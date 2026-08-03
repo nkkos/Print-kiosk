@@ -1,0 +1,38 @@
+/* TODO: exact colors/typography/elevation values pending Design System
+   sign-off (docs/design/design-system.md). Per docs/domain/kiosk-session.md
+   ("End Session" visibility rules), a popup must not cover the header,
+   footer, or even the background of the working screen — so this has no
+   dimming layer and is bounded to the screen's content area (its nearest
+   positioned ancestor, KioskScreenLayout's .content), not the full
+   viewport. `Canvas` is a system color keyword (matches the page's own
+   light/dark background), used only so the panel reads as distinct from
+   what's behind it — not a brand-color decision. */
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Lets clicks reach whatever is behind the popup outside .content below —
+     only the panel itself should intercept clicks. */
+  pointer-events: none;
+  z-index: 10;
+}
+
+.content {
+  pointer-events: auto;
+  box-sizing: border-box;
+  width: 90%;
+  max-width: 32rem;
+  max-height: 100%;
+  overflow-y: auto;
+  padding: var(--space-l);
+  border-radius: var(--radius-large);
+  box-shadow: var(--elevation-modal);
+  border: 1px solid currentColor;
+  background: Canvas;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-m);
+}

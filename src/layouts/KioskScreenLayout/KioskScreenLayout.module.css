@@ -1,0 +1,46 @@
+/* TODO: exact colors/typography/safe-margin values pending Design System
+   sign-off (docs/design/design-system.md). Landscape kiosk display only —
+   no responsive breakpoints. */
+
+.root {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  box-sizing: border-box;
+  padding: var(--space-l);
+  gap: var(--space-l);
+}
+
+.header {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.headerActions {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: var(--space-s);
+}
+
+.navRow {
+  display: flex;
+  justify-content: flex-start;
+  gap: var(--space-s);
+}
+
+.content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  /* Positioned ancestor for Modal (see Modal.module.css) — bounds any popup
+     rendered inside a screen's content to this area, so it never covers the
+     header/footer (docs/domain/kiosk-session.md, End Session visibility). */
+  position: relative;
+}
+
+.footer {
+  display: flex;
+}

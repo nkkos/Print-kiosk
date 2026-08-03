@@ -1,0 +1,17 @@
+/* TODO: colors/typography pending Design System sign-off
+   (docs/design/design-system.md). Border/padding below are the
+   least-opinionated placeholders. */
+
+.root {
+  padding: var(--space-s) var(--space-m);
+  border: 1px solid currentColor;
+  border-radius: var(--radius-medium);
+  background: none;
+  font: inherit;
+  cursor: pointer;
+}
+
+.root:focus-visible {
+  outline: 2px solid;
+  outline-offset: 2px;
+}

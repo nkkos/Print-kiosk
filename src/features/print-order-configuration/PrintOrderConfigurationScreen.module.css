@@ -1,0 +1,32 @@
+/* TODO: exact colors/typography values pending Design System sign-off
+   (docs/design/design-system.md). The preview box is a least-opinionated
+   placeholder pending real document rendering. */
+
+.body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-m);
+}
+
+.preview {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16rem;
+  height: 20rem;
+  border: 1px solid currentColor;
+  border-radius: var(--radius-medium);
+}
+
+.settings {
+  display: flex;
+  gap: var(--space-m);
+}
+
+.price {
+  margin: 0;
+  font-weight: bold;
+}

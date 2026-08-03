@@ -1,0 +1,16 @@
+/* TODO: exact colors/typography per variant pending Design System sign-off
+   (docs/design/design-system.md). */
+
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-s);
+}
+
+.title {
+  margin: 0;
+}
+
+.message {
+  margin: 0;
+}

@@ -1,0 +1,34 @@
+/* TODO: exact colors, typography, and elevation pending Design System
+   sign-off (docs/design/design-system.md). Values below are the
+   least-opinionated placeholders that keep every service card equal in
+   size, per the approved wireframe (Concept A) — Print must not look
+   larger or more dominant than Scan/Copy. */
+
+.root {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-s);
+  flex: 1 1 0;
+  padding: var(--space-xl);
+  border: 1px solid currentColor;
+  border-radius: var(--radius-large);
+  background: none;
+  font: inherit;
+  cursor: pointer;
+}
+
+.root:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.root:focus-visible {
+  outline: 2px solid;
+  outline-offset: 2px;
+}
+
+.title {
+  font-size: 1.25rem;
+}

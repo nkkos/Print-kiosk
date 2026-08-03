@@ -1,0 +1,25 @@
+/*
+ * Design tokens — names only.
+ * Values below are placeholders so `var(--token-name)` resolves during
+ * development. They are not final design decisions — see
+ * docs/design/design-system.md ("To be defined") for the source of truth.
+ */
+:root {
+  /* Spacing scale (docs/design/design-system.md, Section 4) */
+  --space-unit: 8px;
+  --space-xs: calc(var(--space-unit) * 0.5);
+  --space-s: var(--space-unit);
+  --space-m: calc(var(--space-unit) * 2);
+  --space-l: calc(var(--space-unit) * 4);
+  --space-xl: calc(var(--space-unit) * 6);
+
+  /* Border radius scale (Section 5) */
+  --radius-small: 4px;
+  --radius-medium: 8px;
+  --radius-large: 16px;
+
+  /* Elevation (Section 6) — placeholder shadow values only */
+  --elevation-base: none;
+  --elevation-raised: none;
+  --elevation-modal: none;
+}

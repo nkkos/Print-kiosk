@@ -1,0 +1,24 @@
+/* TODO: exact colors/typography/safe-margin values pending Design System
+   sign-off (docs/design/design-system.md). Layout follows the approved
+   wireframe (Concept A): centered instructional text and a 3x2 grid of
+   equal-size option cards. Header/footer/root shell and the Back/Home row
+   now live in KioskScreenLayout. */
+
+.instruction {
+  text-align: center;
+  margin: 0;
+}
+
+.grid {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-l);
+  align-content: center;
+  /* TODO: max-width is a least-opinionated placeholder pending an approved
+     value — keeps the grid from stretching edge-to-edge on the wide
+     reference display. */
+  width: 100%;
+  max-width: 60rem;
+  margin-inline: auto;
+}

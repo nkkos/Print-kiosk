@@ -1,0 +1,39 @@
+/* TODO: exact colors, typography, and elevation pending Design System
+   sign-off (docs/design/design-system.md). Values below are the
+   least-opinionated placeholders that keep every option card equal in
+   size, per the approved wireframe (Concept A) — no method looks larger
+   or more dominant than another. */
+
+.root {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-xs);
+  padding: var(--space-l);
+  border: 1px solid currentColor;
+  border-radius: var(--radius-large);
+  background: none;
+  font: inherit;
+  cursor: pointer;
+}
+
+.marker {
+  position: absolute;
+  top: var(--space-xs);
+  right: var(--space-xs);
+}
+
+.root:focus-visible {
+  outline: 2px solid;
+  outline-offset: 2px;
+}
+
+.title {
+  font-size: 1.1rem;
+}
+
+.description {
+  font-size: 0.875rem;
+}

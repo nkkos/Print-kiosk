@@ -1,0 +1,32 @@
+/* TODO: exact colors/typography/icons pending Design System sign-off
+   (docs/design/design-system.md). Plain text stands in for IconButton
+   until an icon set is approved (docs/design/component-library.md,
+   Section 7). */
+
+.root {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-l);
+  width: 100%;
+}
+
+.group {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: var(--space-m);
+}
+
+.item {
+  font-size: 0.875rem;
+}
+
+.cartButton {
+  border: none;
+  background: none;
+  padding: 0;
+  font: inherit;
+  cursor: pointer;
+}
