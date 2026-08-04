@@ -19,6 +19,7 @@ export const ru: Translations = {
     tapToConfigurePrinting: 'Нажмите, чтобы настроить печать',
     scanningForViruses: 'Проверка на вирусы...',
     configureAllFiles: 'Настроить печать для всех файлов',
+    blockedVirusScan: 'Заблокировано — не прошло проверку на вирусы',
   },
   footer: {
     callOperator: 'Вызвать оператора',
@@ -98,7 +99,6 @@ export const ru: Translations = {
     preparingQrCode: 'Подготовка QR-кода...',
     qrHint: 'Отсканируйте камерой телефона, затем загрузите файл(ы) со страницы, которая откроется',
     waitingForFiles: 'Ожидание файлов...',
-    blockedVirusScan: 'Заблокировано — не прошло проверку на вирусы',
   },
   personalAccount: {
     myFiles: 'Мои файлы',

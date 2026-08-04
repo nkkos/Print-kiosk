@@ -19,6 +19,7 @@ export const sk: Translations = {
     tapToConfigurePrinting: 'Ťuknutím nastavíte tlač',
     scanningForViruses: 'Kontrola na vírusy...',
     configureAllFiles: 'Nastaviť tlač pre všetky súbory',
+    blockedVirusScan: 'Zablokované — nevyhovelo kontrole na vírusy',
   },
   footer: {
     callOperator: 'Zavolať operátora',
@@ -99,7 +100,6 @@ export const sk: Translations = {
     qrHint:
       'Naskenujte fotoaparátom telefónu a potom nahrajte súbor(y) zo stránky, ktorá sa otvorí',
     waitingForFiles: 'Čakanie na súbory...',
-    blockedVirusScan: 'Zablokované — nevyhovelo kontrole na vírusy',
   },
   personalAccount: {
     myFiles: 'Moje súbory',

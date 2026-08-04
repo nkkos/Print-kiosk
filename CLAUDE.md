@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-A React + TypeScript + Vite client application for a self-service printing kiosk (unattended document printing). Currently a clickable prototype: the full user journey works end-to-end against mock data (no hardware integrations, no automated tests — still explicitly out of scope per `docs/product-overview.md`). One exception: the QR upload method has a real, dev-only backend (`server/`) — see "Backend" below. Every other upload method (Email, Personal account) remains fully mocked in the frontend.
+A React + TypeScript + Vite client application for a self-service printing kiosk (unattended document printing). Currently a clickable prototype: the full user journey works end-to-end against mock data (no hardware integrations, no automated tests — still explicitly out of scope per `docs/product-overview.md`). Two exceptions: the QR and Email upload methods have a real backend (`server/`) — see "Backend" below. Personal account remains fully mocked in the frontend.
 
 ## Commands
 
@@ -16,17 +16,19 @@ A React + TypeScript + Vite client application for a self-service printing kiosk
 
 There is no test runner/suite in this project — do not invent one.
 
-## Backend (dev-only, QR upload)
+## Backend (QR + Email upload)
 
-`server/` is a small Express + TypeScript backend, wired into the same TS project-reference graph as the frontend (`tsconfig.server.json`, referenced from the root `tsconfig.json`) — `npm run build`/`npm run lint`/`npx prettier . --check` already cover it, no separate commands needed for verification.
+`server/` is a small Express + TypeScript backend, wired into the same TS project-reference graph as the frontend (`tsconfig.server.json`, referenced from the root `tsconfig.json`) — `npm run build`/`npm run lint`/`npx prettier . --check` already cover it, no separate commands needed for verification. Runs locally for development (`npm run dev:server`/`dev:all`) and can also be deployed to Railway (`npm start`) — see `README.md`, "Deploying to Railway," for the full setup (two services: `backend` + a `clamav` Docker-image service, reached over Railway's private network).
 
 - `npm run dev:server` — run the backend alone (`tsx watch server/index.ts`, port 3001).
 - `npm run dev:all` — frontend + backend together (`concurrently`).
-- In-memory only (`server/uploadStore.ts`) — no database, nothing survives a restart. Uploaded files land on disk under `server/uploads/<sessionId>/` (gitignored).
-- `GET /api/config` returns the backend's auto-detected LAN IP, which the frontend embeds in the QR code so a phone (a separate device) can reach it — the frontend's own calls to the backend always use `localhost` (see `.env.example`, `VITE_API_BASE_URL`).
-- This is intentionally a _dev-only_ backend (permissive CORS, no real auth) — matches `docs/product-overview.md`'s "production-ready backend" and "security hardening" being out of scope, not a contradiction of it. Format/size validation and real antivirus scanning are implemented, though (see below) — those aren't "hardening" so much as correctness/data-quality checks, and the AV-scanning open item had been unresolved since the project's earliest domain discovery.
+- `npm start` — production entrypoint (`tsx server/index.ts`, no watch) — what Railway's `backend` service runs.
+- In-memory only (`server/uploadStore.ts`, `server/emailStore.ts`) — no database, nothing survives a restart. Uploaded files (QR and Email attachments alike) land on disk under `server/uploads/<sessionId-or-email-prefix>/` (gitignored).
+- `GET /api/config` returns `RAILWAY_PUBLIC_DOMAIN` when set (deployed), else falls back to LAN-IP auto-detection (local dev) — the frontend embeds this in the QR code so a phone (a separate device) can reach it. The frontend's own calls to the backend always use `localhost` in dev (see `.env.example`, `VITE_API_BASE_URL`).
+- **Real inbound email**: Cloudflare Email Routing → a thin Cloudflare Worker (`cloudflare-worker/email-relay.js`, forwards raw MIME only, no parsing) → `POST /api/email/incoming`, parsed with `mailparser` and reusing the same validation/scanning pipeline as QR — see `docs/email-upload-requirements.md`, "How it works."
+- This is intentionally a backend without production hardening (permissive CORS, no real auth) — matches `docs/product-overview.md`'s "production-ready backend" and "security hardening" being out of scope, not a contradiction of it. Format/size validation and real antivirus scanning are implemented, though (see below) — those aren't "hardening" so much as correctness/data-quality checks, and the AV-scanning open item had been unresolved since the project's earliest domain discovery.
 - **File format/size limits** (`server/fileValidation.ts`): shared rule across every upload method — see `docs/domain/kiosk-session.md`, "File format and size limits."
-- **Real antivirus scanning** (`server/uploadStore.ts`) via a local ClamAV daemon (`clamd`) over TCP — see `docs/qr-upload-requirements.md`, "File scanning status," and `README.md` for the one-time setup + how to start `clamd` before testing. Fails open (dev-only) if `clamd` isn't running.
+- **Real antivirus scanning** (`server/uploadStore.ts`) via a ClamAV daemon (`clamd`) over TCP, host/port from `CLAMD_HOST`/`CLAMD_PORT` (default `127.0.0.1:3310` for local dev) — see `docs/qr-upload-requirements.md`, "File scanning status," and `README.md` for local one-time setup + the Railway `clamav` service. Fails open (dev convenience, not the production answer) if `clamd` isn't reachable.
 
 ## Documentation is the source of truth
 

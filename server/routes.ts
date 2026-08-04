@@ -1,12 +1,15 @@
-import { Router } from 'express';
+import express, { Router } from 'express';
 import type { Request, Response, NextFunction } from 'express';
 import multer from 'multer';
+import { simpleParser } from 'mailparser';
 import { networkInterfaces } from 'node:os';
 import { mkdirSync } from 'node:fs';
+import { writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { randomUUID } from 'node:crypto';
 import { addFile, listFiles } from './uploadStore.js';
+import { addEmail, listEmails } from './emailStore.js';
 import {
   ACCEPTED_EXTENSIONS,
   MAX_FILE_SIZE_BYTES,
@@ -15,7 +18,7 @@ import {
   decodeOriginalName,
 } from './fileValidation.js';
 
-export const PORT = 3001;
+export const DEFAULT_PORT = 3001;
 const serverDir = dirname(fileURLToPath(import.meta.url));
 const uploadsDir = join(serverDir, 'uploads');
 
@@ -105,8 +108,18 @@ function handleFileUpload(req: Request, res: Response, next: NextFunction) {
 
 export const router = Router();
 
+// Prefers the deployed Railway public URL when present (RAILWAY_PUBLIC_DOMAIN
+// is injected automatically once a public domain is generated for this
+// service — see docs/qr-upload-requirements.md), so a phone can reach this
+// backend from any network. Falls back to LAN-IP detection for local dev,
+// where no public domain exists.
 router.get('/api/config', (_req, res) => {
-  res.json({ lanUploadUrl: `http://${getLanIPv4()}:${PORT}` });
+  const port = Number(process.env.PORT ?? DEFAULT_PORT);
+  const railwayDomain = process.env.RAILWAY_PUBLIC_DOMAIN;
+  const lanUploadUrl = railwayDomain
+    ? `https://${railwayDomain}`
+    : `http://${getLanIPv4()}:${port}`;
+  res.json({ lanUploadUrl });
 });
 
 // The "lightweight web page (file picker / take-a-photo)" from
@@ -162,4 +175,59 @@ router.post('/api/qr-sessions/:sessionId/files', handleFileUpload, (req, res) =>
 
 router.get('/api/qr-sessions/:sessionId/files', (req, res) => {
   res.json(listFiles(paramString(req.params.sessionId)));
+});
+
+// Extracts the 8-character session prefix from an address of the form
+// `upload-<prefix>@<domain>` (the format src/App.tsx generates) — falls back
+// to the whole local part if the address doesn't have the expected prefix,
+// so a stray/misaddressed message still lands in *some* bucket instead of
+// throwing.
+function extractSessionPrefix(toAddress: string): string {
+  const localPart = toAddress.split('@')[0] ?? '';
+  return localPart.startsWith('upload-') ? localPart.slice('upload-'.length) : localPart;
+}
+
+// The Cloudflare Worker's (cloudflare-worker/email-relay.js) fixed target —
+// see docs/email-upload-requirements.md. Reads the raw RFC822 message body
+// (scoped `express.raw()` just for this route, so JSON parsing elsewhere is
+// unaffected) plus the original recipient in the X-Original-To header the
+// Worker sets, and reuses the exact same format/size validation and ClamAV
+// scanning path QR uploads already go through (server/uploadStore.ts), via
+// server/emailStore.ts.
+router.post(
+  '/api/email/incoming',
+  express.raw({ type: '*/*', limit: `${MAX_FILE_SIZE_MB * 5}mb` }),
+  async (req, res) => {
+    const toHeader = req.header('X-Original-To');
+    if (!toHeader) {
+      res.status(400).json({ error: 'Missing X-Original-To header' });
+      return;
+    }
+    const prefix = extractSessionPrefix(toHeader);
+    const parsed = await simpleParser(req.body as Buffer);
+
+    const sessionDir = join(uploadsDir, prefix);
+    mkdirSync(sessionDir, { recursive: true });
+
+    const attachments: { fileName: string; filePath: string }[] = [];
+    for (const attachment of parsed.attachments) {
+      const fileName = decodeOriginalName(attachment.filename ?? 'attachment');
+      if (!hasAcceptedExtension(fileName) || attachment.size > MAX_FILE_SIZE_BYTES) continue;
+      const filePath = join(sessionDir, `${randomUUID()}-${fileName}`);
+      await writeFile(filePath, attachment.content);
+      attachments.push({ fileName, filePath });
+    }
+
+    addEmail(
+      prefix,
+      parsed.subject ?? '(no subject)',
+      (parsed.text ?? '').slice(0, 200),
+      attachments,
+    );
+    res.status(204).end();
+  },
+);
+
+router.get('/api/email-sessions/:prefix/messages', (req, res) => {
+  res.json(listEmails(paramString(req.params.prefix)));
 });

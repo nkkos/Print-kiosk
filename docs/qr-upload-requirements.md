@@ -8,13 +8,18 @@ Lets the user upload a document from their phone by scanning a QR code shown on 
 
 ## How it works (implemented — dev-only backend)
 
-Implemented as of this revision, via a small Express backend in `server/` (see `CLAUDE.md`, "Backend"). This is a _dev-only_ backend — it runs on the developer's own machine, with no hosting/domain/HTTPS, permissive CORS, and no auth/validation, matching `docs/product-overview.md`'s "production-ready backend" and "security hardening" being out of scope:
+Implemented as of this revision, via a small Express backend in `server/` (see `CLAUDE.md`, "Backend"). This is still a _dev-only_ backend — permissive CORS and no auth/validation beyond format/size, matching `docs/product-overview.md`'s "production-ready backend" and "security hardening" being out of scope — but it can now run either locally on the developer's own machine, or deployed to Railway (see "Where the phone connects" below):
 
-- The Kiosk Session's own `session.id` is reused directly as the upload token (the same simplification already used for the mock Email address) — no separate token-minting step.
-- The QR code encodes `http://<lan-ip>:3001/upload/<sessionId>`, where `<lan-ip>` is the backend's own LAN-facing IPv4, auto-detected via `GET /api/config` (so the phone, a separate device on the same Wi-Fi, can actually reach it — `localhost` only resolves on the kiosk machine itself). Scanning it opens the URL directly in the phone's browser — no dedicated app required.
+- The Kiosk Session's own `session.id` is reused directly as the upload token (the same simplification already used for the Email address's session prefix) — no separate token-minting step.
+- The QR code encodes `<backend base URL>/upload/<sessionId>`, where the base URL comes from `GET /api/config` (see "Where the phone connects" below). Scanning it opens the URL directly in the phone's browser — no dedicated app required.
 - The destination is a lightweight, server-rendered HTML page (plain file input + upload button) served by the same backend — a real "lightweight web page," not a placeholder.
 - Uploaded files are sent from the phone's browser via a standard multipart form post, stored on the backend's disk under `server/uploads/<sessionId>/`, and tracked in an in-memory store (`server/uploadStore.ts`) — nothing persists across a backend restart.
 - The kiosk learns about newly arrived files by polling the backend every 3 seconds while the QR screen is open (`GET /api/qr-sessions/:sessionId/files`) — a WebSocket/SSE push remains a possible future refinement, polling was the simpler, confirmed choice.
+
+## Where the phone connects
+
+- **Deployed (Railway):** `GET /api/config` returns the backend's public Railway URL (`RAILWAY_PUBLIC_DOMAIN`, injected automatically once the `backend` service has a public domain) — the phone just needs any internet connection, not the kiosk's own network. This is the confirmed setup for anything beyond local development, since QR moved to the same Railway hosting as Email (`README.md`, "Deploying to Railway").
+- **Local development (fallback, unchanged):** with no `RAILWAY_PUBLIC_DOMAIN` set, `GET /api/config` falls back to auto-detecting the dev machine's LAN-facing IPv4 (`getLanIPv4()` in `server/routes.ts`), same as before — the phone must be on the same Wi-Fi as the dev machine for this path, since `localhost` only resolves on the kiosk machine itself.
 
 ## Confirmed flow
 
@@ -38,7 +43,7 @@ The list is a **flat list of files** — no grouping (unlike Email's grouping by
 
 - Every uploaded file passes through the same antivirus-scanning step as every other upload method (see `docs/domain/kiosk-session.md`, "File scanning status" — this is a cross-cutting rule, not QR-specific).
 - While scanning, the file is shown in the list but is not selectable (visually indicated as pending, e.g., "Scanning for viruses..."). Once scanning completes, it becomes selectable, same as any other received file, to proceed to Print Order Configuration.
-- **Implemented, real scanning:** a local ClamAV daemon (`clamd`), scanned via the `clamscan` npm package over TCP (`server/uploadStore.ts`) — chosen over a cloud scanning API specifically so uploaded files never leave the machine. Must be running (`clamd.exe`) before testing QR uploads — see `README.md`.
+- **Implemented, real scanning:** a ClamAV daemon (`clamd`), scanned via the `clamscan` npm package over TCP (`server/uploadStore.ts`) — chosen over a cloud scanning API specifically so uploaded files stay within infrastructure we control. Locally, this is `clamd.exe` running on the dev machine (`CLAMD_HOST`/`CLAMD_PORT` default to `127.0.0.1:3310` — see `README.md`); when deployed, it's the `clamav` Railway service, reached over Railway's private network (`README.md`, "Deploying to Railway").
 - **Infected file:** deleted from disk immediately; the kiosk's file list shows it as `'rejected'` — "Blocked — failed virus scan," non-selectable, but still visible (not silently removed). See `docs/domain/kiosk-session.md`, "File scanning status," for the full shared rule.
 - **Dev-only fail-open:** if `clamd` isn't reachable, the file is logged server-side and still let through as `'ready'` — a deliberate dev convenience, not the production answer (a production system should fail closed instead).
 
@@ -57,5 +62,4 @@ Out of scope for this document: the six-method selection screen itself (see `doc
 
 ## Open items
 
-- Same real antivirus scanning for Email once it has a real backend (currently mocked there — see `docs/email-upload-requirements.md`).
-- Production-ready backend (hosting, domain, HTTPS, auth/session-token hardening, real cleanup on session end) — deferred; see "Known gaps" above for what today's dev-only backend does instead.
+- Production-ready backend (auth/session-token hardening, real cleanup on session end) — deferred; see "Known gaps" above for what today's dev-only backend does instead. Hosting/domain/HTTPS themselves are now covered by the Railway deployment (see "Where the phone connects" above), though the backend's own security posture is unchanged (dev-only, not hardened).

@@ -151,7 +151,7 @@ export function QrUploadScreen({
                   file.status === 'ready'
                     ? t.common.tapToConfigurePrinting
                     : file.status === 'rejected'
-                      ? t.qrUpload.blockedVirusScan
+                      ? t.common.blockedVirusScan
                       : t.common.scanningForViruses;
                 return (
                   <OptionCard

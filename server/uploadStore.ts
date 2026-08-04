@@ -22,7 +22,12 @@ const filesBySession = new Map<string, UploadedFile[]>();
 // not here, so a slow/late-starting clamd doesn't crash the whole server.
 const clamscanPromise = new NodeClam().init({
   removeInfected: false, // we delete ourselves, after updating our own store
-  clamdscan: { host: '127.0.0.1', port: 3310, timeout: 60000, active: true },
+  clamdscan: {
+    host: process.env.CLAMD_HOST ?? '127.0.0.1',
+    port: Number(process.env.CLAMD_PORT ?? 3310),
+    timeout: 60000,
+    active: true,
+  },
   clamscan: { active: false },
   preference: 'clamdscan',
 });

@@ -3,10 +3,9 @@ import { KioskScreenLayout } from '../../layouts/KioskScreenLayout/KioskScreenLa
 import { OptionCard } from '../../components/OptionCard/OptionCard';
 import { Modal } from '../../components/Modal/Modal';
 import { Button } from '../../components/Button/Button';
-import { MOCK_EMAILS } from './mockEmails';
 import { useTranslation } from '../../i18n';
 import type { Language } from '../../i18n';
-import type { PrintOrder } from '../../types/kiosk';
+import type { PrintOrder, ReceivedEmail } from '../../types/kiosk';
 import styles from './EmailFileListScreen.module.css';
 
 // Second Email upload screen — see docs/email-upload-requirements.md.
@@ -18,14 +17,10 @@ import styles from './EmailFileListScreen.module.css';
 // email they came from — this grouping is for navigation only, not a new
 // print-order concept.
 //
-// Prototype simplification: mock emails are always "received" the instant
-// this screen is reached — no real inbound-email backend. Each attachment
-// still passes through the shared antivirus-scanning status
-// (docs/domain/kiosk-session.md, "File scanning status") — `readyAttachments`
-// is owned by App.tsx (not locally here), since this screen unmounts/remounts
-// on every navigation away and back (e.g., after "Add to cart"), and an
-// already-scanned file must not restart scanning just because the screen
-// remounted.
+// Real emails arrive via server/emailStore.ts (docs/email-upload-requirements.md)
+// and are polled for by App.tsx, which owns `emails` (not locally here) since
+// this screen unmounts/remounts on every navigation away and back (e.g.,
+// after "Add to cart") and polling must keep running regardless.
 interface EmailFileListScreenProps {
   onFileSelect: (fileName: string) => void;
   /** Configures every currently-selectable (scanned) attachment across every
@@ -35,8 +30,9 @@ interface EmailFileListScreenProps {
   onBack: () => void;
   onHome: () => void;
   onEndSession: () => void;
-  /** Attachments that have finished antivirus scanning and can be selected. */
-  readyAttachments: ReadonlySet<string>;
+  /** Received emails, each attachment carrying its own scanning status
+   * (docs/domain/kiosk-session.md, "File scanning status"). */
+  emails: ReceivedEmail[];
   /** Current Cart contents, shown in the btn-cart popup. */
   cartItems: PrintOrder[];
   /** Adjusts a Cart item's quantity (docs/cart-requirements.md). */
@@ -68,7 +64,7 @@ export function EmailFileListScreen({
   onBack,
   onHome,
   onEndSession,
-  readyAttachments,
+  emails,
   cartItems,
   onQuantityChange,
   onRemoveItem,
@@ -87,7 +83,10 @@ export function EmailFileListScreen({
 }: EmailFileListScreenProps) {
   const t = useTranslation();
   const [openEmailId, setOpenEmailId] = useState<string | null>(null);
-  const openEmail = MOCK_EMAILS.find((email) => email.id === openEmailId) ?? null;
+  const openEmail = emails.find((email) => email.id === openEmailId) ?? null;
+  const hasReadyAttachments = emails.some((email) =>
+    email.attachments.some((attachment) => attachment.status === 'ready'),
+  );
 
   return (
     <KioskScreenLayout
@@ -113,7 +112,7 @@ export function EmailFileListScreen({
       <div className={styles.body}>
         <p className={styles.instruction}>{t.emailFileList.instruction}</p>
         <div className={styles.list}>
-          {MOCK_EMAILS.map((email) => (
+          {emails.map((email) => (
             <OptionCard
               key={email.id}
               id={`email-item-${email.id}`}
@@ -128,7 +127,7 @@ export function EmailFileListScreen({
           id="email-configure-all"
           label={t.common.configureAllFiles}
           onClick={onConfigureAllFiles}
-          disabled={readyAttachments.size === 0}
+          disabled={!hasReadyAttachments}
         />
       </div>
 
@@ -137,17 +136,24 @@ export function EmailFileListScreen({
           <h2 className={styles.emailSubject}>{openEmail.subject}</h2>
           <p className={styles.emailBody}>{openEmail.bodyPreview}</p>
           <div className={styles.attachments}>
-            {openEmail.attachments.map((fileName) => {
-              const isReady = readyAttachments.has(fileName);
+            {openEmail.attachments.map((attachment) => {
+              const isReady = attachment.status === 'ready';
+              // 'rejected' (docs/domain/kiosk-session.md, "File scanning
+              // status") stays visible rather than disappearing, so the
+              // user isn't left wondering whether their attachment got stuck.
+              const description =
+                attachment.status === 'ready'
+                  ? t.common.tapToConfigurePrinting
+                  : attachment.status === 'rejected'
+                    ? t.common.blockedVirusScan
+                    : t.common.scanningForViruses;
               return (
                 <OptionCard
-                  key={fileName}
-                  id={`email-attachment-${fileName}`}
-                  title={fileName}
-                  description={
-                    isReady ? t.common.tapToConfigurePrinting : t.common.scanningForViruses
-                  }
-                  onActivate={isReady ? () => onFileSelect(fileName) : undefined}
+                  key={attachment.id}
+                  id={`email-attachment-${attachment.id}`}
+                  title={attachment.fileName}
+                  description={description}
+                  onActivate={isReady ? () => onFileSelect(attachment.fileName) : undefined}
                   disabled={!isReady}
                 />
               );

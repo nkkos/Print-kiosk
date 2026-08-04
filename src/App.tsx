@@ -3,7 +3,6 @@ import { WelcomeScreen } from './features/welcome/WelcomeScreen';
 import { UploadMethodSelectionScreen } from './features/upload-method-selection/UploadMethodSelectionScreen';
 import { EmailAddressScreen } from './features/email-upload/EmailAddressScreen';
 import { EmailFileListScreen } from './features/email-upload/EmailFileListScreen';
-import { ALL_EMAIL_ATTACHMENT_NAMES } from './features/email-upload/mockEmails';
 import { QrUploadScreen } from './features/qr-upload/QrUploadScreen';
 import { PersonalAccountScreen } from './features/personal-account/PersonalAccountScreen';
 import { MOCK_PAID_ORDERS } from './features/personal-account/mockAccountData';
@@ -14,9 +13,10 @@ import { FinalisingSessionScreen } from './features/finalising-session/Finalisin
 import { EndingSessionScreen } from './features/ending-session/EndingSessionScreen';
 import { computeItemPrice } from './utils/pricing';
 import { getUploadConfig, listQrFiles } from './services/qrUploadApi';
+import { listEmailMessages } from './services/emailApi';
 import { LanguageProvider } from './i18n';
 import type { Language } from './i18n';
-import type { KioskSession, PrintOrder, ReceivedFile } from './types/kiosk';
+import type { KioskSession, PrintOrder, ReceivedFile, ReceivedEmail } from './types/kiosk';
 
 type Screen =
   | 'welcome'
@@ -46,15 +46,15 @@ const ENDING_SESSION_DELAY_MS = 1200;
 const SESSION_ID_STORAGE_KEY = 'print-kiosk.sessionId';
 const CART_STORAGE_KEY = 'print-kiosk.cart';
 
-// File scanning status (docs/domain/kiosk-session.md, "File scanning
-// status"): shared across every upload method — a realistic approximation
-// of local antivirus-scan latency, not an inflated wait.
-const FILE_SCAN_DELAY_MS = 3000;
-
 // Real QR upload backend (server/, dev-only — see
 // docs/qr-upload-requirements.md): the kiosk polls it for newly arrived
 // files while the QR screen is open.
 const QR_POLL_INTERVAL_MS = 3000;
+
+// Real Email upload backend (server/, dev-only — see
+// docs/email-upload-requirements.md): the kiosk polls it for newly arrived
+// messages while the Email file list screen is open, same pattern as QR.
+const EMAIL_POLL_INTERVAL_MS = 3000;
 
 // Simple state-based screen switch — no React Router yet, per
 // docs/implementation/project-architecture.md, Section 9 (deferred until a
@@ -107,14 +107,14 @@ function App() {
   // (docs/personal-account-requirements.md, "Batch configure"). Empty for
   // the ordinary one-file-at-a-time flow.
   const [batchQueue, setBatchQueue] = useState<{ fileName: string; sourceMethod: string }[]>([]);
-  // Attachments that have finished antivirus scanning (docs/domain/kiosk-session.md,
-  // "File scanning status") and can be selected. Owned here (not locally in
-  // EmailFileListScreen) so an already-scanned file doesn't restart scanning
-  // just because that screen unmounted and remounted (e.g., after "Add to cart").
-  const [readyEmailAttachments, setReadyEmailAttachments] = useState<Set<string>>(new Set());
+  // Real received emails, each attachment carrying its own scanning status
+  // (docs/email-upload-requirements.md; docs/domain/kiosk-session.md, "File
+  // scanning status"). Owned here (not locally in EmailFileListScreen) for
+  // the same survives-remount reason as qrFiles below.
+  const [emailMessages, setEmailMessages] = useState<ReceivedEmail[]>([]);
   // QR-uploaded files, each carrying its own scanning status
   // (docs/qr-upload-requirements.md). Owned here for the same
-  // survives-remount reason as readyEmailAttachments above.
+  // survives-remount reason as emailMessages above.
   const [qrFiles, setQrFiles] = useState<ReceivedFile[]>([]);
   // Whether the QR screen has been reached at least once this session —
   // gates the one-time /api/config fetch below (docs/qr-upload-requirements.md).
@@ -122,12 +122,12 @@ function App() {
   // The phone-facing upload URL encoded in the QR image, once known — null
   // until the one-time /api/config fetch (below) resolves.
   const [qrUploadUrl, setQrUploadUrl] = useState<string | null>(null);
-  // Simulates "is this session's mailbox empty?" without a real inbound-email
-  // backend (docs/email-upload-requirements.md, Open items): starts false
-  // (empty), flips true once the user has gone through the address/instruction
-  // screen at least once this session. While false, selecting Email shows the
-  // instruction screen; once true, selecting Email again skips straight to
-  // the email list (the user already knows the address and has mail waiting).
+  // Whether the user has gone through the address/instruction screen at
+  // least once this session (docs/email-upload-requirements.md) — not
+  // whether mail has actually arrived (see emailMessages for that, which
+  // drives the "used" card marker below). While false, selecting Email shows
+  // the instruction screen; once true, selecting Email again skips straight
+  // to the email list (the user already knows the address).
   const [hasReceivedEmail, setHasReceivedEmail] = useState(false);
   // Ids of upload methods used at least once this session — drives the
   // "used" marker on Upload Method Selection's cards
@@ -181,17 +181,26 @@ function App() {
     localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cart));
   }, [cart]);
 
-  // Starts scanning all mock email attachments the first time the mailbox
-  // is populated (mirrors "mail arrives instantly" — see EmailAddressScreen's
-  // onNext) — runs once, since hasReceivedEmail never flips back to false
-  // mid-session.
+  // Polls the backend for newly arrived email while the Email file list
+  // screen is open — messages themselves live server-side
+  // (server/emailStore.ts), so polling simply resumes and immediately
+  // re-fetches on every revisit. Mirrors the QR polling effect below.
   useEffect(() => {
-    if (!hasReceivedEmail) return;
-    const timeoutId = setTimeout(() => {
-      setReadyEmailAttachments(new Set(ALL_EMAIL_ATTACHMENT_NAMES));
-    }, FILE_SCAN_DELAY_MS);
-    return () => clearTimeout(timeoutId);
-  }, [hasReceivedEmail]);
+    if (screen !== 'email-file-list' || !session) return;
+    const prefix = session.id.slice(0, 8);
+    let cancelled = false;
+    function poll() {
+      listEmailMessages(prefix).then((messages) => {
+        if (!cancelled) setEmailMessages(messages);
+      });
+    }
+    poll();
+    const intervalId = setInterval(poll, EMAIL_POLL_INTERVAL_MS);
+    return () => {
+      cancelled = true;
+      clearInterval(intervalId);
+    };
+  }, [screen, session]);
 
   // Fetches the backend's LAN-facing upload URL once, the first time the QR
   // screen is reached this session — the QR image encodes
@@ -267,9 +276,13 @@ function App() {
 
   function handleConfigureAllEmailAttachments() {
     startBatch(
-      ALL_EMAIL_ATTACHMENT_NAMES.filter((fileName) => readyEmailAttachments.has(fileName)).map(
-        (fileName) => ({ fileName, sourceMethod: 'upload-method-email' }),
-      ),
+      emailMessages
+        .flatMap((email) => email.attachments)
+        .filter((attachment) => attachment.status === 'ready')
+        .map((attachment) => ({
+          fileName: attachment.fileName,
+          sourceMethod: 'upload-method-email',
+        })),
     );
   }
 
@@ -369,7 +382,7 @@ function App() {
       setPaymentItems([]);
       setSelectedFile(null);
       setBatchQueue([]);
-      setReadyEmailAttachments(new Set());
+      setEmailMessages([]);
       setQrFiles([]);
       setHasQrUploadStarted(false);
       setQrUploadUrl(null);
@@ -465,7 +478,7 @@ function App() {
   // depends on that, alongside being logged in).
   const cardMarkerMethods = new Set(usedMethods);
   if (qrFiles.length > 0) cardMarkerMethods.add('upload-method-qr');
-  if (hasReceivedEmail) cardMarkerMethods.add('upload-method-email');
+  if (emailMessages.length > 0) cardMarkerMethods.add('upload-method-email');
 
   if (screen === 'upload-method-selection') {
     return (
@@ -508,7 +521,7 @@ function App() {
     return (
       <LanguageProvider language={language}>
         <EmailAddressScreen
-          emailAddress={`upload-${session.id.slice(0, 8)}@kiosk.example`}
+          emailAddress={`upload-${session.id.slice(0, 8)}@${import.meta.env.VITE_EMAIL_DOMAIN ?? 'kiosk.example'}`}
           onNext={() => {
             setHasReceivedEmail(true);
             goToEmailFileList(false);
@@ -541,7 +554,7 @@ function App() {
         <EmailFileListScreen
           onFileSelect={(fileName) => selectFileForConfiguration(fileName, 'upload-method-email')}
           onConfigureAllFiles={handleConfigureAllEmailAttachments}
-          readyAttachments={readyEmailAttachments}
+          emails={emailMessages}
           onBack={() => setScreen('email-address')}
           onHome={() => setScreen('welcome')}
           onEndSession={handleEndSession}

@@ -19,6 +19,7 @@ export const de: Translations = {
     tapToConfigurePrinting: 'Tippen, um den Druck zu konfigurieren',
     scanningForViruses: 'Virenprüfung läuft...',
     configureAllFiles: 'Druck für alle Dateien konfigurieren',
+    blockedVirusScan: 'Blockiert — Virenprüfung fehlgeschlagen',
   },
   footer: {
     callOperator: 'Mitarbeiter rufen',
@@ -100,7 +101,6 @@ export const de: Translations = {
     qrHint:
       'Scannen Sie mit der Kamera Ihres Telefons und laden Sie dann Ihre Datei(en) von der sich öffnenden Seite hoch',
     waitingForFiles: 'Warten auf Dateien...',
-    blockedVirusScan: 'Blockiert — Virenprüfung fehlgeschlagen',
   },
   personalAccount: {
     myFiles: 'Meine Dateien',

@@ -8,13 +8,22 @@ Lets the user provide a document for printing by sending it as an email attachme
 
 ## Session-specific email address
 
-- Each Kiosk Session that chooses the Email upload method is assigned a unique, dynamically generated email address for that session — not a pre-provisioned pool of fixed mailboxes.
+- Each Kiosk Session that chooses the Email upload method is assigned a unique, dynamically generated email address for that session — not a pre-provisioned pool of fixed mailboxes: `upload-<8-char session id prefix>@<kiosk's registered domain>` (`src/App.tsx`).
 - The address is served by a catch-all inbound-mail configuration (a dedicated domain/subdomain routes any address to a single inbound-email handling service), not an individually pre-existing mailbox.
-- Incoming email for a session's address is delivered directly to the backend (e.g., via a webhook from an inbound-email provider) — the kiosk does not poll a shared inbox.
-- Because the address space is effectively unlimited, there is no fixed pool to exhaust and no "which mailbox is free" check.
+- Incoming email for a session's address is delivered directly to the backend — the kiosk does not poll a shared inbox.
+- Because the address space is effectively unlimited, there is no fixed pool to exhaust and no "which mailbox is free" check. The 8-character prefix collision risk is accepted as-is, matching the same simplification already used for the QR session id.
 - Attachments belonging to a session are stored and shown to the user by session identity, not by reading a shared mailbox — the user never sees "a mailbox," only their own session's received files.
 - Cleanup: no message or attachment persists beyond what the backend explicitly stores against the session; there is no shared inbox that needs periodic clearing.
-- Exact inbound-email provider/mail-domain choice, its failure/retry behavior, and message size or attachment limits: To be defined.
+
+## How it works (implemented — dev-only backend)
+
+Implemented as of this revision, reusing the same backend as QR (see `docs/qr-upload-requirements.md`, "How it works," and `CLAUDE.md`, "Backend") — still a _dev-only_ backend (no auth/validation beyond format/size, matching `docs/product-overview.md`'s scope):
+
+- **Cloudflare Email Routing**, enabled on the kiosk's registered domain, forwards every message addressed to the domain (a catch-all rule) to a Cloudflare Worker.
+- The **Worker** (`cloudflare-worker/email-relay.js`) is deliberately thin: it does no parsing itself, just forwards the raw MIME message and the original recipient address (as an `X-Original-To` header) to the backend's fixed `POST /api/email/incoming` — kept swappable for a different relay mechanism later.
+- The **backend** (`server/routes.ts`) parses the raw message with `mailparser`, extracts the 8-character session prefix from the recipient's local part, and reuses the exact same format/size validation and ClamAV scanning pipeline QR uploads already go through (`server/uploadStore.ts`), via a thin `server/emailStore.ts` that tracks subject/body-preview/attachment-list per prefix.
+- Message subject and a short plaintext body preview are shown to the user per received email (matching the "grouped by message" flow below); attachments failing format/size validation are silently dropped from that email's list rather than blocking the whole message.
+- The kiosk learns about newly arrived email by polling the backend every 3 seconds while the Email file list screen is open (`GET /api/email-sessions/:prefix/messages`) — same polling pattern as QR.
 
 ## Confirmed flow (happy path)
 
@@ -36,7 +45,7 @@ Lets the user provide a document for printing by sending it as an email attachme
 - Files in accepted formats are automatically converted to PDF by the system before preview — the user never chooses or triggers a conversion step themselves.
 - The user is informed of the accepted formats before sending their file (on the instructional screen described in the confirmed flow above).
 - If a received file is not in an accepted format, or conversion fails, a popup error is shown to the user.
-- **Accepted formats and size limit are now confirmed** — PDF, DOC, DOCX, JPG/JPEG, PNG, HEIC; 20 MB max per file; see `docs/domain/kiosk-session.md`, "File format and size limits" (shared across every upload method, not Email-specific). **Not yet implemented for Email** — enforcing it requires a real inbound-email backend, which doesn't exist yet (Email remains fully mocked); QR has the same rule already implemented (`docs/qr-upload-requirements.md`) since it has a real backend. The popup's exact wording and whether the user can retry are still open (see Open items).
+- **Accepted formats and size limit are now confirmed and implemented for Email** — PDF, DOC, DOCX, JPG/JPEG, PNG, HEIC; 20 MB max per file; see `docs/domain/kiosk-session.md`, "File format and size limits" (shared across every upload method, same rule QR already implements — see `docs/qr-upload-requirements.md`). Email-specific behavior: since there's no interactive page to redirect back to (unlike QR's phone-facing upload page), a rejected attachment is simply left out of that email's attachment list rather than shown as an inline error — the popup error described below is not yet implemented for Email.
 
 ## Preview and print configuration
 
@@ -62,7 +71,6 @@ Out of scope for this document: the six-method selection screen itself (see `doc
 
 ## Open items
 
-- Inbound-email provider/domain choice and its failure behavior.
-- Popup error wording for rejected or unconvertible formats, and whether retry is offered.
+- Popup error wording for rejected or unconvertible formats, and whether retry is offered — a rejected email attachment is currently just left out of the list silently (see "Automatic format conversion" above), not surfaced as a popup.
 - Exact print-setting options and how price is calculated.
-- Real antivirus scanning for Email specifically — the rule and rejected-file behavior are now confirmed and implemented for QR (see `docs/domain/kiosk-session.md`, "File scanning status," and `docs/qr-upload-requirements.md`); Email just doesn't have a real backend yet to scan against, so it stays a mock timer.
+- Inbound-email provider failure/retry behavior (Cloudflare Email Routing / Worker delivery failures) beyond what Cloudflare's own dashboard reports.

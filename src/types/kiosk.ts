@@ -76,3 +76,17 @@ export interface ReceivedFile {
   fileName: string;
   status: 'scanning' | 'ready' | 'rejected';
 }
+
+/**
+ * One received email (docs/email-upload-requirements.md) as reported by the
+ * real backend (server/emailStore.ts) — subject/body preview plus its
+ * attachments, each carrying the same live scanning status as QR uploads
+ * (`ReceivedFile`) since both go through the identical validation/ClamAV
+ * pipeline (server/uploadStore.ts).
+ */
+export interface ReceivedEmail {
+  id: string;
+  subject: string;
+  bodyPreview: string;
+  attachments: ReceivedFile[];
+}

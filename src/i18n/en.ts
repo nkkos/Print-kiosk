@@ -22,6 +22,7 @@ export const en = {
     tapToConfigurePrinting: 'Tap to configure printing',
     scanningForViruses: 'Scanning for viruses...',
     configureAllFiles: 'Configure printing for all files',
+    blockedVirusScan: 'Blocked — failed virus scan',
   },
   footer: {
     callOperator: 'Call operator',
@@ -101,7 +102,6 @@ export const en = {
     preparingQrCode: 'Preparing QR code...',
     qrHint: "Scan with your phone's camera, then upload your file(s) from the page that opens",
     waitingForFiles: 'Waiting for files...',
-    blockedVirusScan: 'Blocked — failed virus scan',
   },
   personalAccount: {
     myFiles: 'My files',
