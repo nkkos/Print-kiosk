@@ -23,10 +23,14 @@
   font-size: 0.875rem;
 }
 
-.cartButton {
+.plainButton {
   border: none;
   background: none;
   padding: 0;
   font: inherit;
   cursor: pointer;
+}
+
+.marker {
+  margin-inline-start: var(--space-xs);
 }

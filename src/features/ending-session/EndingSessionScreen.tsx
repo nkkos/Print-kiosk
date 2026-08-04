@@ -1,3 +1,4 @@
+import { useTranslation } from '../../i18n';
 import styles from './EndingSessionScreen.module.css';
 
 // Shown while a Kiosk Session is being cleaned up, after End Session is
@@ -8,9 +9,10 @@ import styles from './EndingSessionScreen.module.css';
 // torn down. App.tsx times this out after a fixed prototype delay, since
 // there's no real cleanup work to await yet.
 export function EndingSessionScreen() {
+  const t = useTranslation();
   return (
     <div className={styles.root}>
-      <p className={styles.message}>Ending session...</p>
+      <p className={styles.message}>{t.endingSession.message}</p>
     </div>
   );
 }

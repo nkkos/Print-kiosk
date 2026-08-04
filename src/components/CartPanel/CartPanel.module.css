@@ -27,6 +27,14 @@
 .item {
   display: flex;
   flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.itemRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-s);
 }
 
 .fileName {
@@ -35,6 +43,12 @@
 
 .details {
   font-size: 0.875rem;
+}
+
+.quantity {
+  display: flex;
+  align-items: center;
+  gap: var(--space-s);
 }
 
 .total {

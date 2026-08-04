@@ -14,21 +14,28 @@ export type OverlayKind = 'language' | 'help' | 'tariffs' | 'login' | null;
 /**
  * Minimal Kiosk Session shape for the current prototype slice — see
  * docs/domain/kiosk-session.md for the full domain model. Deliberately
- * scoped down for now: no `accountId`, `startedVia`, timestamps, or
- * `status` lifecycle yet (the session is simply present or absent —
- * `null` means no active session). Extend this as later steps need more.
+ * scoped down for now: no `startedVia`, timestamps, or `status` lifecycle
+ * yet (the session is simply present or absent — `null` means no active
+ * session). Extend this as later steps need more.
  */
 export interface KioskSession {
   id: string;
+  /** Nullable — set when login occurs, at any point during the session
+   * (docs/domain/kiosk-session.md, "Minimum session attributes"; Trigger B).
+   * Holds the entered username for this prototype slice — no real
+   * account/profile data model exists yet (docs/personal-account-requirements.md). */
+  accountId: string | null;
 }
 
 /**
  * A configured document ready for printing, added to the session's Cart on
  * "Add to cart" — see docs/domain/kiosk-session.md ("Related entities: Print
- * Order") for the full model. Deliberately scoped down for the current
- * prototype slice: settings are a fixed set of three toggles and `price` is
- * a static placeholder, not a real per-page calculation (see
- * docs/email-upload-requirements.md).
+ * Order") and docs/cart-requirements.md (quantity, pricing, selection,
+ * removal) for the full model. Deliberately scoped down for the current
+ * prototype slice: settings are a fixed set of three toggles and
+ * `unitPrice` is a static placeholder, not a real per-page calculation (see
+ * docs/email-upload-requirements.md). Line total is always `unitPrice *
+ * quantity`, computed where displayed rather than stored redundantly.
  */
 export interface PrintOrder {
   id: string;
@@ -36,5 +43,36 @@ export interface PrintOrder {
   paperSize: 'A4' | 'A5';
   sides: 'single' | 'double';
   color: 'bw' | 'color';
-  price: number;
+  /** Number of copies of this configured document. Minimum 1 — see
+   * docs/cart-requirements.md ("Quantity"). */
+  quantity: number;
+  unitPrice: number;
+  /** Present only on orders paid in advance via the web portal
+   * (docs/personal-account-requirements.md, "Paid orders awaiting print").
+   * How many copies were already paid for — see `computeItemPrice`
+   * (src/utils/pricing.ts) for how this changes the Cart price. Absent on
+   * every ordinary order. */
+  paidQuantity?: number;
+  /** Present only alongside `paidQuantity` — the id of the source "paid,
+   * awaiting print" order this Cart item came from (docs/personal-account-requirements.md,
+   * "Paid orders awaiting print"). Used to prevent adding the same paid
+   * order to Cart more than once (it stays hidden from My orders while a
+   * Cart item traces back to it) — extra copies beyond what was paid for
+   * are obtained by raising this item's `quantity`, not by re-adding it. */
+  sourcePaidOrderId?: string;
+}
+
+/**
+ * A file uploaded via QR (docs/qr-upload-requirements.md) as it awaits or
+ * completes antivirus scanning (docs/domain/kiosk-session.md, "File scanning
+ * status"). Uses its own `id` (not just `fileName`) since QR uploads can
+ * plausibly repeat a file name across separate uploads, unlike Email's fixed
+ * mock attachments. `'rejected'` means a real ClamAV scan (server/uploadStore.ts)
+ * flagged the file as infected — it's already deleted from disk by then;
+ * this record is kept only so the kiosk can show what happened.
+ */
+export interface ReceivedFile {
+  id: string;
+  fileName: string;
+  status: 'scanning' | 'ready' | 'rejected';
 }

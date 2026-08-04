@@ -1,20 +1,30 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { WelcomeScreen } from './features/welcome/WelcomeScreen';
 import { UploadMethodSelectionScreen } from './features/upload-method-selection/UploadMethodSelectionScreen';
 import { EmailAddressScreen } from './features/email-upload/EmailAddressScreen';
 import { EmailFileListScreen } from './features/email-upload/EmailFileListScreen';
+import { ALL_EMAIL_ATTACHMENT_NAMES } from './features/email-upload/mockEmails';
+import { QrUploadScreen } from './features/qr-upload/QrUploadScreen';
+import { PersonalAccountScreen } from './features/personal-account/PersonalAccountScreen';
+import { MOCK_PAID_ORDERS } from './features/personal-account/mockAccountData';
 import { PrintOrderConfigurationScreen } from './features/print-order-configuration/PrintOrderConfigurationScreen';
 import { PaymentStatusScreen } from './features/payment-status/PaymentStatusScreen';
 import { PrintStatusScreen } from './features/print-status/PrintStatusScreen';
 import { FinalisingSessionScreen } from './features/finalising-session/FinalisingSessionScreen';
 import { EndingSessionScreen } from './features/ending-session/EndingSessionScreen';
-import type { KioskSession, PrintOrder } from './types/kiosk';
+import { computeItemPrice } from './utils/pricing';
+import { getUploadConfig, listQrFiles } from './services/qrUploadApi';
+import { LanguageProvider } from './i18n';
+import type { Language } from './i18n';
+import type { KioskSession, PrintOrder, ReceivedFile } from './types/kiosk';
 
 type Screen =
   | 'welcome'
   | 'upload-method-selection'
   | 'email-address'
   | 'email-file-list'
+  | 'qr-upload'
+  | 'personal-account'
   | 'print-order-configuration'
   | 'payment-status'
   | 'print-status'
@@ -28,12 +38,23 @@ const ENDING_SESSION_DELAY_MS = 1200;
 
 // "To make the brief-interruption case work, sessionId is persisted locally
 // ... so it survives a short crash/restart" (docs/domain/kiosk-session.md,
-// Failure/recovery). Deliberately narrow: only the id itself is restored on
-// reload (sessionActive becomes true again) — cart, screen, and everything
-// else stay transient in-memory state, per the confirmed "no smart session
-// restore" decision; an abandoned session still relies on the existing
-// inactivity timeout (not yet implemented) to eventually clean itself up.
+// Failure/recovery). The Cart is persisted alongside it (revised: losing a
+// user's in-progress order to an accidental reload is real lost work worth
+// avoiding) — but this still isn't a full "smart restore": `screen` itself
+// is not persisted, so a reload always lands back on Welcome, just with the
+// session and cart intact.
 const SESSION_ID_STORAGE_KEY = 'print-kiosk.sessionId';
+const CART_STORAGE_KEY = 'print-kiosk.cart';
+
+// File scanning status (docs/domain/kiosk-session.md, "File scanning
+// status"): shared across every upload method — a realistic approximation
+// of local antivirus-scan latency, not an inflated wait.
+const FILE_SCAN_DELAY_MS = 3000;
+
+// Real QR upload backend (server/, dev-only — see
+// docs/qr-upload-requirements.md): the kiosk polls it for newly arrived
+// files while the QR screen is open.
+const QR_POLL_INTERVAL_MS = 3000;
 
 // Simple state-based screen switch — no React Router yet, per
 // docs/implementation/project-architecture.md, Section 9 (deferred until a
@@ -43,23 +64,64 @@ const SESSION_ID_STORAGE_KEY = 'print-kiosk.sessionId';
 // by every screen (service-print creates/reuses it; all in-flow screens show
 // End Session), which is exactly the "two concrete consumers" threshold the
 // architecture doc uses to justify a shared owner, rather than living inside
-// features/welcome. Only sessionId is persisted (SESSION_ID_STORAGE_KEY,
-// below) — cart and everything else remain in-memory only, per the
-// confirmed "no smart session restore" decision.
+// features/welcome. `screen` itself is still not persisted — see
+// SESSION_ID_STORAGE_KEY above.
 //
-// Cart (docs/domain/kiosk-session.md) is likewise minimal: just an in-memory
-// array of PrintOrder, populated by the Email flow's "Add to cart" and read
-// by every screen's Cart popup (KioskScreenLayout).
+// Cart (docs/domain/kiosk-session.md) is likewise minimal: just an array of
+// PrintOrder, populated by the Email flow's "Add to cart" and read by every
+// screen's Cart popup (KioskScreenLayout) — persisted to localStorage (see
+// CART_STORAGE_KEY) so it survives a reload.
 function App() {
   const [screen, setScreen] = useState<Screen>('welcome');
   const [session, setSession] = useState<KioskSession | null>(() => {
     const storedId = localStorage.getItem(SESSION_ID_STORAGE_KEY);
-    return storedId ? { id: storedId } : null;
+    // accountId is deliberately not persisted/restored here — only sessionId
+    // is (see SESSION_ID_STORAGE_KEY above); a reload always comes back
+    // logged out, consistent with "no smart session restore."
+    return storedId ? { id: storedId, accountId: null } : null;
   });
-  const [cart, setCart] = useState<PrintOrder[]>([]);
-  // The file the user picked from an email's attachments, carried through
-  // to Print Order Configuration (see EmailFileListScreen).
-  const [selectedFileName, setSelectedFileName] = useState<string | null>(null);
+  // Session-scoped, not persisted (docs/i18n-requirements.md, "Language
+  // selection" — confirmed to reset every session, same category as
+  // accountId, not kiosk-sticky).
+  const [language, setLanguage] = useState<Language>('en');
+  const [cart, setCart] = useState<PrintOrder[]>(() => {
+    const storedCart = localStorage.getItem(CART_STORAGE_KEY);
+    return storedCart ? (JSON.parse(storedCart) as PrintOrder[]) : [];
+  });
+  // The file the user picked (from an email's attachments or a QR upload),
+  // carried through to Print Order Configuration. `sourceMethod` is what
+  // lets handleAddToCart mark the right upload-method card as "used" and
+  // return to the right screen afterward, now that more than one method
+  // exists. `instanceKey` is a fresh id generated on every selection, used
+  // as PrintOrderConfigurationScreen's React `key` so its internal settings
+  // state (paper size, quantity, etc.) resets between files during a batch
+  // (docs/personal-account-requirements.md, "Batch configure") instead of
+  // carrying over from the previous file.
+  const [selectedFile, setSelectedFile] = useState<{
+    fileName: string;
+    sourceMethod: string;
+    instanceKey: string;
+  } | null>(null);
+  // Files still queued after the current one, when the user chose "Configure
+  // printing for all files" instead of picking one file at a time
+  // (docs/personal-account-requirements.md, "Batch configure"). Empty for
+  // the ordinary one-file-at-a-time flow.
+  const [batchQueue, setBatchQueue] = useState<{ fileName: string; sourceMethod: string }[]>([]);
+  // Attachments that have finished antivirus scanning (docs/domain/kiosk-session.md,
+  // "File scanning status") and can be selected. Owned here (not locally in
+  // EmailFileListScreen) so an already-scanned file doesn't restart scanning
+  // just because that screen unmounted and remounted (e.g., after "Add to cart").
+  const [readyEmailAttachments, setReadyEmailAttachments] = useState<Set<string>>(new Set());
+  // QR-uploaded files, each carrying its own scanning status
+  // (docs/qr-upload-requirements.md). Owned here for the same
+  // survives-remount reason as readyEmailAttachments above.
+  const [qrFiles, setQrFiles] = useState<ReceivedFile[]>([]);
+  // Whether the QR screen has been reached at least once this session —
+  // gates the one-time /api/config fetch below (docs/qr-upload-requirements.md).
+  const [hasQrUploadStarted, setHasQrUploadStarted] = useState(false);
+  // The phone-facing upload URL encoded in the QR image, once known — null
+  // until the one-time /api/config fetch (below) resolves.
+  const [qrUploadUrl, setQrUploadUrl] = useState<string | null>(null);
   // Simulates "is this session's mailbox empty?" without a real inbound-email
   // backend (docs/email-upload-requirements.md, Open items): starts false
   // (empty), flips true once the user has gone through the address/instruction
@@ -69,21 +131,183 @@ function App() {
   const [hasReceivedEmail, setHasReceivedEmail] = useState(false);
   // Ids of upload methods used at least once this session — drives the
   // "used" marker on Upload Method Selection's cards
-  // (docs/upload-method-requirements.md). Only Email can ever be added right
-  // now, since it's the only implemented method; PrintOrder doesn't track
-  // its source method yet, so this is set from the one place that currently
-  // exists rather than derived generically — revisit once a second method
-  // is implemented.
+  // (docs/upload-method-requirements.md). Set from `selectedFile.sourceMethod`
+  // in handleAddToCart, now that a second method (QR) exists alongside Email.
   const [usedMethods, setUsedMethods] = useState<Set<string>>(new Set());
   // Opens the Cart popup as soon as Upload Method Selection mounts — set
   // right after "Add to cart" so the user sees what was just added instead
   // of silently landing back on this screen. Reset to false on every other
   // way of reaching this screen.
   const [openCartOnUploadMethodSelection, setOpenCartOnUploadMethodSelection] = useState(false);
+  // Same idea, but for the Email mailbox screen: after "Add to cart" the
+  // user returns there (not to Upload Method Selection), since they may
+  // still have other attachments/emails to process.
+  const [openCartOnEmailFileList, setOpenCartOnEmailFileList] = useState(false);
+  // Same idea, but for the QR upload screen.
+  const [openCartOnQrUpload, setOpenCartOnQrUpload] = useState(false);
+  // Same idea, but for the Personal Account screen.
+  const [openCartOnPersonalAccount, setOpenCartOnPersonalAccount] = useState(false);
+  // Which tab Personal Account should show when it (re)mounts — set
+  // explicitly by every navigation into the screen (docs/personal-account-requirements.md:
+  // returning after "My files" batch/single-file actions goes back to
+  // "files"; adding a paid order from "My orders" goes back to "orders").
+  const [personalAccountTab, setPersonalAccountTab] = useState<'files' | 'orders'>('files');
+  // Forces PersonalAccountScreen to remount when a paid order is added to
+  // Cart directly from "My orders" — unlike every other "add to cart" path,
+  // that one doesn't navigate to a different screen first, so
+  // `initialCartOpen` (a plain useState initializer in KioskScreenLayout)
+  // would otherwise never re-run and the Cart popup wouldn't reopen.
+  const [personalAccountRenderKey, setPersonalAccountRenderKey] = useState(0);
+  // True right after a successful login while the account has at least one
+  // order paid in advance and awaiting print (docs/personal-account-requirements.md,
+  // "Paid orders awaiting print") — drives a one-time prompt popup shown
+  // from whichever screen the login happened on, offering a shortcut to My
+  // orders. Persists across screen navigation until dismissed, same pattern
+  // as isConnectionLost.
+  const [hasPendingPaidOrders, setHasPendingPaidOrders] = useState(false);
+  // The batch of Cart items the user checked and chose to pay for right now
+  // (docs/cart-requirements.md, "Selection for payment") — a snapshot taken
+  // when "Proceed to payment" is pressed. `cart` itself isn't touched until
+  // payment actually succeeds, so unchecked items simply stay behind.
+  const [paymentItems, setPaymentItems] = useState<PrintOrder[]>([]);
+  // Lifted here (not owned by KioskScreenLayout) since it must persist
+  // across screen navigation and actually blocks Payment/Print actions
+  // (docs/domain/kiosk-session.md, "Failure and recovery") — only those two,
+  // not cart-browsing/configuration, since connectivity may come back
+  // quickly and the user can keep working with files meanwhile.
+  const [isConnectionLost, setIsConnectionLost] = useState(false);
+
+  useEffect(() => {
+    localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cart));
+  }, [cart]);
+
+  // Starts scanning all mock email attachments the first time the mailbox
+  // is populated (mirrors "mail arrives instantly" — see EmailAddressScreen's
+  // onNext) — runs once, since hasReceivedEmail never flips back to false
+  // mid-session.
+  useEffect(() => {
+    if (!hasReceivedEmail) return;
+    const timeoutId = setTimeout(() => {
+      setReadyEmailAttachments(new Set(ALL_EMAIL_ATTACHMENT_NAMES));
+    }, FILE_SCAN_DELAY_MS);
+    return () => clearTimeout(timeoutId);
+  }, [hasReceivedEmail]);
+
+  // Fetches the backend's LAN-facing upload URL once, the first time the QR
+  // screen is reached this session — the QR image encodes
+  // `${lanUploadUrl}/upload/${session.id}` (docs/qr-upload-requirements.md).
+  useEffect(() => {
+    if (!hasQrUploadStarted || !session) return;
+    let cancelled = false;
+    getUploadConfig().then(({ lanUploadUrl }) => {
+      if (!cancelled) setQrUploadUrl(`${lanUploadUrl}/upload/${session.id}`);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [hasQrUploadStarted, session]);
+
+  // Polls the backend for newly arrived files while the QR screen is open —
+  // files themselves live server-side (server/uploadStore.ts), so polling
+  // simply resumes and immediately re-fetches on every revisit, preserving
+  // the confirmed "same QR persists across revisits" behavior
+  // (docs/qr-upload-requirements.md) without needing to run forever.
+  useEffect(() => {
+    if (screen !== 'qr-upload' || !session) return;
+    let cancelled = false;
+    function poll() {
+      if (!session) return;
+      listQrFiles(session.id).then((files) => {
+        if (!cancelled) setQrFiles(files);
+      });
+    }
+    poll();
+    const intervalId = setInterval(poll, QR_POLL_INTERVAL_MS);
+    return () => {
+      cancelled = true;
+      clearInterval(intervalId);
+    };
+  }, [screen, session]);
 
   function goToUploadMethodSelection(openCart: boolean) {
     setOpenCartOnUploadMethodSelection(openCart);
     setScreen('upload-method-selection');
+  }
+
+  function goToEmailFileList(openCart: boolean) {
+    setOpenCartOnEmailFileList(openCart);
+    setScreen('email-file-list');
+  }
+
+  function goToQrUpload(openCart: boolean) {
+    setOpenCartOnQrUpload(openCart);
+    setScreen('qr-upload');
+  }
+
+  function goToPersonalAccount(openCart: boolean, tab: 'files' | 'orders' = 'files') {
+    setOpenCartOnPersonalAccount(openCart);
+    setPersonalAccountTab(tab);
+    setScreen('personal-account');
+  }
+
+  function selectFileForConfiguration(fileName: string, sourceMethod: string) {
+    setSelectedFile({ fileName, sourceMethod, instanceKey: crypto.randomUUID() });
+    setScreen('print-order-configuration');
+  }
+
+  // Starts a batch (docs/personal-account-requirements.md, "Batch
+  // configure"): configures the first file now, queues the rest for
+  // handleAddToCart to work through one at a time.
+  function startBatch(files: { fileName: string; sourceMethod: string }[]) {
+    if (files.length === 0) return;
+    const [first, ...rest] = files;
+    setBatchQueue(rest);
+    selectFileForConfiguration(first.fileName, first.sourceMethod);
+  }
+
+  function handleConfigureAllEmailAttachments() {
+    startBatch(
+      ALL_EMAIL_ATTACHMENT_NAMES.filter((fileName) => readyEmailAttachments.has(fileName)).map(
+        (fileName) => ({ fileName, sourceMethod: 'upload-method-email' }),
+      ),
+    );
+  }
+
+  function handleConfigureAllQrFiles() {
+    startBatch(
+      qrFiles
+        .filter((file) => file.status === 'ready')
+        .map((file) => ({ fileName: file.fileName, sourceMethod: 'upload-method-qr' })),
+    );
+  }
+
+  function handleConfigureSelectedAccountFiles(fileNames: string[]) {
+    startBatch(fileNames.map((fileName) => ({ fileName, sourceMethod: 'upload-method-account' })));
+  }
+
+  function handleAddPaidOrderToCart(order: PrintOrder) {
+    // Already fully configured when paid for via the portal — no Print
+    // Order Configuration step, straight into Cart (docs/personal-account-requirements.md,
+    // "Paid orders awaiting print"). `sourcePaidOrderId` tracks it back to
+    // the mock order so My orders can hide it while it's in Cart — prevents
+    // adding the same paid order repeatedly for free; extra copies are
+    // obtained by raising quantity on this Cart item instead.
+    setCart((current) => [
+      ...current,
+      { ...order, id: crypto.randomUUID(), sourcePaidOrderId: order.id },
+    ]);
+    setUsedMethods((current) => new Set(current).add('upload-method-account'));
+    setPersonalAccountRenderKey((current) => current + 1);
+    goToPersonalAccount(true, 'orders');
+  }
+
+  function handleLogout() {
+    // Logging out only clears accountId — the Kiosk Session itself (and any
+    // Cart contents) stays intact (docs/personal-account-requirements.md,
+    // "Kiosk-side login"; docs/domain/kiosk-session.md, "Login relationship").
+    setSession((current) => (current ? { ...current, accountId: null } : current));
+    setHasPendingPaidOrders(false);
+    goToUploadMethodSelection(false);
   }
 
   function handlePrintActivate() {
@@ -91,11 +315,41 @@ function App() {
     // doesn't already exist — reuse it otherwise.
     setSession((current) => {
       if (current) return current;
-      const newSession: KioskSession = { id: crypto.randomUUID() };
+      const newSession: KioskSession = { id: crypto.randomUUID(), accountId: null };
       localStorage.setItem(SESSION_ID_STORAGE_KEY, newSession.id);
       return newSession;
     });
     goToUploadMethodSelection(false);
+  }
+
+  function handleLogin(username: string) {
+    // Trigger B (docs/domain/kiosk-session.md): successful login creates a
+    // Kiosk Session if none exists yet, or associates the current one with
+    // the account if one is already active — it never creates a second
+    // session (docs/personal-account-requirements.md, "Kiosk-side login").
+    setSession((current) => {
+      if (current) {
+        return { ...current, accountId: username };
+      }
+      const newSession: KioskSession = { id: crypto.randomUUID(), accountId: username };
+      localStorage.setItem(SESSION_ID_STORAGE_KEY, newSession.id);
+      return newSession;
+    });
+
+    // Detection and prompt (docs/personal-account-requirements.md, "Paid
+    // orders awaiting print") — checked on every login, from any screen.
+    if (MOCK_PAID_ORDERS.length > 0) {
+      setHasPendingPaidOrders(true);
+    }
+  }
+
+  function handleDismissPaidOrdersPrompt() {
+    setHasPendingPaidOrders(false);
+  }
+
+  function handleGoToPaidOrders() {
+    setHasPendingPaidOrders(false);
+    goToPersonalAccount(false, 'orders');
   }
 
   // Wrapped in useCallback for a stable reference: KioskScreenLayout's
@@ -112,27 +366,82 @@ function App() {
       localStorage.removeItem(SESSION_ID_STORAGE_KEY);
       setSession(null);
       setCart([]);
-      setSelectedFileName(null);
+      setPaymentItems([]);
+      setSelectedFile(null);
+      setBatchQueue([]);
+      setReadyEmailAttachments(new Set());
+      setQrFiles([]);
+      setHasQrUploadStarted(false);
+      setQrUploadUrl(null);
       setHasReceivedEmail(false);
       setUsedMethods(new Set());
+      setHasPendingPaidOrders(false);
+      setLanguage('en');
       setScreen('welcome');
     }, ENDING_SESSION_DELAY_MS);
   }, []);
 
   function handleAddToCart(order: PrintOrder) {
     setCart((current) => [...current, order]);
-    setUsedMethods((current) => new Set(current).add('upload-method-email'));
-    // Returns to Upload Method Selection so the user can add another
-    // document — matches Cart's confirmed purpose (docs/domain/kiosk-session.md).
-    // Cart popup opens automatically so the user sees what was just added;
-    // they close it themselves to continue.
-    goToUploadMethodSelection(true);
+    if (!selectedFile) return;
+    setUsedMethods((current) => new Set(current).add(selectedFile.sourceMethod));
+
+    // Mid-batch (docs/personal-account-requirements.md, "Batch configure"):
+    // move straight to the next queued file's Print Order Configuration —
+    // no trip back to the source screen or Cart popup until every file in
+    // the batch has been added.
+    if (batchQueue.length > 0) {
+      const [next, ...rest] = batchQueue;
+      setBatchQueue(rest);
+      selectFileForConfiguration(next.fileName, next.sourceMethod);
+      return;
+    }
+
+    // Returns to the screen the file came from (not Upload Method Selection)
+    // so the user can process another file from the same source — matches
+    // Cart's confirmed purpose (docs/domain/kiosk-session.md). Cart popup
+    // opens automatically so the user sees what was just added; they close
+    // it themselves to continue.
+    if (selectedFile.sourceMethod === 'upload-method-qr') {
+      goToQrUpload(true);
+    } else if (selectedFile.sourceMethod === 'upload-method-account') {
+      goToPersonalAccount(true, 'files');
+    } else {
+      goToEmailFileList(true);
+    }
+  }
+
+  function handleQuantityChange(id: string, quantity: number) {
+    setCart((current) => current.map((item) => (item.id === id ? { ...item, quantity } : item)));
+  }
+
+  function handleRemoveItem(id: string) {
+    setCart((current) => current.filter((item) => item.id !== id));
+  }
+
+  function handleProceedToPayment(selectedItems: PrintOrder[]) {
+    const hasPayableItems = selectedItems.some((item) => computeItemPrice(item) > 0);
+    if (!hasPayableItems) {
+      // Every checked item is already paid for in full (docs/personal-account-requirements.md,
+      // "Paid orders awaiting print") — nothing to charge, so Payment Status
+      // is skipped entirely and the batch goes straight to printing.
+      setCart((current) =>
+        current.filter((item) => !selectedItems.some((selected) => selected.id === item.id)),
+      );
+      setScreen('print-status');
+      return;
+    }
+    setPaymentItems(selectedItems);
+    setScreen('payment-status');
   }
 
   function handlePaymentSuccess() {
-    // The paid items leave the cart — Cart only ever shows "awaiting
-    // payment" orders (docs/domain/kiosk-session.md, "Related entities").
-    setCart([]);
+    // Only the paid batch leaves the cart — anything left unchecked stays
+    // behind (docs/cart-requirements.md, "Selection for payment").
+    setCart((current) =>
+      current.filter((item) => !paymentItems.some((paid) => paid.id === item.id)),
+    );
+    setPaymentItems([]);
     setScreen('print-status');
   }
 
@@ -140,115 +449,344 @@ function App() {
     setScreen('finalising-session');
   }
 
+  function handleSimulateConnectionLost() {
+    setIsConnectionLost(true);
+  }
+
+  function handleSimulateConnectionRestored() {
+    setIsConnectionLost(false);
+  }
+
+  // Card "used" marker (docs/upload-method-requirements.md): QR and Email
+  // count as used once files have arrived/been received this session, not
+  // only once something from them reached Cart — otherwise the user could
+  // lose track of files still sitting unprocessed. `usedMethods` itself
+  // still only tracks "added to Cart" (Personal account's marker still
+  // depends on that, alongside being logged in).
+  const cardMarkerMethods = new Set(usedMethods);
+  if (qrFiles.length > 0) cardMarkerMethods.add('upload-method-qr');
+  if (hasReceivedEmail) cardMarkerMethods.add('upload-method-email');
+
   if (screen === 'upload-method-selection') {
     return (
-      <UploadMethodSelectionScreen
-        onBack={() => setScreen('welcome')}
-        onHome={() => setScreen('welcome')}
-        onEndSession={handleEndSession}
-        onEmailActivate={() => setScreen(hasReceivedEmail ? 'email-file-list' : 'email-address')}
-        cartItems={cart}
-        onProceedToPayment={() => setScreen('payment-status')}
-        usedMethods={usedMethods}
-        cartOpenOnMount={openCartOnUploadMethodSelection}
-      />
+      <LanguageProvider language={language}>
+        <UploadMethodSelectionScreen
+          onBack={() => setScreen('welcome')}
+          onHome={() => setScreen('welcome')}
+          onEndSession={handleEndSession}
+          onEmailActivate={() =>
+            hasReceivedEmail ? goToEmailFileList(false) : setScreen('email-address')
+          }
+          onQrActivate={() => {
+            if (!hasQrUploadStarted) {
+              setHasQrUploadStarted(true);
+            }
+            goToQrUpload(false);
+          }}
+          cartItems={cart}
+          onQuantityChange={handleQuantityChange}
+          onRemoveItem={handleRemoveItem}
+          onProceedToPayment={handleProceedToPayment}
+          usedMethods={cardMarkerMethods}
+          cartOpenOnMount={openCartOnUploadMethodSelection}
+          isConnectionLost={isConnectionLost}
+          onSimulateConnectionLost={handleSimulateConnectionLost}
+          onSimulateConnectionRestored={handleSimulateConnectionRestored}
+          onLogin={handleLogin}
+          onGoToPersonalAccount={() => goToPersonalAccount(false)}
+          accountId={session?.accountId ?? null}
+          hasPendingPaidOrders={hasPendingPaidOrders}
+          onDismissPaidOrdersPrompt={handleDismissPaidOrdersPrompt}
+          onGoToPaidOrders={handleGoToPaidOrders}
+          onLanguageChange={setLanguage}
+        />
+      </LanguageProvider>
     );
   }
 
   if (screen === 'email-address' && session) {
     return (
-      <EmailAddressScreen
-        emailAddress={`upload-${session.id.slice(0, 8)}@kiosk.example`}
-        onNext={() => {
-          setHasReceivedEmail(true);
-          setScreen('email-file-list');
-        }}
-        onBack={() => goToUploadMethodSelection(false)}
-        onHome={() => setScreen('welcome')}
-        onEndSession={handleEndSession}
-        cartItems={cart}
-        onProceedToPayment={() => setScreen('payment-status')}
-      />
+      <LanguageProvider language={language}>
+        <EmailAddressScreen
+          emailAddress={`upload-${session.id.slice(0, 8)}@kiosk.example`}
+          onNext={() => {
+            setHasReceivedEmail(true);
+            goToEmailFileList(false);
+          }}
+          onBack={() => goToUploadMethodSelection(false)}
+          onHome={() => setScreen('welcome')}
+          onEndSession={handleEndSession}
+          cartItems={cart}
+          onQuantityChange={handleQuantityChange}
+          onRemoveItem={handleRemoveItem}
+          onProceedToPayment={handleProceedToPayment}
+          isConnectionLost={isConnectionLost}
+          onSimulateConnectionLost={handleSimulateConnectionLost}
+          onSimulateConnectionRestored={handleSimulateConnectionRestored}
+          onLogin={handleLogin}
+          accountId={session?.accountId ?? null}
+          onGoToPersonalAccount={() => goToPersonalAccount(false)}
+          hasPendingPaidOrders={hasPendingPaidOrders}
+          onDismissPaidOrdersPrompt={handleDismissPaidOrdersPrompt}
+          onGoToPaidOrders={handleGoToPaidOrders}
+          onLanguageChange={setLanguage}
+        />
+      </LanguageProvider>
     );
   }
 
   if (screen === 'email-file-list') {
     return (
-      <EmailFileListScreen
-        onFileSelect={(fileName) => {
-          setSelectedFileName(fileName);
-          setScreen('print-order-configuration');
-        }}
-        onBack={() => setScreen('email-address')}
-        onHome={() => setScreen('welcome')}
-        onEndSession={handleEndSession}
-        cartItems={cart}
-        onProceedToPayment={() => setScreen('payment-status')}
-      />
+      <LanguageProvider language={language}>
+        <EmailFileListScreen
+          onFileSelect={(fileName) => selectFileForConfiguration(fileName, 'upload-method-email')}
+          onConfigureAllFiles={handleConfigureAllEmailAttachments}
+          readyAttachments={readyEmailAttachments}
+          onBack={() => setScreen('email-address')}
+          onHome={() => setScreen('welcome')}
+          onEndSession={handleEndSession}
+          cartItems={cart}
+          onQuantityChange={handleQuantityChange}
+          onRemoveItem={handleRemoveItem}
+          onProceedToPayment={handleProceedToPayment}
+          cartOpenOnMount={openCartOnEmailFileList}
+          isConnectionLost={isConnectionLost}
+          onSimulateConnectionLost={handleSimulateConnectionLost}
+          onSimulateConnectionRestored={handleSimulateConnectionRestored}
+          onLogin={handleLogin}
+          accountId={session?.accountId ?? null}
+          onGoToPersonalAccount={() => goToPersonalAccount(false)}
+          hasPendingPaidOrders={hasPendingPaidOrders}
+          onDismissPaidOrdersPrompt={handleDismissPaidOrdersPrompt}
+          onGoToPaidOrders={handleGoToPaidOrders}
+          onLanguageChange={setLanguage}
+        />
+      </LanguageProvider>
     );
   }
 
-  if (screen === 'print-order-configuration' && selectedFileName) {
+  if (screen === 'qr-upload') {
     return (
-      <PrintOrderConfigurationScreen
-        fileName={selectedFileName}
-        onAddToCart={handleAddToCart}
-        onBack={() => setScreen('email-file-list')}
-        onHome={() => setScreen('welcome')}
-        onEndSession={handleEndSession}
-        cartItems={cart}
-        onProceedToPayment={() => setScreen('payment-status')}
-      />
+      <LanguageProvider language={language}>
+        <QrUploadScreen
+          files={qrFiles}
+          qrUploadUrl={qrUploadUrl}
+          onFileSelect={(fileName) => selectFileForConfiguration(fileName, 'upload-method-qr')}
+          onConfigureAllFiles={handleConfigureAllQrFiles}
+          onBack={() => goToUploadMethodSelection(false)}
+          onHome={() => setScreen('welcome')}
+          onEndSession={handleEndSession}
+          cartItems={cart}
+          onQuantityChange={handleQuantityChange}
+          onRemoveItem={handleRemoveItem}
+          onProceedToPayment={handleProceedToPayment}
+          cartOpenOnMount={openCartOnQrUpload}
+          isConnectionLost={isConnectionLost}
+          onSimulateConnectionLost={handleSimulateConnectionLost}
+          onSimulateConnectionRestored={handleSimulateConnectionRestored}
+          onLogin={handleLogin}
+          accountId={session?.accountId ?? null}
+          onGoToPersonalAccount={() => goToPersonalAccount(false)}
+          hasPendingPaidOrders={hasPendingPaidOrders}
+          onDismissPaidOrdersPrompt={handleDismissPaidOrdersPrompt}
+          onGoToPaidOrders={handleGoToPaidOrders}
+          onLanguageChange={setLanguage}
+        />
+      </LanguageProvider>
+    );
+  }
+
+  if (screen === 'personal-account' && session?.accountId) {
+    return (
+      <LanguageProvider language={language}>
+        <PersonalAccountScreen
+          key={personalAccountRenderKey}
+          onFileSelect={(fileName) => selectFileForConfiguration(fileName, 'upload-method-account')}
+          onConfigureSelectedFiles={handleConfigureSelectedAccountFiles}
+          onAddPaidOrderToCart={handleAddPaidOrderToCart}
+          initialTab={personalAccountTab}
+          onBack={() => goToUploadMethodSelection(false)}
+          onHome={() => setScreen('welcome')}
+          onEndSession={handleEndSession}
+          cartItems={cart}
+          onQuantityChange={handleQuantityChange}
+          onRemoveItem={handleRemoveItem}
+          onProceedToPayment={handleProceedToPayment}
+          cartOpenOnMount={openCartOnPersonalAccount}
+          isConnectionLost={isConnectionLost}
+          onSimulateConnectionLost={handleSimulateConnectionLost}
+          onSimulateConnectionRestored={handleSimulateConnectionRestored}
+          onLogin={handleLogin}
+          accountId={session?.accountId ?? null}
+          onGoToPersonalAccount={() => goToPersonalAccount(false)}
+          onLogout={handleLogout}
+          hasPendingPaidOrders={hasPendingPaidOrders}
+          onDismissPaidOrdersPrompt={handleDismissPaidOrdersPrompt}
+          onGoToPaidOrders={handleGoToPaidOrders}
+          onLanguageChange={setLanguage}
+        />
+      </LanguageProvider>
+    );
+  }
+
+  if (screen === 'print-order-configuration' && selectedFile) {
+    return (
+      <LanguageProvider language={language}>
+        <PrintOrderConfigurationScreen
+          key={selectedFile.instanceKey}
+          fileName={selectedFile.fileName}
+          onAddToCart={handleAddToCart}
+          onBack={() => {
+            // Leaving mid-batch abandons the rest of the queue — continuing a
+            // partial batch after backing out would be confusing (docs/personal-account-requirements.md,
+            // "Batch configure").
+            setBatchQueue([]);
+            if (selectedFile.sourceMethod === 'upload-method-qr') {
+              goToQrUpload(false);
+            } else if (selectedFile.sourceMethod === 'upload-method-account') {
+              goToPersonalAccount(false, 'files');
+            } else {
+              setScreen('email-file-list');
+            }
+          }}
+          onHome={() => {
+            setBatchQueue([]);
+            setScreen('welcome');
+          }}
+          onEndSession={handleEndSession}
+          cartItems={cart}
+          onQuantityChange={handleQuantityChange}
+          onRemoveItem={handleRemoveItem}
+          onProceedToPayment={handleProceedToPayment}
+          isConnectionLost={isConnectionLost}
+          onSimulateConnectionLost={handleSimulateConnectionLost}
+          onSimulateConnectionRestored={handleSimulateConnectionRestored}
+          onLogin={handleLogin}
+          accountId={session?.accountId ?? null}
+          onGoToPersonalAccount={() => goToPersonalAccount(false)}
+          hasPendingPaidOrders={hasPendingPaidOrders}
+          onDismissPaidOrdersPrompt={handleDismissPaidOrdersPrompt}
+          onGoToPaidOrders={handleGoToPaidOrders}
+          onLanguageChange={setLanguage}
+        />
+      </LanguageProvider>
     );
   }
 
   if (screen === 'payment-status') {
     return (
-      <PaymentStatusScreen
-        cartItems={cart}
-        onPaymentSuccess={handlePaymentSuccess}
-        onCancelPayment={() => goToUploadMethodSelection(false)}
-        onReturnHome={() => setScreen('welcome')}
-        onEndSession={handleEndSession}
-        onProceedToPayment={() => setScreen('payment-status')}
-      />
+      <LanguageProvider language={language}>
+        <PaymentStatusScreen
+          paymentItems={paymentItems}
+          cartItems={cart}
+          onQuantityChange={handleQuantityChange}
+          onRemoveItem={handleRemoveItem}
+          onPaymentSuccess={handlePaymentSuccess}
+          onCancelPayment={() => {
+            setPaymentItems([]);
+            goToUploadMethodSelection(false);
+          }}
+          onReturnHome={() => {
+            setPaymentItems([]);
+            setScreen('welcome');
+          }}
+          onEndSession={handleEndSession}
+          onProceedToPayment={handleProceedToPayment}
+          isConnectionLost={isConnectionLost}
+          onSimulateConnectionLost={handleSimulateConnectionLost}
+          onSimulateConnectionRestored={handleSimulateConnectionRestored}
+          onLogin={handleLogin}
+          accountId={session?.accountId ?? null}
+          onGoToPersonalAccount={() => goToPersonalAccount(false)}
+          hasPendingPaidOrders={hasPendingPaidOrders}
+          onDismissPaidOrdersPrompt={handleDismissPaidOrdersPrompt}
+          onGoToPaidOrders={handleGoToPaidOrders}
+          onLanguageChange={setLanguage}
+        />
+      </LanguageProvider>
     );
   }
 
   if (screen === 'print-status') {
     return (
-      <PrintStatusScreen
-        cartItems={cart}
-        onPrintComplete={handlePrintComplete}
-        onEndSession={handleEndSession}
-        onProceedToPayment={() => setScreen('payment-status')}
-      />
+      <LanguageProvider language={language}>
+        <PrintStatusScreen
+          cartItems={cart}
+          onQuantityChange={handleQuantityChange}
+          onRemoveItem={handleRemoveItem}
+          onPrintComplete={handlePrintComplete}
+          onEndSession={handleEndSession}
+          onProceedToPayment={handleProceedToPayment}
+          isConnectionLost={isConnectionLost}
+          onSimulateConnectionLost={handleSimulateConnectionLost}
+          onSimulateConnectionRestored={handleSimulateConnectionRestored}
+          onLogin={handleLogin}
+          accountId={session?.accountId ?? null}
+          onGoToPersonalAccount={() => goToPersonalAccount(false)}
+          hasPendingPaidOrders={hasPendingPaidOrders}
+          onDismissPaidOrdersPrompt={handleDismissPaidOrdersPrompt}
+          onGoToPaidOrders={handleGoToPaidOrders}
+          onLanguageChange={setLanguage}
+        />
+      </LanguageProvider>
     );
   }
 
   if (screen === 'ending-session') {
-    return <EndingSessionScreen />;
+    return (
+      <LanguageProvider language={language}>
+        <EndingSessionScreen />
+      </LanguageProvider>
+    );
   }
 
   if (screen === 'finalising-session') {
     return (
-      <FinalisingSessionScreen
-        onReturnToWelcome={() => setScreen('welcome')}
-        onEndSession={handleEndSession}
-        cartItems={cart}
-        onProceedToPayment={() => setScreen('payment-status')}
-      />
+      <LanguageProvider language={language}>
+        <FinalisingSessionScreen
+          onReturnToWelcome={() => setScreen('welcome')}
+          onEndSession={handleEndSession}
+          cartItems={cart}
+          onQuantityChange={handleQuantityChange}
+          onRemoveItem={handleRemoveItem}
+          onProceedToPayment={handleProceedToPayment}
+          isConnectionLost={isConnectionLost}
+          onSimulateConnectionLost={handleSimulateConnectionLost}
+          onSimulateConnectionRestored={handleSimulateConnectionRestored}
+          onLogin={handleLogin}
+          accountId={session?.accountId ?? null}
+          onGoToPersonalAccount={() => goToPersonalAccount(false)}
+          hasPendingPaidOrders={hasPendingPaidOrders}
+          onDismissPaidOrdersPrompt={handleDismissPaidOrdersPrompt}
+          onGoToPaidOrders={handleGoToPaidOrders}
+          onLanguageChange={setLanguage}
+        />
+      </LanguageProvider>
     );
   }
 
   return (
-    <WelcomeScreen
-      onPrintActivate={handlePrintActivate}
-      sessionActive={session !== null}
-      onEndSession={handleEndSession}
-      cartItems={cart}
-      onProceedToPayment={() => setScreen('payment-status')}
-    />
+    <LanguageProvider language={language}>
+      <WelcomeScreen
+        onPrintActivate={handlePrintActivate}
+        sessionActive={session !== null}
+        onEndSession={handleEndSession}
+        cartItems={cart}
+        onQuantityChange={handleQuantityChange}
+        onRemoveItem={handleRemoveItem}
+        onProceedToPayment={handleProceedToPayment}
+        isConnectionLost={isConnectionLost}
+        onSimulateConnectionLost={handleSimulateConnectionLost}
+        onSimulateConnectionRestored={handleSimulateConnectionRestored}
+        onLogin={handleLogin}
+        accountId={session?.accountId ?? null}
+        onGoToPersonalAccount={() => goToPersonalAccount(false)}
+        hasPendingPaidOrders={hasPendingPaidOrders}
+        onDismissPaidOrdersPrompt={handleDismissPaidOrdersPrompt}
+        onGoToPaidOrders={handleGoToPaidOrders}
+        onLanguageChange={setLanguage}
+      />
+    </LanguageProvider>
   );
 }
 

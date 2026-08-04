@@ -15,3 +15,8 @@
   outline: 2px solid;
   outline-offset: 2px;
 }
+
+.root:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

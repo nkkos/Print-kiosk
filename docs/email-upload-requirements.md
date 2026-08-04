@@ -21,10 +21,10 @@ Lets the user provide a document for printing by sending it as an email attachme
 1. User selects the Email method on the Upload Method Selection Screen.
 2. The system generates the session's unique address and shows it together with instructional text and a "Next" action. The user is also informed of the accepted file formats at this point.
 3. User sends their file(s) as email attachment(s) to the shown address, then presses "Next".
-4. The system shows the list of files received for this session so far, each corresponding to a received attachment.
-5. User selects a file from the list to proceed with it.
+4. The system shows the list of files received for this session so far, each corresponding to a received attachment. Each attachment passes through the antivirus-scanning step confirmed in `docs/domain/kiosk-session.md` ("File scanning status") before it can be selected — shown as a pending/scanning status in the meantime.
+5. User selects a file from the list (once scanning has completed) to proceed with it.
 
-Whether the user can select and proceed with more than one received file, and how multiple selections are handled, is out of scope for this document.
+**Batch alternative (confirmed):** instead of selecting one file at a time, a single "Configure printing for all files" action covers every currently-selectable (scanned) attachment across every received email at once — see `docs/personal-account-requirements.md`, "Batch configure," for the shared mechanics (sequential Print Order Configuration per file, Cart popup only opens once the whole batch is done).
 
 ## No in-kiosk editing
 
@@ -36,7 +36,7 @@ Whether the user can select and proceed with more than one received file, and ho
 - Files in accepted formats are automatically converted to PDF by the system before preview — the user never chooses or triggers a conversion step themselves.
 - The user is informed of the accepted formats before sending their file (on the instructional screen described in the confirmed flow above).
 - If a received file is not in an accepted format, or conversion fails, a popup error is shown to the user.
-- The exact list of accepted formats, the popup's exact wording, and whether the user can retry: To be defined (the accepted-formats question is also tracked as an open product-level question in `docs/product-overview.md`).
+- **Accepted formats and size limit are now confirmed** — PDF, DOC, DOCX, JPG/JPEG, PNG, HEIC; 20 MB max per file; see `docs/domain/kiosk-session.md`, "File format and size limits" (shared across every upload method, not Email-specific). **Not yet implemented for Email** — enforcing it requires a real inbound-email backend, which doesn't exist yet (Email remains fully mocked); QR has the same rule already implemented (`docs/qr-upload-requirements.md`) since it has a real backend. The popup's exact wording and whether the user can retry are still open (see Open items).
 
 ## Preview and print configuration
 
@@ -58,12 +58,11 @@ This document confirms only that the Email upload flow produces a Print Order ad
 
 ## Scope boundaries
 
-Out of scope for this document: the six-method selection screen itself (see `docs/upload-method-requirements.md`), antivirus-scanning behavior details, the Cart/Payment/Print screens and flow, Kiosk Session lifecycle, and the Print Order Configuration screen's full field-level requirements (a future document).
+Out of scope for this document: the six-method selection screen itself (see `docs/upload-method-requirements.md`), antivirus-scanning behavior beyond the shared status confirmed in `docs/domain/kiosk-session.md` ("File scanning status"), the Cart/Payment/Print screens and flow, Kiosk Session lifecycle, and the Print Order Configuration screen's full field-level requirements (a future document).
 
 ## Open items
 
-- Accepted file formats and attachment size limits.
 - Inbound-email provider/domain choice and its failure behavior.
 - Popup error wording for rejected or unconvertible formats, and whether retry is offered.
 - Exact print-setting options and how price is calculated.
-- Antivirus scan behavior when a threat is detected (discussed but not yet formally confirmed).
+- Real antivirus scanning for Email specifically — the rule and rejected-file behavior are now confirmed and implemented for QR (see `docs/domain/kiosk-session.md`, "File scanning status," and `docs/qr-upload-requirements.md`); Email just doesn't have a real backend yet to scan against, so it stays a mock timer.

@@ -1,4 +1,5 @@
 import styles from './StatusBadge.module.css';
+import { useTranslation } from '../../i18n';
 import type { ServiceStatus } from '../../types/kiosk';
 
 // See docs/design/component-library.md, Section 14.
@@ -8,11 +9,11 @@ interface StatusBadgeProps {
   status: Exclude<ServiceStatus, 'available'>;
 }
 
-const STATUS_LABEL: Record<StatusBadgeProps['status'], string> = {
-  'coming-soon': 'Coming soon',
-  unavailable: 'Unavailable',
-};
-
 export function StatusBadge({ status }: StatusBadgeProps) {
+  const t = useTranslation();
+  const STATUS_LABEL: Record<StatusBadgeProps['status'], string> = {
+    'coming-soon': t.common.comingSoon,
+    unavailable: t.common.unavailable,
+  };
   return <span className={styles.root}>{STATUS_LABEL[status]}</span>;
 }

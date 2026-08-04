@@ -10,11 +10,12 @@ interface ButtonProps {
   id?: string;
   label: string;
   onClick?: () => void;
+  disabled?: boolean;
 }
 
-export function Button({ id, label, onClick }: ButtonProps) {
+export function Button({ id, label, onClick, disabled = false }: ButtonProps) {
   return (
-    <button type="button" id={id} className={styles.root} onClick={onClick}>
+    <button type="button" id={id} className={styles.root} onClick={onClick} disabled={disabled}>
       {label}
     </button>
   );

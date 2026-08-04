@@ -1,5 +1,7 @@
 import { KioskScreenLayout } from '../../layouts/KioskScreenLayout/KioskScreenLayout';
 import { Button } from '../../components/Button/Button';
+import { useTranslation } from '../../i18n';
+import type { Language } from '../../i18n';
 import type { PrintOrder } from '../../types/kiosk';
 import styles from './EmailAddressScreen.module.css';
 
@@ -16,8 +18,24 @@ interface EmailAddressScreenProps {
   onEndSession: () => void;
   /** Current Cart contents, shown in the btn-cart popup. */
   cartItems: PrintOrder[];
-  /** Navigates to the Payment Status screen from the Cart popup. */
-  onProceedToPayment: () => void;
+  /** Adjusts a Cart item's quantity (docs/cart-requirements.md). */
+  onQuantityChange: (id: string, quantity: number) => void;
+  /** Removes a Cart item entirely (docs/cart-requirements.md). */
+  onRemoveItem: (id: string) => void;
+  /** Navigates to the Payment Status screen with the checked Cart items. */
+  onProceedToPayment: (selectedItems: PrintOrder[]) => void;
+  isConnectionLost: boolean;
+  onSimulateConnectionLost: () => void;
+  onSimulateConnectionRestored: () => void;
+  onLogin: (username: string) => void;
+  accountId: string | null;
+  /** Navigates to the Personal Account screen (docs/personal-account-requirements.md)
+   * — used by the footer's btn-account. */
+  onGoToPersonalAccount: () => void;
+  hasPendingPaidOrders: boolean;
+  onDismissPaidOrdersPrompt: () => void;
+  onGoToPaidOrders: () => void;
+  onLanguageChange: (language: Language) => void;
 }
 
 export function EmailAddressScreen({
@@ -27,23 +45,46 @@ export function EmailAddressScreen({
   onHome,
   onEndSession,
   cartItems,
+  onQuantityChange,
+  onRemoveItem,
   onProceedToPayment,
+  isConnectionLost,
+  onSimulateConnectionLost,
+  onSimulateConnectionRestored,
+  onLogin,
+  accountId,
+  onGoToPersonalAccount,
+  hasPendingPaidOrders,
+  onDismissPaidOrdersPrompt,
+  onGoToPaidOrders,
+  onLanguageChange,
 }: EmailAddressScreenProps) {
+  const t = useTranslation();
   return (
     <KioskScreenLayout
       onEndSession={onEndSession}
       onBack={onBack}
       onHome={onHome}
       cartItems={cartItems}
+      onQuantityChange={onQuantityChange}
+      onRemoveItem={onRemoveItem}
       onProceedToPayment={onProceedToPayment}
+      isConnectionLost={isConnectionLost}
+      onSimulateConnectionLost={onSimulateConnectionLost}
+      onSimulateConnectionRestored={onSimulateConnectionRestored}
+      onLogin={onLogin}
+      accountId={accountId}
+      onGoToPersonalAccount={onGoToPersonalAccount}
+      hasPendingPaidOrders={hasPendingPaidOrders}
+      onDismissPaidOrdersPrompt={onDismissPaidOrdersPrompt}
+      onGoToPaidOrders={onGoToPaidOrders}
+      onLanguageChange={onLanguageChange}
     >
       <div className={styles.body}>
-        <p className={styles.instruction}>
-          Send your document as an email attachment to the address below
-        </p>
+        <p className={styles.instruction}>{t.emailAddress.instruction}</p>
         <p className={styles.address}>{emailAddress}</p>
-        <p className={styles.formats}>Accepted formats: PDF, DOC, DOCX, JPG, PNG</p>
-        <Button id="email-address-next" label="Next" onClick={onNext} />
+        <p className={styles.formats}>{t.emailAddress.acceptedFormats}</p>
+        <Button id="email-address-next" label={t.emailAddress.next} onClick={onNext} />
       </div>
     </KioskScreenLayout>
   );

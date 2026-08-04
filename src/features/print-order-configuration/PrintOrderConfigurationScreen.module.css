@@ -26,6 +26,12 @@
   gap: var(--space-m);
 }
 
+.quantity {
+  display: flex;
+  align-items: center;
+  gap: var(--space-s);
+}
+
 .price {
   margin: 0;
   font-weight: bold;

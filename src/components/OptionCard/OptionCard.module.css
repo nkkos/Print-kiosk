@@ -30,6 +30,11 @@
   outline-offset: 2px;
 }
 
+.root:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .title {
   font-size: 1.1rem;
 }

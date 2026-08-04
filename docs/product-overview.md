@@ -106,11 +106,10 @@ Build a working clickable prototype of the kiosk client application within 7 day
 
 ## Open questions
 
-- Which document formats must the kiosk accept (PDF, DOCX, images, other)?
 - What is the file retention/deletion policy after printing?
 - Are personal accounts authenticated (login/password), or tied to another identifier (phone, QR)?
-- Is multi-language support required?
 - What is the required behavior when the kiosk loses network connectivity?
 - What is the scope of the administrative interface (monitoring, remote configuration, reporting)?
 - What are the refund/recovery steps when payment succeeds but printing fails (or vice versa)?
 - What are the kiosk screen size, resolution, and orientation?
+- How is the physical kiosk browser locked down against navigation away from the app (refresh, address bar, keyboard shortcuts, closing the window)? Surfaced while testing the real QR upload backend: a plain browser reload currently returns the user to the Welcome Screen (session/Cart persist via `localStorage`, but which screen they were on and in-progress QR/Email state do not — a deliberate, already-confirmed "no smart session restore" decision, not itself the gap). The likely real answer is deployment-level (e.g., Chrome kiosk mode, `--kiosk`, disabling browser chrome and shortcuts) rather than an app-code fix, but this hasn't been confirmed or scoped.

@@ -25,6 +25,10 @@ Six methods, all shown on this screen:
 5. **Web page** — the user accesses an internet page and obtains a document from it. URL entry, browsing restrictions, downloads, and security rules are not yet defined.
 6. **USB drive** — must remain visible; the product owner currently considers it undesirable but has not rejected it. Hardware availability, file-system access, and security rules are not yet defined.
 
+## Temporary display scope
+
+While only QR, Email, and Personal account are being actively developed, the other three confirmed methods (Telegram, Web page, USB drive) are temporarily not rendered on this screen — this is a display-only decision, not a reversal of the six confirmed methods above. Their placeholder code (`handleMethodActivate`, the cards themselves) stays in the codebase behind a single flag (`SHOW_UNBUILT_METHODS` in `UploadMethodSelectionScreen.tsx`) so they can be brought back with a one-line change once work on them starts. While hidden, the grid naturally shows a single row of three cards instead of the eventual 3×2 layout.
+
 ## Method availability and status
 
 - All six methods are `available` (visible and clickable) in this milestone — none are `coming-soon` or disabled at the screen level, since the method-specific screens will be built next.
@@ -51,7 +55,9 @@ Six methods, all shown on this screen:
 - No longer explanations are added on this screen — method-specific details (e.g., the temporary nature of the email address, saved files in the personal account) remain on each method's own next screen.
 - Technical terms (QR, Telegram, browser, USB) are acceptable at this stage; final iconography is a future visual-design decision and may change based on user testing. No icons or additional copy beyond the confirmed title + description are introduced here.
 - No method needs a special onboarding warning/hint for unfamiliar technology beyond its confirmed short description.
-- Each card shows a marker (e.g., a star) if that method has been used at least once during the current Kiosk Session — so the user does not lose track of where they already uploaded something. The marker persists for the whole session and does not disappear once an order is printed; it is intentionally designed to be easy to change later to a "still has unprocessed items" rule instead, based on observed user behavior. Exact visual treatment: To be defined.
+- Each card shows a marker (e.g., a star) if that method has been used at least once during the current Kiosk Session — so the user does not lose track of where they already uploaded something. The marker persists for the whole session and does not disappear once an order is printed. Exact visual treatment: To be defined.
+  - **QR / Email (confirmed, revised):** counts as used as soon as files have arrived/been received this session — not only once something from them has reached Cart — so the user does not lose track of files still sitting unprocessed. Originally "added to Cart at least once"; revised after real QR testing surfaced the gap.
+  - **Exception — Personal account:** unlike QR/Email, still requires having added something to Cart at least once (not merely being logged in — the account's existing files aren't "arrivals" the way uploads are) _and_ still being logged in. Logging out makes those files unreachable again, so the marker would be misleading if it stayed lit; it reappears on its own once logged back in (docs/personal-account-requirements.md, "Kiosk-side login").
 
 ## Interaction and navigation
 

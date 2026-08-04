@@ -1,0 +1,135 @@
+import type { Translations } from './en';
+
+// Slovak — see docs/i18n-requirements.md ("Translation quality": AI-generated,
+// not yet reviewed by a native speaker).
+export const sk: Translations = {
+  common: {
+    back: 'Späť',
+    home: 'Domov',
+    close: 'Zavrieť',
+    confirm: 'Potvrdiť',
+    paperSizeA4: 'A4',
+    paperSizeA5: 'A5',
+    sidesSingle: 'Jednostranne',
+    sidesDouble: 'Obojstranne',
+    colorBw: 'Čiernobielo',
+    colorColor: 'Farebne',
+    comingSoon: 'Čoskoro',
+    unavailable: 'Nedostupné',
+    tapToConfigurePrinting: 'Ťuknutím nastavíte tlač',
+    scanningForViruses: 'Kontrola na vírusy...',
+    configureAllFiles: 'Nastaviť tlač pre všetky súbory',
+  },
+  footer: {
+    callOperator: 'Zavolať operátora',
+    help: 'Pomoc',
+    tariffs: 'Cenník',
+    account: 'Účet',
+    cart: 'Košík',
+    language: 'Jazyk',
+  },
+  kioskLayout: {
+    endSession: 'Ukončiť a vymazať údaje',
+    endSessionConfirmMessage: 'Ukončiť túto reláciu a vymazať všetky vaše údaje?',
+    connectionLostTitle: 'Spojenie prerušené',
+    connectionLostMessage:
+      'Kiosk stratil pripojenie. Platba a tlač sú nedostupné, kým sa spojenie neobnoví.',
+    idleWarningTitle: 'Ste stále tu?',
+    idleWarningMessage:
+      'Táto relácia sa ukončí o 1 minútu z dôvodu nečinnosti. Dotykom pokračujete.',
+    paidOrdersPromptMessage: 'Máte vopred zaplatenú objednávku čakajúcu na tlač.',
+    goToMyOrders: 'Prejsť na Moje objednávky',
+    selectLanguage: 'Vyberte jazyk',
+  },
+  cart: {
+    empty: 'Košík je prázdny',
+    title: 'Košík',
+    qty: (quantity: number) => `Počet: ${quantity}`,
+    total: (amount: string) => `Spolu: $${amount}`,
+    proceedToPayment: 'Prejsť k platbe',
+  },
+  login: {
+    checkYourEmail: 'Skontrolujte si e-mail',
+    resetInstructionsSent:
+      'Ak účet s týmto používateľským menom existuje, boli naň odoslané pokyny na obnovenie hesla.',
+    backToLogin: 'Späť na prihlásenie',
+    resetPassword: 'Obnoviť heslo',
+    username: 'Používateľské meno',
+    password: 'Heslo',
+    sendResetInstructions: 'Odoslať pokyny na obnovenie',
+    logIn: 'Prihlásiť sa',
+    incorrectCredentials: 'Nesprávne používateľské meno alebo heslo.',
+    forgotPassword: 'Zabudli ste heslo?',
+  },
+  welcome: {
+    print: 'Tlač',
+    scan: 'Skenovanie',
+    copy: 'Kopírovanie',
+    serviceUnavailableTitle: 'Služba nedostupná',
+    serviceUnavailableMessage:
+      'Tlač je dočasne nedostupná. Skúste to prosím neskôr alebo kontaktujte operátora.',
+  },
+  uploadMethodSelection: {
+    instruction: 'Vyberte spôsob, akým chcete nahrať dokument na tlač',
+    qrTitle: 'QR kód',
+    qrDescription: 'Použite svoj telefón',
+    emailTitle: 'E-mail',
+    emailDescription: 'Odošlite svoj súbor',
+    accountTitle: 'Osobný účet',
+    accountDescription: 'Vaše uložené súbory',
+    telegramTitle: 'Telegram',
+    telegramDescription: 'Použite bota',
+    webTitle: 'Webová stránka',
+    webDescription: 'Otvoriť online',
+    usbTitle: 'USB kľúč',
+    usbDescription: 'Pripojte svoj USB kľúč',
+  },
+  emailAddress: {
+    instruction: 'Odošlite svoj dokument ako prílohu e-mailu na uvedenú adresu',
+    acceptedFormats: 'Podporované formáty: PDF, DOC, DOCX, JPG, PNG',
+    next: 'Ďalej',
+  },
+  emailFileList: {
+    instruction: 'Vyberte e-mail na zobrazenie jeho príloh',
+    attachmentCount: (count: number) => `${count} príloh(y)`,
+  },
+  qrUpload: {
+    qrImageAlt: 'QR kód na nahratie súborov z telefónu',
+    preparingQrCode: 'Pripravuje sa QR kód...',
+    qrHint:
+      'Naskenujte fotoaparátom telefónu a potom nahrajte súbor(y) zo stránky, ktorá sa otvorí',
+    waitingForFiles: 'Čakanie na súbory...',
+    blockedVirusScan: 'Zablokované — nevyhovelo kontrole na vírusy',
+  },
+  personalAccount: {
+    myFiles: 'Moje súbory',
+    myOrders: 'Moje objednávky',
+    logOut: 'Odhlásiť sa',
+    backToMyFiles: 'Späť na Moje súbory',
+    configureSelected: 'Nastaviť tlač pre vybrané súbory',
+    noOrdersAwaitingPrint: 'Žiadne objednávky nečakajú na tlač.',
+    orderDescription: (quantity: number) =>
+      `Počet ${quantity} · Zaplatené — ťuknutím pridáte do košíka`,
+  },
+  printOrderConfiguration: {
+    paperSizeLegend: 'Veľkosť papiera',
+    sidesLegend: 'Strany',
+    colorLegend: 'Farba',
+    quantity: 'Množstvo',
+    price: (amount: string) => `Cena: $${amount}`,
+    addToCart: 'Pridať do košíka',
+  },
+  paymentStatus: {
+    cancelPayment: 'Zrušiť platbu',
+    cancelConfirmMessage: 'Naozaj chcete zrušiť túto objednávku?',
+  },
+  printStatus: {
+    printingMessage: 'Tlačí sa váš dokument (dokumenty)...',
+  },
+  finalisingSession: {
+    message: 'Vaše dokumenty boli vytlačené. Ďakujeme!',
+  },
+  endingSession: {
+    message: 'Ukončuje sa relácia...',
+  },
+};

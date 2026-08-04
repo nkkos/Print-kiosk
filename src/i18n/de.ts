@@ -1,0 +1,136 @@
+import type { Translations } from './en';
+
+// German — see docs/i18n-requirements.md ("Translation quality": AI-generated,
+// not yet reviewed by a native speaker).
+export const de: Translations = {
+  common: {
+    back: 'Zurück',
+    home: 'Startseite',
+    close: 'Schließen',
+    confirm: 'Bestätigen',
+    paperSizeA4: 'A4',
+    paperSizeA5: 'A5',
+    sidesSingle: 'Einseitig',
+    sidesDouble: 'Beidseitig',
+    colorBw: 'Schwarz-weiß',
+    colorColor: 'Farbig',
+    comingSoon: 'Demnächst',
+    unavailable: 'Nicht verfügbar',
+    tapToConfigurePrinting: 'Tippen, um den Druck zu konfigurieren',
+    scanningForViruses: 'Virenprüfung läuft...',
+    configureAllFiles: 'Druck für alle Dateien konfigurieren',
+  },
+  footer: {
+    callOperator: 'Mitarbeiter rufen',
+    help: 'Hilfe',
+    tariffs: 'Preise',
+    account: 'Konto',
+    cart: 'Warenkorb',
+    language: 'Sprache',
+  },
+  kioskLayout: {
+    endSession: 'Beenden und Daten löschen',
+    endSessionConfirmMessage: 'Diese Sitzung beenden und alle Ihre Daten löschen?',
+    connectionLostTitle: 'Verbindung unterbrochen',
+    connectionLostMessage:
+      'Der Kiosk hat die Verbindung verloren. Zahlung und Druck sind nicht verfügbar, bis die Verbindung wiederhergestellt ist.',
+    idleWarningTitle: 'Sind Sie noch da?',
+    idleWarningMessage:
+      'Diese Sitzung wird in 1 Minute wegen Inaktivität beendet. Berühren Sie den Bildschirm, um fortzufahren.',
+    paidOrdersPromptMessage:
+      'Sie haben eine im Voraus bezahlte Bestellung, die auf den Druck wartet.',
+    goToMyOrders: 'Zu Meine Bestellungen',
+    selectLanguage: 'Sprache auswählen',
+  },
+  cart: {
+    empty: 'Der Warenkorb ist leer',
+    title: 'Warenkorb',
+    qty: (quantity: number) => `Anzahl: ${quantity}`,
+    total: (amount: string) => `Gesamt: $${amount}`,
+    proceedToPayment: 'Zur Zahlung',
+  },
+  login: {
+    checkYourEmail: 'Überprüfen Sie Ihre E-Mails',
+    resetInstructionsSent:
+      'Falls ein Konto mit diesem Benutzernamen existiert, wurden Anweisungen zum Zurücksetzen des Passworts gesendet.',
+    backToLogin: 'Zurück zur Anmeldung',
+    resetPassword: 'Passwort zurücksetzen',
+    username: 'Benutzername',
+    password: 'Passwort',
+    sendResetInstructions: 'Anweisungen zum Zurücksetzen senden',
+    logIn: 'Anmelden',
+    incorrectCredentials: 'Falscher Benutzername oder falsches Passwort.',
+    forgotPassword: 'Passwort vergessen?',
+  },
+  welcome: {
+    print: 'Drucken',
+    scan: 'Scannen',
+    copy: 'Kopieren',
+    serviceUnavailableTitle: 'Dienst nicht verfügbar',
+    serviceUnavailableMessage:
+      'Der Druck ist vorübergehend nicht verfügbar. Bitte versuchen Sie es später erneut oder wenden Sie sich an einen Mitarbeiter.',
+  },
+  uploadMethodSelection: {
+    instruction: 'Wählen Sie, wie Sie Ihr Dokument zum Drucken hochladen möchten',
+    qrTitle: 'QR-Code',
+    qrDescription: 'Nutzen Sie Ihr Telefon',
+    emailTitle: 'E-Mail',
+    emailDescription: 'Senden Sie Ihre Datei',
+    accountTitle: 'Persönliches Konto',
+    accountDescription: 'Ihre gespeicherten Dateien',
+    telegramTitle: 'Telegram',
+    telegramDescription: 'Bot verwenden',
+    webTitle: 'Webseite',
+    webDescription: 'Online öffnen',
+    usbTitle: 'USB-Stick',
+    usbDescription: 'USB-Stick anschließen',
+  },
+  emailAddress: {
+    instruction: 'Senden Sie Ihr Dokument als E-Mail-Anhang an die unten stehende Adresse',
+    acceptedFormats: 'Akzeptierte Formate: PDF, DOC, DOCX, JPG, PNG',
+    next: 'Weiter',
+  },
+  emailFileList: {
+    instruction: 'Wählen Sie eine E-Mail aus, um deren Anhänge zu sehen',
+    attachmentCount: (count: number) => `${count} Anhang/Anhänge`,
+  },
+  qrUpload: {
+    qrImageAlt: 'QR-Code zum Hochladen von Dateien vom Telefon',
+    preparingQrCode: 'QR-Code wird vorbereitet...',
+    qrHint:
+      'Scannen Sie mit der Kamera Ihres Telefons und laden Sie dann Ihre Datei(en) von der sich öffnenden Seite hoch',
+    waitingForFiles: 'Warten auf Dateien...',
+    blockedVirusScan: 'Blockiert — Virenprüfung fehlgeschlagen',
+  },
+  personalAccount: {
+    myFiles: 'Meine Dateien',
+    myOrders: 'Meine Bestellungen',
+    logOut: 'Abmelden',
+    backToMyFiles: 'Zurück zu Meine Dateien',
+    configureSelected: 'Druck für ausgewählte Dateien konfigurieren',
+    noOrdersAwaitingPrint: 'Keine Bestellungen warten auf den Druck.',
+    orderDescription: (quantity: number) =>
+      `Anzahl ${quantity} · Bezahlt — zum Hinzufügen zum Warenkorb tippen`,
+  },
+  printOrderConfiguration: {
+    paperSizeLegend: 'Papierformat',
+    sidesLegend: 'Seiten',
+    colorLegend: 'Farbe',
+    quantity: 'Menge',
+    price: (amount: string) => `Preis: $${amount}`,
+    addToCart: 'In den Warenkorb',
+  },
+  paymentStatus: {
+    cancelPayment: 'Zahlung abbrechen',
+    cancelConfirmMessage: 'Möchten Sie diese Bestellung wirklich stornieren?',
+  },
+  printStatus: {
+    printingMessage: 'Ihre Dokument(e) werden gedruckt...',
+  },
+  finalisingSession: {
+    message: 'Ihre Dokumente wurden gedruckt. Vielen Dank!',
+  },
+  endingSession: {
+    message: 'Sitzung wird beendet...',
+  },
+};

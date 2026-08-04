@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { Button } from '../Button/Button';
+import { useTranslation } from '../../i18n';
 import styles from './Modal.module.css';
 
 // See docs/design/component-library.md, Section 12. Minimal shell: a
@@ -18,10 +19,11 @@ interface ModalProps {
 }
 
 export function Modal({ onClose, children }: ModalProps) {
+  const t = useTranslation();
   return (
     <div className={styles.overlay}>
       <div className={styles.content}>
-        <Button id="modal-close" label="Close" onClick={onClose} />
+        <Button id="modal-close" label={t.common.close} onClick={onClose} />
         {children}
       </div>
     </div>

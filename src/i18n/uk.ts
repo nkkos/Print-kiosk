@@ -1,0 +1,134 @@
+import type { Translations } from './en';
+
+// Ukrainian — see docs/i18n-requirements.md ("Translation quality": AI-generated,
+// not yet reviewed by a native speaker).
+export const uk: Translations = {
+  common: {
+    back: 'Назад',
+    home: 'На головну',
+    close: 'Закрити',
+    confirm: 'Підтвердити',
+    paperSizeA4: 'A4',
+    paperSizeA5: 'A5',
+    sidesSingle: 'Односторонній',
+    sidesDouble: 'Двосторонній',
+    colorBw: 'Чорно-білий',
+    colorColor: 'Кольоровий',
+    comingSoon: 'Скоро',
+    unavailable: 'Недоступно',
+    tapToConfigurePrinting: 'Торкніться, щоб налаштувати друк',
+    scanningForViruses: 'Перевірка на віруси...',
+    configureAllFiles: 'Налаштувати друк для всіх файлів',
+  },
+  footer: {
+    callOperator: 'Викликати оператора',
+    help: 'Допомога',
+    tariffs: 'Тарифи',
+    account: 'Обліковий запис',
+    cart: 'Кошик',
+    language: 'Мова',
+  },
+  kioskLayout: {
+    endSession: 'Завершити і видалити дані',
+    endSessionConfirmMessage: 'Завершити цю сесію і видалити всі ваші дані?',
+    connectionLostTitle: "З'єднання втрачено",
+    connectionLostMessage:
+      "Кіоск втратив з'єднання. Оплата і друк недоступні, поки з'єднання не відновиться.",
+    idleWarningTitle: 'Ви ще тут?',
+    idleWarningMessage:
+      'Ця сесія завершиться через 1 хвилину через бездіяльність. Торкніться екрана, щоб продовжити.',
+    paidOrdersPromptMessage: 'У вас є заздалегідь оплачене замовлення, яке очікує на друк.',
+    goToMyOrders: 'Перейти до Мої замовлення',
+    selectLanguage: 'Виберіть мову',
+  },
+  cart: {
+    empty: 'Кошик порожній',
+    title: 'Кошик',
+    qty: (quantity: number) => `Кількість: ${quantity}`,
+    total: (amount: string) => `Разом: $${amount}`,
+    proceedToPayment: 'Перейти до оплати',
+  },
+  login: {
+    checkYourEmail: 'Перевірте пошту',
+    resetInstructionsSent:
+      'Якщо обліковий запис із таким іменем користувача існує, на нього надіслано інструкції з відновлення пароля.',
+    backToLogin: 'Назад до входу',
+    resetPassword: 'Відновити пароль',
+    username: "Ім'я користувача",
+    password: 'Пароль',
+    sendResetInstructions: 'Надіслати інструкції',
+    logIn: 'Увійти',
+    incorrectCredentials: "Неправильне ім'я користувача або пароль.",
+    forgotPassword: 'Забули пароль?',
+  },
+  welcome: {
+    print: 'Друк',
+    scan: 'Сканування',
+    copy: 'Копіювання',
+    serviceUnavailableTitle: 'Послуга недоступна',
+    serviceUnavailableMessage:
+      'Друк тимчасово недоступний. Спробуйте пізніше або зверніться до оператора.',
+  },
+  uploadMethodSelection: {
+    instruction: 'Виберіть спосіб завантаження документа для друку',
+    qrTitle: 'QR-код',
+    qrDescription: 'Використайте телефон',
+    emailTitle: 'Email',
+    emailDescription: 'Надішліть файл',
+    accountTitle: 'Особистий кабінет',
+    accountDescription: 'Ваші збережені файли',
+    telegramTitle: 'Telegram',
+    telegramDescription: 'Через бота',
+    webTitle: 'Веб-сторінка',
+    webDescription: 'Відкрити онлайн',
+    usbTitle: 'USB-накопичувач',
+    usbDescription: "Під'єднайте накопичувач",
+  },
+  emailAddress: {
+    instruction: 'Надішліть документ як вкладення на вказану нижче адресу електронної пошти',
+    acceptedFormats: 'Допустимі формати: PDF, DOC, DOCX, JPG, PNG',
+    next: 'Далі',
+  },
+  emailFileList: {
+    instruction: 'Виберіть лист, щоб побачити вкладення',
+    attachmentCount: (count: number) => `Вкладень: ${count}`,
+  },
+  qrUpload: {
+    qrImageAlt: 'QR-код для завантаження файлів з телефону',
+    preparingQrCode: 'Підготовка QR-коду...',
+    qrHint: 'Відскануйте камерою телефону, потім завантажте файл(и) зі сторінки, що відкриється',
+    waitingForFiles: 'Очікування файлів...',
+    blockedVirusScan: 'Заблоковано — не пройшло перевірку на віруси',
+  },
+  personalAccount: {
+    myFiles: 'Мої файли',
+    myOrders: 'Мої замовлення',
+    logOut: 'Вийти',
+    backToMyFiles: 'Назад до Моїх файлів',
+    configureSelected: 'Налаштувати друк для вибраних файлів',
+    noOrdersAwaitingPrint: 'Немає замовлень, що очікують на друк.',
+    orderDescription: (quantity: number) =>
+      `Кількість ${quantity} · Оплачено — торкніться, щоб додати до кошика`,
+  },
+  printOrderConfiguration: {
+    paperSizeLegend: 'Формат паперу',
+    sidesLegend: 'Сторони',
+    colorLegend: 'Колір',
+    quantity: 'Кількість',
+    price: (amount: string) => `Ціна: $${amount}`,
+    addToCart: 'Додати до кошика',
+  },
+  paymentStatus: {
+    cancelPayment: 'Скасувати оплату',
+    cancelConfirmMessage: 'Ви впевнені, що хочете скасувати це замовлення?',
+  },
+  printStatus: {
+    printingMessage: 'Друк документа(ів)...',
+  },
+  finalisingSession: {
+    message: 'Ваші документи надруковано. Дякуємо!',
+  },
+  endingSession: {
+    message: 'Завершення сесії...',
+  },
+};

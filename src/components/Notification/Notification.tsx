@@ -6,14 +6,16 @@ import styles from './Notification.module.css';
 // for CartPanel. No color-per-variant styling yet — no confirmed Design
 // System values (`data-variant` is a hook for later).
 interface NotificationProps {
+  /** e.g. `notification-service-unavailable` (docs/screens/welcome-screen-spec.md). */
+  id?: string;
   title: string;
   message: string;
   variant?: 'informational' | 'warning' | 'error' | 'success';
 }
 
-export function Notification({ title, message, variant = 'informational' }: NotificationProps) {
+export function Notification({ id, title, message, variant = 'informational' }: NotificationProps) {
   return (
-    <div className={styles.root} data-variant={variant}>
+    <div id={id} className={styles.root} data-variant={variant}>
       <h2 className={styles.title}>{title}</h2>
       <p className={styles.message}>{message}</p>
     </div>

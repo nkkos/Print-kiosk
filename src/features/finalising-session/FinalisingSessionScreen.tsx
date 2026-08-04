@@ -1,4 +1,6 @@
 import { KioskScreenLayout } from '../../layouts/KioskScreenLayout/KioskScreenLayout';
+import { useTranslation } from '../../i18n';
+import type { Language } from '../../i18n';
 import type { PrintOrder } from '../../types/kiosk';
 import styles from './FinalisingSessionScreen.module.css';
 
@@ -14,25 +16,64 @@ interface FinalisingSessionScreenProps {
   onReturnToWelcome: () => void;
   onEndSession: () => void;
   cartItems: PrintOrder[];
-  onProceedToPayment: () => void;
+  onQuantityChange: (id: string, quantity: number) => void;
+  onRemoveItem: (id: string) => void;
+  onProceedToPayment: (selectedItems: PrintOrder[]) => void;
+  isConnectionLost: boolean;
+  onSimulateConnectionLost: () => void;
+  onSimulateConnectionRestored: () => void;
+  onLogin: (username: string) => void;
+  accountId: string | null;
+  /** Navigates to the Personal Account screen (docs/personal-account-requirements.md)
+   * — used by the footer's btn-account. */
+  onGoToPersonalAccount: () => void;
+  hasPendingPaidOrders: boolean;
+  onDismissPaidOrdersPrompt: () => void;
+  onGoToPaidOrders: () => void;
+  onLanguageChange: (language: Language) => void;
 }
 
 export function FinalisingSessionScreen({
   onReturnToWelcome,
   onEndSession,
   cartItems,
+  onQuantityChange,
+  onRemoveItem,
   onProceedToPayment,
+  isConnectionLost,
+  onSimulateConnectionLost,
+  onSimulateConnectionRestored,
+  onLogin,
+  accountId,
+  onGoToPersonalAccount,
+  hasPendingPaidOrders,
+  onDismissPaidOrdersPrompt,
+  onGoToPaidOrders,
+  onLanguageChange,
 }: FinalisingSessionScreenProps) {
+  const t = useTranslation();
   return (
     <KioskScreenLayout
       onEndSession={onEndSession}
       onBack={onReturnToWelcome}
       onHome={onReturnToWelcome}
       cartItems={cartItems}
+      onQuantityChange={onQuantityChange}
+      onRemoveItem={onRemoveItem}
       onProceedToPayment={onProceedToPayment}
+      isConnectionLost={isConnectionLost}
+      onSimulateConnectionLost={onSimulateConnectionLost}
+      onSimulateConnectionRestored={onSimulateConnectionRestored}
+      onLogin={onLogin}
+      accountId={accountId}
+      onGoToPersonalAccount={onGoToPersonalAccount}
+      hasPendingPaidOrders={hasPendingPaidOrders}
+      onDismissPaidOrdersPrompt={onDismissPaidOrdersPrompt}
+      onGoToPaidOrders={onGoToPaidOrders}
+      onLanguageChange={onLanguageChange}
     >
       <div className={styles.body}>
-        <p className={styles.message}>Your documents have been printed. Thank you!</p>
+        <p className={styles.message}>{t.finalisingSession.message}</p>
       </div>
     </KioskScreenLayout>
   );

@@ -6,6 +6,9 @@ import { PersistentActionBar } from '../../components/PersistentActionBar/Persis
 import { Modal } from '../../components/Modal/Modal';
 import { CartPanel } from '../../components/CartPanel/CartPanel';
 import { Notification } from '../../components/Notification/Notification';
+import { LoginPanel } from '../../components/LoginPanel/LoginPanel';
+import { useTranslation, LANGUAGE_NAMES } from '../../i18n';
+import type { Language } from '../../i18n';
 import type { PrintOrder } from '../../types/kiosk';
 import styles from './KioskScreenLayout.module.css';
 
@@ -19,6 +22,13 @@ import styles from './KioskScreenLayout.module.css';
 const IDLE_WARNING_DELAY_MS = 5 * 60 * 1000;
 const IDLE_END_DELAY_MS = 60 * 1000;
 const ACTIVITY_EVENTS = ['pointerdown', 'keydown', 'touchstart'] as const;
+
+// Connection lost (docs/domain/kiosk-session.md, "Failure and recovery";
+// docs/screens/upload-method-selection-spec.md, "Connectivity lost"): while
+// lost, the notification reappears every 30s even if the user dismisses it,
+// since dismissing it never restores connectivity — only the (simulated)
+// underlying condition changing does.
+const CONNECTION_LOST_REMINDER_INTERVAL_MS = 30 * 1000;
 
 // Shared shell for every in-flow screen: header (BrandMark + conditional
 // end-session), an optional Back/Home row, the persistent footer, and the
@@ -44,14 +54,55 @@ interface KioskScreenLayoutProps {
   onHome?: () => void;
   /** Current Cart contents, shown in the btn-cart popup. */
   cartItems: PrintOrder[];
-  /** Navigates to the Payment Status screen. Offered from the Cart popup
-   * whenever it has items (docs/domain/kiosk-session.md, "Cart"). */
-  onProceedToPayment: () => void;
+  /** Adjusts a Cart item's quantity (docs/cart-requirements.md). */
+  onQuantityChange: (id: string, quantity: number) => void;
+  /** Removes a Cart item entirely, immediately (docs/cart-requirements.md). */
+  onRemoveItem: (id: string) => void;
+  /** Navigates to the Payment Status screen with the currently-checked
+   * subset of Cart items (docs/cart-requirements.md, "Selection for
+   * payment"). Offered from the Cart popup whenever it has items. */
+  onProceedToPayment: (selectedItems: PrintOrder[]) => void;
   /** Opens the Cart popup as soon as this screen mounts — used right after
    * "Add to cart" so the user sees what was just added, instead of
    * silently landing back on Upload Method Selection. The user closes it
    * themselves (Modal's Close) to continue. Defaults to false. */
   initialCartOpen?: boolean;
+  /** Whether the (simulated) connection is currently lost — lifted to
+   * App.tsx rather than owned here, since it must persist across screen
+   * navigation and actually blocks Payment/Print actions on those screens,
+   * not just show a popup on whichever screen triggered it. */
+  isConnectionLost: boolean;
+  onSimulateConnectionLost: () => void;
+  onSimulateConnectionRestored: () => void;
+  /** Logs the Kiosk Session into an account (docs/personal-account-requirements.md,
+   * "Kiosk-side login") — offered from the footer's btn-account, available
+   * on every screen via this shared shell. */
+  onLogin: (username: string) => void;
+  /** Current account, if logged in — null when anonymous. Determines
+   * whether btn-account opens the login form or navigates straight to the
+   * Personal Account screen, and drives the footer's logged-in marker. */
+  accountId: string | null;
+  /** Navigates to the Personal Account screen (docs/personal-account-requirements.md)
+   * — btn-account goes here directly when already logged in, or right after
+   * a successful login from btn-account's own popup, same as the Personal
+   * account OptionCard on Upload Method Selection. */
+  onGoToPersonalAccount: () => void;
+  /** True right after a successful login when the account has at least one
+   * order paid in advance and awaiting print (docs/personal-account-requirements.md,
+   * "Paid orders awaiting print") — triggers a one-time popup from whichever
+   * screen the login happened on. Stays true (and the popup keeps
+   * reappearing across screen navigation, same pattern as connection-lost)
+   * until dismissed. */
+  hasPendingPaidOrders: boolean;
+  onDismissPaidOrdersPrompt: () => void;
+  /** Navigates straight to the Personal Account screen's My orders section
+   * — the popup's primary action. */
+  onGoToPaidOrders: () => void;
+  /** Changes the interface language (docs/i18n-requirements.md) — offered
+   * from the footer's language-switch, available on every screen via this
+   * shared shell. Ownership of the current language stays in App.tsx (reset
+   * every session, same as accountId); this is just the write side. */
+  onLanguageChange: (language: Language) => void;
   children: ReactNode;
 }
 
@@ -61,20 +112,45 @@ export function KioskScreenLayout({
   onBack,
   onHome,
   cartItems,
+  onQuantityChange,
+  onRemoveItem,
   onProceedToPayment,
   initialCartOpen = false,
+  isConnectionLost,
+  onSimulateConnectionLost,
+  onSimulateConnectionRestored,
+  onLogin,
+  accountId,
+  onGoToPersonalAccount,
+  hasPendingPaidOrders,
+  onDismissPaidOrdersPrompt,
+  onGoToPaidOrders,
+  onLanguageChange,
   children,
 }: KioskScreenLayoutProps) {
+  const t = useTranslation();
   const [isCartOpen, setIsCartOpen] = useState(initialCartOpen);
   const [isEndConfirmOpen, setIsEndConfirmOpen] = useState(false);
-  // Stands in for real network-loss detection, which doesn't exist in this
-  // prototype (docs/domain/kiosk-session.md: "connection lost" reuses the
-  // Notification popup pattern, closable, does not restore connectivity
-  // itself, footer/operator-call remain accessible). Manually triggered here
-  // so the pattern is demonstrable, the same way Payment/Print Status use a
-  // "Simulate ..." button rather than a real backend outcome.
-  const [isConnectionLost, setIsConnectionLost] = useState(false);
+  const [isConnectionNotificationVisible, setIsConnectionNotificationVisible] = useState(false);
   const [isIdleWarningOpen, setIsIdleWarningOpen] = useState(false);
+  const [isLoginOpen, setIsLoginOpen] = useState(false);
+  const [isLanguageOpen, setIsLanguageOpen] = useState(false);
+
+  // Shows immediately when connection is lost, then keeps reappearing every
+  // 30s regardless of dismissal, for as long as it stays lost.
+  useEffect(() => {
+    if (!isConnectionLost) {
+      setIsConnectionNotificationVisible(false);
+      return;
+    }
+
+    setIsConnectionNotificationVisible(true);
+    const intervalId = setInterval(() => {
+      setIsConnectionNotificationVisible(true);
+    }, CONNECTION_LOST_REMINDER_INTERVAL_MS);
+
+    return () => clearInterval(intervalId);
+  }, [isConnectionLost]);
 
   // Applies whenever sessionActive is true — matches the confirmed "every
   // screen, including Welcome Screen when it has an active session" rule,
@@ -135,20 +211,50 @@ export function KioskScreenLayout({
     onEndSession();
   }
 
+  function handleLoginSuccess(username: string) {
+    setIsLoginOpen(false);
+    onLogin(username);
+    onGoToPersonalAccount();
+  }
+
+  // Mirrors the Personal account OptionCard on Upload Method Selection
+  // (docs/personal-account-requirements.md): navigate straight there if
+  // already logged in, otherwise ask for credentials first.
+  function handleAccountActivate() {
+    if (accountId) {
+      onGoToPersonalAccount();
+    } else {
+      setIsLoginOpen(true);
+    }
+  }
+
+  function handleLanguageSelect(language: Language) {
+    setIsLanguageOpen(false);
+    onLanguageChange(language);
+  }
+
   return (
     <div className={styles.root}>
       <header className={styles.header}>
         <BrandMark />
         <div className={styles.headerActions}>
-          <Button
-            id="simulate-connection-lost"
-            label="Simulate connection lost"
-            onClick={() => setIsConnectionLost(true)}
-          />
+          {isConnectionLost ? (
+            <Button
+              id="simulate-connection-restored"
+              label="Simulate connection restored"
+              onClick={onSimulateConnectionRestored}
+            />
+          ) : (
+            <Button
+              id="simulate-connection-lost"
+              label="Simulate connection lost"
+              onClick={onSimulateConnectionLost}
+            />
+          )}
           {sessionActive && (
             <Button
               id="end-session"
-              label="Finish and clear data"
+              label={t.kioskLayout.endSession}
               onClick={handleEndSessionClick}
             />
           )}
@@ -157,8 +263,8 @@ export function KioskScreenLayout({
 
       {(onBack || onHome) && (
         <div className={styles.navRow}>
-          {onBack && <Button id="navigation-back" label="Back" onClick={onBack} />}
-          {onHome && <Button id="navigation-home" label="Home" onClick={onHome} />}
+          {onBack && <Button id="navigation-back" label={t.common.back} onClick={onBack} />}
+          {onHome && <Button id="navigation-home" label={t.common.home} onClick={onHome} />}
         </div>
       )}
 
@@ -167,29 +273,31 @@ export function KioskScreenLayout({
 
         {isCartOpen && (
           <Modal onClose={() => setIsCartOpen(false)}>
-            <CartPanel items={cartItems} />
-            {cartItems.length > 0 && (
-              <Button
-                id="cart-proceed-to-payment"
-                label="Proceed to payment"
-                onClick={onProceedToPayment}
-              />
-            )}
+            <CartPanel
+              items={cartItems}
+              onQuantityChange={onQuantityChange}
+              onRemove={onRemoveItem}
+              onProceedToPayment={onProceedToPayment}
+            />
           </Modal>
         )}
 
         {isEndConfirmOpen && (
           <Modal onClose={() => setIsEndConfirmOpen(false)}>
-            <p>End this session and clear all your data?</p>
-            <Button id="end-session-confirm" label="Confirm" onClick={handleConfirmEndSession} />
+            <p>{t.kioskLayout.endSessionConfirmMessage}</p>
+            <Button
+              id="end-session-confirm"
+              label={t.common.confirm}
+              onClick={handleConfirmEndSession}
+            />
           </Modal>
         )}
 
-        {isConnectionLost && (
-          <Modal onClose={() => setIsConnectionLost(false)}>
+        {isConnectionNotificationVisible && (
+          <Modal onClose={() => setIsConnectionNotificationVisible(false)}>
             <Notification
-              title="Connection lost"
-              message="The kiosk has lost its connection. Some features may be unavailable until it's restored."
+              title={t.kioskLayout.connectionLostTitle}
+              message={t.kioskLayout.connectionLostMessage}
               variant="warning"
             />
           </Modal>
@@ -198,16 +306,58 @@ export function KioskScreenLayout({
         {isIdleWarningOpen && (
           <Modal onClose={() => setIsIdleWarningOpen(false)}>
             <Notification
-              title="Still there?"
-              message="This session will end in 1 minute due to inactivity. Tap anywhere to continue."
+              title={t.kioskLayout.idleWarningTitle}
+              message={t.kioskLayout.idleWarningMessage}
               variant="warning"
             />
+          </Modal>
+        )}
+
+        {isLoginOpen && (
+          <Modal onClose={() => setIsLoginOpen(false)}>
+            <LoginPanel onLogin={handleLoginSuccess} />
+          </Modal>
+        )}
+
+        {hasPendingPaidOrders && (
+          <Modal onClose={onDismissPaidOrdersPrompt}>
+            <p>{t.kioskLayout.paidOrdersPromptMessage}</p>
+            <Button
+              id="paid-orders-prompt-go-to-orders"
+              label={t.kioskLayout.goToMyOrders}
+              onClick={onGoToPaidOrders}
+            />
+            <Button
+              id="paid-orders-prompt-close"
+              label={t.common.close}
+              onClick={onDismissPaidOrdersPrompt}
+            />
+          </Modal>
+        )}
+
+        {isLanguageOpen && (
+          <Modal onClose={() => setIsLanguageOpen(false)}>
+            <h2>{t.kioskLayout.selectLanguage}</h2>
+            {(Object.keys(LANGUAGE_NAMES) as Language[]).map((language) => (
+              <Button
+                key={language}
+                id={`language-option-${language}`}
+                label={LANGUAGE_NAMES[language]}
+                onClick={() => handleLanguageSelect(language)}
+              />
+            ))}
           </Modal>
         )}
       </main>
 
       <footer className={styles.footer}>
-        <PersistentActionBar onCartActivate={handleCartActivate} />
+        <PersistentActionBar
+          onCartActivate={handleCartActivate}
+          cartHasItems={cartItems.length > 0}
+          onAccountActivate={handleAccountActivate}
+          accountLoggedIn={accountId !== null}
+          onLanguageActivate={() => setIsLanguageOpen(true)}
+        />
       </footer>
     </div>
   );

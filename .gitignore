@@ -12,6 +12,9 @@ dist
 dist-ssr
 *.local
 
+# QR upload backend's stored files (dev-only, never committed)
+server/uploads/
+
 # Environment variables (real secrets — .env.example is tracked separately)
 .env
 .env.*
