@@ -5,10 +5,9 @@ import { simpleParser } from 'mailparser';
 import { networkInterfaces } from 'node:os';
 import { mkdirSync } from 'node:fs';
 import { writeFile } from 'node:fs/promises';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
-import { addFile, listFiles } from './uploadStore.js';
+import { addFile, listFiles, uploadsDir } from './uploadStore.js';
 import { addEmail, listEmails } from './emailStore.js';
 import {
   ACCEPTED_EXTENSIONS,
@@ -19,8 +18,6 @@ import {
 } from './fileValidation.js';
 
 export const DEFAULT_PORT = 3001;
-const serverDir = dirname(fileURLToPath(import.meta.url));
-const uploadsDir = join(serverDir, 'uploads');
 
 // Auto-detects the dev machine's LAN-facing IPv4 so the QR code can encode a
 // URL the phone (a different device, on the same Wi-Fi) can actually reach —
@@ -164,17 +161,15 @@ router.get('/upload/:sessionId', (req, res) => {
 </html>`);
 });
 
-router.post('/api/qr-sessions/:sessionId/files', handleFileUpload, (req, res) => {
+router.post('/api/qr-sessions/:sessionId/files', handleFileUpload, async (req, res) => {
   const sessionId = paramString(req.params.sessionId);
   const files = Array.isArray(req.files) ? req.files : [];
-  for (const file of files) {
-    addFile(sessionId, file.originalname, file.path);
-  }
+  await Promise.all(files.map((file) => addFile(sessionId, file.originalname, file.path)));
   res.redirect(303, `/upload/${sessionId}?uploaded=1`);
 });
 
-router.get('/api/qr-sessions/:sessionId/files', (req, res) => {
-  res.json(listFiles(paramString(req.params.sessionId)));
+router.get('/api/qr-sessions/:sessionId/files', async (req, res) => {
+  res.json(await listFiles(paramString(req.params.sessionId)));
 });
 
 // Extracts the 8-character session prefix from an address of the form
@@ -218,7 +213,7 @@ router.post(
       attachments.push({ fileName, filePath });
     }
 
-    addEmail(
+    await addEmail(
       prefix,
       parsed.subject ?? '(no subject)',
       (parsed.text ?? '').slice(0, 200),
@@ -228,6 +223,6 @@ router.post(
   },
 );
 
-router.get('/api/email-sessions/:prefix/messages', (req, res) => {
-  res.json(listEmails(paramString(req.params.prefix)));
+router.get('/api/email-sessions/:prefix/messages', async (req, res) => {
+  res.json(await listEmails(paramString(req.params.prefix)));
 });

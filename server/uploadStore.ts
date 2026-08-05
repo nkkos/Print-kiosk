@@ -1,19 +1,24 @@
-import { randomUUID } from 'node:crypto';
 import { unlink } from 'node:fs/promises';
+import { dirname, join, relative } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { eq } from 'drizzle-orm';
 import NodeClam from 'clamscan';
+import { db } from './db/client.js';
+import { uploadedFiles } from './db/schema.js';
 
-// In-memory store for QR-uploaded files, keyed by Kiosk Session id (reused
-// directly as the upload token — see server/routes.ts). Dev-only backend:
-// no database, nothing survives a server restart — see the plan notes in
-// docs/qr-upload-requirements.md.
+// Real, DB-backed store for QR/Email-uploaded files, keyed by Kiosk Session
+// id or the email session-address prefix (see server/routes.ts, server/emailStore.ts).
+// See README.md, "Database" — this used to be an in-memory Map, wiped on every
+// restart; it's now Postgres, so uploads survive redeploys.
+
+const serverDir = dirname(fileURLToPath(import.meta.url));
+export const uploadsDir = join(serverDir, 'uploads');
 
 export interface UploadedFile {
   id: string;
   fileName: string;
   status: 'scanning' | 'ready' | 'rejected';
 }
-
-const filesBySession = new Map<string, UploadedFile[]>();
 
 // Real antivirus scanning (docs/domain/kiosk-session.md, "File scanning
 // status") via a clamd daemon over TCP — connected lazily and cached only on
@@ -45,16 +50,11 @@ function getClamscan(): Promise<NodeClam> {
   return clamscanPromise;
 }
 
-function updateStatus(sessionId: string, fileId: string, status: UploadedFile['status']) {
-  const current = filesBySession.get(sessionId);
-  if (!current) return;
-  filesBySession.set(
-    sessionId,
-    current.map((entry) => (entry.id === fileId ? { ...entry, status } : entry)),
-  );
+async function updateStatus(fileId: string, status: UploadedFile['status']) {
+  await db.update(uploadedFiles).set({ status }).where(eq(uploadedFiles.id, fileId));
 }
 
-async function scanFile(sessionId: string, fileId: string, filePath: string) {
+async function scanFile(fileId: string, filePath: string) {
   try {
     const clamscan = await getClamscan();
     const { isInfected } = await clamscan.scanFile(filePath);
@@ -63,12 +63,12 @@ async function scanFile(sessionId: string, fileId: string, filePath: string) {
       // docs/domain/kiosk-session.md's "delete the file content, retain the
       // metadata/fact" cleanup philosophy, just applied right away since
       // there's no reason to keep a flagged file around any longer than
-      // necessary. The in-memory record (fileName + 'rejected') stays, so
-      // the kiosk can still show the user what happened.
+      // necessary. The DB record (fileName + 'rejected') stays, so the
+      // kiosk can still show the user what happened.
       await unlink(filePath).catch(() => {});
-      updateStatus(sessionId, fileId, 'rejected');
+      await updateStatus(fileId, 'rejected');
     } else {
-      updateStatus(sessionId, fileId, 'ready');
+      await updateStatus(fileId, 'ready');
     }
   } catch (err) {
     // Dev-only fail-open: if clamd itself is unreachable (e.g. a developer
@@ -77,20 +77,41 @@ async function scanFile(sessionId: string, fileId: string, filePath: string) {
     // production answer (docs/domain/kiosk-session.md, "File scanning
     // status") — production should fail closed.
     console.error(`[uploadStore] Scan failed for ${filePath}, failing open:`, err);
-    updateStatus(sessionId, fileId, 'ready');
+    await updateStatus(fileId, 'ready');
   }
 }
 
-export function addFile(sessionId: string, fileName: string, filePath: string): UploadedFile {
-  const file: UploadedFile = { id: randomUUID(), fileName, status: 'scanning' };
-  const existing = filesBySession.get(sessionId) ?? [];
-  filesBySession.set(sessionId, [...existing, file]);
+export async function addFile(
+  sessionKey: string,
+  fileName: string,
+  filePath: string,
+  emailId?: string,
+): Promise<UploadedFile> {
+  const [row] = await db
+    .insert(uploadedFiles)
+    .values({
+      sessionKey,
+      fileName,
+      storagePath: relative(uploadsDir, filePath),
+      emailId,
+      status: 'scanning',
+    })
+    .returning({ id: uploadedFiles.id, fileName: uploadedFiles.fileName });
 
-  void scanFile(sessionId, file.id, filePath);
+  void scanFile(row.id, filePath);
 
-  return file;
+  return { id: row.id, fileName: row.fileName, status: 'scanning' };
 }
 
-export function listFiles(sessionId: string): UploadedFile[] {
-  return filesBySession.get(sessionId) ?? [];
+export async function listFiles(sessionKey: string): Promise<UploadedFile[]> {
+  const rows = await db
+    .select({
+      id: uploadedFiles.id,
+      fileName: uploadedFiles.fileName,
+      status: uploadedFiles.status,
+    })
+    .from(uploadedFiles)
+    .where(eq(uploadedFiles.sessionKey, sessionKey))
+    .orderBy(uploadedFiles.createdAt);
+  return rows as UploadedFile[];
 }

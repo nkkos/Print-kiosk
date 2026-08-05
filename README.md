@@ -8,27 +8,44 @@ The QR (`docs/qr-upload-requirements.md`) and Email (`docs/email-upload-requirem
 
 1. `npm install` (already covers backend dependencies — no separate install step).
 2. Copy `.env.example` to `.env` (optional — the defaults already point at the local backend; set `VITE_EMAIL_DOMAIN` if you want the Email screen's address to match a real domain you've wired up, see "Deploying to Railway").
-3. **Antivirus scanning (real, local ClamAV — see `docs/qr-upload-requirements.md`, "File scanning status"):** one-time setup — install ClamAV (`winget install --id Cisco.ClamAV`), then run `freshclam.exe` once to download virus definitions (~110 MB, needs internet). Every dev session, before testing uploads, start the daemon: `"C:\Program Files\ClamAV\clamd.exe" --config-file="$env:LOCALAPPDATA\ClamAV\clamd.conf"` (a plain foreground process, not a Windows service — matches how the backend itself is just run as a dev process, not installed). If `clamd` isn't running, uploads still work (fail-open, dev-only convenience) but nothing is actually being scanned.
-4. Run both dev servers: `npm run dev:all` (or two terminals: `npm run dev` for the frontend, `npm run dev:server` for the backend).
-5. To actually test QR uploading from a phone against the _local_ backend: the phone must be on the **same Wi-Fi/LAN** as this machine (not a guest network with client isolation). On first run, Windows Firewall may prompt to allow Node.js to accept incoming connections — you'll need to click "Allow" yourself. Once the backend is deployed to Railway, QR works from any network instead — see "Deploying to Railway".
-6. Testing Email locally requires the backend's `/api/email/incoming` endpoint to actually receive mail, which needs the real Cloudflare Email Routing → Worker setup below — there's no local-only way to simulate inbound email.
+3. **Database (real Postgres — see "Database" below for the one-time local setup):** the backend won't start without `DATABASE_URL` pointing at a reachable Postgres.
+4. **Antivirus scanning (real, local ClamAV — see `docs/qr-upload-requirements.md`, "File scanning status"):** one-time setup — install ClamAV (`winget install --id Cisco.ClamAV`), then run `freshclam.exe` once to download virus definitions (~110 MB, needs internet). Every dev session, before testing uploads, start the daemon: `"C:\Program Files\ClamAV\clamd.exe" --config-file="$env:LOCALAPPDATA\ClamAV\clamd.conf"` (a plain foreground process, not a Windows service — matches how the backend itself is just run as a dev process, not installed). If `clamd` isn't running, uploads still work (fail-open, dev-only convenience) but nothing is actually being scanned.
+5. Run both dev servers: `npm run dev:all` (or two terminals: `npm run dev` for the frontend, `npm run dev:server` for the backend).
+6. To actually test QR uploading from a phone against the _local_ backend: the phone must be on the **same Wi-Fi/LAN** as this machine (not a guest network with client isolation). On first run, Windows Firewall may prompt to allow Node.js to accept incoming connections — you'll need to click "Allow" yourself. Once the backend is deployed to Railway, QR works from any network instead — see "Deploying to Railway".
+7. Testing Email locally requires the backend's `/api/email/incoming` endpoint to actually receive mail, which needs the real Cloudflare Email Routing → Worker setup below — there's no local-only way to simulate inbound email.
+
+### Database
+
+Real Postgres, via [Drizzle ORM](https://orm.drizzle.team/) — schema in `server/db/schema.ts`, migrations in `server/db/migrations/` (plain SQL, checked into git). The backend runs any pending migrations automatically on startup (`server/index.ts`), so there's no separate "run migrations" step to remember.
+
+**Local dev, one-time setup** — install [Docker Desktop](https://www.docker.com/products/docker-desktop/), then start a local Postgres container:
+
+```
+docker run --name print-kiosk-postgres -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=print_kiosk -p 5432:5432 -d postgres:16
+```
+
+This only needs to run once — the container keeps its data between `docker start print-kiosk-postgres`/`docker stop print-kiosk-postgres` (or just leave it running). `.env.example`'s `DATABASE_URL` default already points at it.
+
+**Changing the schema:** edit `server/db/schema.ts`, then run `npx drizzle-kit generate` to produce a new migration file — review it, commit it alongside the schema change.
 
 ### Backend environment variables
 
-| Variable                    | Used by  | Default                 | Purpose                                                                                                                                                                      |
-| --------------------------- | -------- | ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `PORT`                      | backend  | `3001`                  | Port the Express server listens on — Railway sets this automatically.                                                                                                        |
-| `CLAMD_HOST` / `CLAMD_PORT` | backend  | `127.0.0.1` / `3310`    | Where to reach the ClamAV daemon — set to `clamav.railway.internal` / `3310` on Railway.                                                                                     |
-| `RAILWAY_PUBLIC_DOMAIN`     | backend  | unset                   | Set automatically by Railway once the `backend` service has a public domain — when present, `GET /api/config` returns it instead of the LAN-IP fallback.                     |
-| `VITE_API_BASE_URL`         | frontend | `http://localhost:3001` | Where the frontend itself (not the phone) reaches the backend.                                                                                                               |
-| `VITE_EMAIL_DOMAIN`         | frontend | `kiosk.example`         | The domain the Email screen builds its `upload-<prefix>@<domain>` address from — must match a domain with Cloudflare Email Routing enabled and the Worker below bound to it. |
+| Variable                    | Used by  | Default                                                   | Purpose                                                                                                                                                                      |
+| --------------------------- | -------- | --------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `DATABASE_URL`              | backend  | `postgres://postgres:postgres@localhost:5432/print_kiosk` | Postgres connection string — Railway injects this automatically once its Postgres service's variable is referenced into `backend` (see "Deploying to Railway").              |
+| `PORT`                      | backend  | `3001`                                                    | Port the Express server listens on — Railway sets this automatically.                                                                                                        |
+| `CLAMD_HOST` / `CLAMD_PORT` | backend  | `127.0.0.1` / `3310`                                      | Where to reach the ClamAV daemon — set to `clamav.railway.internal` / `3310` on Railway.                                                                                     |
+| `RAILWAY_PUBLIC_DOMAIN`     | backend  | unset                                                     | Set automatically by Railway once the `backend` service has a public domain — when present, `GET /api/config` returns it instead of the LAN-IP fallback.                     |
+| `VITE_API_BASE_URL`         | frontend | `http://localhost:3001`                                   | Where the frontend itself (not the phone) reaches the backend.                                                                                                               |
+| `VITE_EMAIL_DOMAIN`         | frontend | `kiosk.example`                                           | The domain the Email screen builds its `upload-<prefix>@<domain>` address from — must match a domain with Cloudflare Email Routing enabled and the Worker below bound to it. |
 
 ## Deploying to Railway
 
-Two Railway services, in one project:
+Three Railway services, in one project:
 
-1. **`clamav`** — add a service from the Docker image `clamav/clamav` (Docker Hub, no build needed). Attach a persistent volume at `/var/lib/clamav` so the virus database survives restarts instead of re-downloading (~100–200 MB) every time. Not exposed publicly — reachable only from other services in the same project via Railway's automatic private networking, at `clamav.railway.internal:3310`. The service must be named exactly `clamav` for that hostname to resolve.
-2. **`backend`** — connect this GitHub repo. Nixpacks auto-detects Node; set the Start Command explicitly to `npm start` (not the default) so it runs the production entrypoint, not `dev:server`'s watch mode. Set `CLAMD_HOST=clamav.railway.internal` and `CLAMD_PORT=3310`. Generate a public domain for it (Settings → Networking) — this is what `RAILWAY_PUBLIC_DOMAIN` picks up automatically and what QR's `GET /api/config` and the Cloudflare Worker's `BACKEND_URL` both point at. A persistent volume for `server/uploads/` is optional (avoids losing in-flight uploads on redeploy, but nothing here is meant to persist long-term anyway).
+1. **Postgres** — add Railway's own managed Postgres ("New" → "Database" → "Add PostgreSQL"). Railway generates a `DATABASE_URL` on this service automatically — it needs to be explicitly referenced into `backend`'s variables (see step 3 below), it isn't shared project-wide by itself.
+2. **`clamav`** — add a service from the Docker image `clamav/clamav` (Docker Hub, no build needed). Attach a persistent volume at `/var/lib/clamav` so the virus database survives restarts instead of re-downloading (~100–200 MB) every time. Not exposed publicly — reachable only from other services in the same project via Railway's automatic private networking, at `clamav.railway.internal:3310`. The service must be named exactly `clamav` for that hostname to resolve. **Needs at least ~2–3 GB of memory** to load its virus signature database — the default 1 GB plan limit isn't enough and causes `clamd` to silently fail to start; raise the service's Memory limit under Settings → Scale if you hit this (upgrading the Railway plan first, if needed).
+3. **`backend`** — connect this GitHub repo. Nixpacks auto-detects Node; set the Start Command explicitly to `npm start` (not the default) so it runs the production entrypoint, not `dev:server`'s watch mode. Reference the Postgres service's `DATABASE_URL` into this service's variables (Railway's variable-reference UI, e.g. `${{Postgres.DATABASE_URL}}`) — migrations run automatically on boot, nothing else to do. Set `CLAMD_HOST=clamav.railway.internal` and `CLAMD_PORT=3310`. Generate a public domain for it (Settings → Networking) — this is what `RAILWAY_PUBLIC_DOMAIN` picks up automatically and what QR's `GET /api/config` and the Cloudflare Worker's `BACKEND_URL` both point at. A persistent volume for `server/uploads/` is recommended (without one, uploaded files disappear on every redeploy — the database records survive, but the file bytes are on this service's local disk).
 
 Then wire up real inbound email (Cloudflare dashboard):
 
