@@ -107,7 +107,6 @@ Build a working clickable prototype of the kiosk client application within 7 day
 ## Open questions
 
 - What is the file retention/deletion policy after printing?
-- Are personal accounts authenticated (login/password), or tied to another identifier (phone, QR)?
 - What is the required behavior when the kiosk loses network connectivity?
 - What is the scope of the administrative interface (monitoring, remote configuration, reporting)?
 - What are the refund/recovery steps when payment succeeds but printing fails (or vice versa)?

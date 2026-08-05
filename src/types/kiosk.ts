@@ -22,8 +22,8 @@ export interface KioskSession {
   id: string;
   /** Nullable — set when login occurs, at any point during the session
    * (docs/domain/kiosk-session.md, "Minimum session attributes"; Trigger B).
-   * Holds the entered username for this prototype slice — no real
-   * account/profile data model exists yet (docs/personal-account-requirements.md). */
+   * The real account id (server/db/schema.ts's `accounts.id`), returned by
+   * POST /api/accounts/login (docs/personal-account-requirements.md). */
   accountId: string | null;
 }
 

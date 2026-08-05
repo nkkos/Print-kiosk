@@ -44,7 +44,7 @@ interface WelcomeScreenProps {
   isConnectionLost: boolean;
   onSimulateConnectionLost: () => void;
   onSimulateConnectionRestored: () => void;
-  onLogin: (username: string) => void;
+  onLogin: (username: string, password: string) => Promise<void>;
   accountId: string | null;
   /** Navigates to the Personal Account screen (docs/personal-account-requirements.md)
    * — used by the footer's btn-account. */

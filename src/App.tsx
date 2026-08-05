@@ -14,6 +14,7 @@ import { EndingSessionScreen } from './features/ending-session/EndingSessionScre
 import { computeItemPrice } from './utils/pricing';
 import { getUploadConfig, listQrFiles } from './services/qrUploadApi';
 import { listEmailMessages } from './services/emailApi';
+import { login } from './services/accountApi';
 import { LanguageProvider } from './i18n';
 import type { Language } from './i18n';
 import type { KioskSession, PrintOrder, ReceivedFile, ReceivedEmail } from './types/kiosk';
@@ -335,22 +336,28 @@ function App() {
     goToUploadMethodSelection(false);
   }
 
-  function handleLogin(username: string) {
+  async function handleLogin(username: string, password: string) {
+    // Real backend authentication (server/routes.ts, POST /api/accounts/login)
+    // — throws on failure, which LoginPanel catches and displays.
+    const account = await login(username, password);
+
     // Trigger B (docs/domain/kiosk-session.md): successful login creates a
     // Kiosk Session if none exists yet, or associates the current one with
     // the account if one is already active — it never creates a second
     // session (docs/personal-account-requirements.md, "Kiosk-side login").
     setSession((current) => {
       if (current) {
-        return { ...current, accountId: username };
+        return { ...current, accountId: account.id };
       }
-      const newSession: KioskSession = { id: crypto.randomUUID(), accountId: username };
+      const newSession: KioskSession = { id: crypto.randomUUID(), accountId: account.id };
       localStorage.setItem(SESSION_ID_STORAGE_KEY, newSession.id);
       return newSession;
     });
 
     // Detection and prompt (docs/personal-account-requirements.md, "Paid
     // orders awaiting print") — checked on every login, from any screen.
+    // Still mock data — real "My orders" needs the future portal + Phase 3
+    // payments (see docs/personal-account-requirements.md).
     if (MOCK_PAID_ORDERS.length > 0) {
       setHasPendingPaidOrders(true);
     }

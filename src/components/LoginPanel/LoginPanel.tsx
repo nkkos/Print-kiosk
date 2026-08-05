@@ -9,17 +9,13 @@ import styles from './LoginPanel.module.css';
 // session on any device. QR quick-login (reusing docs/qr-upload-requirements.md's
 // mechanism) is a separate, not-yet-built addition on top of this.
 //
-// No real account backend/database exists yet: a single hardcoded mock
-// credential stands in for it, so login failure and "forgot password" are
-// actually testable (rather than every non-empty pair silently succeeding).
-// Never a real credential — purely a prototype testing aid.
-const MOCK_USERNAME = 'qwerty';
-const MOCK_PASSWORD = '123456789';
+// Real backend authentication (server/routes.ts, POST /api/accounts/login) —
+// onLogin does the network call and throws on failure.
 
 type Mode = 'login' | 'forgot-password' | 'reset-sent';
 
 interface LoginPanelProps {
-  onLogin: (username: string) => void;
+  onLogin: (username: string, password: string) => Promise<void>;
 }
 
 export function LoginPanel({ onLogin }: LoginPanelProps) {
@@ -29,12 +25,16 @@ export function LoginPanel({ onLogin }: LoginPanelProps) {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [resetUsername, setResetUsername] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  function handleSubmit() {
-    if (username === MOCK_USERNAME && password === MOCK_PASSWORD) {
-      onLogin(username);
-    } else {
+  async function handleSubmit() {
+    setIsSubmitting(true);
+    try {
+      await onLogin(username, password);
+    } catch {
       setError(t.login.incorrectCredentials);
+    } finally {
+      setIsSubmitting(false);
     }
   }
 
@@ -109,7 +109,7 @@ export function LoginPanel({ onLogin }: LoginPanelProps) {
         id="login-submit"
         label={t.login.logIn}
         onClick={handleSubmit}
-        disabled={username.trim() === '' || password.trim() === ''}
+        disabled={username.trim() === '' || password.trim() === '' || isSubmitting}
       />
       <Button
         id="login-forgot-password"

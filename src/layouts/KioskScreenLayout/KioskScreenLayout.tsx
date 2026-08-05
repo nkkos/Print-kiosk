@@ -77,7 +77,7 @@ interface KioskScreenLayoutProps {
   /** Logs the Kiosk Session into an account (docs/personal-account-requirements.md,
    * "Kiosk-side login") — offered from the footer's btn-account, available
    * on every screen via this shared shell. */
-  onLogin: (username: string) => void;
+  onLogin: (username: string, password: string) => Promise<void>;
   /** Current account, if logged in — null when anonymous. Determines
    * whether btn-account opens the login form or navigates straight to the
    * Personal Account screen, and drives the footer's logged-in marker. */
@@ -211,9 +211,12 @@ export function KioskScreenLayout({
     onEndSession();
   }
 
-  function handleLoginSuccess(username: string) {
+  // Only closes the popup and navigates on success — if onLogin rejects, the
+  // error propagates back up to LoginPanel's own catch (it stays open and
+  // shows the error, same as before).
+  async function handleLoginSuccess(username: string, password: string) {
+    await onLogin(username, password);
     setIsLoginOpen(false);
-    onLogin(username);
     onGoToPersonalAccount();
   }
 

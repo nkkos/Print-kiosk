@@ -1,6 +1,7 @@
 import express, { Router } from 'express';
 import type { Request, Response, NextFunction } from 'express';
 import multer from 'multer';
+import bcrypt from 'bcryptjs';
 import { simpleParser } from 'mailparser';
 import { networkInterfaces } from 'node:os';
 import { mkdirSync } from 'node:fs';
@@ -9,6 +10,7 @@ import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { addFile, listFiles, uploadsDir } from './uploadStore.js';
 import { addEmail, listEmails } from './emailStore.js';
+import { createAccount, findAccountByUsername, UsernameTakenError } from './accountStore.js';
 import {
   ACCEPTED_EXTENSIONS,
   MAX_FILE_SIZE_BYTES,
@@ -225,4 +227,52 @@ router.post(
 
 router.get('/api/email-sessions/:prefix/messages', async (req, res) => {
   res.json(await listEmails(paramString(req.params.prefix)));
+});
+
+// Real accounts (docs/personal-account-requirements.md, "Kiosk-side login" —
+// baseline username/password). No sign-up screen exists on the kiosk yet
+// (account creation is a portal concern) — this exists for test accounts
+// (curl) and for whenever a portal/sign-up UI needs it.
+router.post('/api/accounts/register', async (req, res) => {
+  const { username, password } = (req.body ?? {}) as { username?: unknown; password?: unknown };
+  if (typeof username !== 'string' || typeof password !== 'string' || !username) {
+    res.status(400).json({ error: 'Username and password are required' });
+    return;
+  }
+  if (password.length < 8) {
+    res.status(400).json({ error: 'Password must be at least 8 characters' });
+    return;
+  }
+  const passwordHash = await bcrypt.hash(password, 10);
+  try {
+    const account = await createAccount(username, passwordHash);
+    res.status(201).json(account);
+  } catch (err) {
+    if (err instanceof UsernameTakenError) {
+      res.status(409).json({ error: 'Username is already taken' });
+      return;
+    }
+    throw err;
+  }
+});
+
+router.post('/api/accounts/login', async (req, res) => {
+  const { username, password } = (req.body ?? {}) as { username?: unknown; password?: unknown };
+  if (typeof username !== 'string' || typeof password !== 'string') {
+    res.status(400).json({ error: 'Username and password are required' });
+    return;
+  }
+  const account = await findAccountByUsername(username);
+  // Same generic message either way — avoids confirming whether a username exists.
+  const genericError = { error: 'Incorrect username or password' };
+  if (!account) {
+    res.status(401).json(genericError);
+    return;
+  }
+  const passwordMatches = await bcrypt.compare(password, account.passwordHash);
+  if (!passwordMatches) {
+    res.status(401).json(genericError);
+    return;
+  }
+  res.json({ id: account.id, username: account.username });
 });
