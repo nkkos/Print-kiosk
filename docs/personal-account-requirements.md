@@ -6,7 +6,7 @@ Internal project document. Consolidates the requirements confirmed with the prod
 
 Personal Account spans two genuinely different applications, sharing the same backend account/data:
 
-- **The web portal** — a separate product, accessed from the user's own device (phone, computer) via a normal browser, outside the kiosk application. Lets the user manage their account in full: browse/organize files (including creating and managing folders), view order history, invoices, promo codes, account information, and payment methods. **This portal is out of scope for the kiosk codebase** — it is a distinct application against the same backend.
+- **The web portal** (`portal/`) — a separate, deliberately minimal product so far, accessed from the user's own device (phone, computer) via a normal browser, outside the kiosk application — see "Account lifecycle (portal)" below for what's actually implemented. Its eventual full scope (browse/organize files including folders, order history, invoices, promo codes, payment methods) is still out of scope and not yet built — only registration/email verification/password reset/change-password exist today, and the portal is expected to be redesigned once that fuller scope is decided.
 - **The kiosk's Personal Account screen** — a deliberately reduced view, part of this codebase, with two sections (revised from an earlier "My files only" decision, once it became clear paid-awaiting-print orders need somewhere to live):
   - **My files** — file selection for the purpose of picking something to print. See "File browsing on the kiosk" and "Batch configure" below.
   - **My orders** — reduced to only orders in a "paid, awaiting print" status (see "Paid orders awaiting print" below); not the portal's full order history.
@@ -14,7 +14,7 @@ Personal Account spans two genuinely different applications, sharing the same ba
 
 ## Kiosk-side login (`btn-account`)
 
-**Implemented, real backend:** `LoginPanel` authenticates against `POST /api/accounts/register`/`login` (`server/routes.ts`, `server/accountStore.ts`), a real `accounts` table (`server/db/schema.ts`) with bcrypt-hashed passwords — no more hardcoded mock credential. **My files and My orders below are still mocked** — there's no real "save a file to my account" or "pay in advance" flow yet (that needs the web portal, out of scope here, plus real payments); only the login mechanism itself is real so far.
+**Implemented, real backend:** `LoginPanel` authenticates against `POST /api/accounts/login` (`server/routes.ts`, `server/accountStore.ts`), a real `accounts` table (`server/db/schema.ts`) with bcrypt-hashed passwords — no more hardcoded mock credential. Its "forgot password" mode is real too now (`POST /api/accounts/request-password-reset`), sending an actual email. **My files and My orders below are still mocked** — there's no real "save a file to my account" or "pay in advance" flow yet (that needs the portal's fuller scope, plus real payments); only account/auth itself is real so far. **Registration, email verification, password reset completion, and change-password all live on the portal** (`portal/`), not the kiosk — see "Account lifecycle (portal)" below.
 
 - **Baseline: username/password**, entered via the kiosk's on-screen keyboard (a physical keyboard is also expected to be installed at the kiosk). This must exist regardless of any other login method, since it's the only method that works for a first-time user with no prior session on any device.
 - **QR quick-login** is a confirmed-worthwhile addition on top of the baseline, reusing the same mechanism as QR file upload (`docs/qr-upload-requirements.md`): the kiosk shows a QR code encoding a login token; the user's phone (already holding an authenticated session with the web portal) confirms the login; the kiosk detects the confirmation via the same polling pattern used for QR uploads. This only skips password entry for a user whose phone already has a persisted portal session — a user logging in from their phone for the first time is still redirected to a normal login form there, just off the shared kiosk keyboard rather than on it.
@@ -47,9 +47,21 @@ A confirmed scenario distinct from every other upload method: the user configure
 - **Payment Status with a mixed Cart selection (confirmed):** when "Proceed to payment" is pressed on a checked selection that includes both $0 and priced items, only the priced items require an actual payment step — but the $0 items are still shown in the Payment Status summary for clarity (so the user sees the full batch that's about to print, not just what they're paying for). If every checked item is $0, Payment Status and payment verification are skipped entirely. Either way, once payment succeeds (or there was nothing to pay), the **entire** checked selection — priced and free items together — proceeds to Print Status as one batch, since they print together.
 - **Mixing sources freely:** a single Cart may contain both paid-awaiting-print orders and newly configured files from any upload method (e.g., the user uploads new documents via QR, then also visits Personal Account to add a pre-paid order) — there is no exclusivity between these paths.
 
+## Account lifecycle (portal)
+
+**Implemented, real backend.** Five minimal pages in `portal/`, deployed separately from the kiosk (Cloudflare Pages — see `README.md`, "Portal") but sharing the same backend and `accounts` table:
+
+- **`register.html`** — username, email, password → `POST /api/accounts/register`. Sends a verification email (`server/emailSender.ts`, via Resend) but does **not** block login on verification — an unverified account can still log in, since a frustrated user stuck at a public kiosk terminal over an unread email would be worse than the alternative.
+- **`verify-email.html`** — reads `?token=` from the link in that email, calls `POST /api/accounts/verify-email`.
+- **`forgot-password.html`** — same request the kiosk's own "forgot password" mode uses (`POST /api/accounts/request-password-reset`); either surface can trigger the email.
+- **`reset-password.html`** — reads `?token=` from the reset email, sets a new password (`POST /api/accounts/reset-password`).
+- **`account.html`** — login, then change password (`POST /api/accounts/change-password`). The only place a session token exists at all — issued by login, kept in memory only (never persisted), used solely to authenticate this one request. The kiosk itself never needs or receives this token.
+
+Deliberately plain/unstyled — not reusing the kiosk's component library or i18n system, since the portal is expected to be redesigned once its fuller scope (file browsing/folders, order history, invoices, promo codes, payment methods) is actually decided. Those remain unbuilt.
+
 ## Scope boundaries
 
-Out of scope for this document: the web portal itself (a separate application), the full pricing/discount engine (promo codes, promotions, volume discounts — see `docs/domain/kiosk-session.md`, Open items, for early directional decisions only), corporate/B2B account features (shared team accounts, invoicing terms — explicitly deferred, not part of this method's current scope), and the six-method selection screen itself (see `docs/upload-method-requirements.md`).
+Out of scope for this document: the portal's fuller scope beyond account lifecycle (file browsing/folders, order history, invoices, promo codes, payment methods — see "Account lifecycle (portal)" above for what is built), the full pricing/discount engine (promo codes, promotions, volume discounts — see `docs/domain/kiosk-session.md`, Open items, for early directional decisions only), corporate/B2B account features (shared team accounts, invoicing terms — explicitly deferred, not part of this method's current scope), and the six-method selection screen itself (see `docs/upload-method-requirements.md`).
 
 ## Open items
 

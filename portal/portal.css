@@ -1,0 +1,63 @@
+/* Deliberately plain/minimal — the portal is expected to be redesigned once
+   its business shape is decided (docs/personal-account-requirements.md).
+   Only reuses design-token spacing/radius for basic consistency with the
+   kiosk, not its component library. */
+@import '../src/styles/tokens.css';
+
+body {
+  font-family:
+    system-ui,
+    -apple-system,
+    sans-serif;
+  max-width: 24rem;
+  margin: var(--space-xl) auto;
+  padding: 0 var(--space-m);
+  color: #1a1a1a;
+}
+
+h1 {
+  font-size: 1.25rem;
+}
+
+label {
+  display: block;
+  margin-bottom: var(--space-m);
+}
+
+input {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  padding: var(--space-s);
+  margin-top: var(--space-xs);
+  font-size: 1rem;
+  border: 1px solid #ccc;
+  border-radius: var(--radius-small);
+}
+
+button {
+  padding: var(--space-s) var(--space-m);
+  font-size: 1rem;
+  border: none;
+  border-radius: var(--radius-small);
+  background: #1a1a1a;
+  color: #fff;
+  cursor: pointer;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.error {
+  color: #b3261e;
+}
+
+.success {
+  color: #146c2e;
+}
+
+a {
+  color: #1a1a1a;
+}

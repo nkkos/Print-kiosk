@@ -2,6 +2,7 @@ import express, { Router } from 'express';
 import type { Request, Response, NextFunction } from 'express';
 import multer from 'multer';
 import bcrypt from 'bcryptjs';
+import rateLimit from 'express-rate-limit';
 import { simpleParser } from 'mailparser';
 import { networkInterfaces } from 'node:os';
 import { mkdirSync } from 'node:fs';
@@ -10,7 +11,18 @@ import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { addFile, listFiles, uploadsDir } from './uploadStore.js';
 import { addEmail, listEmails } from './emailStore.js';
-import { createAccount, findAccountByUsername, UsernameTakenError } from './accountStore.js';
+import {
+  createAccount,
+  findAccountByUsername,
+  findAccountBySessionToken,
+  verifyAccountEmail,
+  updateAccountPassword,
+  createAccountToken,
+  consumeAccountToken,
+  UsernameTakenError,
+  EmailTakenError,
+} from './accountStore.js';
+import { sendVerificationEmail, sendPasswordResetEmail } from './emailSender.js';
 import {
   ACCEPTED_EXTENSIONS,
   MAX_FILE_SIZE_BYTES,
@@ -230,13 +242,42 @@ router.get('/api/email-sessions/:prefix/messages', async (req, res) => {
 });
 
 // Real accounts (docs/personal-account-requirements.md, "Kiosk-side login" —
-// baseline username/password). No sign-up screen exists on the kiosk yet
-// (account creation is a portal concern) — this exists for test accounts
-// (curl) and for whenever a portal/sign-up UI needs it.
-router.post('/api/accounts/register', async (req, res) => {
-  const { username, password } = (req.body ?? {}) as { username?: unknown; password?: unknown };
-  if (typeof username !== 'string' || typeof password !== 'string' || !username) {
-    res.status(400).json({ error: 'Username and password are required' });
+// baseline username/password; registration/verification/reset itself lives
+// on the portal, portal/). Login/register are rate-limited (10 requests /
+// 15 min per IP) against brute-forcing.
+const accountRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const VERIFICATION_TOKEN_EXPIRY_MS = 24 * 60 * 60 * 1000;
+const PASSWORD_RESET_TOKEN_EXPIRY_MS = 60 * 60 * 1000;
+const SESSION_TOKEN_EXPIRY_MS = 7 * 24 * 60 * 60 * 1000;
+
+// Resolves the account behind an `Authorization: Bearer <sessionToken>`
+// header — used only by change-password so far.
+async function requireSession(req: Request) {
+  const authHeader = req.header('Authorization');
+  if (!authHeader?.startsWith('Bearer ')) return null;
+  return findAccountBySessionToken(authHeader.slice('Bearer '.length));
+}
+
+router.post('/api/accounts/register', accountRateLimiter, async (req, res) => {
+  const { username, email, password } = (req.body ?? {}) as {
+    username?: unknown;
+    email?: unknown;
+    password?: unknown;
+  };
+  if (
+    typeof username !== 'string' ||
+    typeof email !== 'string' ||
+    typeof password !== 'string' ||
+    !username ||
+    !email
+  ) {
+    res.status(400).json({ error: 'Username, email, and password are required' });
     return;
   }
   if (password.length < 8) {
@@ -244,19 +285,30 @@ router.post('/api/accounts/register', async (req, res) => {
     return;
   }
   const passwordHash = await bcrypt.hash(password, 10);
+  let account;
   try {
-    const account = await createAccount(username, passwordHash);
-    res.status(201).json(account);
+    account = await createAccount(username, email, passwordHash);
   } catch (err) {
     if (err instanceof UsernameTakenError) {
       res.status(409).json({ error: 'Username is already taken' });
       return;
     }
+    if (err instanceof EmailTakenError) {
+      res.status(409).json({ error: 'An account with this email already exists' });
+      return;
+    }
     throw err;
   }
+  const verificationToken = await createAccountToken(
+    account.id,
+    'email-verification',
+    VERIFICATION_TOKEN_EXPIRY_MS,
+  );
+  await sendVerificationEmail(email, verificationToken);
+  res.status(201).json(account);
 });
 
-router.post('/api/accounts/login', async (req, res) => {
+router.post('/api/accounts/login', accountRateLimiter, async (req, res) => {
   const { username, password } = (req.body ?? {}) as { username?: unknown; password?: unknown };
   if (typeof username !== 'string' || typeof password !== 'string') {
     res.status(400).json({ error: 'Username and password are required' });
@@ -274,5 +326,88 @@ router.post('/api/accounts/login', async (req, res) => {
     res.status(401).json(genericError);
     return;
   }
-  res.json({ id: account.id, username: account.username });
+  // Unwired on the kiosk (it never sends this token) — the portal's account
+  // page is the only current consumer, for change-password.
+  const sessionToken = await createAccountToken(account.id, 'session', SESSION_TOKEN_EXPIRY_MS);
+  res.json({ id: account.id, username: account.username, sessionToken });
+});
+
+router.post('/api/accounts/verify-email', async (req, res) => {
+  const { token } = (req.body ?? {}) as { token?: unknown };
+  if (typeof token !== 'string') {
+    res.status(400).json({ error: 'Token is required' });
+    return;
+  }
+  const accountId = await consumeAccountToken(token, 'email-verification');
+  if (!accountId) {
+    res.status(400).json({ error: 'Invalid or expired verification link' });
+    return;
+  }
+  await verifyAccountEmail(accountId);
+  res.json({ ok: true });
+});
+
+router.post('/api/accounts/request-password-reset', accountRateLimiter, async (req, res) => {
+  const { username } = (req.body ?? {}) as { username?: unknown };
+  if (typeof username !== 'string' || !username) {
+    res.status(400).json({ error: 'Username is required' });
+    return;
+  }
+  const account = await findAccountByUsername(username);
+  // Same response either way — avoids confirming whether a username exists.
+  if (account) {
+    const resetToken = await createAccountToken(
+      account.id,
+      'password-reset',
+      PASSWORD_RESET_TOKEN_EXPIRY_MS,
+    );
+    await sendPasswordResetEmail(account.email, resetToken);
+  }
+  res.json({ ok: true });
+});
+
+router.post('/api/accounts/reset-password', async (req, res) => {
+  const { token, newPassword } = (req.body ?? {}) as { token?: unknown; newPassword?: unknown };
+  if (typeof token !== 'string' || typeof newPassword !== 'string') {
+    res.status(400).json({ error: 'Token and new password are required' });
+    return;
+  }
+  if (newPassword.length < 8) {
+    res.status(400).json({ error: 'Password must be at least 8 characters' });
+    return;
+  }
+  const accountId = await consumeAccountToken(token, 'password-reset');
+  if (!accountId) {
+    res.status(400).json({ error: 'Invalid or expired reset link' });
+    return;
+  }
+  await updateAccountPassword(accountId, await bcrypt.hash(newPassword, 10));
+  res.json({ ok: true });
+});
+
+router.post('/api/accounts/change-password', async (req, res) => {
+  const account = await requireSession(req);
+  if (!account) {
+    res.status(401).json({ error: 'Not authenticated' });
+    return;
+  }
+  const { currentPassword, newPassword } = (req.body ?? {}) as {
+    currentPassword?: unknown;
+    newPassword?: unknown;
+  };
+  if (typeof currentPassword !== 'string' || typeof newPassword !== 'string') {
+    res.status(400).json({ error: 'Current and new password are required' });
+    return;
+  }
+  if (newPassword.length < 8) {
+    res.status(400).json({ error: 'Password must be at least 8 characters' });
+    return;
+  }
+  const currentMatches = await bcrypt.compare(currentPassword, account.passwordHash);
+  if (!currentMatches) {
+    res.status(401).json({ error: 'Current password is incorrect' });
+    return;
+  }
+  await updateAccountPassword(account.id, await bcrypt.hash(newPassword, 10));
+  res.json({ ok: true });
 });

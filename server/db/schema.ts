@@ -1,4 +1,4 @@
-import { pgTable, uuid, text, integer, timestamp, index } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, text, integer, timestamp, index, boolean } from 'drizzle-orm/pg-core';
 
 // Real database schema (docs/domain/kiosk-session.md, docs/personal-account-requirements.md,
 // docs/cart-requirements.md) — see README.md, "Database." `accounts`/`kioskSessions`/
@@ -10,9 +10,34 @@ import { pgTable, uuid, text, integer, timestamp, index } from 'drizzle-orm/pg-c
 export const accounts = pgTable('accounts', {
   id: uuid('id').primaryKey().defaultRandom(),
   username: text('username').notNull().unique(),
+  email: text('email').notNull().unique(),
+  emailVerified: boolean('email_verified').notNull().default(false),
   passwordHash: text('password_hash').notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
+
+// Single table for every kind of account-related token — email verification,
+// password reset, and login session tokens all share the same shape. Only
+// `tokenHash` (the raw token's SHA-256) is ever stored, same principle as
+// password hashing: a leaked DB doesn't leak usable tokens. Verification/
+// reset tokens are single-use (`usedAt` set on consumption); session tokens
+// are multi-use until `expiresAt` (`usedAt` stays null for those).
+export const accountTokens = pgTable(
+  'account_tokens',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    accountId: uuid('account_id')
+      .notNull()
+      .references(() => accounts.id),
+    // 'email-verification' | 'password-reset' | 'session'
+    type: text('type').notNull(),
+    tokenHash: text('token_hash').notNull().unique(),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+    usedAt: timestamp('used_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index('account_tokens_account_id_idx').on(table.accountId)],
+);
 
 export const kioskSessions = pgTable(
   'kiosk_sessions',

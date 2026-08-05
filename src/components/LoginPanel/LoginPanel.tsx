@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Button } from '../Button/Button';
 import { useTranslation } from '../../i18n';
+import { requestPasswordReset } from '../../services/accountApi';
 import styles from './LoginPanel.module.css';
 
 // See docs/personal-account-requirements.md ("Kiosk-side login"). Baseline
@@ -26,6 +27,7 @@ export function LoginPanel({ onLogin }: LoginPanelProps) {
   const [error, setError] = useState<string | null>(null);
   const [resetUsername, setResetUsername] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSendingReset, setIsSendingReset] = useState(false);
 
   async function handleSubmit() {
     setIsSubmitting(true);
@@ -35,6 +37,21 @@ export function LoginPanel({ onLogin }: LoginPanelProps) {
       setError(t.login.incorrectCredentials);
     } finally {
       setIsSubmitting(false);
+    }
+  }
+
+  // Backend response is intentionally the same either way (no confirmation
+  // of whether the username exists) — proceed to the same "check your
+  // email" screen regardless, including on a network error.
+  async function handleSendReset() {
+    setIsSendingReset(true);
+    try {
+      await requestPasswordReset(resetUsername);
+    } catch (err) {
+      console.error('[LoginPanel] Failed to request password reset:', err);
+    } finally {
+      setIsSendingReset(false);
+      setMode('reset-sent');
     }
   }
 
@@ -67,8 +84,8 @@ export function LoginPanel({ onLogin }: LoginPanelProps) {
         <Button
           id="login-send-reset"
           label={t.login.sendResetInstructions}
-          onClick={() => setMode('reset-sent')}
-          disabled={resetUsername.trim() === ''}
+          onClick={handleSendReset}
+          disabled={resetUsername.trim() === '' || isSendingReset}
         />
         <Button
           id="login-cancel-reset"

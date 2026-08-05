@@ -36,8 +36,30 @@ This only needs to run once — the container keeps its data between `docker sta
 | `PORT`                      | backend  | `3001`                                                    | Port the Express server listens on — Railway sets this automatically.                                                                                                        |
 | `CLAMD_HOST` / `CLAMD_PORT` | backend  | `127.0.0.1` / `3310`                                      | Where to reach the ClamAV daemon — set to `clamav.railway.internal` / `3310` on Railway.                                                                                     |
 | `RAILWAY_PUBLIC_DOMAIN`     | backend  | unset                                                     | Set automatically by Railway once the `backend` service has a public domain — when present, `GET /api/config` returns it instead of the LAN-IP fallback.                     |
+| `RESEND_API_KEY`            | backend  | unset                                                     | Sends verification/password-reset emails via [Resend](https://resend.com). Unset locally logs the email link to the console instead of sending — no real account needed.     |
+| `RESEND_FROM_EMAIL`         | backend  | `noreply@kiosk.example`                                   | The sending address — needs Resend's domain verification (DNS records in Cloudflare) first, see "Portal" below.                                                              |
+| `PORTAL_URL`                | backend  | `http://localhost:5173`                                   | Used to build the links inside those emails — set to the deployed Cloudflare Pages URL in production.                                                                        |
 | `VITE_API_BASE_URL`         | frontend | `http://localhost:3001`                                   | Where the frontend itself (not the phone) reaches the backend.                                                                                                               |
 | `VITE_EMAIL_DOMAIN`         | frontend | `kiosk.example`                                           | The domain the Email screen builds its `upload-<prefix>@<domain>` address from — must match a domain with Cloudflare Email Routing enabled and the Worker below bound to it. |
+
+## Portal
+
+A minimal, separate set of account pages — registration, email verification, password reset, change password (`docs/personal-account-requirements.md`, "Account lifecycle (portal)") — in `portal/`, deployed independently from the kiosk to Cloudflare Pages. Deliberately plain (own `portal/portal.css`, not the kiosk's component library) since it's expected to be redesigned once the portal's fuller scope is decided.
+
+**Local dev:** already served by `npm run dev` alongside the kiosk — visit `http://localhost:5173/portal/register.html` (and `verify-email.html`, `forgot-password.html`, `reset-password.html`, `account.html`). With `RESEND_API_KEY` unset, verification/reset links are logged to the backend's console instead of emailed — copy them from there to test the flow end-to-end locally.
+
+**Sending real email (Resend):**
+
+1. Create a [Resend](https://resend.com) account, add your domain, and follow its DNS-verification instructions — add the records it gives you to your domain in the Cloudflare dashboard (same place as the Email Routing setup).
+2. Once verified, create an API key and set `RESEND_API_KEY` (and `RESEND_FROM_EMAIL`, e.g. `noreply@yourdomain.example`) on the Railway `backend` service.
+
+**Deploying the portal (Cloudflare Pages):**
+
+1. Cloudflare dashboard → Workers & Pages → Create → Pages → connect this GitHub repo.
+2. Build command: `npm run build`. Build output directory: `dist`.
+3. Once deployed, note the Pages URL (e.g. `https://print-kiosk.pages.dev`) and set it as `PORTAL_URL` on the Railway `backend` service, so email links point at the right place.
+
+Known quirk: since it's one Vite build (`vite.config.ts`'s multi-page `rollupOptions.input`), the kiosk's own `index.html` bundle also ends up published on the Pages domain alongside the portal pages — harmless (nothing here is auth-gated beyond the account endpoints anyway), just not hidden.
 
 ## Deploying to Railway
 
