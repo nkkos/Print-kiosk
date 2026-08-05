@@ -43,3 +43,14 @@ main().catch((err: unknown) => {
   console.error('[index] Failed to start:', err);
   process.exit(1);
 });
+
+// Without this, Railway's SIGTERM on every redeploy (replacing this
+// container with the new one) exits with a non-zero code by default,
+// which Railway then shows as "Crashed" even though it's a routine
+// deploy, not a real failure.
+for (const signal of ['SIGTERM', 'SIGINT']) {
+  process.on(signal, () => {
+    console.log(`[index] Received ${signal}, shutting down`);
+    process.exit(0);
+  });
+}
