@@ -15,6 +15,13 @@
       "when": 1785936466670,
       "tag": "0001_secret_frog_thor",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1785948309937,
+      "tag": "0002_clumsy_mentallo",
+      "breakpoints": true
     }
   ]
 }

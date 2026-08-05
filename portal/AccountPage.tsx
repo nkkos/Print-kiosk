@@ -8,7 +8,7 @@ import { login, changePassword, type Account } from '../src/services/accountApi'
 // restore" principle the kiosk already follows for its own login.
 export function AccountPage() {
   const [session, setSession] = useState<(Account & { sessionToken: string }) | null>(null);
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loginError, setLoginError] = useState<string | null>(null);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
@@ -24,7 +24,7 @@ export function AccountPage() {
     setIsLoggingIn(true);
     setLoginError(null);
     try {
-      setSession(await login(username, password));
+      setSession(await login(email, password));
     } catch (err) {
       setLoginError(err instanceof Error ? err.message : 'Login failed');
     } finally {
@@ -55,8 +55,8 @@ export function AccountPage() {
         <h1>Log in</h1>
         <form onSubmit={handleLogin}>
           <label>
-            Username
-            <input value={username} onChange={(e) => setUsername(e.target.value)} required />
+            Email
+            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
           </label>
           <label>
             Password
@@ -83,7 +83,7 @@ export function AccountPage() {
   return (
     <>
       <h1>My account</h1>
-      <p>Logged in as {session.username}.</p>
+      <p>Logged in as {session.email}.</p>
       <h2>Change password</h2>
       <form onSubmit={handleChangePassword}>
         <label>

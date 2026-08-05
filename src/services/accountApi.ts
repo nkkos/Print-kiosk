@@ -6,7 +6,7 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3001
 
 export interface Account {
   id: string;
-  username: string;
+  email: string;
 }
 
 async function postJson<T>(path: string, body: unknown, sessionToken?: string): Promise<T> {
@@ -27,26 +27,22 @@ async function postJson<T>(path: string, body: unknown, sessionToken?: string): 
 // The kiosk ignores `sessionToken` — no session/change-password there today,
 // only the portal's account page uses it (docs/personal-account-requirements.md).
 export async function login(
-  username: string,
-  password: string,
-): Promise<Account & { sessionToken: string }> {
-  return postJson('/api/accounts/login', { username, password });
-}
-
-export async function register(
-  username: string,
   email: string,
   password: string,
-): Promise<Account> {
-  return postJson('/api/accounts/register', { username, email, password });
+): Promise<Account & { sessionToken: string }> {
+  return postJson('/api/accounts/login', { email, password });
+}
+
+export async function register(email: string, password: string): Promise<Account> {
+  return postJson('/api/accounts/register', { email, password });
 }
 
 export async function verifyEmail(token: string): Promise<void> {
   await postJson('/api/accounts/verify-email', { token });
 }
 
-export async function requestPasswordReset(username: string): Promise<void> {
-  await postJson('/api/accounts/request-password-reset', { username });
+export async function requestPasswordReset(email: string): Promise<void> {
+  await postJson('/api/accounts/request-password-reset', { email });
 }
 
 export async function resetPassword(token: string, newPassword: string): Promise<void> {

@@ -53,14 +53,14 @@ export const de: Translations = {
   login: {
     checkYourEmail: 'Überprüfen Sie Ihre E-Mails',
     resetInstructionsSent:
-      'Falls ein Konto mit diesem Benutzernamen existiert, wurden Anweisungen zum Zurücksetzen des Passworts gesendet.',
+      'Falls ein Konto mit dieser E-Mail-Adresse existiert, wurden Anweisungen zum Zurücksetzen des Passworts gesendet.',
     backToLogin: 'Zurück zur Anmeldung',
     resetPassword: 'Passwort zurücksetzen',
-    username: 'Benutzername',
+    email: 'E-Mail',
     password: 'Passwort',
     sendResetInstructions: 'Anweisungen zum Zurücksetzen senden',
     logIn: 'Anmelden',
-    incorrectCredentials: 'Falscher Benutzername oder falsches Passwort.',
+    incorrectCredentials: 'Falsche E-Mail-Adresse oder falsches Passwort.',
     forgotPassword: 'Passwort vergessen?',
   },
   welcome: {

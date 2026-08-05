@@ -54,7 +54,7 @@ interface UploadMethodSelectionScreenProps {
   /** Logs the Kiosk Session into an account (docs/personal-account-requirements.md).
    * Used both for KioskScreenLayout's footer login popup and this screen's
    * own upload-method-account card, which opens its own local login popup. */
-  onLogin: (username: string, password: string) => Promise<void>;
+  onLogin: (email: string, password: string) => Promise<void>;
   /** Navigates to the Personal Account screen (docs/personal-account-requirements.md).
    * Called directly if already logged in, or right after a successful login
    * from the upload-method-account card's own popup. */
@@ -124,8 +124,8 @@ export function UploadMethodSelectionScreen({
   // Only closes the popup and navigates on success — if onLogin rejects, the
   // error propagates back up to LoginPanel's own catch (it stays open and
   // shows the error, same as before).
-  async function handleAccountLoginSuccess(username: string, password: string) {
-    await onLogin(username, password);
+  async function handleAccountLoginSuccess(email: string, password: string) {
+    await onLogin(email, password);
     setIsAccountLoginOpen(false);
     onGoToPersonalAccount();
   }

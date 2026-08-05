@@ -13,13 +13,12 @@ import { addFile, listFiles, uploadsDir } from './uploadStore.js';
 import { addEmail, listEmails } from './emailStore.js';
 import {
   createAccount,
-  findAccountByUsername,
+  findAccountByEmail,
   findAccountBySessionToken,
   verifyAccountEmail,
   updateAccountPassword,
   createAccountToken,
   consumeAccountToken,
-  UsernameTakenError,
   EmailTakenError,
 } from './accountStore.js';
 import { sendVerificationEmail, sendPasswordResetEmail } from './emailSender.js';
@@ -242,7 +241,7 @@ router.get('/api/email-sessions/:prefix/messages', async (req, res) => {
 });
 
 // Real accounts (docs/personal-account-requirements.md, "Kiosk-side login" —
-// baseline username/password; registration/verification/reset itself lives
+// baseline email/password; registration/verification/reset itself lives
 // on the portal, portal/). Login/register are rate-limited (10 requests /
 // 15 min per IP) against brute-forcing.
 const accountRateLimiter = rateLimit({
@@ -265,19 +264,12 @@ async function requireSession(req: Request) {
 }
 
 router.post('/api/accounts/register', accountRateLimiter, async (req, res) => {
-  const { username, email, password } = (req.body ?? {}) as {
-    username?: unknown;
+  const { email, password } = (req.body ?? {}) as {
     email?: unknown;
     password?: unknown;
   };
-  if (
-    typeof username !== 'string' ||
-    typeof email !== 'string' ||
-    typeof password !== 'string' ||
-    !username ||
-    !email
-  ) {
-    res.status(400).json({ error: 'Username, email, and password are required' });
+  if (typeof email !== 'string' || typeof password !== 'string' || !email) {
+    res.status(400).json({ error: 'Email and password are required' });
     return;
   }
   if (password.length < 8) {
@@ -287,12 +279,8 @@ router.post('/api/accounts/register', accountRateLimiter, async (req, res) => {
   const passwordHash = await bcrypt.hash(password, 10);
   let account;
   try {
-    account = await createAccount(username, email, passwordHash);
+    account = await createAccount(email, passwordHash);
   } catch (err) {
-    if (err instanceof UsernameTakenError) {
-      res.status(409).json({ error: 'Username is already taken' });
-      return;
-    }
     if (err instanceof EmailTakenError) {
       res.status(409).json({ error: 'An account with this email already exists' });
       return;
@@ -309,14 +297,14 @@ router.post('/api/accounts/register', accountRateLimiter, async (req, res) => {
 });
 
 router.post('/api/accounts/login', accountRateLimiter, async (req, res) => {
-  const { username, password } = (req.body ?? {}) as { username?: unknown; password?: unknown };
-  if (typeof username !== 'string' || typeof password !== 'string') {
-    res.status(400).json({ error: 'Username and password are required' });
+  const { email, password } = (req.body ?? {}) as { email?: unknown; password?: unknown };
+  if (typeof email !== 'string' || typeof password !== 'string') {
+    res.status(400).json({ error: 'Email and password are required' });
     return;
   }
-  const account = await findAccountByUsername(username);
-  // Same generic message either way — avoids confirming whether a username exists.
-  const genericError = { error: 'Incorrect username or password' };
+  const account = await findAccountByEmail(email);
+  // Same generic message either way — avoids confirming whether an email exists.
+  const genericError = { error: 'Incorrect email or password' };
   if (!account) {
     res.status(401).json(genericError);
     return;
@@ -329,7 +317,7 @@ router.post('/api/accounts/login', accountRateLimiter, async (req, res) => {
   // Unwired on the kiosk (it never sends this token) — the portal's account
   // page is the only current consumer, for change-password.
   const sessionToken = await createAccountToken(account.id, 'session', SESSION_TOKEN_EXPIRY_MS);
-  res.json({ id: account.id, username: account.username, sessionToken });
+  res.json({ id: account.id, email: account.email, sessionToken });
 });
 
 router.post('/api/accounts/verify-email', async (req, res) => {
@@ -348,13 +336,13 @@ router.post('/api/accounts/verify-email', async (req, res) => {
 });
 
 router.post('/api/accounts/request-password-reset', accountRateLimiter, async (req, res) => {
-  const { username } = (req.body ?? {}) as { username?: unknown };
-  if (typeof username !== 'string' || !username) {
-    res.status(400).json({ error: 'Username is required' });
+  const { email } = (req.body ?? {}) as { email?: unknown };
+  if (typeof email !== 'string' || !email) {
+    res.status(400).json({ error: 'Email is required' });
     return;
   }
-  const account = await findAccountByUsername(username);
-  // Same response either way — avoids confirming whether a username exists.
+  const account = await findAccountByEmail(email);
+  // Same response either way — avoids confirming whether an email exists.
   if (account) {
     const resetToken = await createAccountToken(
       account.id,

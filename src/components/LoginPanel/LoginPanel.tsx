@@ -5,7 +5,7 @@ import { requestPasswordReset } from '../../services/accountApi';
 import styles from './LoginPanel.module.css';
 
 // See docs/personal-account-requirements.md ("Kiosk-side login"). Baseline
-// username/password login — required regardless of any other login method,
+// email/password login — required regardless of any other login method,
 // since it's the only one that works for a first-time user with no prior
 // session on any device. QR quick-login (reusing docs/qr-upload-requirements.md's
 // mechanism) is a separate, not-yet-built addition on top of this.
@@ -16,23 +16,23 @@ import styles from './LoginPanel.module.css';
 type Mode = 'login' | 'forgot-password' | 'reset-sent';
 
 interface LoginPanelProps {
-  onLogin: (username: string, password: string) => Promise<void>;
+  onLogin: (email: string, password: string) => Promise<void>;
 }
 
 export function LoginPanel({ onLogin }: LoginPanelProps) {
   const t = useTranslation();
   const [mode, setMode] = useState<Mode>('login');
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
-  const [resetUsername, setResetUsername] = useState('');
+  const [resetEmail, setResetEmail] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSendingReset, setIsSendingReset] = useState(false);
 
   async function handleSubmit() {
     setIsSubmitting(true);
     try {
-      await onLogin(username, password);
+      await onLogin(email, password);
     } catch {
       setError(t.login.incorrectCredentials);
     } finally {
@@ -41,12 +41,12 @@ export function LoginPanel({ onLogin }: LoginPanelProps) {
   }
 
   // Backend response is intentionally the same either way (no confirmation
-  // of whether the username exists) — proceed to the same "check your
+  // of whether the email exists) — proceed to the same "check your
   // email" screen regardless, including on a network error.
   async function handleSendReset() {
     setIsSendingReset(true);
     try {
-      await requestPasswordReset(resetUsername);
+      await requestPasswordReset(resetEmail);
     } catch (err) {
       console.error('[LoginPanel] Failed to request password reset:', err);
     } finally {
@@ -74,18 +74,18 @@ export function LoginPanel({ onLogin }: LoginPanelProps) {
       <div className={styles.root}>
         <h2 className={styles.title}>{t.login.resetPassword}</h2>
         <label className={styles.field}>
-          {t.login.username}
+          {t.login.email}
           <input
-            type="text"
-            value={resetUsername}
-            onChange={(event) => setResetUsername(event.target.value)}
+            type="email"
+            value={resetEmail}
+            onChange={(event) => setResetEmail(event.target.value)}
           />
         </label>
         <Button
           id="login-send-reset"
           label={t.login.sendResetInstructions}
           onClick={handleSendReset}
-          disabled={resetUsername.trim() === '' || isSendingReset}
+          disabled={resetEmail.trim() === '' || isSendingReset}
         />
         <Button
           id="login-cancel-reset"
@@ -100,12 +100,12 @@ export function LoginPanel({ onLogin }: LoginPanelProps) {
     <div className={styles.root}>
       <h2 className={styles.title}>{t.login.logIn}</h2>
       <label className={styles.field}>
-        {t.login.username}
+        {t.login.email}
         <input
-          type="text"
-          value={username}
+          type="email"
+          value={email}
           onChange={(event) => {
-            setUsername(event.target.value);
+            setEmail(event.target.value);
             setError(null);
           }}
         />
@@ -126,7 +126,7 @@ export function LoginPanel({ onLogin }: LoginPanelProps) {
         id="login-submit"
         label={t.login.logIn}
         onClick={handleSubmit}
-        disabled={username.trim() === '' || password.trim() === '' || isSubmitting}
+        disabled={email.trim() === '' || password.trim() === '' || isSubmitting}
       />
       <Button
         id="login-forgot-password"

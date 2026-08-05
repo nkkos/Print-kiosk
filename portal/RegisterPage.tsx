@@ -5,7 +5,6 @@ import { register } from '../src/services/accountApi';
 // creation is a portal concern). Deliberately plain, not reusing the kiosk's
 // component library — see portal.css.
 export function RegisterPage() {
-  const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -17,7 +16,7 @@ export function RegisterPage() {
     setIsSubmitting(true);
     setError(null);
     try {
-      await register(username, email, password);
+      await register(email, password);
       setDone(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Registration failed');
@@ -41,10 +40,6 @@ export function RegisterPage() {
     <>
       <h1>Create account</h1>
       <form onSubmit={handleSubmit}>
-        <label>
-          Username
-          <input value={username} onChange={(e) => setUsername(e.target.value)} required />
-        </label>
         <label>
           Email
           <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />

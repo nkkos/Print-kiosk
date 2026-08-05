@@ -22,7 +22,7 @@ interface FinalisingSessionScreenProps {
   isConnectionLost: boolean;
   onSimulateConnectionLost: () => void;
   onSimulateConnectionRestored: () => void;
-  onLogin: (username: string, password: string) => Promise<void>;
+  onLogin: (email: string, password: string) => Promise<void>;
   accountId: string | null;
   /** Navigates to the Personal Account screen (docs/personal-account-requirements.md)
    * — used by the footer's btn-account. */

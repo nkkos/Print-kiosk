@@ -52,14 +52,14 @@ export const uk: Translations = {
   login: {
     checkYourEmail: 'Перевірте пошту',
     resetInstructionsSent:
-      'Якщо обліковий запис із таким іменем користувача існує, на нього надіслано інструкції з відновлення пароля.',
+      'Якщо обліковий запис із такою поштою існує, на неї надіслано інструкції з відновлення пароля.',
     backToLogin: 'Назад до входу',
     resetPassword: 'Відновити пароль',
-    username: "Ім'я користувача",
+    email: 'Email',
     password: 'Пароль',
     sendResetInstructions: 'Надіслати інструкції',
     logIn: 'Увійти',
-    incorrectCredentials: "Неправильне ім'я користувача або пароль.",
+    incorrectCredentials: 'Неправильний email або пароль.',
     forgotPassword: 'Забули пароль?',
   },
   welcome: {

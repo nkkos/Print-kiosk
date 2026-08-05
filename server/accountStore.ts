@@ -8,21 +8,19 @@ import { accounts, accountTokens } from './db/schema.js';
 
 export interface Account {
   id: string;
-  username: string;
+  email: string;
 }
 
 export interface AccountWithHash extends Account {
-  email: string;
   passwordHash: string;
 }
 
 export type AccountTokenType = 'email-verification' | 'password-reset' | 'session';
 
-// Thrown by createAccount() when the username's or email's UNIQUE
-// constraint is violated — mirrors the existing InvalidFileFormatError
-// pattern in server/routes.ts, so the register route can catch a specific
-// class and respond 409 instead of a raw 500.
-export class UsernameTakenError extends Error {}
+// Thrown by createAccount() when the email's UNIQUE constraint is violated —
+// mirrors the existing InvalidFileFormatError pattern in server/routes.ts,
+// so the register route can catch a specific class and respond 409 instead
+// of a raw 500.
 export class EmailTakenError extends Error {}
 
 // node-postgres's raw unique-violation error (code '23505', with a
@@ -42,37 +40,31 @@ function hashToken(rawToken: string): string {
   return createHash('sha256').update(rawToken).digest('hex');
 }
 
-export async function createAccount(
-  username: string,
-  email: string,
-  passwordHash: string,
-): Promise<Account> {
+export async function createAccount(email: string, passwordHash: string): Promise<Account> {
   try {
     const [row] = await db
       .insert(accounts)
-      .values({ username, email, passwordHash })
-      .returning({ id: accounts.id, username: accounts.username });
+      .values({ email, passwordHash })
+      .returning({ id: accounts.id, email: accounts.email });
     return row;
   } catch (err) {
     const constraint = getViolatedConstraint(err);
-    if (constraint === 'accounts_username_unique') throw new UsernameTakenError();
     if (constraint === 'accounts_email_unique') throw new EmailTakenError();
     throw err;
   }
 }
 
-// Includes the password hash and email — only the login/password routes
-// should call this.
-export async function findAccountByUsername(username: string): Promise<AccountWithHash | null> {
+// Includes the password hash — only the login/password routes should call
+// this.
+export async function findAccountByEmail(email: string): Promise<AccountWithHash | null> {
   const [row] = await db
     .select({
       id: accounts.id,
-      username: accounts.username,
       email: accounts.email,
       passwordHash: accounts.passwordHash,
     })
     .from(accounts)
-    .where(eq(accounts.username, username));
+    .where(eq(accounts.email, email));
   return row ?? null;
 }
 
@@ -133,7 +125,6 @@ export async function findAccountBySessionToken(rawToken: string): Promise<Accou
   const [row] = await db
     .select({
       id: accounts.id,
-      username: accounts.username,
       email: accounts.email,
       passwordHash: accounts.passwordHash,
     })

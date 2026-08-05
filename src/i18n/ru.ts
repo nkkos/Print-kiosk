@@ -52,14 +52,14 @@ export const ru: Translations = {
   login: {
     checkYourEmail: 'Проверьте почту',
     resetInstructionsSent:
-      'Если аккаунт с таким именем пользователя существует, на него отправлены инструкции по восстановлению пароля.',
+      'Если аккаунт с таким email существует, на него отправлены инструкции по восстановлению пароля.',
     backToLogin: 'Назад ко входу',
     resetPassword: 'Восстановить пароль',
-    username: 'Имя пользователя',
+    email: 'Email',
     password: 'Пароль',
     sendResetInstructions: 'Отправить инструкции',
     logIn: 'Войти',
-    incorrectCredentials: 'Неверное имя пользователя или пароль.',
+    incorrectCredentials: 'Неверный email или пароль.',
     forgotPassword: 'Забыли пароль?',
   },
   welcome: {

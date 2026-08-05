@@ -2,18 +2,18 @@ import { useState } from 'react';
 import { requestPasswordReset } from '../src/services/accountApi';
 
 export function ForgotPasswordPage() {
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [done, setDone] = useState(false);
 
-  // Same response either way (no confirmation of whether the username
+  // Same response either way (no confirmation of whether the email
   // exists) — always show the same "check your email" result, including on
   // a network error.
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     setIsSubmitting(true);
     try {
-      await requestPasswordReset(username);
+      await requestPasswordReset(email);
     } catch (err) {
       console.error('[forgot-password] Request failed:', err);
     } finally {
@@ -27,7 +27,7 @@ export function ForgotPasswordPage() {
       <>
         <h1>Check your email</h1>
         <p className="success">
-          If an account with that username exists, password reset instructions have been sent.
+          If an account with that email exists, password reset instructions have been sent.
         </p>
       </>
     );
@@ -38,10 +38,10 @@ export function ForgotPasswordPage() {
       <h1>Forgot password</h1>
       <form onSubmit={handleSubmit}>
         <label>
-          Username
-          <input value={username} onChange={(e) => setUsername(e.target.value)} required />
+          Email
+          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
         </label>
-        <button type="submit" disabled={isSubmitting || username.trim() === ''}>
+        <button type="submit" disabled={isSubmitting || email.trim() === ''}>
           Send reset instructions
         </button>
       </form>

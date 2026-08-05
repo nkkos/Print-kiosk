@@ -55,14 +55,14 @@ export const en = {
   login: {
     checkYourEmail: 'Check your email',
     resetInstructionsSent:
-      'If an account with that username exists, password reset instructions have been sent.',
+      'If an account with that email exists, password reset instructions have been sent.',
     backToLogin: 'Back to log in',
     resetPassword: 'Reset password',
-    username: 'Username',
+    email: 'Email',
     password: 'Password',
     sendResetInstructions: 'Send reset instructions',
     logIn: 'Log in',
-    incorrectCredentials: 'Incorrect username or password.',
+    incorrectCredentials: 'Incorrect email or password.',
     forgotPassword: 'Forgot password?',
   },
   welcome: {

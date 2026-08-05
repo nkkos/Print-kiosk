@@ -52,14 +52,14 @@ export const sk: Translations = {
   login: {
     checkYourEmail: 'Skontrolujte si e-mail',
     resetInstructionsSent:
-      'Ak účet s týmto používateľským menom existuje, boli naň odoslané pokyny na obnovenie hesla.',
+      'Ak účet s týmto e-mailom existuje, boli naň odoslané pokyny na obnovenie hesla.',
     backToLogin: 'Späť na prihlásenie',
     resetPassword: 'Obnoviť heslo',
-    username: 'Používateľské meno',
+    email: 'E-mail',
     password: 'Heslo',
     sendResetInstructions: 'Odoslať pokyny na obnovenie',
     logIn: 'Prihlásiť sa',
-    incorrectCredentials: 'Nesprávne používateľské meno alebo heslo.',
+    incorrectCredentials: 'Nesprávny e-mail alebo heslo.',
     forgotPassword: 'Zabudli ste heslo?',
   },
   welcome: {

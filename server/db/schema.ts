@@ -9,7 +9,6 @@ import { pgTable, uuid, text, integer, timestamp, index, boolean } from 'drizzle
 
 export const accounts = pgTable('accounts', {
   id: uuid('id').primaryKey().defaultRandom(),
-  username: text('username').notNull().unique(),
   email: text('email').notNull().unique(),
   emailVerified: boolean('email_verified').notNull().default(false),
   passwordHash: text('password_hash').notNull(),

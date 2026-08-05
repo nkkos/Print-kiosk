@@ -336,10 +336,10 @@ function App() {
     goToUploadMethodSelection(false);
   }
 
-  async function handleLogin(username: string, password: string) {
+  async function handleLogin(email: string, password: string) {
     // Real backend authentication (server/routes.ts, POST /api/accounts/login)
     // — throws on failure, which LoginPanel catches and displays.
-    const account = await login(username, password);
+    const account = await login(email, password);
 
     // Trigger B (docs/domain/kiosk-session.md): successful login creates a
     // Kiosk Session if none exists yet, or associates the current one with
