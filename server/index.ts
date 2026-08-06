@@ -12,7 +12,7 @@ try {
 
 const { router, DEFAULT_PORT, getLanIPv4 } = await import('./routes.js');
 const { db } = await import('./db/client.js');
-const { sweepExpiredFiles, ORPHAN_FILE_TTL_MS } = await import('./sessionCleanup.js');
+const { sweepExpiredFiles, ORPHAN_FILE_TTL_MS } = await import('./sessionLifecycle.js');
 
 // Dev-only backend for the QR/Email upload methods (docs/qr-upload-requirements.md,
 // docs/email-upload-requirements.md). Permissive CORS is intentional here — see

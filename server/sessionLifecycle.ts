@@ -6,17 +6,46 @@ import { kioskSessions, receivedEmails, uploadedFiles } from './db/schema.js';
 import { uploadsDir } from './uploadStore.js';
 import { getConvertedPath } from './documentConverter.js';
 
-// Session-scoped file cleanup (docs/data-privacy-requirements.md,
+// Owns every write to `kiosk_sessions` across a session's lifecycle — start,
+// activity heartbeats, and end (docs/data-privacy-requirements.md,
 // docs/domain/kiosk-session.md's "Resource ownership and cleanup contract").
-// A `kiosk_sessions` row is written here, and only here — once, when a
-// session ends — directly as 'ended' or 'cleanup-failed'; nothing writes
-// 'active'/'ending' rows, since no consumer (e.g. an operator dashboard)
-// reads those yet.
+// Deliberately minimal: no 'ending' transient status and no staleness sweep
+// for an abandoned 'active' row (crash with no end signal) — both deferred
+// until a real consumer (e.g. an operator dashboard) needs them.
 
 // "Orphaned files are deleted automatically after 4 hours" — the TTL
 // safety net for a session-end signal that never reached the backend at all
 // (crash, connectivity loss).
 export const ORPHAN_FILE_TTL_MS = 4 * 60 * 60 * 1000;
+
+// Fired once, when a session is actually created (src/App.tsx's Trigger A/B
+// — handlePrintActivate / handleLogin). onConflictDoNothing makes this safe
+// against an unlikely double-fire without ever clobbering the real start data.
+export async function startSession(
+  sessionId: string,
+  accountId: string | null,
+  startedVia: string | null,
+): Promise<void> {
+  await db
+    .insert(kioskSessions)
+    .values({ id: sessionId, accountId, startedVia, status: 'active' })
+    .onConflictDoNothing({ target: kioskSessions.id });
+}
+
+// Bumps last_activity_at, and sets account_id only when a real one is known
+// — never clears an already-recorded account back to null (e.g. after a
+// kiosk logout mid-session), since the fact "this session was, at some
+// point, this account's" stays useful for analysis. A no-op if the row
+// doesn't exist yet (harmless — self-heals on the next call).
+export async function touchSessionActivity(
+  sessionId: string,
+  accountId: string | null,
+): Promise<void> {
+  await db
+    .update(kioskSessions)
+    .set({ lastActivityAt: new Date(), ...(accountId ? { accountId } : {}) })
+    .where(eq(kioskSessions.id, sessionId));
+}
 
 async function deleteUploadedFileRow(file: {
   id: string;
@@ -113,7 +142,10 @@ export async function isSessionClosed(prefix: string): Promise<boolean> {
 // timeout — src/App.tsx's handleEndSession) triggers. Never throws — a
 // cleanup failure is logged for an operator and recorded as
 // 'cleanup-failed' on the session row, but the user is never shown anything
-// about it (docs/domain/kiosk-session.md, "Privacy guarantee").
+// about it (docs/domain/kiosk-session.md, "Privacy guarantee"). Preserves
+// the row's original started_at/started_via/last_activity_at from
+// startSession()/touchSessionActivity() — only status/endedReason/accountId
+// are overwritten here.
 export async function endSession(
   sessionId: string,
   reason: 'manual' | 'timeout',
@@ -123,7 +155,7 @@ export async function endSession(
   try {
     await deleteFilesForSessionKeys([sessionId, sessionId.slice(0, 8)]);
   } catch (err) {
-    console.error(`[sessionCleanup] Cleanup failed for session ${sessionId}:`, err);
+    console.error(`[sessionLifecycle] Cleanup failed for session ${sessionId}:`, err);
     status = 'cleanup-failed';
   }
   await db

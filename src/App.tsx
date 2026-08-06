@@ -11,13 +11,14 @@ import { PaymentStatusScreen } from './features/payment-status/PaymentStatusScre
 import { PrintStatusScreen } from './features/print-status/PrintStatusScreen';
 import { FinalisingSessionScreen } from './features/finalising-session/FinalisingSessionScreen';
 import { EndingSessionScreen } from './features/ending-session/EndingSessionScreen';
+import { ACTIVITY_EVENTS } from './layouts/KioskScreenLayout/KioskScreenLayout';
 import { computeItemPrice } from './utils/pricing';
 import { getUploadConfig, listQrFiles } from './services/qrUploadApi';
 import { listEmailMessages } from './services/emailApi';
 import { login } from './services/accountApi';
 import { submitPrintJob, getPrintTask, simulatePrintOutcome } from './services/printApi';
 import type { PrintTask } from './services/printApi';
-import { endSession } from './services/sessionApi';
+import { startSession, touchSessionActivity, endSession } from './services/sessionApi';
 import { LanguageProvider } from './i18n';
 import type { Language } from './i18n';
 import type {
@@ -47,6 +48,11 @@ type Screen =
 // determine when the transition actually happens (docs/domain/kiosk-session.md,
 // "Timing": deletion must complete before the screen returns to idle).
 const ENDING_SESSION_DELAY_MS = 1200;
+
+// Minimum time between session-activity heartbeats (below) — enough
+// granularity for post-hoc log analysis without pinging the backend on
+// every click.
+const SESSION_ACTIVITY_PING_INTERVAL_MS = 60 * 1000;
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -325,6 +331,32 @@ function App() {
     };
   }, [screen, printTasks]);
 
+  // Session-activity heartbeat (docs/data-privacy-requirements.md follow-up:
+  // kiosk_sessions.last_activity_at should be honest, not just whatever the
+  // session happened to be doing at the moment it ends). Reuses the exact
+  // activity signal KioskScreenLayout's inactivity timer already listens
+  // for, throttled so it doesn't spam the backend. Deliberately not gated on
+  // which screen is active (unlike the inactivity timer) — Payment/Print
+  // Status should still count as activity for logging purposes even though
+  // auto-end is suspended there.
+  useEffect(() => {
+    if (!session) return;
+    const activeSession = session;
+    let lastPingAt = 0;
+    function handleActivity() {
+      const now = Date.now();
+      if (now - lastPingAt < SESSION_ACTIVITY_PING_INTERVAL_MS) return;
+      lastPingAt = now;
+      touchSessionActivity(activeSession.id, activeSession.accountId).catch((err: unknown) => {
+        console.error('[App] touchSessionActivity request failed:', err);
+      });
+    }
+    ACTIVITY_EVENTS.forEach((eventName) => window.addEventListener(eventName, handleActivity));
+    return () => {
+      ACTIVITY_EVENTS.forEach((eventName) => window.removeEventListener(eventName, handleActivity));
+    };
+  }, [session]);
+
   function goToUploadMethodSelection(openCart: boolean) {
     setOpenCartOnUploadMethodSelection(openCart);
     setScreen('upload-method-selection');
@@ -421,13 +453,18 @@ function App() {
 
   function handlePrintActivate() {
     // Trigger A (docs/domain/kiosk-session.md): create a session only if one
-    // doesn't already exist — reuse it otherwise.
-    setSession((current) => {
-      if (current) return current;
+    // doesn't already exist — reuse it otherwise. Reads `session` directly
+    // (rather than the functional setSession(current => ...) form) so the
+    // "is this actually new" decision is available for the startSession()
+    // call below too (docs/data-privacy-requirements.md follow-up).
+    if (!session) {
       const newSession: KioskSession = { id: crypto.randomUUID(), accountId: null };
       localStorage.setItem(SESSION_ID_STORAGE_KEY, newSession.id);
-      return newSession;
-    });
+      setSession(newSession);
+      startSession(newSession.id, null, 'service-print').catch((err: unknown) => {
+        console.error('[App] startSession request failed:', err);
+      });
+    }
     goToUploadMethodSelection(false);
   }
 
@@ -440,14 +477,19 @@ function App() {
     // Kiosk Session if none exists yet, or associates the current one with
     // the account if one is already active — it never creates a second
     // session (docs/personal-account-requirements.md, "Kiosk-side login").
-    setSession((current) => {
-      if (current) {
-        return { ...current, accountId: account.id };
-      }
+    if (session) {
+      setSession({ ...session, accountId: account.id });
+      touchSessionActivity(session.id, account.id).catch((err: unknown) => {
+        console.error('[App] touchSessionActivity request failed:', err);
+      });
+    } else {
       const newSession: KioskSession = { id: crypto.randomUUID(), accountId: account.id };
       localStorage.setItem(SESSION_ID_STORAGE_KEY, newSession.id);
-      return newSession;
-    });
+      setSession(newSession);
+      startSession(newSession.id, account.id, 'login').catch((err: unknown) => {
+        console.error('[App] startSession request failed:', err);
+      });
+    }
 
     // Detection and prompt (docs/personal-account-requirements.md, "Paid
     // orders awaiting print") — checked on every login, from any screen.

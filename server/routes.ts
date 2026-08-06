@@ -11,7 +11,12 @@ import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { addFile, listFiles, uploadsDir, getUploadedFile } from './uploadStore.js';
 import { addEmail, listEmails } from './emailStore.js';
-import { endSession, isSessionClosed } from './sessionCleanup.js';
+import {
+  startSession,
+  touchSessionActivity,
+  endSession,
+  isSessionClosed,
+} from './sessionLifecycle.js';
 import {
   createAccount,
   findAccountByEmail,
@@ -194,6 +199,35 @@ router.post('/api/qr-sessions/:sessionId/files', handleFileUpload, async (req, r
 
 router.get('/api/qr-sessions/:sessionId/files', async (req, res) => {
   res.json(await listFiles(paramString(req.params.sessionId)));
+});
+
+// Session start (src/App.tsx's Trigger A/B — handlePrintActivate/handleLogin)
+// — fired once when a session is actually created, so kiosk_sessions'
+// started_at/started_via are honest (docs/data-privacy-requirements.md
+// follow-up: session-log analysis needs real timestamps, not just the
+// end-of-session row endSession() below already writes).
+router.post('/api/sessions/:sessionId/start', async (req, res) => {
+  const sessionId = paramString(req.params.sessionId);
+  const { accountId, startedVia } = (req.body ?? {}) as {
+    accountId?: unknown;
+    startedVia?: unknown;
+  };
+  await startSession(
+    sessionId,
+    typeof accountId === 'string' ? accountId : null,
+    typeof startedVia === 'string' ? startedVia : null,
+  );
+  res.json({ ok: true });
+});
+
+// Activity heartbeat — bumps last_activity_at and opportunistically records
+// the account once known (e.g. a mid-session login). Fired both on login
+// and, throttled, on real user activity (src/App.tsx).
+router.post('/api/sessions/:sessionId/activity', async (req, res) => {
+  const sessionId = paramString(req.params.sessionId);
+  const { accountId } = (req.body ?? {}) as { accountId?: unknown };
+  await touchSessionActivity(sessionId, typeof accountId === 'string' ? accountId : null);
+  res.json({ ok: true });
 });
 
 // Session end (button or inactivity timeout — src/App.tsx's handleEndSession)

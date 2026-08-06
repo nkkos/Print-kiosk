@@ -21,7 +21,10 @@ import styles from './KioskScreenLayout.module.css';
 // in the domain doc and is not implemented.
 const IDLE_WARNING_DELAY_MS = 5 * 60 * 1000;
 const IDLE_END_DELAY_MS = 60 * 1000;
-const ACTIVITY_EVENTS = ['pointerdown', 'keydown', 'touchstart'] as const;
+// Exported so App.tsx's session-activity heartbeat (docs/data-privacy-requirements.md
+// follow-up) can listen for the same real-activity signal, instead of
+// duplicating this list.
+export const ACTIVITY_EVENTS = ['pointerdown', 'keydown', 'touchstart'] as const;
 
 // Connection lost (docs/domain/kiosk-session.md, "Failure and recovery";
 // docs/screens/upload-method-selection-spec.md, "Connectivity lost"): while
