@@ -19,7 +19,7 @@ export const uploadsDir = join(serverDir, 'uploads');
 export interface UploadedFile {
   id: string;
   fileName: string;
-  status: 'scanning' | 'converting' | 'ready' | 'rejected';
+  status: 'scanning' | 'converting' | 'ready' | 'rejected' | 'scan-unavailable';
 }
 
 // Real antivirus scanning (docs/domain/kiosk-session.md, "File scanning
@@ -89,11 +89,21 @@ async function scanFile(fileId: string, filePath: string, fileName: string) {
       return;
     }
   } catch (err) {
+    if (process.env.NODE_ENV === 'production') {
+      // Fail closed in production (docs/domain/kiosk-session.md, "File
+      // scanning status"): an unscanned file must never reach the user as
+      // if it were clean. Deleted immediately, same as a confirmed-infected
+      // file, but kept as a distinct status ('scan-unavailable', not
+      // 'rejected') — this is "couldn't verify," not "confirmed a threat,"
+      // and the kiosk shows a different message for it.
+      console.error(`[uploadStore] Scan failed for ${filePath}, failing closed:`, err);
+      await unlink(filePath).catch(() => {});
+      await updateStatus(fileId, 'scan-unavailable');
+      return;
+    }
     // Dev-only fail-open: if clamd itself is unreachable (e.g. a developer
     // forgot to start it), don't silently block every QR upload — log
-    // clearly and let the file through instead. This is explicitly NOT the
-    // production answer (docs/domain/kiosk-session.md, "File scanning
-    // status") — production should fail closed.
+    // clearly and let the file through instead.
     console.error(`[uploadStore] Scan failed for ${filePath}, failing open:`, err);
   }
   await convertIfNeeded(fileId, filePath, fileName);

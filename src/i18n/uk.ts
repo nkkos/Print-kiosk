@@ -21,6 +21,7 @@ export const uk: Translations = {
     preparingForPrint: 'Підготовка до друку...',
     configureAllFiles: 'Налаштувати друк для всіх файлів',
     blockedVirusScan: 'Заблоковано — не пройшло перевірку на віруси',
+    scanUnavailable: 'Видалено — перевірка на віруси недоступна. Спробуйте пізніше.',
   },
   footer: {
     callOperator: 'Викликати оператора',

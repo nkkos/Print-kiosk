@@ -21,6 +21,8 @@ export const de: Translations = {
     preparingForPrint: 'Wird für den Druck vorbereitet...',
     configureAllFiles: 'Druck für alle Dateien konfigurieren',
     blockedVirusScan: 'Blockiert — Virenprüfung fehlgeschlagen',
+    scanUnavailable:
+      'Entfernt — Virenprüfung nicht verfügbar. Bitte versuchen Sie es später erneut.',
   },
   footer: {
     callOperator: 'Mitarbeiter rufen',

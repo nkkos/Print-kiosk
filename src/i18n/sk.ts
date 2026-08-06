@@ -21,6 +21,7 @@ export const sk: Translations = {
     preparingForPrint: 'Príprava na tlač...',
     configureAllFiles: 'Nastaviť tlač pre všetky súbory',
     blockedVirusScan: 'Zablokované — nevyhovelo kontrole na vírusy',
+    scanUnavailable: 'Odstránené — kontrola na vírusy nie je dostupná. Skúste to prosím neskôr.',
   },
   footer: {
     callOperator: 'Zavolať operátora',

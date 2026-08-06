@@ -24,6 +24,7 @@ export const en = {
     preparingForPrint: 'Preparing for print...',
     configureAllFiles: 'Configure printing for all files',
     blockedVirusScan: 'Blocked — failed virus scan',
+    scanUnavailable: 'Removed — virus scan unavailable. Please try again later.',
   },
   footer: {
     callOperator: 'Call operator',
