@@ -27,6 +27,11 @@ export interface KioskSession {
   accountId: string | null;
 }
 
+/** How a Kiosk Session ended — the manual "Finish and clear data" button, or
+ * the automatic inactivity timeout (docs/domain/kiosk-session.md,
+ * "Lifecycle" — carried as `kiosk_sessions.ended_reason` server-side). */
+export type EndSessionReason = 'manual' | 'timeout';
+
 /**
  * A configured document ready for printing, added to the session's Cart on
  * "Add to cart" — see docs/domain/kiosk-session.md ("Related entities: Print

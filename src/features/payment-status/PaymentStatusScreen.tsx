@@ -5,7 +5,7 @@ import { Button } from '../../components/Button/Button';
 import { Modal } from '../../components/Modal/Modal';
 import { useTranslation } from '../../i18n';
 import type { Language } from '../../i18n';
-import type { PrintOrder } from '../../types/kiosk';
+import type { EndSessionReason, PrintOrder } from '../../types/kiosk';
 import styles from './PaymentStatusScreen.module.css';
 
 // Payment Status screen — see docs/domain/kiosk-session.md ("Payment
@@ -40,7 +40,7 @@ interface PaymentStatusScreenProps {
   onPaymentSuccess: () => void;
   onCancelPayment: () => void;
   onReturnHome: () => void;
-  onEndSession: () => void;
+  onEndSession: (reason: EndSessionReason) => void;
   onProceedToPayment: (selectedItems: PrintOrder[]) => void;
   /** While true, "Simulate payment success" is disabled — payment is one of
    * the two actions connection loss actually blocks (docs/domain/kiosk-session.md,

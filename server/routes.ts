@@ -11,6 +11,7 @@ import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { addFile, listFiles, uploadsDir, getUploadedFile } from './uploadStore.js';
 import { addEmail, listEmails } from './emailStore.js';
+import { endSession, isSessionClosed } from './sessionCleanup.js';
 import {
   createAccount,
   findAccountByEmail,
@@ -19,6 +20,7 @@ import {
   updateAccountPassword,
   createAccountToken,
   consumeAccountToken,
+  deleteAccount,
   EmailTakenError,
 } from './accountStore.js';
 import { sendVerificationEmail, sendPasswordResetEmail } from './emailSender.js';
@@ -194,6 +196,24 @@ router.get('/api/qr-sessions/:sessionId/files', async (req, res) => {
   res.json(await listFiles(paramString(req.params.sessionId)));
 });
 
+// Session end (button or inactivity timeout — src/App.tsx's handleEndSession)
+// — deletes the session's uploaded files and marks it closed so a
+// late-arriving email is discarded rather than accepted (see
+// isSessionClosed() above, used by POST /api/email/incoming below). Always
+// responds ok; a cleanup failure is logged server-side and recorded as
+// 'cleanup-failed', never surfaced to the user (docs/domain/kiosk-session.md,
+// "Privacy guarantee").
+router.post('/api/sessions/:sessionId/end', async (req, res) => {
+  const sessionId = paramString(req.params.sessionId);
+  const { reason, accountId } = (req.body ?? {}) as { reason?: unknown; accountId?: unknown };
+  await endSession(
+    sessionId,
+    reason === 'timeout' ? 'timeout' : 'manual',
+    typeof accountId === 'string' ? accountId : null,
+  );
+  res.json({ ok: true });
+});
+
 // Extracts the 8-character session prefix from an address of the form
 // `upload-<prefix>@<domain>` (the format src/App.tsx generates) — falls back
 // to the whole local part if the address doesn't have the expected prefix,
@@ -221,6 +241,12 @@ router.post(
       return;
     }
     const prefix = extractSessionPrefix(toHeader);
+    // A session that already ended discards late mail immediately — not
+    // even briefly stored (docs/data-privacy-requirements.md).
+    if (await isSessionClosed(prefix)) {
+      res.status(204).end();
+      return;
+    }
     const parsed = await simpleParser(req.body as Buffer);
 
     const sessionDir = join(uploadsDir, prefix);
@@ -406,6 +432,21 @@ router.post('/api/accounts/change-password', async (req, res) => {
     return;
   }
   await updateAccountPassword(account.id, await bcrypt.hash(newPassword, 10));
+  res.json({ ok: true });
+});
+
+// Right to erasure (docs/data-privacy-requirements.md, "Account data") —
+// self-service, portal-only (portal/AccountPage.tsx). `kiosk_sessions`/
+// `print_orders` rows referencing this account are anonymized (account_id
+// set null), not deleted — see the onDelete: 'set null' FKs in
+// server/db/schema.ts — since they're retained as audit/log records.
+router.post('/api/accounts/delete-account', async (req, res) => {
+  const account = await requireSession(req);
+  if (!account) {
+    res.status(401).json({ error: 'Not authenticated' });
+    return;
+  }
+  await deleteAccount(account.id);
   res.json({ ok: true });
 });
 

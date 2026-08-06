@@ -5,7 +5,7 @@ import { Modal } from '../../components/Modal/Modal';
 import { Button } from '../../components/Button/Button';
 import { useTranslation } from '../../i18n';
 import type { Language } from '../../i18n';
-import type { PrintOrder, ReceivedEmail } from '../../types/kiosk';
+import type { EndSessionReason, PrintOrder, ReceivedEmail } from '../../types/kiosk';
 import styles from './EmailFileListScreen.module.css';
 
 // Second Email upload screen — see docs/email-upload-requirements.md.
@@ -29,7 +29,7 @@ interface EmailFileListScreenProps {
   onConfigureAllFiles: () => void;
   onBack: () => void;
   onHome: () => void;
-  onEndSession: () => void;
+  onEndSession: (reason: EndSessionReason) => void;
   /** Received emails, each attachment carrying its own scanning status
    * (docs/domain/kiosk-session.md, "File scanning status"). */
   emails: ReceivedEmail[];

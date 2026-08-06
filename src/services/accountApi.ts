@@ -56,3 +56,9 @@ export async function changePassword(
 ): Promise<void> {
   await postJson('/api/accounts/change-password', { currentPassword, newPassword }, sessionToken);
 }
+
+// Right to erasure (docs/data-privacy-requirements.md, "Account data") —
+// portal-only (portal/AccountPage.tsx), the kiosk has no equivalent UI.
+export async function deleteAccount(sessionToken: string): Promise<void> {
+  await postJson('/api/accounts/delete-account', {}, sessionToken);
+}

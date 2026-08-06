@@ -12,6 +12,7 @@ try {
 
 const { router, DEFAULT_PORT, getLanIPv4 } = await import('./routes.js');
 const { db } = await import('./db/client.js');
+const { sweepExpiredFiles, ORPHAN_FILE_TTL_MS } = await import('./sessionCleanup.js');
 
 // Dev-only backend for the QR/Email upload methods (docs/qr-upload-requirements.md,
 // docs/email-upload-requirements.md). Permissive CORS is intentional here — see
@@ -37,6 +38,18 @@ async function main() {
     console.log(`Upload backend listening on http://localhost:${port}`);
     console.log(`Reachable from phones on the same Wi-Fi at http://${getLanIPv4()}:${port}`);
   });
+
+  // TTL safety net (docs/data-privacy-requirements.md) for a session-end
+  // signal that never reached the backend — a single persistent process, so
+  // a plain interval is enough; no separate scheduler/service needed.
+  const runSweep = () =>
+    sweepExpiredFiles(ORPHAN_FILE_TTL_MS)
+      .then((count) => {
+        if (count > 0) console.log(`[index] Orphaned-file sweep deleted ${count} file(s)`);
+      })
+      .catch((err: unknown) => console.error('[index] Orphaned-file sweep failed:', err));
+  void runSweep();
+  setInterval(runSweep, 30 * 60 * 1000);
 }
 
 main().catch((err: unknown) => {

@@ -6,7 +6,7 @@ import { Modal } from '../../components/Modal/Modal';
 import { Notification } from '../../components/Notification/Notification';
 import { useTranslation } from '../../i18n';
 import type { Language } from '../../i18n';
-import type { PrintOrder } from '../../types/kiosk';
+import type { EndSessionReason, PrintOrder } from '../../types/kiosk';
 import styles from './WelcomeScreen.module.css';
 
 // Placeholder composition only — see docs/screens/welcome-screen-spec.md,
@@ -32,7 +32,7 @@ interface WelcomeScreenProps {
    * after returning via Back) — controls end-session's visibility. */
   sessionActive: boolean;
   /** Ends the active Kiosk Session and returns to this screen's neutral state. */
-  onEndSession: () => void;
+  onEndSession: (reason: EndSessionReason) => void;
   /** Current Cart contents, shown in the btn-cart popup. */
   cartItems: PrintOrder[];
   /** Adjusts a Cart item's quantity (docs/cart-requirements.md). */

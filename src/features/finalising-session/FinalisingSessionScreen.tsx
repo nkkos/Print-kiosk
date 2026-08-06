@@ -1,7 +1,7 @@
 import { KioskScreenLayout } from '../../layouts/KioskScreenLayout/KioskScreenLayout';
 import { useTranslation } from '../../i18n';
 import type { Language } from '../../i18n';
-import type { PrintOrder } from '../../types/kiosk';
+import type { EndSessionReason, PrintOrder } from '../../types/kiosk';
 import styles from './FinalisingSessionScreen.module.css';
 
 // Finalising Session screen — see docs/domain/kiosk-session.md:
@@ -14,7 +14,7 @@ import styles from './FinalisingSessionScreen.module.css';
 // ending it remains a separate, explicit end-session action.
 interface FinalisingSessionScreenProps {
   onReturnToWelcome: () => void;
-  onEndSession: () => void;
+  onEndSession: (reason: EndSessionReason) => void;
   cartItems: PrintOrder[];
   onQuantityChange: (id: string, quantity: number) => void;
   onRemoveItem: (id: string) => void;

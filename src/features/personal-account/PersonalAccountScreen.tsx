@@ -10,7 +10,7 @@ import {
 } from './mockAccountData';
 import { useTranslation } from '../../i18n';
 import type { Language } from '../../i18n';
-import type { PrintOrder } from '../../types/kiosk';
+import type { EndSessionReason, PrintOrder } from '../../types/kiosk';
 import styles from './PersonalAccountScreen.module.css';
 
 // Personal Account screen — see docs/personal-account-requirements.md. Two
@@ -33,7 +33,7 @@ interface PersonalAccountScreenProps {
   initialTab?: 'files' | 'orders';
   onBack: () => void;
   onHome: () => void;
-  onEndSession: () => void;
+  onEndSession: (reason: EndSessionReason) => void;
   cartItems: PrintOrder[];
   onQuantityChange: (id: string, quantity: number) => void;
   onRemoveItem: (id: string) => void;

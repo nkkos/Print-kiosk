@@ -3,7 +3,7 @@ import { KioskScreenLayout } from '../../layouts/KioskScreenLayout/KioskScreenLa
 import { Button } from '../../components/Button/Button';
 import { useTranslation } from '../../i18n';
 import type { Language } from '../../i18n';
-import type { PrintOrder } from '../../types/kiosk';
+import type { EndSessionReason, PrintOrder } from '../../types/kiosk';
 import styles from './PrintOrderConfigurationScreen.module.css';
 
 // Combined preview + print-settings screen — see
@@ -31,7 +31,7 @@ interface PrintOrderConfigurationScreenProps {
   onAddToCart: (order: PrintOrder) => void;
   onBack: () => void;
   onHome: () => void;
-  onEndSession: () => void;
+  onEndSession: (reason: EndSessionReason) => void;
   /** Current Cart contents, shown in the btn-cart popup. */
   cartItems: PrintOrder[];
   /** Adjusts a Cart item's quantity (docs/cart-requirements.md). */

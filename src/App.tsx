@@ -17,9 +17,16 @@ import { listEmailMessages } from './services/emailApi';
 import { login } from './services/accountApi';
 import { submitPrintJob, getPrintTask, simulatePrintOutcome } from './services/printApi';
 import type { PrintTask } from './services/printApi';
+import { endSession } from './services/sessionApi';
 import { LanguageProvider } from './i18n';
 import type { Language } from './i18n';
-import type { KioskSession, PrintOrder, ReceivedFile, ReceivedEmail } from './types/kiosk';
+import type {
+  EndSessionReason,
+  KioskSession,
+  PrintOrder,
+  ReceivedFile,
+  ReceivedEmail,
+} from './types/kiosk';
 
 type Screen =
   | 'welcome'
@@ -34,10 +41,16 @@ type Screen =
   | 'finalising-session'
   | 'ending-session';
 
-// Prototype stand-in for real cleanup work (docs/domain/kiosk-session.md,
-// "User-visible sequence") — just long enough for the transition screen to
-// be visibly noticeable.
+// Minimum time the "ending session" screen stays up, joined (via
+// Promise.all) with the real endSession() call below — avoids a jarring
+// flash on a fast local network while still letting the real cleanup
+// determine when the transition actually happens (docs/domain/kiosk-session.md,
+// "Timing": deletion must complete before the screen returns to idle).
 const ENDING_SESSION_DELAY_MS = 1200;
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
 // "To make the brief-interruption case work, sessionId is persisted locally
 // ... so it survives a short crash/restart" (docs/domain/kiosk-session.md,
@@ -455,33 +468,47 @@ function App() {
   }
 
   // Wrapped in useCallback for a stable reference: KioskScreenLayout's
-  // inactivity timer (below) depends on this function and must not restart
-  // on every unrelated re-render.
-  const handleEndSession = useCallback(() => {
-    // Confirmation (if any — manual or the inactivity auto-end below) has
-    // already happened by the time this is called (KioskScreenLayout) —
-    // this is the actual cleanup sequence: show the "ending session" screen
-    // while cleanup "runs", then reset everything and return to Welcome
-    // (docs/domain/kiosk-session.md, "User-visible sequence").
-    setScreen('ending-session');
-    setTimeout(() => {
-      localStorage.removeItem(SESSION_ID_STORAGE_KEY);
-      setSession(null);
-      setCart([]);
-      setPaymentItems([]);
-      setSelectedFile(null);
-      setBatchQueue([]);
-      setEmailMessages([]);
-      setQrFiles([]);
-      setHasQrUploadStarted(false);
-      setQrUploadUrl(null);
-      setHasReceivedEmail(false);
-      setUsedMethods(new Set());
-      setHasPendingPaidOrders(false);
-      setLanguage('en');
-      setScreen('welcome');
-    }, ENDING_SESSION_DELAY_MS);
-  }, []);
+  // inactivity timer (above) depends on this function. Its identity now
+  // changes when `session` changes (start/login), which is fine — the
+  // inactivity effect already re-subscribes on identity change.
+  const handleEndSession = useCallback(
+    (reason: EndSessionReason) => {
+      // Confirmation (if any — manual or the inactivity auto-end below) has
+      // already happened by the time this is called (KioskScreenLayout) —
+      // this is the actual cleanup sequence: show the "ending session"
+      // screen, tell the backend to delete the session's files
+      // synchronously (docs/data-privacy-requirements.md), then reset
+      // everything and return to Welcome (docs/domain/kiosk-session.md,
+      // "User-visible sequence").
+      setScreen('ending-session');
+      const cleanup = session
+        ? endSession(session.id, reason, session.accountId).catch((err: unknown) => {
+            // Network/timeout failure — logged, not retried; the TTL sweep
+            // (server/sessionCleanup.ts) is the confirmed fallback for a
+            // signal that never arrives.
+            console.error('[App] endSession request failed:', err);
+          })
+        : Promise.resolve();
+      Promise.all([cleanup, sleep(ENDING_SESSION_DELAY_MS)]).then(() => {
+        localStorage.removeItem(SESSION_ID_STORAGE_KEY);
+        setSession(null);
+        setCart([]);
+        setPaymentItems([]);
+        setSelectedFile(null);
+        setBatchQueue([]);
+        setEmailMessages([]);
+        setQrFiles([]);
+        setHasQrUploadStarted(false);
+        setQrUploadUrl(null);
+        setHasReceivedEmail(false);
+        setUsedMethods(new Set());
+        setHasPendingPaidOrders(false);
+        setLanguage('en');
+        setScreen('welcome');
+      });
+    },
+    [session],
+  );
 
   function handleAddToCart(order: PrintOrder) {
     setCart((current) => [...current, order]);

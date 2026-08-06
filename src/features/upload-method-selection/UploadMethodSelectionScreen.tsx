@@ -5,7 +5,7 @@ import { Modal } from '../../components/Modal/Modal';
 import { LoginPanel } from '../../components/LoginPanel/LoginPanel';
 import { useTranslation } from '../../i18n';
 import type { Language } from '../../i18n';
-import type { PrintOrder } from '../../types/kiosk';
+import type { EndSessionReason, PrintOrder } from '../../types/kiosk';
 import styles from './UploadMethodSelectionScreen.module.css';
 
 // Placeholder composition only — see docs/screens/upload-method-selection-spec.md
@@ -46,7 +46,7 @@ interface UploadMethodSelectionScreenProps {
   /** Ends the active Kiosk Session and returns to the Welcome Screen. A
    * session always exists by the time this screen is reached (created by
    * service-print), so end-session is shown unconditionally here. */
-  onEndSession: () => void;
+  onEndSession: (reason: EndSessionReason) => void;
   /** Navigates into the Email upload flow (docs/email-upload-requirements.md). */
   onEmailActivate: () => void;
   /** Navigates into the QR upload flow (docs/qr-upload-requirements.md). */

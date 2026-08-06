@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { login, changePassword, type Account } from '../src/services/accountApi';
+import { login, changePassword, deleteAccount, type Account } from '../src/services/accountApi';
 
 // Login + change-password — the only portal page that needs a session
 // token (docs/personal-account-requirements.md; the kiosk itself never
@@ -18,6 +18,11 @@ export function AccountPage() {
   const [changeError, setChangeError] = useState<string | null>(null);
   const [changeDone, setChangeDone] = useState(false);
   const [isChanging, setIsChanging] = useState(false);
+
+  const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [accountDeleted, setAccountDeleted] = useState(false);
 
   async function handleLogin(event: React.FormEvent) {
     event.preventDefault();
@@ -49,10 +54,29 @@ export function AccountPage() {
     }
   }
 
+  // Right to erasure (docs/data-privacy-requirements.md, "Account data") —
+  // a two-step inline confirm, since the portal has no shared Modal
+  // component (portal/portal.css is deliberately plain).
+  async function handleDeleteAccount() {
+    if (!session) return;
+    setIsDeleting(true);
+    setDeleteError(null);
+    try {
+      await deleteAccount(session.sessionToken);
+      setSession(null);
+      setAccountDeleted(true);
+    } catch (err) {
+      setDeleteError(err instanceof Error ? err.message : 'Account deletion failed');
+    } finally {
+      setIsDeleting(false);
+    }
+  }
+
   if (!session) {
     return (
       <>
         <h1>Log in</h1>
+        {accountDeleted && <p className="success">Your account has been deleted.</p>}
         <form onSubmit={handleLogin}>
           <label>
             Email
@@ -111,6 +135,24 @@ export function AccountPage() {
           Change password
         </button>
       </form>
+
+      <h2>Delete account</h2>
+      {isConfirmingDelete ? (
+        <>
+          <p className="error">This will permanently delete your account. Are you sure?</p>
+          {deleteError && <p className="error">{deleteError}</p>}
+          <button type="button" onClick={handleDeleteAccount} disabled={isDeleting}>
+            Confirm delete
+          </button>
+          <button type="button" onClick={() => setIsConfirmingDelete(false)} disabled={isDeleting}>
+            Cancel
+          </button>
+        </>
+      ) : (
+        <button type="button" onClick={() => setIsConfirmingDelete(true)}>
+          Delete account
+        </button>
+      )}
     </>
   );
 }

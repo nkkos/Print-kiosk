@@ -26,7 +26,7 @@ export const accountTokens = pgTable(
     id: uuid('id').primaryKey().defaultRandom(),
     accountId: uuid('account_id')
       .notNull()
-      .references(() => accounts.id),
+      .references(() => accounts.id, { onDelete: 'cascade' }),
     // 'email-verification' | 'password-reset' | 'session'
     type: text('type').notNull(),
     tokenHash: text('token_hash').notNull().unique(),
@@ -42,7 +42,10 @@ export const kioskSessions = pgTable(
   {
     id: uuid('id').primaryKey().defaultRandom(),
     kioskId: text('kiosk_id'),
-    accountId: uuid('account_id').references(() => accounts.id),
+    // set null (not cascaded) on account deletion — the session's fact/log
+    // record is retained per docs/domain/kiosk-session.md's "Retained ...
+    // Session lifecycle events", only the account linkage is anonymized.
+    accountId: uuid('account_id').references(() => accounts.id, { onDelete: 'set null' }),
     // 'service-print' | 'service-scan' | 'service-copy' | 'login'
     startedVia: text('started_via'),
     startedAt: timestamp('started_at', { withTimezone: true }).notNull().defaultNow(),
@@ -71,7 +74,10 @@ export const printOrders = pgTable(
     id: uuid('id').primaryKey().defaultRandom(),
     sessionId: uuid('session_id').references(() => kioskSessions.id),
     // set only for orders originating from a logged-in Personal Account (e.g. "paid orders awaiting print")
-    accountId: uuid('account_id').references(() => accounts.id),
+    // set null (not cascaded) on account deletion — the fact/log record of
+    // the order is retained per docs/domain/kiosk-session.md, only the
+    // account linkage is anonymized.
+    accountId: uuid('account_id').references(() => accounts.id, { onDelete: 'set null' }),
     paymentOrderId: uuid('payment_order_id').references(() => paymentOrders.id),
     fileName: text('file_name').notNull(),
     paperSize: text('paper_size').notNull(), // 'A4' | 'A5'

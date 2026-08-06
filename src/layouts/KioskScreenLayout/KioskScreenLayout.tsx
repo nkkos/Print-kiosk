@@ -9,7 +9,7 @@ import { Notification } from '../../components/Notification/Notification';
 import { LoginPanel } from '../../components/LoginPanel/LoginPanel';
 import { useTranslation, LANGUAGE_NAMES } from '../../i18n';
 import type { Language } from '../../i18n';
-import type { PrintOrder } from '../../types/kiosk';
+import type { EndSessionReason, PrintOrder } from '../../types/kiosk';
 import styles from './KioskScreenLayout.module.css';
 
 // Automatic timeout (docs/domain/kiosk-session.md, "Automatic timeout"):
@@ -47,7 +47,7 @@ interface KioskScreenLayoutProps {
    * only screen that passes this explicitly, since it's reachable both with
    * and without a session. */
   sessionActive?: boolean;
-  onEndSession: () => void;
+  onEndSession: (reason: EndSessionReason) => void;
   /** Renders navigation-back when provided; omitted on WelcomeScreen. */
   onBack?: () => void;
   /** Renders navigation-home when provided; omitted on WelcomeScreen. */
@@ -168,7 +168,7 @@ export function KioskScreenLayout({
     function scheduleWarning() {
       warningTimeoutId = setTimeout(() => {
         setIsIdleWarningOpen(true);
-        endTimeoutId = setTimeout(onEndSession, IDLE_END_DELAY_MS);
+        endTimeoutId = setTimeout(() => onEndSession('timeout'), IDLE_END_DELAY_MS);
       }, IDLE_WARNING_DELAY_MS);
     }
 
@@ -199,7 +199,7 @@ export function KioskScreenLayout({
   // the same generic confirmation first.
   function handleEndSessionClick() {
     if (cartItems.length === 0) {
-      onEndSession();
+      onEndSession('manual');
     } else {
       setIsCartOpen(false);
       setIsEndConfirmOpen(true);
@@ -208,7 +208,7 @@ export function KioskScreenLayout({
 
   function handleConfirmEndSession() {
     setIsEndConfirmOpen(false);
-    onEndSession();
+    onEndSession('manual');
   }
 
   // Only closes the popup and navigates on success — if onLogin rejects, the

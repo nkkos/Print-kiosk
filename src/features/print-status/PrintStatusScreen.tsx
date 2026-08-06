@@ -2,7 +2,7 @@ import { KioskScreenLayout } from '../../layouts/KioskScreenLayout/KioskScreenLa
 import { Button } from '../../components/Button/Button';
 import { useTranslation } from '../../i18n';
 import type { Language } from '../../i18n';
-import type { PrintOrder } from '../../types/kiosk';
+import type { EndSessionReason, PrintOrder } from '../../types/kiosk';
 import type { PrintTask, PrintTaskErrorReason } from '../../services/printApi';
 import styles from './PrintStatusScreen.module.css';
 
@@ -30,7 +30,7 @@ interface PrintStatusScreenProps {
   onSimulatePrintOutcome: (
     outcome: 'success' | 'paper-jam' | 'out-of-paper' | 'out-of-ink',
   ) => void;
-  onEndSession: () => void;
+  onEndSession: (reason: EndSessionReason) => void;
   onProceedToPayment: (selectedItems: PrintOrder[]) => void;
   /** While true, printing-related actions are disabled — printing is one of
    * the two actions connection loss actually blocks (docs/domain/kiosk-session.md,

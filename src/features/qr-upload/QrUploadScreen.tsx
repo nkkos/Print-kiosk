@@ -5,7 +5,7 @@ import { OptionCard } from '../../components/OptionCard/OptionCard';
 import { Button } from '../../components/Button/Button';
 import { useTranslation } from '../../i18n';
 import type { Language } from '../../i18n';
-import type { PrintOrder, ReceivedFile } from '../../types/kiosk';
+import type { EndSessionReason, PrintOrder, ReceivedFile } from '../../types/kiosk';
 import styles from './QrUploadScreen.module.css';
 
 // QR upload screen — see docs/qr-upload-requirements.md. A single screen
@@ -32,7 +32,7 @@ interface QrUploadScreenProps {
   onConfigureAllFiles: () => void;
   onBack: () => void;
   onHome: () => void;
-  onEndSession: () => void;
+  onEndSession: (reason: EndSessionReason) => void;
   /** Current Cart contents, shown in the btn-cart popup. */
   cartItems: PrintOrder[];
   onQuantityChange: (id: string, quantity: number) => void;

@@ -2,7 +2,7 @@ import { KioskScreenLayout } from '../../layouts/KioskScreenLayout/KioskScreenLa
 import { Button } from '../../components/Button/Button';
 import { useTranslation } from '../../i18n';
 import type { Language } from '../../i18n';
-import type { PrintOrder } from '../../types/kiosk';
+import type { EndSessionReason, PrintOrder } from '../../types/kiosk';
 import styles from './EmailAddressScreen.module.css';
 
 // First Email upload screen — see docs/email-upload-requirements.md.
@@ -15,7 +15,7 @@ interface EmailAddressScreenProps {
   onNext: () => void;
   onBack: () => void;
   onHome: () => void;
-  onEndSession: () => void;
+  onEndSession: (reason: EndSessionReason) => void;
   /** Current Cart contents, shown in the btn-cart popup. */
   cartItems: PrintOrder[];
   /** Adjusts a Cart item's quantity (docs/cart-requirements.md). */

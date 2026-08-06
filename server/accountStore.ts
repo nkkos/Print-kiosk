@@ -79,6 +79,14 @@ export async function updateAccountPassword(
   await db.update(accounts).set({ passwordHash }).where(eq(accounts.id, accountId));
 }
 
+// Right to erasure (docs/data-privacy-requirements.md, "Account data").
+// `account_tokens` cascades; `kiosk_sessions`/`print_orders` are anonymized
+// (account_id set null, row retained) — both via onDelete behavior on the
+// FKs in server/db/schema.ts, so a single delete here is enough.
+export async function deleteAccount(accountId: string): Promise<void> {
+  await db.delete(accounts).where(eq(accounts.id, accountId));
+}
+
 // Generates a random token, stores only its hash (same principle as
 // password hashing — a leaked DB doesn't leak usable tokens), and returns
 // the raw token once so it can be emailed/returned to the caller.
