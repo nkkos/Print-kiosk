@@ -18,6 +18,7 @@ export const sk: Translations = {
     unavailable: 'Nedostupné',
     tapToConfigurePrinting: 'Ťuknutím nastavíte tlač',
     scanningForViruses: 'Kontrola na vírusy...',
+    preparingForPrint: 'Príprava na tlač...',
     configureAllFiles: 'Nastaviť tlač pre všetky súbory',
     blockedVirusScan: 'Zablokované — nevyhovelo kontrole na vírusy',
   },
@@ -133,6 +134,7 @@ export const sk: Translations = {
     errorOutOfPaper: 'V tlačiarni došiel papier. Doplňte ho a skúste znova.',
     errorOutOfInk: 'V tlačiarni došiel atrament. Vymeňte ho a skúste znova.',
     errorSubmitFailed: 'Tlač zlyhala. Skúste znova.',
+    errorConversionFailed: 'Tento dokument sa nepodarilo pripraviť na tlač.',
   },
   finalisingSession: {
     message: 'Vaše dokumenty boli vytlačené. Ďakujeme!',

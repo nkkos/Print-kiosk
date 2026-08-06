@@ -18,6 +18,7 @@ export const de: Translations = {
     unavailable: 'Nicht verfügbar',
     tapToConfigurePrinting: 'Tippen, um den Druck zu konfigurieren',
     scanningForViruses: 'Virenprüfung läuft...',
+    preparingForPrint: 'Wird für den Druck vorbereitet...',
     configureAllFiles: 'Druck für alle Dateien konfigurieren',
     blockedVirusScan: 'Blockiert — Virenprüfung fehlgeschlagen',
   },
@@ -134,6 +135,7 @@ export const de: Translations = {
     errorOutOfPaper: 'Kein Papier mehr im Drucker. Bitte nachfüllen und erneut versuchen.',
     errorOutOfInk: 'Keine Tinte mehr im Drucker. Bitte ersetzen und erneut versuchen.',
     errorSubmitFailed: 'Drucken fehlgeschlagen. Bitte erneut versuchen.',
+    errorConversionFailed: 'Dieses Dokument konnte nicht für den Druck vorbereitet werden.',
   },
   finalisingSession: {
     message: 'Ihre Dokumente wurden gedruckt. Vielen Dank!',

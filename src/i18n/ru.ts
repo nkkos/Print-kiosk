@@ -18,6 +18,7 @@ export const ru: Translations = {
     unavailable: 'Недоступно',
     tapToConfigurePrinting: 'Нажмите, чтобы настроить печать',
     scanningForViruses: 'Проверка на вирусы...',
+    preparingForPrint: 'Подготовка к печати...',
     configureAllFiles: 'Настроить печать для всех файлов',
     blockedVirusScan: 'Заблокировано — не прошло проверку на вирусы',
   },
@@ -132,6 +133,7 @@ export const ru: Translations = {
     errorOutOfPaper: 'В принтере закончилась бумага. Пополните лоток и повторите попытку.',
     errorOutOfInk: 'В принтере закончились чернила. Замените картридж и повторите попытку.',
     errorSubmitFailed: 'Не удалось распечатать. Повторите попытку.',
+    errorConversionFailed: 'Не удалось подготовить этот документ к печати.',
   },
   finalisingSession: {
     message: 'Ваши документы напечатаны. Спасибо!',

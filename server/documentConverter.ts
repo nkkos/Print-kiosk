@@ -3,6 +3,7 @@ import { readFile, writeFile } from 'node:fs/promises';
 import { promisify } from 'node:util';
 import libre from 'libreoffice-convert';
 import heicConvert from 'heic-convert';
+import { runExclusive } from './conversionQueue.js';
 
 // Converts an uploaded file to a format server/printerAdapter.ts can actually
 // print (server/fileValidation.ts's PRINTABLE_EXTENSIONS) when it isn't one
@@ -16,31 +17,59 @@ import heicConvert from 'heic-convert';
 
 const libreConvert = promisify(libre.convert);
 
+// Generous given the ~34s cold-start already observed locally — this only
+// stops *waiting* on a hung soffice call (server/conversionQueue.ts still
+// serializes real invocations); the underlying process isn't force-killed,
+// since the promisified API gives no handle to it.
+const CONVERSION_TIMEOUT_MS = 60_000;
+
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error('Conversion timed out')), ms);
+    promise.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (err: unknown) => {
+        clearTimeout(timer);
+        reject(err);
+      },
+    );
+  });
+}
+
+// The cache path a given file would convert to — or null if this module
+// doesn't handle its format. Exported so callers (server/routes.ts) can
+// check whether a conversion already succeeded without triggering one.
+export function getConvertedPath(absolutePath: string, fileName: string): string | null {
+  const lowerCased = fileName.toLowerCase();
+  if (lowerCased.endsWith('.doc') || lowerCased.endsWith('.docx')) return `${absolutePath}.pdf`;
+  if (lowerCased.endsWith('.heic')) return `${absolutePath}.jpg`;
+  return null;
+}
+
 export async function convertToPrintable(
   absolutePath: string,
   fileName: string,
 ): Promise<string | null> {
   const lowerCased = fileName.toLowerCase();
+  const outputPath = getConvertedPath(absolutePath, fileName);
+  if (!outputPath) return null;
+
+  if (existsSync(outputPath)) return outputPath;
 
   if (lowerCased.endsWith('.doc') || lowerCased.endsWith('.docx')) {
-    const outputPath = `${absolutePath}.pdf`;
-    if (!existsSync(outputPath)) {
-      const input = await readFile(absolutePath);
-      const output = await libreConvert(input, '.pdf', undefined);
-      await writeFile(outputPath, output);
-    }
+    const input = await readFile(absolutePath);
+    const output = await runExclusive(() =>
+      withTimeout(libreConvert(input, '.pdf', undefined), CONVERSION_TIMEOUT_MS),
+    );
+    await writeFile(outputPath, output);
     return outputPath;
   }
 
-  if (lowerCased.endsWith('.heic')) {
-    const outputPath = `${absolutePath}.jpg`;
-    if (!existsSync(outputPath)) {
-      const input = await readFile(absolutePath);
-      const output = await heicConvert({ buffer: input, format: 'JPEG', quality: 0.9 });
-      await writeFile(outputPath, Buffer.from(output));
-    }
-    return outputPath;
-  }
-
-  return null;
+  const input = await readFile(absolutePath);
+  const output = await heicConvert({ buffer: input, format: 'JPEG', quality: 0.9 });
+  await writeFile(outputPath, Buffer.from(output));
+  return outputPath;
 }

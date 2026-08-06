@@ -5,7 +5,7 @@ import bcrypt from 'bcryptjs';
 import rateLimit from 'express-rate-limit';
 import { simpleParser } from 'mailparser';
 import { networkInterfaces } from 'node:os';
-import { mkdirSync } from 'node:fs';
+import { mkdirSync, existsSync } from 'node:fs';
 import { writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
@@ -31,7 +31,7 @@ import {
   decodeOriginalName,
 } from './fileValidation.js';
 import { submitPrintJob, PrintSubmitError, PLACEHOLDER_PDF_PATH } from './printerAdapter.js';
-import { convertToPrintable } from './documentConverter.js';
+import { getConvertedPath } from './documentConverter.js';
 import {
   createPrintTask,
   updatePrintTaskStatus,
@@ -430,9 +430,12 @@ router.post('/api/print-tasks', async (req, res) => {
   // scanned 'ready' — otherwise fall back to the placeholder
   // (server/printerAdapter.ts), same as when no fileId is given at all (e.g.
   // still-mocked Personal Account items). Formats pdf-to-printer can't
-  // handle directly go through server/documentConverter.ts first; any
-  // conversion failure (e.g. LibreOffice not installed locally) falls back
-  // to the placeholder too, rather than erroring the whole print task.
+  // handle directly are converted at upload time already
+  // (server/uploadStore.ts's scanFile → server/documentConverter.ts) — this
+  // just checks whether that conversion actually left a usable cached file.
+  // If it was expected but didn't happen (conversion failed, e.g. a
+  // password-protected file), that's a real failure worth surfacing — not
+  // silently printing a placeholder instead.
   let filePath = PLACEHOLDER_PDF_PATH;
   if (typeof fileId === 'string') {
     const file = await getUploadedFile(fileId);
@@ -440,10 +443,14 @@ router.post('/api/print-tasks', async (req, res) => {
       if (hasPrintableExtension(file.fileName)) {
         filePath = file.absolutePath;
       } else {
-        const converted = await convertToPrintable(file.absolutePath, file.fileName).catch(
-          () => null,
-        );
-        if (converted) filePath = converted;
+        const convertedPath = getConvertedPath(file.absolutePath, file.fileName);
+        if (convertedPath && existsSync(convertedPath)) {
+          filePath = convertedPath;
+        } else if (convertedPath) {
+          await updatePrintTaskStatus(task.id, 'failed', 'conversion-failed');
+          res.status(201).json(await getPrintTask(task.id));
+          return;
+        }
       }
     }
   }

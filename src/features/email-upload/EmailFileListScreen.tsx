@@ -146,7 +146,9 @@ export function EmailFileListScreen({
                   ? t.common.tapToConfigurePrinting
                   : attachment.status === 'rejected'
                     ? t.common.blockedVirusScan
-                    : t.common.scanningForViruses;
+                    : attachment.status === 'converting'
+                      ? t.common.preparingForPrint
+                      : t.common.scanningForViruses;
               return (
                 <OptionCard
                   key={attachment.id}

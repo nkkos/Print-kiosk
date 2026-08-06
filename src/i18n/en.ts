@@ -21,6 +21,7 @@ export const en = {
     unavailable: 'Unavailable',
     tapToConfigurePrinting: 'Tap to configure printing',
     scanningForViruses: 'Scanning for viruses...',
+    preparingForPrint: 'Preparing for print...',
     configureAllFiles: 'Configure printing for all files',
     blockedVirusScan: 'Blocked — failed virus scan',
   },
@@ -134,6 +135,7 @@ export const en = {
     errorOutOfPaper: 'The printer is out of paper. Please refill it and retry.',
     errorOutOfInk: 'The printer is out of ink. Please replace it and retry.',
     errorSubmitFailed: 'Printing failed. Please retry.',
+    errorConversionFailed: 'This document could not be prepared for printing.',
   },
   finalisingSession: {
     message: 'Your documents have been printed. Thank you!',

@@ -5,6 +5,8 @@ import { eq } from 'drizzle-orm';
 import NodeClam from 'clamscan';
 import { db } from './db/client.js';
 import { uploadedFiles } from './db/schema.js';
+import { hasPrintableExtension } from './fileValidation.js';
+import { convertToPrintable } from './documentConverter.js';
 
 // Real, DB-backed store for QR/Email-uploaded files, keyed by Kiosk Session
 // id or the email session-address prefix (see server/routes.ts, server/emailStore.ts).
@@ -17,7 +19,7 @@ export const uploadsDir = join(serverDir, 'uploads');
 export interface UploadedFile {
   id: string;
   fileName: string;
-  status: 'scanning' | 'ready' | 'rejected';
+  status: 'scanning' | 'converting' | 'ready' | 'rejected';
 }
 
 // Real antivirus scanning (docs/domain/kiosk-session.md, "File scanning
@@ -54,7 +56,24 @@ async function updateStatus(fileId: string, status: UploadedFile['status']) {
   await db.update(uploadedFiles).set({ status }).where(eq(uploadedFiles.id, fileId));
 }
 
-async function scanFile(fileId: string, filePath: string) {
+// Converts to a printable format right after a clean scan (server/documentConverter.ts)
+// — so by the time a file can be selected on QR/Email screens (status
+// 'ready'), printing it later is fast and its real content is known to be
+// printable or not. A conversion failure doesn't reject the upload itself
+// (the file passed the virus scan and is legitimate) — it's remembered
+// implicitly by the cached output file not existing, which
+// POST /api/print-tasks (server/routes.ts) checks at print time.
+async function convertIfNeeded(fileId: string, filePath: string, fileName: string) {
+  if (hasPrintableExtension(fileName)) return;
+  await updateStatus(fileId, 'converting');
+  try {
+    await convertToPrintable(filePath, fileName);
+  } catch (err) {
+    console.error(`[uploadStore] Conversion failed for ${filePath}:`, err);
+  }
+}
+
+async function scanFile(fileId: string, filePath: string, fileName: string) {
   try {
     const clamscan = await getClamscan();
     const { isInfected } = await clamscan.scanFile(filePath);
@@ -67,8 +86,7 @@ async function scanFile(fileId: string, filePath: string) {
       // kiosk can still show the user what happened.
       await unlink(filePath).catch(() => {});
       await updateStatus(fileId, 'rejected');
-    } else {
-      await updateStatus(fileId, 'ready');
+      return;
     }
   } catch (err) {
     // Dev-only fail-open: if clamd itself is unreachable (e.g. a developer
@@ -77,8 +95,9 @@ async function scanFile(fileId: string, filePath: string) {
     // production answer (docs/domain/kiosk-session.md, "File scanning
     // status") — production should fail closed.
     console.error(`[uploadStore] Scan failed for ${filePath}, failing open:`, err);
-    await updateStatus(fileId, 'ready');
   }
+  await convertIfNeeded(fileId, filePath, fileName);
+  await updateStatus(fileId, 'ready');
 }
 
 export async function addFile(
@@ -98,7 +117,7 @@ export async function addFile(
     })
     .returning({ id: uploadedFiles.id, fileName: uploadedFiles.fileName });
 
-  void scanFile(row.id, filePath);
+  void scanFile(row.id, filePath, fileName);
 
   return { id: row.id, fileName: row.fileName, status: 'scanning' };
 }

@@ -80,7 +80,7 @@ export interface PrintOrder {
 export interface ReceivedFile {
   id: string;
   fileName: string;
-  status: 'scanning' | 'ready' | 'rejected';
+  status: 'scanning' | 'converting' | 'ready' | 'rejected';
 }
 
 /**

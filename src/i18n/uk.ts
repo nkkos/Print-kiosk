@@ -18,6 +18,7 @@ export const uk: Translations = {
     unavailable: 'Недоступно',
     tapToConfigurePrinting: 'Торкніться, щоб налаштувати друк',
     scanningForViruses: 'Перевірка на віруси...',
+    preparingForPrint: 'Підготовка до друку...',
     configureAllFiles: 'Налаштувати друк для всіх файлів',
     blockedVirusScan: 'Заблоковано — не пройшло перевірку на віруси',
   },
@@ -132,6 +133,7 @@ export const uk: Translations = {
     errorOutOfPaper: 'У принтері закінчився папір. Поповніть лоток і повторіть спробу.',
     errorOutOfInk: 'У принтері закінчилося чорнило. Замініть картридж і повторіть спробу.',
     errorSubmitFailed: 'Не вдалося надрукувати. Повторіть спробу.',
+    errorConversionFailed: 'Не вдалося підготувати цей документ до друку.',
   },
   finalisingSession: {
     message: 'Ваші документи надруковано. Дякуємо!',

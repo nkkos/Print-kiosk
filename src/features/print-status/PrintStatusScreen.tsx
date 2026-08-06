@@ -62,6 +62,8 @@ function errorMessage(
       return t.printStatus.errorOutOfPaper;
     case 'out-of-ink':
       return t.printStatus.errorOutOfInk;
+    case 'conversion-failed':
+      return t.printStatus.errorConversionFailed;
     default:
       return t.printStatus.errorSubmitFailed;
   }

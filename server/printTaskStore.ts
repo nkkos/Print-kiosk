@@ -8,7 +8,7 @@ import type { SubmitFailureReason } from './printerAdapter.js';
 
 export type PrintTaskStatus = 'queued' | 'printing' | 'succeeded' | 'failed';
 export type PrintTaskErrorReason =
-  SubmitFailureReason | 'paper-jam' | 'out-of-paper' | 'out-of-ink';
+  SubmitFailureReason | 'paper-jam' | 'out-of-paper' | 'out-of-ink' | 'conversion-failed';
 
 export interface PrintTask {
   id: string;
