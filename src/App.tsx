@@ -296,6 +296,8 @@ function App() {
           paperSize: item.paperSize,
           sides: item.sides,
           color: item.color,
+          orientation: item.orientation,
+          scale: item.scale,
           copies: item.quantity,
         }),
       ),

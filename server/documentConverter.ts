@@ -4,6 +4,7 @@ import { promisify } from 'node:util';
 import libre from 'libreoffice-convert';
 import heicConvert from 'heic-convert';
 import { runExclusive } from './conversionQueue.js';
+import { hasPrintableExtension } from './fileValidation.js';
 
 // Converts an uploaded file to a format server/printerAdapter.ts can actually
 // print (server/fileValidation.ts's PRINTABLE_EXTENSIONS) when it isn't one
@@ -47,6 +48,18 @@ export function getConvertedPath(absolutePath: string, fileName: string): string
   if (lowerCased.endsWith('.doc') || lowerCased.endsWith('.docx')) return `${absolutePath}.pdf`;
   if (lowerCased.endsWith('.heic')) return `${absolutePath}.jpg`;
   return null;
+}
+
+// Resolves the printable file for an already-'ready' upload — the original
+// itself if it's already a printable format, else its cached conversion
+// (only if that conversion actually succeeded — server/uploadStore.ts's
+// convertIfNeeded() runs at upload time, not here). Shared by
+// POST /api/print-tasks and GET /api/uploaded-files/:fileId/content
+// (server/routes.ts) — both need the identical resolution.
+export function resolvePrintablePath(absolutePath: string, fileName: string): string | null {
+  if (hasPrintableExtension(fileName)) return absolutePath;
+  const convertedPath = getConvertedPath(absolutePath, fileName);
+  return convertedPath && existsSync(convertedPath) ? convertedPath : null;
 }
 
 export async function convertToPrintable(

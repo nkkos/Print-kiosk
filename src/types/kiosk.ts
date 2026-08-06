@@ -48,6 +48,14 @@ export interface PrintOrder {
   paperSize: 'A4' | 'A5';
   sides: 'single' | 'double';
   color: 'bw' | 'color';
+  /** Forwarded as-is to `pdf-to-printer`'s own `orientation` option
+   * (server/printerAdapter.ts) — genuinely changes the physical printout,
+   * not just the preview. */
+  orientation: 'portrait' | 'landscape';
+  /** 'fit' maps to pdf-to-printer's `scale: 'fit'` (shrink/stretch to the
+   * selected paper size); 'original' maps to its `scale: 'noscale'` (true
+   * document size, may overflow or leave margin) — server/routes.ts. */
+  scale: 'fit' | 'original';
   /** Number of copies of this configured document. Minimum 1 — see
    * docs/cart-requirements.md ("Quantity"). */
   quantity: number;

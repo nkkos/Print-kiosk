@@ -53,6 +53,8 @@ export const MOCK_PAID_ORDERS: PrintOrder[] = [
     paperSize: 'A4',
     sides: 'double',
     color: 'bw',
+    orientation: 'portrait',
+    scale: 'fit',
     quantity: 2,
     unitPrice: 1,
     paidQuantity: 2,

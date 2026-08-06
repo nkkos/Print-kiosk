@@ -44,6 +44,14 @@ export function CartPanel({
     bw: t.common.colorBw,
     color: t.common.colorColor,
   };
+  const ORIENTATION_LABEL: Record<PrintOrder['orientation'], string> = {
+    portrait: t.common.orientationPortrait,
+    landscape: t.common.orientationLandscape,
+  };
+  const SCALE_LABEL: Record<PrintOrder['scale'], string> = {
+    fit: t.common.scaleFit,
+    original: t.common.scaleOriginal,
+  };
 
   if (items.length === 0) {
     return <p className={styles.empty}>{t.cart.empty}</p>;
@@ -92,6 +100,7 @@ export function CartPanel({
 
             <span className={styles.details}>
               {SETTINGS_LABEL[item.paperSize]}, {SIDES_LABEL[item.sides]}, {COLOR_LABEL[item.color]}
+              , {ORIENTATION_LABEL[item.orientation]}, {SCALE_LABEL[item.scale]}
             </span>
 
             <div className={styles.itemRow}>

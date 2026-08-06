@@ -1,6 +1,7 @@
 /* TODO: exact colors/typography values pending Design System sign-off
    (docs/design/design-system.md). The preview box is a least-opinionated
-   placeholder pending real document rendering. */
+   frame around the real rendered document (or, for items with no real file,
+   the filename placeholder). */
 
 .body {
   flex: 1;
@@ -19,6 +20,37 @@
   height: 20rem;
   border: 1px solid currentColor;
   border-radius: var(--radius-medium);
+}
+
+.previewMedia {
+  max-width: 100%;
+  max-height: 100%;
+}
+
+/* The popup's paper-size-calibrated frame (PX_PER_MM in the .tsx) —
+   overflow:hidden is what makes "original size" honestly show a document
+   that doesn't fit the selected paper as cropped, not silently shrunk. */
+.previewFrame {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border: 1px solid currentColor;
+  border-radius: var(--radius-medium);
+}
+
+.previewMediaContain {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.previewNav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-s);
+  margin-top: var(--space-s);
 }
 
 .settings {

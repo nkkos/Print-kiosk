@@ -5,7 +5,7 @@ import bcrypt from 'bcryptjs';
 import rateLimit from 'express-rate-limit';
 import { simpleParser } from 'mailparser';
 import { networkInterfaces } from 'node:os';
-import { mkdirSync, existsSync } from 'node:fs';
+import { mkdirSync } from 'node:fs';
 import { writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
@@ -34,11 +34,10 @@ import {
   MAX_FILE_SIZE_BYTES,
   MAX_FILE_SIZE_MB,
   hasAcceptedExtension,
-  hasPrintableExtension,
   decodeOriginalName,
 } from './fileValidation.js';
 import { submitPrintJob, PrintSubmitError, PLACEHOLDER_PDF_PATH } from './printerAdapter.js';
-import { getConvertedPath } from './documentConverter.js';
+import { getConvertedPath, resolvePrintablePath } from './documentConverter.js';
 import {
   createPrintTask,
   updatePrintTaskStatus,
@@ -199,6 +198,26 @@ router.post('/api/qr-sessions/:sessionId/files', handleFileUpload, async (req, r
 
 router.get('/api/qr-sessions/:sessionId/files', async (req, res) => {
   res.json(await listFiles(paramString(req.params.sessionId)));
+});
+
+// Serves the actual printable bytes for a real document preview
+// (src/features/print-order-configuration/PrintOrderConfigurationScreen.tsx)
+// — the same resolution POST /api/print-tasks uses (original if already
+// printable, else its cached conversion), just returned to the client
+// instead of handed to the local printer. res.sendFile infers Content-Type
+// from the extension automatically (application/pdf, image/jpeg, ...).
+router.get('/api/uploaded-files/:fileId/content', async (req, res) => {
+  const file = await getUploadedFile(paramString(req.params.fileId));
+  if (!file || file.status !== 'ready') {
+    res.status(404).end();
+    return;
+  }
+  const printablePath = resolvePrintablePath(file.absolutePath, file.fileName);
+  if (!printablePath) {
+    res.status(404).end();
+    return;
+  }
+  res.sendFile(printablePath);
 });
 
 // Session start (src/App.tsx's Trigger A/B — handlePrintActivate/handleLogin)
@@ -491,13 +510,16 @@ router.post('/api/accounts/delete-account', async (req, res) => {
 // manual "Simulate ..." outcomes below — both paths update the same record,
 // so the frontend only ever reacts to real status, never to how it got there.
 router.post('/api/print-tasks', async (req, res) => {
-  const { sessionId, fileId, paperSize, sides, color, copies } = (req.body ?? {}) as {
+  const { sessionId, fileId, paperSize, sides, color, copies, orientation, scale } = (req.body ??
+    {}) as {
     sessionId?: unknown;
     fileId?: unknown;
     paperSize?: unknown;
     sides?: unknown;
     color?: unknown;
     copies?: unknown;
+    orientation?: unknown;
+    scale?: unknown;
   };
   const task = await createPrintTask(typeof sessionId === 'string' ? sessionId : null);
 
@@ -515,17 +537,13 @@ router.post('/api/print-tasks', async (req, res) => {
   if (typeof fileId === 'string') {
     const file = await getUploadedFile(fileId);
     if (file && file.status === 'ready') {
-      if (hasPrintableExtension(file.fileName)) {
-        filePath = file.absolutePath;
-      } else {
-        const convertedPath = getConvertedPath(file.absolutePath, file.fileName);
-        if (convertedPath && existsSync(convertedPath)) {
-          filePath = convertedPath;
-        } else if (convertedPath) {
-          await updatePrintTaskStatus(task.id, 'failed', 'conversion-failed');
-          res.status(201).json(await getPrintTask(task.id));
-          return;
-        }
+      const resolvedPath = resolvePrintablePath(file.absolutePath, file.fileName);
+      if (resolvedPath) {
+        filePath = resolvedPath;
+      } else if (getConvertedPath(file.absolutePath, file.fileName)) {
+        await updatePrintTaskStatus(task.id, 'failed', 'conversion-failed');
+        res.status(201).json(await getPrintTask(task.id));
+        return;
       }
     }
   }
@@ -536,6 +554,9 @@ router.post('/api/print-tasks', async (req, res) => {
       paperSize: typeof paperSize === 'string' ? paperSize : undefined,
       side: sides === 'double' ? 'duplex' : sides === 'single' ? 'simplex' : undefined,
       monochrome: color === 'bw' ? true : color === 'color' ? false : undefined,
+      orientation:
+        orientation === 'portrait' || orientation === 'landscape' ? orientation : undefined,
+      scale: scale === 'fit' ? 'fit' : scale === 'original' ? 'noscale' : undefined,
     });
     await updatePrintTaskStatus(task.id, 'printing');
   } catch (err) {

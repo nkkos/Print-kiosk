@@ -26,6 +26,8 @@ export interface SubmitPrintJobRequest {
   paperSize?: 'A4' | 'A5';
   sides?: 'single' | 'double';
   color?: 'bw' | 'color';
+  orientation?: 'portrait' | 'landscape';
+  scale?: 'fit' | 'original';
   copies?: number;
 }
 
