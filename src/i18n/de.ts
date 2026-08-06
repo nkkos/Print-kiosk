@@ -126,6 +126,14 @@ export const de: Translations = {
   },
   printStatus: {
     printingMessage: 'Ihre Dokument(e) werden gedruckt...',
+    succeededMessage: 'Ihre Dokument(e) wurden erfolgreich gedruckt.',
+    continueLabel: 'Weiter',
+    retry: 'Erneut versuchen',
+    errorPrinterNotFound: 'Kein Drucker verfügbar. Bitte Drucker prüfen und erneut versuchen.',
+    errorPaperJam: 'Papierstau im Drucker. Bitte beheben und erneut versuchen.',
+    errorOutOfPaper: 'Kein Papier mehr im Drucker. Bitte nachfüllen und erneut versuchen.',
+    errorOutOfInk: 'Keine Tinte mehr im Drucker. Bitte ersetzen und erneut versuchen.',
+    errorSubmitFailed: 'Drucken fehlgeschlagen. Bitte erneut versuchen.',
   },
   finalisingSession: {
     message: 'Ihre Dokumente wurden gedruckt. Vielen Dank!',

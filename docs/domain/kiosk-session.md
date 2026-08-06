@@ -152,7 +152,7 @@ The confirmed process references the following entities. This document does not 
 - **Print Order** — created when the user confirms print settings for a file; kept separate from Scan Order because execution differs (a Print Order leads to a Print Task sent to a physical printer). Carries a `quantity` (number of copies of the configured document) that linearly multiplies price — see `docs/cart-requirements.md`.
 - **Scan Order** — created _after_ scanning happens (the reverse order compared to Print); leads to a Scan Task, which delivers a digital file to the user rather than producing a physical printout.
 - **Payment Order** — created from a user-selected subset of cart items; tracks its own status (e.g., ready for payment, paid, cancelled by client) independent of the individual orders it covers.
-- **Print Task / Scan Task** — the execution unit that actually drives the physical printer or the digital-delivery step, respectively.
+- **Print Task / Scan Task** — the execution unit that actually drives the physical printer or the digital-delivery step, respectively. Basic Print Task submission and status tracking is implemented for real (`server/printerAdapter.ts`, `printTasks` table) — job submission itself is real, but a plain OS print API gives no reliable in-progress signal (jam, out of paper/ink), so those outcomes are still driven manually via "Simulate ..." actions on Print Status, same underlying record either way. Deliberately independent of the still-mocked Cart/Print Order/Payment pipeline.
 
 ## Open items
 

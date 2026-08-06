@@ -24,6 +24,10 @@ const PLACEHOLDER_UNIT_PRICE = 1;
 
 interface PrintOrderConfigurationScreenProps {
   fileName: string;
+  /** The real `uploadedFiles.id` this file came from (QR/Email only) —
+   * threaded into the built PrintOrder so Print Status can print the real
+   * file instead of a placeholder (server/printerAdapter.ts). */
+  sourceFileId?: string;
   onAddToCart: (order: PrintOrder) => void;
   onBack: () => void;
   onHome: () => void;
@@ -52,6 +56,7 @@ interface PrintOrderConfigurationScreenProps {
 
 export function PrintOrderConfigurationScreen({
   fileName,
+  sourceFileId,
   onAddToCart,
   onBack,
   onHome,
@@ -81,6 +86,7 @@ export function PrintOrderConfigurationScreen({
     onAddToCart({
       id: crypto.randomUUID(),
       fileName,
+      sourceFileId,
       paperSize,
       sides,
       color,

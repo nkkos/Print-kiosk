@@ -9,7 +9,7 @@ import { mkdirSync } from 'node:fs';
 import { writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
-import { addFile, listFiles, uploadsDir } from './uploadStore.js';
+import { addFile, listFiles, uploadsDir, getUploadedFile } from './uploadStore.js';
 import { addEmail, listEmails } from './emailStore.js';
 import {
   createAccount,
@@ -27,8 +27,17 @@ import {
   MAX_FILE_SIZE_BYTES,
   MAX_FILE_SIZE_MB,
   hasAcceptedExtension,
+  hasPrintableExtension,
   decodeOriginalName,
 } from './fileValidation.js';
+import { submitPrintJob, PrintSubmitError, PLACEHOLDER_PDF_PATH } from './printerAdapter.js';
+import { convertToPrintable } from './documentConverter.js';
+import {
+  createPrintTask,
+  updatePrintTaskStatus,
+  getPrintTask,
+  type PrintTaskErrorReason,
+} from './printTaskStore.js';
 
 export const DEFAULT_PORT = 3001;
 
@@ -398,4 +407,93 @@ router.post('/api/accounts/change-password', async (req, res) => {
   }
   await updateAccountPassword(account.id, await bcrypt.hash(newPassword, 10));
   res.json({ ok: true });
+});
+
+// Print Tasks (docs/domain/kiosk-session.md, "Related entities" — "the
+// execution unit that actually drives the physical printer"). Only
+// job-submission is real (server/printerAdapter.ts); a plain OS print API
+// gives no reliable in-progress signal, so jam/out-of-paper/out-of-ink stay
+// manual "Simulate ..." outcomes below — both paths update the same record,
+// so the frontend only ever reacts to real status, never to how it got there.
+router.post('/api/print-tasks', async (req, res) => {
+  const { sessionId, fileId, paperSize, sides, color, copies } = (req.body ?? {}) as {
+    sessionId?: unknown;
+    fileId?: unknown;
+    paperSize?: unknown;
+    sides?: unknown;
+    color?: unknown;
+    copies?: unknown;
+  };
+  const task = await createPrintTask(typeof sessionId === 'string' ? sessionId : null);
+
+  // Only print the real uploaded file when it's actually resolvable and
+  // scanned 'ready' — otherwise fall back to the placeholder
+  // (server/printerAdapter.ts), same as when no fileId is given at all (e.g.
+  // still-mocked Personal Account items). Formats pdf-to-printer can't
+  // handle directly go through server/documentConverter.ts first; any
+  // conversion failure (e.g. LibreOffice not installed locally) falls back
+  // to the placeholder too, rather than erroring the whole print task.
+  let filePath = PLACEHOLDER_PDF_PATH;
+  if (typeof fileId === 'string') {
+    const file = await getUploadedFile(fileId);
+    if (file && file.status === 'ready') {
+      if (hasPrintableExtension(file.fileName)) {
+        filePath = file.absolutePath;
+      } else {
+        const converted = await convertToPrintable(file.absolutePath, file.fileName).catch(
+          () => null,
+        );
+        if (converted) filePath = converted;
+      }
+    }
+  }
+
+  try {
+    await submitPrintJob(filePath, {
+      copies: typeof copies === 'number' ? copies : undefined,
+      paperSize: typeof paperSize === 'string' ? paperSize : undefined,
+      side: sides === 'double' ? 'duplex' : sides === 'single' ? 'simplex' : undefined,
+      monochrome: color === 'bw' ? true : color === 'color' ? false : undefined,
+    });
+    await updatePrintTaskStatus(task.id, 'printing');
+  } catch (err) {
+    const reason = err instanceof PrintSubmitError ? err.reason : 'submit-failed';
+    await updatePrintTaskStatus(task.id, 'failed', reason);
+  }
+  res.status(201).json(await getPrintTask(task.id));
+});
+
+router.get('/api/print-tasks/:id', async (req, res) => {
+  const task = await getPrintTask(paramString(req.params.id));
+  if (!task) {
+    res.status(404).json({ error: 'Print task not found' });
+    return;
+  }
+  res.json(task);
+});
+
+const SIMULATABLE_OUTCOMES = ['success', 'paper-jam', 'out-of-paper', 'out-of-ink'] as const;
+type SimulatableOutcome = (typeof SIMULATABLE_OUTCOMES)[number];
+
+router.post('/api/print-tasks/:id/simulate', async (req, res) => {
+  const id = paramString(req.params.id);
+  const { outcome } = (req.body ?? {}) as { outcome?: unknown };
+  if (
+    typeof outcome !== 'string' ||
+    !SIMULATABLE_OUTCOMES.includes(outcome as SimulatableOutcome)
+  ) {
+    res.status(400).json({ error: 'Invalid outcome' });
+    return;
+  }
+  if (outcome === 'success') {
+    await updatePrintTaskStatus(id, 'succeeded');
+  } else {
+    await updatePrintTaskStatus(id, 'failed', outcome as PrintTaskErrorReason);
+  }
+  const task = await getPrintTask(id);
+  if (!task) {
+    res.status(404).json({ error: 'Print task not found' });
+    return;
+  }
+  res.json(task);
 });

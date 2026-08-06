@@ -125,6 +125,14 @@ export const sk: Translations = {
   },
   printStatus: {
     printingMessage: 'Tlačí sa váš dokument (dokumenty)...',
+    succeededMessage: 'Váš dokument (dokumenty) bol úspešne vytlačený.',
+    continueLabel: 'Pokračovať',
+    retry: 'Skúsiť znova',
+    errorPrinterNotFound: 'Tlačiareň nie je k dispozícii. Skontrolujte ju a skúste znova.',
+    errorPaperJam: 'V tlačiarni sa zasekol papier. Odstráňte ho a skúste znova.',
+    errorOutOfPaper: 'V tlačiarni došiel papier. Doplňte ho a skúste znova.',
+    errorOutOfInk: 'V tlačiarni došiel atrament. Vymeňte ho a skúste znova.',
+    errorSubmitFailed: 'Tlač zlyhala. Skúste znova.',
   },
   finalisingSession: {
     message: 'Vaše dokumenty boli vytlačené. Ďakujeme!',

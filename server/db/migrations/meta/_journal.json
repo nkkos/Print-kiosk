@@ -22,6 +22,20 @@
       "when": 1785948309937,
       "tag": "0002_clumsy_mentallo",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1785958512990,
+      "tag": "0003_early_mandrill",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1785963373049,
+      "tag": "0004_ambiguous_toad",
+      "breakpoints": true
     }
   ]
 }

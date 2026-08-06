@@ -1,10 +1,9 @@
 import { pgTable, uuid, text, integer, timestamp, index, boolean } from 'drizzle-orm/pg-core';
 
 // Real database schema (docs/domain/kiosk-session.md, docs/personal-account-requirements.md,
-// docs/cart-requirements.md) — see README.md, "Database." `accounts`/`kioskSessions`/
-// `printOrders`/`paymentOrders` exist now so later phases (real accounts, real payments) don't
-// need another migration, but nothing writes to them yet — only `uploadedFiles`/`receivedEmails`
-// are wired up (they're the only real production traffic today: QR/Email upload). Money is
+// docs/cart-requirements.md) — see README.md, "Database." `printOrders`/`paymentOrders` exist
+// now so a later real-payments phase doesn't need another migration, but nothing writes to them
+// yet — the Cart/Print Order/Payment pipeline in the frontend is still fully mocked. Money is
 // stored as integer cents to avoid float-precision bugs.
 
 export const accounts = pgTable('accounts', {
@@ -120,4 +119,28 @@ export const uploadedFiles = pgTable(
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [index('uploaded_files_session_key_idx').on(table.sessionKey)],
+);
+
+// A Print Task — "the execution unit that actually drives the physical
+// printer" (docs/domain/kiosk-session.md, "Related entities"). Deliberately
+// independent of `printOrders` (still unwired to the real Cart/pricing
+// pipeline) — this table only tracks one printer-submission attempt.
+export const printTasks = pgTable(
+  'print_tasks',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    // Not a real FK to kioskSessions — that table isn't written to yet (Cart/
+    // Payment/Print are still frontend-only, session state lives in
+    // localStorage), so a real client-generated session id would violate a
+    // references() constraint here. Kept as a plain column for later.
+    sessionId: uuid('session_id'),
+    // 'queued' | 'printing' | 'succeeded' | 'failed'
+    status: text('status').notNull().default('queued'),
+    // 'printer-not-found' | 'submit-failed' | 'paper-jam' | 'out-of-paper' | 'out-of-ink'
+    errorReason: text('error_reason'),
+    printerName: text('printer_name'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index('print_tasks_session_id_idx').on(table.sessionId)],
 );

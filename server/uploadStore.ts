@@ -115,3 +115,26 @@ export async function listFiles(sessionKey: string): Promise<UploadedFile[]> {
     .orderBy(uploadedFiles.createdAt);
   return rows as UploadedFile[];
 }
+
+// Resolves a real uploaded file's absolute path for printing
+// (server/printerAdapter.ts) — only 'ready' files with a printable extension
+// (server/fileValidation.ts) should actually be sent to the printer; callers
+// fall back to the placeholder document otherwise.
+export async function getUploadedFile(
+  id: string,
+): Promise<{ absolutePath: string; fileName: string; status: UploadedFile['status'] } | null> {
+  const [row] = await db
+    .select({
+      fileName: uploadedFiles.fileName,
+      storagePath: uploadedFiles.storagePath,
+      status: uploadedFiles.status,
+    })
+    .from(uploadedFiles)
+    .where(eq(uploadedFiles.id, id));
+  if (!row) return null;
+  return {
+    absolutePath: join(uploadsDir, row.storagePath),
+    fileName: row.fileName,
+    status: row.status as UploadedFile['status'],
+  };
+}

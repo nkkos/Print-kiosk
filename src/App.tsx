@@ -15,6 +15,8 @@ import { computeItemPrice } from './utils/pricing';
 import { getUploadConfig, listQrFiles } from './services/qrUploadApi';
 import { listEmailMessages } from './services/emailApi';
 import { login } from './services/accountApi';
+import { submitPrintJob, getPrintTask, simulatePrintOutcome } from './services/printApi';
+import type { PrintTask } from './services/printApi';
 import { LanguageProvider } from './i18n';
 import type { Language } from './i18n';
 import type { KioskSession, PrintOrder, ReceivedFile, ReceivedEmail } from './types/kiosk';
@@ -56,6 +58,12 @@ const QR_POLL_INTERVAL_MS = 3000;
 // docs/email-upload-requirements.md): the kiosk polls it for newly arrived
 // messages while the Email file list screen is open, same pattern as QR.
 const EMAIL_POLL_INTERVAL_MS = 3000;
+
+// Real print backend (server/printerAdapter.ts, dev-only — see
+// docs/domain/kiosk-session.md, "Related entities"): the kiosk polls the
+// submitted Print Task's status while Print Status is open, same pattern as
+// QR/Email above.
+const PRINT_POLL_INTERVAL_MS = 1500;
 
 // Simple state-based screen switch — no React Router yet, per
 // docs/implementation/project-architecture.md, Section 9 (deferred until a
@@ -99,6 +107,7 @@ function App() {
   // (docs/personal-account-requirements.md, "Batch configure") instead of
   // carrying over from the previous file.
   const [selectedFile, setSelectedFile] = useState<{
+    fileId?: string;
     fileName: string;
     sourceMethod: string;
     instanceKey: string;
@@ -107,7 +116,9 @@ function App() {
   // printing for all files" instead of picking one file at a time
   // (docs/personal-account-requirements.md, "Batch configure"). Empty for
   // the ordinary one-file-at-a-time flow.
-  const [batchQueue, setBatchQueue] = useState<{ fileName: string; sourceMethod: string }[]>([]);
+  const [batchQueue, setBatchQueue] = useState<
+    { fileId?: string; fileName: string; sourceMethod: string }[]
+  >([]);
   // Real received emails, each attachment carrying its own scanning status
   // (docs/email-upload-requirements.md; docs/domain/kiosk-session.md, "File
   // scanning status"). Owned here (not locally in EmailFileListScreen) for
@@ -177,6 +188,15 @@ function App() {
   // not cart-browsing/configuration, since connectivity may come back
   // quickly and the user can keep working with files meanwhile.
   const [isConnectionLost, setIsConnectionLost] = useState(false);
+  // The batch actually being printed this Print Status visit — distinct from
+  // `cart` (which only holds what's left for further shopping) and
+  // `paymentItems` (cleared once payment succeeds). Set right before
+  // navigating to Print Status, cleared once printing completes.
+  const [printingItems, setPrintingItems] = useState<PrintOrder[]>([]);
+  // One Print Task per `printingItems` entry (server/printTaskStore.ts) —
+  // empty before Print Status has submitted any yet. Cleared once the user
+  // leaves Print Status, so revisiting later starts a fresh submission.
+  const [printTasks, setPrintTasks] = useState<PrintTask[]>([]);
 
   useEffect(() => {
     localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cart));
@@ -239,6 +259,59 @@ function App() {
     };
   }, [screen, session]);
 
+  // Submits one real Print Task per `printingItems` entry
+  // (server/printerAdapter.ts) once, on entering Print Status — this screen
+  // is "fully system-controlled" (docs/domain/kiosk-session.md), so
+  // submission isn't gated on a button click. Each item's real
+  // `sourceFileId` (QR/Email only) prints that file for real; anything else
+  // falls back to a placeholder document server-side. handleRetryPrint
+  // resets `printTasks` to [] to trigger a fresh submission.
+  useEffect(() => {
+    if (screen !== 'print-status' || printingItems.length === 0 || printTasks.length > 0) return;
+    let cancelled = false;
+    Promise.all(
+      printingItems.map((item) =>
+        submitPrintJob({
+          sessionId: session?.id ?? null,
+          fileId: item.sourceFileId,
+          paperSize: item.paperSize,
+          sides: item.sides,
+          color: item.color,
+          copies: item.quantity,
+        }),
+      ),
+    ).then((tasks) => {
+      if (!cancelled) setPrintTasks(tasks);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [screen, printingItems, printTasks, session]);
+
+  // Polls every non-terminal task's status — a plain OS print API has no
+  // reliable in-progress signal, so "printing" only ever resolves via a real
+  // submit failure or a "Simulate ..." outcome (PrintStatusScreen), both of
+  // which update the same backend records.
+  useEffect(() => {
+    if (screen !== 'print-status' || printTasks.length === 0) return;
+    const hasPending = printTasks.some((t) => t.status !== 'succeeded' && t.status !== 'failed');
+    if (!hasPending) return;
+    let cancelled = false;
+    const intervalId = setInterval(() => {
+      Promise.all(
+        printTasks.map((t) =>
+          t.status === 'succeeded' || t.status === 'failed' ? t : getPrintTask(t.id),
+        ),
+      ).then((tasks) => {
+        if (!cancelled) setPrintTasks(tasks);
+      });
+    }, PRINT_POLL_INTERVAL_MS);
+    return () => {
+      cancelled = true;
+      clearInterval(intervalId);
+    };
+  }, [screen, printTasks]);
+
   function goToUploadMethodSelection(openCart: boolean) {
     setOpenCartOnUploadMethodSelection(openCart);
     setScreen('upload-method-selection');
@@ -260,19 +333,23 @@ function App() {
     setScreen('personal-account');
   }
 
-  function selectFileForConfiguration(fileName: string, sourceMethod: string) {
-    setSelectedFile({ fileName, sourceMethod, instanceKey: crypto.randomUUID() });
+  function selectFileForConfiguration(
+    fileId: string | undefined,
+    fileName: string,
+    sourceMethod: string,
+  ) {
+    setSelectedFile({ fileId, fileName, sourceMethod, instanceKey: crypto.randomUUID() });
     setScreen('print-order-configuration');
   }
 
   // Starts a batch (docs/personal-account-requirements.md, "Batch
   // configure"): configures the first file now, queues the rest for
   // handleAddToCart to work through one at a time.
-  function startBatch(files: { fileName: string; sourceMethod: string }[]) {
+  function startBatch(files: { fileId?: string; fileName: string; sourceMethod: string }[]) {
     if (files.length === 0) return;
     const [first, ...rest] = files;
     setBatchQueue(rest);
-    selectFileForConfiguration(first.fileName, first.sourceMethod);
+    selectFileForConfiguration(first.fileId, first.fileName, first.sourceMethod);
   }
 
   function handleConfigureAllEmailAttachments() {
@@ -281,6 +358,7 @@ function App() {
         .flatMap((email) => email.attachments)
         .filter((attachment) => attachment.status === 'ready')
         .map((attachment) => ({
+          fileId: attachment.id,
           fileName: attachment.fileName,
           sourceMethod: 'upload-method-email',
         })),
@@ -291,7 +369,11 @@ function App() {
     startBatch(
       qrFiles
         .filter((file) => file.status === 'ready')
-        .map((file) => ({ fileName: file.fileName, sourceMethod: 'upload-method-qr' })),
+        .map((file) => ({
+          fileId: file.id,
+          fileName: file.fileName,
+          sourceMethod: 'upload-method-qr',
+        })),
     );
   }
 
@@ -413,7 +495,7 @@ function App() {
     if (batchQueue.length > 0) {
       const [next, ...rest] = batchQueue;
       setBatchQueue(rest);
-      selectFileForConfiguration(next.fileName, next.sourceMethod);
+      selectFileForConfiguration(next.fileId, next.fileName, next.sourceMethod);
       return;
     }
 
@@ -448,6 +530,7 @@ function App() {
       setCart((current) =>
         current.filter((item) => !selectedItems.some((selected) => selected.id === item.id)),
       );
+      setPrintingItems(selectedItems);
       setScreen('print-status');
       return;
     }
@@ -461,12 +544,34 @@ function App() {
     setCart((current) =>
       current.filter((item) => !paymentItems.some((paid) => paid.id === item.id)),
     );
+    setPrintingItems(paymentItems);
     setPaymentItems([]);
     setScreen('print-status');
   }
 
   function handlePrintComplete() {
+    setPrintingItems([]);
+    setPrintTasks([]);
     setScreen('finalising-session');
+  }
+
+  // Resetting to [] re-triggers the submit effect above, which submits a
+  // fresh real batch (`printingItems` is untouched, so it's the same files).
+  function handleRetryPrint() {
+    setPrintTasks([]);
+  }
+
+  async function handleSimulatePrintOutcome(
+    outcome: 'success' | 'paper-jam' | 'out-of-paper' | 'out-of-ink',
+  ) {
+    const pending = printTasks.filter((t) => t.status !== 'succeeded' && t.status !== 'failed');
+    if (pending.length === 0) return;
+    const updated = await Promise.all(
+      pending.map((task) => simulatePrintOutcome(task.id, outcome)),
+    );
+    setPrintTasks((current) =>
+      current.map((task) => updated.find((u) => u.id === task.id) ?? task),
+    );
   }
 
   function handleSimulateConnectionLost() {
@@ -559,7 +664,9 @@ function App() {
     return (
       <LanguageProvider language={language}>
         <EmailFileListScreen
-          onFileSelect={(fileName) => selectFileForConfiguration(fileName, 'upload-method-email')}
+          onFileSelect={(fileId, fileName) =>
+            selectFileForConfiguration(fileId, fileName, 'upload-method-email')
+          }
           onConfigureAllFiles={handleConfigureAllEmailAttachments}
           emails={emailMessages}
           onBack={() => setScreen('email-address')}
@@ -591,7 +698,9 @@ function App() {
         <QrUploadScreen
           files={qrFiles}
           qrUploadUrl={qrUploadUrl}
-          onFileSelect={(fileName) => selectFileForConfiguration(fileName, 'upload-method-qr')}
+          onFileSelect={(fileId, fileName) =>
+            selectFileForConfiguration(fileId, fileName, 'upload-method-qr')
+          }
           onConfigureAllFiles={handleConfigureAllQrFiles}
           onBack={() => goToUploadMethodSelection(false)}
           onHome={() => setScreen('welcome')}
@@ -621,7 +730,9 @@ function App() {
       <LanguageProvider language={language}>
         <PersonalAccountScreen
           key={personalAccountRenderKey}
-          onFileSelect={(fileName) => selectFileForConfiguration(fileName, 'upload-method-account')}
+          onFileSelect={(fileName) =>
+            selectFileForConfiguration(undefined, fileName, 'upload-method-account')
+          }
           onConfigureSelectedFiles={handleConfigureSelectedAccountFiles}
           onAddPaidOrderToCart={handleAddPaidOrderToCart}
           initialTab={personalAccountTab}
@@ -655,6 +766,7 @@ function App() {
         <PrintOrderConfigurationScreen
           key={selectedFile.instanceKey}
           fileName={selectedFile.fileName}
+          sourceFileId={selectedFile.fileId}
           onAddToCart={handleAddToCart}
           onBack={() => {
             // Leaving mid-batch abandons the rest of the queue — continuing a
@@ -734,7 +846,10 @@ function App() {
           cartItems={cart}
           onQuantityChange={handleQuantityChange}
           onRemoveItem={handleRemoveItem}
+          printTasks={printTasks}
           onPrintComplete={handlePrintComplete}
+          onRetryPrint={handleRetryPrint}
+          onSimulatePrintOutcome={handleSimulatePrintOutcome}
           onEndSession={handleEndSession}
           onProceedToPayment={handleProceedToPayment}
           isConnectionLost={isConnectionLost}

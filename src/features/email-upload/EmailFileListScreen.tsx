@@ -22,7 +22,7 @@ import styles from './EmailFileListScreen.module.css';
 // this screen unmounts/remounts on every navigation away and back (e.g.,
 // after "Add to cart") and polling must keep running regardless.
 interface EmailFileListScreenProps {
-  onFileSelect: (fileName: string) => void;
+  onFileSelect: (fileId: string, fileName: string) => void;
   /** Configures every currently-selectable (scanned) attachment across every
    * received email, one after another (docs/personal-account-requirements.md,
    * "Batch configure") — an alternative to picking one file at a time. */
@@ -153,7 +153,9 @@ export function EmailFileListScreen({
                   id={`email-attachment-${attachment.id}`}
                   title={attachment.fileName}
                   description={description}
-                  onActivate={isReady ? () => onFileSelect(attachment.fileName) : undefined}
+                  onActivate={
+                    isReady ? () => onFileSelect(attachment.id, attachment.fileName) : undefined
+                  }
                   disabled={!isReady}
                 />
               );

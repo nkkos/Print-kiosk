@@ -126,6 +126,14 @@ export const en = {
   },
   printStatus: {
     printingMessage: 'Printing your document(s)...',
+    succeededMessage: 'Your document(s) printed successfully.',
+    continueLabel: 'Continue',
+    retry: 'Retry',
+    errorPrinterNotFound: 'No printer is available. Please check the printer and retry.',
+    errorPaperJam: 'The printer has a paper jam. Please clear it and retry.',
+    errorOutOfPaper: 'The printer is out of paper. Please refill it and retry.',
+    errorOutOfInk: 'The printer is out of ink. Please replace it and retry.',
+    errorSubmitFailed: 'Printing failed. Please retry.',
   },
   finalisingSession: {
     message: 'Your documents have been printed. Thank you!',

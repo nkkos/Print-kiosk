@@ -25,7 +25,7 @@ interface QrUploadScreenProps {
   /** The phone-facing upload URL to encode — null until App.tsx has fetched
    * it from the backend (docs/qr-upload-requirements.md). */
   qrUploadUrl: string | null;
-  onFileSelect: (fileName: string) => void;
+  onFileSelect: (fileId: string, fileName: string) => void;
   /** Configures every currently-selectable (scanned) uploaded file, one
    * after another (docs/personal-account-requirements.md, "Batch
    * configure") — an alternative to picking one file at a time. */
@@ -159,7 +159,7 @@ export function QrUploadScreen({
                     id={`qr-file-${file.id}`}
                     title={file.fileName}
                     description={description}
-                    onActivate={isReady ? () => onFileSelect(file.fileName) : undefined}
+                    onActivate={isReady ? () => onFileSelect(file.id, file.fileName) : undefined}
                     disabled={!isReady}
                   />
                 );

@@ -60,6 +60,12 @@ export interface PrintOrder {
    * Cart item traces back to it) — extra copies beyond what was paid for
    * are obtained by raising this item's `quantity`, not by re-adding it. */
   sourcePaidOrderId?: string;
+  /** The real `uploadedFiles.id` this Cart item was configured from — present
+   * only for QR/Email-sourced files (the only sources with real bytes on
+   * disk, server/uploadStore.ts). Absent for Personal Account/paid-order
+   * items, which stay mocked; Print Status falls back to a placeholder
+   * document for any item without this id (server/printerAdapter.ts). */
+  sourceFileId?: string;
 }
 
 /**
