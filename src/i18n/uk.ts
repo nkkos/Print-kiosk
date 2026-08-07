@@ -22,7 +22,7 @@ export const uk: Translations = {
     unavailable: 'Недоступно',
     tapToConfigurePrinting: 'Торкніться, щоб налаштувати друк',
     scanningForViruses: 'Перевірка на віруси...',
-    preparingForPrint: 'Підготовка до друку...',
+    preparingForPrint: 'Конвертація у PDF...',
     configureAllFiles: 'Налаштувати друк для всіх файлів',
     blockedVirusScan: 'Заблоковано — не пройшло перевірку на віруси',
     scanUnavailable: 'Видалено — перевірка на віруси недоступна. Спробуйте пізніше.',

@@ -16,29 +16,25 @@ import { hasPrintableExtension } from './fileValidation.js';
 // Cached on disk next to the original (<path>.pdf / <path>.jpg) so a retry
 // or re-print of the same file doesn't re-run the conversion.
 
-const libreConvert = promisify(libre.convert);
+// `convertWithOptions` (not the simpler `convert`) so `execOptions` reaches
+// the underlying `child_process.execFile` call directly — Node's own
+// `timeout`/`killSignal` support means a hung `soffice` process actually
+// gets killed, not just stopped-waiting-on (see CONVERSION_TIMEOUT_MS below).
+const libreConvertWithOptions = promisify(libre.convertWithOptions);
 
-// Generous given the ~34s cold-start already observed locally — this only
-// stops *waiting* on a hung soffice call (server/conversionQueue.ts still
-// serializes real invocations); the underlying process isn't force-killed,
-// since the promisified API gives no handle to it.
+// Generous given the ~34s cold-start already observed locally —
+// server/index.ts pays this cost once at boot (warmUpLibreOffice) so a real
+// user's first conversion isn't the cold one. server/conversionQueue.ts
+// still serializes real invocations.
 const CONVERSION_TIMEOUT_MS = 60_000;
 
-function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
-  return new Promise((resolve, reject) => {
-    const timer = setTimeout(() => reject(new Error('Conversion timed out')), ms);
-    promise.then(
-      (value) => {
-        clearTimeout(timer);
-        resolve(value);
-      },
-      (err: unknown) => {
-        clearTimeout(timer);
-        reject(err);
-      },
-    );
-  });
-}
+// Cast through unknown: @types for this package don't declare `execOptions`
+// even though the library's own source reads it and forwards it to
+// `child_process.execFile` — confirmed by reading node_modules directly.
+type ConvertOptions = Parameters<typeof libre.convertWithOptions>[3];
+const CONVERSION_EXEC_OPTIONS = {
+  execOptions: { timeout: CONVERSION_TIMEOUT_MS, killSignal: 'SIGKILL' },
+} as unknown as ConvertOptions;
 
 // The cache path a given file would convert to — or null if this module
 // doesn't handle its format. Exported so callers (server/routes.ts) can
@@ -75,7 +71,7 @@ export async function convertToPrintable(
   if (lowerCased.endsWith('.doc') || lowerCased.endsWith('.docx')) {
     const input = await readFile(absolutePath);
     const output = await runExclusive(() =>
-      withTimeout(libreConvert(input, '.pdf', undefined), CONVERSION_TIMEOUT_MS),
+      libreConvertWithOptions(input, '.pdf', undefined, CONVERSION_EXEC_OPTIONS),
     );
     await writeFile(outputPath, output);
     return outputPath;
@@ -85,4 +81,20 @@ export async function convertToPrintable(
   const output = await heicConvert({ buffer: input, format: 'JPEG', quality: 0.9 });
   await writeFile(outputPath, Buffer.from(output));
   return outputPath;
+}
+
+// Pays LibreOffice's cold-start cost once at server boot (server/index.ts)
+// instead of during a real user's first conversion — the ~34s+ startup
+// otherwise risks racing CONVERSION_TIMEOUT_MS on that very first request.
+// Runs through the same queue as real conversions so it can't race one;
+// never throws — a failed warm-up just means the first real conversion pays
+// the cold-start cost after all, not a boot failure.
+export async function warmUpLibreOffice(): Promise<void> {
+  try {
+    await runExclusive(() =>
+      libreConvertWithOptions(Buffer.from('warmup'), '.pdf', undefined, CONVERSION_EXEC_OPTIONS),
+    );
+  } catch (err) {
+    console.error('[documentConverter] LibreOffice warm-up failed:', err);
+  }
 }

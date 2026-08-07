@@ -13,6 +13,7 @@ try {
 const { router, DEFAULT_PORT, getLanIPv4 } = await import('./routes.js');
 const { db } = await import('./db/client.js');
 const { sweepExpiredFiles, ORPHAN_FILE_TTL_MS } = await import('./sessionLifecycle.js');
+const { warmUpLibreOffice } = await import('./documentConverter.js');
 
 // Dev-only backend for the QR/Email upload methods (docs/qr-upload-requirements.md,
 // docs/email-upload-requirements.md). Permissive CORS is intentional here — see
@@ -50,6 +51,12 @@ async function main() {
       .catch((err: unknown) => console.error('[index] Orphaned-file sweep failed:', err));
   void runSweep();
   setInterval(runSweep, 30 * 60 * 1000);
+
+  // Pays LibreOffice's cold-start cost once now instead of during a real
+  // user's first .doc/.docx conversion (server/documentConverter.ts).
+  // Fire-and-forget — doesn't delay the server accepting requests.
+  console.log('[index] Warming up LibreOffice...');
+  void warmUpLibreOffice().then(() => console.log('[index] LibreOffice warm-up complete'));
 }
 
 main().catch((err: unknown) => {

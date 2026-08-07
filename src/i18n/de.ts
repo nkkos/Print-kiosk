@@ -22,7 +22,7 @@ export const de: Translations = {
     unavailable: 'Nicht verfügbar',
     tapToConfigurePrinting: 'Tippen, um den Druck zu konfigurieren',
     scanningForViruses: 'Virenprüfung läuft...',
-    preparingForPrint: 'Wird für den Druck vorbereitet...',
+    preparingForPrint: 'Wird in PDF konvertiert...',
     configureAllFiles: 'Druck für alle Dateien konfigurieren',
     blockedVirusScan: 'Blockiert — Virenprüfung fehlgeschlagen',
     scanUnavailable:

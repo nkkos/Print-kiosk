@@ -25,7 +25,7 @@ export const en = {
     unavailable: 'Unavailable',
     tapToConfigurePrinting: 'Tap to configure printing',
     scanningForViruses: 'Scanning for viruses...',
-    preparingForPrint: 'Preparing for print...',
+    preparingForPrint: 'Converting to PDF...',
     configureAllFiles: 'Configure printing for all files',
     blockedVirusScan: 'Blocked — failed virus scan',
     scanUnavailable: 'Removed — virus scan unavailable. Please try again later.',

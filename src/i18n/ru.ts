@@ -22,7 +22,7 @@ export const ru: Translations = {
     unavailable: 'Недоступно',
     tapToConfigurePrinting: 'Нажмите, чтобы настроить печать',
     scanningForViruses: 'Проверка на вирусы...',
-    preparingForPrint: 'Подготовка к печати...',
+    preparingForPrint: 'Конвертация в PDF...',
     configureAllFiles: 'Настроить печать для всех файлов',
     blockedVirusScan: 'Заблокировано — не прошло проверку на вирусы',
     scanUnavailable: 'Удалено — проверка на вирусы недоступна. Попробуйте позже.',
