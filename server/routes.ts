@@ -510,17 +510,18 @@ router.post('/api/accounts/delete-account', async (req, res) => {
 // manual "Simulate ..." outcomes below — both paths update the same record,
 // so the frontend only ever reacts to real status, never to how it got there.
 router.post('/api/print-tasks', async (req, res) => {
-  const { sessionId, fileId, paperSize, sides, color, copies, orientation, scale } = (req.body ??
-    {}) as {
-    sessionId?: unknown;
-    fileId?: unknown;
-    paperSize?: unknown;
-    sides?: unknown;
-    color?: unknown;
-    copies?: unknown;
-    orientation?: unknown;
-    scale?: unknown;
-  };
+  const { sessionId, fileId, paperSize, sides, color, copies, orientation, scale, pages } =
+    (req.body ?? {}) as {
+      sessionId?: unknown;
+      fileId?: unknown;
+      paperSize?: unknown;
+      sides?: unknown;
+      color?: unknown;
+      copies?: unknown;
+      orientation?: unknown;
+      scale?: unknown;
+      pages?: unknown;
+    };
   const task = await createPrintTask(typeof sessionId === 'string' ? sessionId : null);
 
   // Only print the real uploaded file when it's actually resolvable and
@@ -557,6 +558,7 @@ router.post('/api/print-tasks', async (req, res) => {
       orientation:
         orientation === 'portrait' || orientation === 'landscape' ? orientation : undefined,
       scale: scale === 'fit' ? 'fit' : scale === 'original' ? 'noscale' : undefined,
+      pages: typeof pages === 'string' ? pages : undefined,
     });
     await updatePrintTaskStatus(task.id, 'printing');
   } catch (err) {

@@ -58,6 +58,16 @@
   gap: var(--space-m);
 }
 
+.pageRangeInputs {
+  display: flex;
+  align-items: center;
+  gap: var(--space-s);
+}
+
+.pageRangeInputs input {
+  width: 4rem;
+}
+
 .quantity {
   display: flex;
   align-items: center;

@@ -46,6 +46,7 @@ export interface SubmitPrintJobOptions {
   monochrome?: boolean;
   orientation?: 'portrait' | 'landscape';
   scale?: 'noscale' | 'shrink' | 'fit';
+  pages?: string;
 }
 
 export async function submitPrintJob(
@@ -65,6 +66,7 @@ export async function submitPrintJob(
       monochrome: options.monochrome,
       orientation: options.orientation,
       scale: options.scale,
+      pages: options.pages,
     });
   } catch {
     throw new PrintSubmitError('submit-failed');

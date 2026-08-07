@@ -298,6 +298,7 @@ function App() {
           color: item.color,
           orientation: item.orientation,
           scale: item.scale,
+          pages: item.pageRange,
           copies: item.quantity,
         }),
       ),

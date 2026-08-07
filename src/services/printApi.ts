@@ -28,6 +28,7 @@ export interface SubmitPrintJobRequest {
   color?: 'bw' | 'color';
   orientation?: 'portrait' | 'landscape';
   scale?: 'fit' | 'original';
+  pages?: string;
   copies?: number;
 }
 

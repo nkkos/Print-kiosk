@@ -8,6 +8,7 @@ import { useTranslation } from '../../i18n';
 import type { Language } from '../../i18n';
 import type { EndSessionReason, PrintOrder } from '../../types/kiosk';
 import { getUploadedFileContentUrl } from '../../services/uploadedFileApi';
+import { computeUnitPrice } from '../../utils/pricing';
 import styles from './PrintOrderConfigurationScreen.module.css';
 
 // Combined preview + print-settings screen — see
@@ -16,13 +17,11 @@ import styles from './PrintOrderConfigurationScreen.module.css';
 // and docs/domain/kiosk-session.md ("Related entities: Print Order").
 //
 // Prototype simplifications:
-// - unitPrice is a static placeholder, not a real per-page calculation
 // - settings use plain native radio inputs directly: no shared RadioGroup
 //   component yet, since this is the only consumer so far
 //
 // Quantity (docs/cart-requirements.md) is set here initially and can be
 // adjusted again later directly in the Cart popup — same underlying value.
-const PLACEHOLDER_UNIT_PRICE = 1;
 
 // Calibrates the popup's preview frame to real paper proportions, so
 // "original size" vs. "fit to paper" is honestly comparable against
@@ -215,6 +214,34 @@ export function PrintOrderConfigurationScreen({
   const [quantity, setQuantity] = useState(1);
   const preview = usePreview(sourceFileId);
 
+  // Page range (docs/email-upload-requirements.md's bare mention of "page
+  // range" as a future setting — now real). Only meaningful for a
+  // multi-page PDF; single-page PDFs, images, and mocked items with no real
+  // file all implicitly print/charge for 1 page (see pagesToPrint below).
+  const [pageRangeMode, setPageRangeMode] = useState<'all' | 'custom'>('all');
+  const [rangeFrom, setRangeFrom] = useState(1);
+  const [rangeTo, setRangeTo] = useState(1);
+
+  // Defaults "custom" to the full range once the real page count is known,
+  // so switching to it starts pre-filled rather than collapsed to page 1 —
+  // only fires once, when numPages first becomes available; a later manual
+  // edit to rangeTo is never overwritten since numPages doesn't change again.
+  useEffect(() => {
+    if (preview.kind === 'pdf' && preview.numPages > 0) {
+      setRangeTo(preview.numPages);
+    }
+  }, [preview.kind, preview.numPages]);
+
+  const pagesToPrint =
+    preview.kind === 'pdf' && pageRangeMode === 'custom'
+      ? Math.max(1, rangeTo - rangeFrom + 1)
+      : preview.kind === 'pdf'
+        ? preview.numPages || 1
+        : 1;
+  const unitPrice = computeUnitPrice(pagesToPrint, paperSize, color, sides);
+  const pageRange =
+    preview.kind === 'pdf' && pageRangeMode === 'custom' ? `${rangeFrom}-${rangeTo}` : undefined;
+
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [popupPage, setPopupPage] = useState(1);
   const thumbnailCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -280,8 +307,9 @@ export function PrintOrderConfigurationScreen({
       color,
       orientation,
       scale,
+      pageRange,
       quantity,
-      unitPrice: PLACEHOLDER_UNIT_PRICE,
+      unitPrice,
     });
   }
 
@@ -482,6 +510,61 @@ export function PrintOrderConfigurationScreen({
           </label>
         </fieldset>
 
+        {preview.kind === 'pdf' && preview.numPages > 1 && (
+          <fieldset className={styles.settings}>
+            <legend>{t.printOrderConfiguration.pagesLegend}</legend>
+            <label>
+              <input
+                type="radio"
+                name="pageRangeMode"
+                checked={pageRangeMode === 'all'}
+                onChange={() => setPageRangeMode('all')}
+              />
+              {t.printOrderConfiguration.pagesAll}
+            </label>
+            <label>
+              <input
+                type="radio"
+                name="pageRangeMode"
+                checked={pageRangeMode === 'custom'}
+                onChange={() => setPageRangeMode('custom')}
+              />
+              {t.printOrderConfiguration.pagesCustom}
+            </label>
+            {pageRangeMode === 'custom' && (
+              <span className={styles.pageRangeInputs}>
+                <input
+                  type="number"
+                  min={1}
+                  max={preview.numPages}
+                  value={rangeFrom}
+                  onChange={(e) => {
+                    const value = Math.max(
+                      1,
+                      Math.min(preview.numPages, Number(e.target.value) || 1),
+                    );
+                    setRangeFrom(Math.min(value, rangeTo));
+                  }}
+                />
+                –
+                <input
+                  type="number"
+                  min={1}
+                  max={preview.numPages}
+                  value={rangeTo}
+                  onChange={(e) => {
+                    const value = Math.max(
+                      1,
+                      Math.min(preview.numPages, Number(e.target.value) || 1),
+                    );
+                    setRangeTo(Math.max(value, rangeFrom));
+                  }}
+                />
+              </span>
+            )}
+          </fieldset>
+        )}
+
         <div className={styles.quantity}>
           <span>{t.printOrderConfiguration.quantity}</span>
           <Button
@@ -498,7 +581,7 @@ export function PrintOrderConfigurationScreen({
         </div>
 
         <p className={styles.price}>
-          {t.printOrderConfiguration.price((PLACEHOLDER_UNIT_PRICE * quantity).toFixed(2))}
+          {t.printOrderConfiguration.price((unitPrice * quantity).toFixed(2))}
         </p>
 
         <Button

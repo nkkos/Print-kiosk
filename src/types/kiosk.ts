@@ -56,6 +56,11 @@ export interface PrintOrder {
    * selected paper size); 'original' maps to its `scale: 'noscale'` (true
    * document size, may overflow or leave margin) — server/routes.ts. */
   scale: 'fit' | 'original';
+  /** The exact `pdf-to-printer` page-range syntax (`"2-5"`, server/printerAdapter.ts's
+   * `pages` option) — forwarded as-is to the real print job, and also what
+   * `src/utils/pricing.ts`'s `computeUnitPrice` was given as `pageCount` at
+   * "Add to cart" time. `undefined` means every page. */
+  pageRange?: string;
   /** Number of copies of this configured document. Minimum 1 — see
    * docs/cart-requirements.md ("Quantity"). */
   quantity: number;
