@@ -37,6 +37,47 @@ export const accountTokens = pgTable(
   (table) => [index('account_tokens_account_id_idx').on(table.accountId)],
 );
 
+// Personal Account's "My files" (docs/personal-account-requirements.md) —
+// permanent, account-owned storage, deliberately separate from
+// `uploadedFiles` (session-scoped, subject to server/sessionLifecycle.ts's
+// TTL sweep and session-end cleanup). Mixing the two would risk that sweep
+// silently deleting a user's saved files. Folder management happens only on
+// the portal — the kiosk is read-only with respect to organization.
+export const accountFolders = pgTable(
+  'account_folders',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    accountId: uuid('account_id')
+      .notNull()
+      .references(() => accounts.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index('account_folders_account_id_idx').on(table.accountId)],
+);
+
+export const accountFiles = pgTable(
+  'account_files',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    accountId: uuid('account_id')
+      .notNull()
+      .references(() => accounts.id, { onDelete: 'cascade' }),
+    // null = root (no folder)
+    folderId: uuid('folder_id').references(() => accountFolders.id, { onDelete: 'set null' }),
+    fileName: text('file_name').notNull(),
+    // path relative to server/account-uploads/, not absolute
+    storagePath: text('storage_path').notNull(),
+    // 'scanning' | 'converting' | 'ready' | 'rejected' | 'scan-unavailable'
+    status: text('status').notNull().default('scanning'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index('account_files_account_id_idx').on(table.accountId),
+    index('account_files_folder_id_idx').on(table.folderId),
+  ],
+);
+
 export const kioskSessions = pgTable(
   'kiosk_sessions',
   {
@@ -79,10 +120,22 @@ export const printOrders = pgTable(
     // account linkage is anonymized.
     accountId: uuid('account_id').references(() => accounts.id, { onDelete: 'set null' }),
     paymentOrderId: uuid('payment_order_id').references(() => paymentOrders.id),
+    // The real My-files/portal-uploaded file this order prints — set only
+    // for orders created via POST /api/accounts/orders (server/routes.ts).
+    accountFileId: uuid('account_file_id').references(() => accountFiles.id, {
+      onDelete: 'set null',
+    }),
     fileName: text('file_name').notNull(),
     paperSize: text('paper_size').notNull(), // 'A4' | 'A5'
     sides: text('sides').notNull(), // 'single' | 'double'
     color: text('color').notNull(), // 'bw' | 'color'
+    orientation: text('orientation').notNull(), // 'portrait' | 'landscape'
+    scale: text('scale').notNull(), // 'fit' | 'original'
+    // The exact pdf-to-printer page-range syntax ("2-5") — null means every
+    // page, matching the kiosk's own PrintOrder.pageRange (src/types/kiosk.ts).
+    // Set only for orders created via POST /api/accounts/orders; ordinary
+    // kiosk Cart items never persist here (Cart/Print Order stay mocked).
+    pageRange: text('page_range'),
     quantity: integer('quantity').notNull(),
     unitPriceCents: integer('unit_price_cents').notNull(),
     // present only on orders paid in advance via the portal

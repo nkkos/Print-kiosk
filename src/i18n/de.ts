@@ -70,6 +70,12 @@ export const de: Translations = {
     logIn: 'Anmelden',
     incorrectCredentials: 'Falsche E-Mail-Adresse oder falsches Passwort.',
     forgotPassword: 'Passwort vergessen?',
+    register: 'Registrieren',
+    registerTitle: 'Konto erstellen',
+    registerQrHint:
+      'Scannen Sie diesen QR-Code mit Ihrem Telefon, um ein Konto im Webportal zu erstellen.',
+    registerQrImageAlt: 'QR-Code zur Kontoregistrierung',
+    preparingQrCode: 'QR-Code wird vorbereitet...',
   },
   welcome: {
     print: 'Drucken',

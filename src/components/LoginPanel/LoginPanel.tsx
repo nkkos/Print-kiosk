@@ -13,13 +13,20 @@ import styles from './LoginPanel.module.css';
 // Real backend authentication (server/routes.ts, POST /api/accounts/login) —
 // onLogin does the network call and throws on failure.
 
-type Mode = 'login' | 'forgot-password' | 'reset-sent';
+type Mode = 'login' | 'forgot-password' | 'reset-sent' | 'register';
 
 interface LoginPanelProps {
   onLogin: (email: string, password: string) => Promise<void>;
+  /** QR-code image (data URL) linking to the portal's register.html — null
+   * until KioskScreenLayout has fetched the portal's real URL
+   * (GET /api/config) and generated it. Registration itself only ever
+   * happens on the portal, from the user's own device
+   * (docs/personal-account-requirements.md) — the kiosk never collects a
+   * new account's credentials directly. */
+  registerQrImageUrl: string | null;
 }
 
-export function LoginPanel({ onLogin }: LoginPanelProps) {
+export function LoginPanel({ onLogin, registerQrImageUrl }: LoginPanelProps) {
   const t = useTranslation();
   const [mode, setMode] = useState<Mode>('login');
   const [email, setEmail] = useState('');
@@ -53,6 +60,27 @@ export function LoginPanel({ onLogin }: LoginPanelProps) {
       setIsSendingReset(false);
       setMode('reset-sent');
     }
+  }
+
+  if (mode === 'register') {
+    return (
+      <div className={styles.root}>
+        <h2 className={styles.title}>{t.login.registerTitle}</h2>
+        <div className={styles.qrBox}>
+          {registerQrImageUrl ? (
+            <img src={registerQrImageUrl} alt={t.login.registerQrImageAlt} />
+          ) : (
+            t.login.preparingQrCode
+          )}
+        </div>
+        <p>{t.login.registerQrHint}</p>
+        <Button
+          id="login-back-to-login-from-register"
+          label={t.login.backToLogin}
+          onClick={() => setMode('login')}
+        />
+      </div>
+    );
   }
 
   if (mode === 'reset-sent') {
@@ -133,6 +161,7 @@ export function LoginPanel({ onLogin }: LoginPanelProps) {
         label={t.login.forgotPassword}
         onClick={() => setMode('forgot-password')}
       />
+      <Button id="login-register" label={t.login.register} onClick={() => setMode('register')} />
     </div>
   );
 }

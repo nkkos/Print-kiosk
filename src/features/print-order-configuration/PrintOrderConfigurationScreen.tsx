@@ -1,6 +1,4 @@
 import { useEffect, useRef, useState } from 'react';
-import type { PDFDocumentProxy } from 'pdfjs-dist';
-import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import { KioskScreenLayout } from '../../layouts/KioskScreenLayout/KioskScreenLayout';
 import { Button } from '../../components/Button/Button';
 import { Modal } from '../../components/Modal/Modal';
@@ -8,7 +6,14 @@ import { useTranslation } from '../../i18n';
 import type { Language } from '../../i18n';
 import type { EndSessionReason, PrintOrder } from '../../types/kiosk';
 import { getUploadedFileContentUrl } from '../../services/uploadedFileApi';
+import { getAccountFileContentUrl } from '../../services/accountFileApi';
 import { computeUnitPrice } from '../../utils/pricing';
+import {
+  usePreview,
+  usePageRangeSelection,
+  renderPdfPageToCanvas,
+  type RenderMode,
+} from '../../utils/documentPreview';
 import styles from './PrintOrderConfigurationScreen.module.css';
 
 // Combined preview + print-settings screen — see
@@ -35,128 +40,26 @@ const PAPER_SIZE_MM: Record<PrintOrder['paperSize'], { width: number; height: nu
 };
 
 // Real document preview (docs/email-upload-requirements.md, "Preview and
-// print configuration") — only for QR/Email-sourced files (`sourceFileId`
-// present, the only ones with real bytes on disk, server/uploadStore.ts).
-// Personal Account/paid-order items (no sourceFileId) keep the plain
-// filename box, same fallback class as server/printerAdapter.ts's
-// placeholder document for the same items.
-type PreviewState = 'loading' | 'ready' | 'unavailable';
-type PreviewKind = 'pdf' | 'image';
-
-interface Preview {
-  state: PreviewState;
-  kind: PreviewKind | null;
-  /** Kept around (not discarded after rendering page 1) so switching pages
-   * in the popup re-renders from the already-downloaded bytes — no new
-   * network requests. */
-  pdf: PDFDocumentProxy | null;
-  numPages: number;
-  imageUrl: string | null;
-}
-
-const EMPTY_PREVIEW: Preview = {
-  state: 'unavailable',
-  kind: null,
-  pdf: null,
-  numPages: 0,
-  imageUrl: null,
-};
-
-function usePreview(sourceFileId: string | undefined): Preview {
-  const [preview, setPreview] = useState<Preview>(
-    sourceFileId ? { ...EMPTY_PREVIEW, state: 'loading' } : EMPTY_PREVIEW,
-  );
-
-  useEffect(() => {
-    if (!sourceFileId) {
-      setPreview(EMPTY_PREVIEW);
-      return;
-    }
-    let cancelled = false;
-    let objectUrl: string | null = null;
-    setPreview({ ...EMPTY_PREVIEW, state: 'loading' });
-
-    fetch(getUploadedFileContentUrl(sourceFileId))
-      .then(async (response) => {
-        if (!response.ok) throw new Error('Preview unavailable');
-        const contentType = response.headers.get('content-type') ?? '';
-        if (contentType.startsWith('image/')) {
-          const blob = await response.blob();
-          if (cancelled) return;
-          objectUrl = URL.createObjectURL(blob);
-          setPreview({
-            state: 'ready',
-            kind: 'image',
-            pdf: null,
-            numPages: 0,
-            imageUrl: objectUrl,
-          });
-          return;
-        }
-
-        const data = await response.arrayBuffer();
-        if (cancelled) return;
-        // Loaded on demand (not a top-level import) — it's a large library
-        // only ever needed by this one screen, and only for PDF-backed
-        // previews specifically (not every visit, and not the image branch
-        // above).
-        const pdfjsLib = await import('pdfjs-dist');
-        pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
-        const pdf = await pdfjsLib.getDocument({ data }).promise;
-        if (cancelled) return;
-        setPreview({ state: 'ready', kind: 'pdf', pdf, numPages: pdf.numPages, imageUrl: null });
-      })
-      .catch(() => {
-        if (!cancelled) setPreview(EMPTY_PREVIEW);
-      });
-
-    return () => {
-      cancelled = true;
-      if (objectUrl) URL.revokeObjectURL(objectUrl);
-    };
-  }, [sourceFileId]);
-
-  return preview;
-}
-
-type RenderMode =
-  | { kind: 'fit-width'; targetWidthPx: number }
-  | { kind: 'fit-box'; widthPx: number; heightPx: number }
-  | { kind: 'absolute-points'; pxPerPoint: number };
-
-// `extraRotationDeg` simulates what a driver forcing the selected
-// orientation does to a page shaped the other way — combined with the
-// page's own intrinsic rotation, not replacing it.
-async function renderPdfPageToCanvas(
-  pdf: PDFDocumentProxy,
-  pageNumber: number,
-  canvas: HTMLCanvasElement,
-  extraRotationDeg: 0 | 90,
-  mode: RenderMode,
-): Promise<void> {
-  const page = await pdf.getPage(pageNumber);
-  const rotation = (page.rotate + extraRotationDeg) % 360;
-  const base = page.getViewport({ scale: 1, rotation });
-  const scale =
-    mode.kind === 'fit-width'
-      ? mode.targetWidthPx / base.width
-      : mode.kind === 'fit-box'
-        ? Math.min(mode.widthPx / base.width, mode.heightPx / base.height)
-        : mode.pxPerPoint;
-  const viewport = page.getViewport({ scale, rotation });
-  canvas.width = viewport.width;
-  canvas.height = viewport.height;
-  const context = canvas.getContext('2d');
-  if (!context) return;
-  await page.render({ canvasContext: context, viewport, canvas }).promise;
-}
+// print configuration") — only for files with real bytes on disk
+// (`sourceFileId` present): QR/Email uploads (server/uploadStore.ts) or
+// Personal Account's real "My files"/paid orders (server/accountFileStore.ts),
+// disambiguated by `sourceFileOrigin`. Paid-order items with no backing file
+// at all keep the plain filename box, same fallback class as
+// server/printerAdapter.ts's placeholder document for the same items.
+// Fetch/render/page-range logic itself lives in src/utils/documentPreview.ts,
+// shared with the portal's own "Configure & pay" panel (portal/FilesPage.tsx).
 
 interface PrintOrderConfigurationScreenProps {
   fileName: string;
-  /** The real `uploadedFiles.id` this file came from (QR/Email only) —
-   * threaded into the built PrintOrder so Print Status can print the real
-   * file instead of a placeholder (server/printerAdapter.ts). */
+  /** The real backing file's id this file came from — either
+   * `uploadedFiles.id` (QR/Email) or `accountFiles.id` (Personal Account),
+   * disambiguated by `sourceFileOrigin`. Threaded into the built PrintOrder
+   * so Print Status can print the real file instead of a placeholder
+   * (server/printerAdapter.ts). */
   sourceFileId?: string;
+  /** Which store `sourceFileId` resolves against — absent/`'upload'` = QR/Email,
+   * `'account'` = Personal Account (server/routes.ts). */
+  sourceFileOrigin?: 'upload' | 'account';
   onAddToCart: (order: PrintOrder) => void;
   onBack: () => void;
   onHome: () => void;
@@ -186,6 +89,7 @@ interface PrintOrderConfigurationScreenProps {
 export function PrintOrderConfigurationScreen({
   fileName,
   sourceFileId,
+  sourceFileOrigin,
   onAddToCart,
   onBack,
   onHome,
@@ -212,35 +116,23 @@ export function PrintOrderConfigurationScreen({
   const [orientation, setOrientation] = useState<PrintOrder['orientation']>('portrait');
   const [scale, setScale] = useState<PrintOrder['scale']>('fit');
   const [quantity, setQuantity] = useState(1);
-  const preview = usePreview(sourceFileId);
-
-  // Page range (docs/email-upload-requirements.md's bare mention of "page
-  // range" as a future setting — now real). Only meaningful for a
-  // multi-page PDF; single-page PDFs, images, and mocked items with no real
-  // file all implicitly print/charge for 1 page (see pagesToPrint below).
-  const [pageRangeMode, setPageRangeMode] = useState<'all' | 'custom'>('all');
-  const [rangeFrom, setRangeFrom] = useState(1);
-  const [rangeTo, setRangeTo] = useState(1);
-
-  // Defaults "custom" to the full range once the real page count is known,
-  // so switching to it starts pre-filled rather than collapsed to page 1 —
-  // only fires once, when numPages first becomes available; a later manual
-  // edit to rangeTo is never overwritten since numPages doesn't change again.
-  useEffect(() => {
-    if (preview.kind === 'pdf' && preview.numPages > 0) {
-      setRangeTo(preview.numPages);
-    }
-  }, [preview.kind, preview.numPages]);
-
-  const pagesToPrint =
-    preview.kind === 'pdf' && pageRangeMode === 'custom'
-      ? Math.max(1, rangeTo - rangeFrom + 1)
-      : preview.kind === 'pdf'
-        ? preview.numPages || 1
-        : 1;
+  const contentUrl = sourceFileId
+    ? sourceFileOrigin === 'account'
+      ? getAccountFileContentUrl(sourceFileId)
+      : getUploadedFileContentUrl(sourceFileId)
+    : undefined;
+  const preview = usePreview(contentUrl);
+  const {
+    pageRangeMode,
+    setPageRangeMode,
+    rangeFrom,
+    setRangeFrom,
+    rangeTo,
+    setRangeTo,
+    pagesToPrint,
+    pageRange,
+  } = usePageRangeSelection(preview);
   const unitPrice = computeUnitPrice(pagesToPrint, paperSize, color, sides);
-  const pageRange =
-    preview.kind === 'pdf' && pageRangeMode === 'custom' ? `${rangeFrom}-${rangeTo}` : undefined;
 
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [popupPage, setPopupPage] = useState(1);
@@ -302,6 +194,7 @@ export function PrintOrderConfigurationScreen({
       id: crypto.randomUUID(),
       fileName,
       sourceFileId,
+      sourceFileOrigin,
       paperSize,
       sides,
       color,

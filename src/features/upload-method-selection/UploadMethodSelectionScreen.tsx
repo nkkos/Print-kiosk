@@ -3,6 +3,7 @@ import { KioskScreenLayout } from '../../layouts/KioskScreenLayout/KioskScreenLa
 import { OptionCard } from '../../components/OptionCard/OptionCard';
 import { Modal } from '../../components/Modal/Modal';
 import { LoginPanel } from '../../components/LoginPanel/LoginPanel';
+import { useRegisterQrImageUrl } from '../../components/LoginPanel/useRegisterQrImageUrl';
 import { useTranslation } from '../../i18n';
 import type { Language } from '../../i18n';
 import type { EndSessionReason, PrintOrder } from '../../types/kiosk';
@@ -112,6 +113,7 @@ export function UploadMethodSelectionScreen({
 }: UploadMethodSelectionScreenProps) {
   const t = useTranslation();
   const [isAccountLoginOpen, setIsAccountLoginOpen] = useState(false);
+  const registerQrImageUrl = useRegisterQrImageUrl();
 
   function handleAccountCardActivate() {
     if (accountId) {
@@ -208,7 +210,7 @@ export function UploadMethodSelectionScreen({
 
       {isAccountLoginOpen && (
         <Modal onClose={() => setIsAccountLoginOpen(false)}>
-          <LoginPanel onLogin={handleAccountLoginSuccess} />
+          <LoginPanel onLogin={handleAccountLoginSuccess} registerQrImageUrl={registerQrImageUrl} />
         </Modal>
       )}
 

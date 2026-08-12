@@ -5,7 +5,7 @@ import type { ReceivedFile } from '../types/kiosk';
 // elsewhere later; defaults to the backend's own default port.
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3001';
 
-export async function getUploadConfig(): Promise<{ lanUploadUrl: string }> {
+export async function getUploadConfig(): Promise<{ lanUploadUrl: string; portalUrl: string }> {
   const response = await fetch(`${API_BASE_URL}/api/config`);
   return response.json();
 }

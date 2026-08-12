@@ -1,13 +1,13 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { KioskScreenLayout } from '../../layouts/KioskScreenLayout/KioskScreenLayout';
 import { Button } from '../../components/Button/Button';
 import { OptionCard } from '../../components/OptionCard/OptionCard';
 import {
-  ACCOUNT_FOLDERS,
-  ACCOUNT_ROOT_FILES,
-  ALL_ACCOUNT_FILES,
-  MOCK_PAID_ORDERS,
-} from './mockAccountData';
+  listAccountFiles,
+  listAccountFolders,
+  listAccountOrders,
+} from '../../services/accountFileApi';
+import type { AccountFile, AccountFolder, AccountOrder } from '../../services/accountFileApi';
 import { useTranslation } from '../../i18n';
 import type { Language } from '../../i18n';
 import type { EndSessionReason, PrintOrder } from '../../types/kiosk';
@@ -27,8 +27,8 @@ import styles from './PersonalAccountScreen.module.css';
 //   Print Order Configuration step) with `paidQuantity` set, making its
 //   Cart price $0 unless the quantity is raised on-site.
 interface PersonalAccountScreenProps {
-  onFileSelect: (fileName: string) => void;
-  onConfigureSelectedFiles: (fileNames: string[]) => void;
+  onFileSelect: (fileId: string, fileName: string) => void;
+  onConfigureSelectedFiles: (files: { fileId: string; fileName: string }[]) => void;
   onAddPaidOrderToCart: (order: PrintOrder) => void;
   initialTab?: 'files' | 'orders';
   onBack: () => void;
@@ -86,9 +86,22 @@ export function PersonalAccountScreen({
   const [activeTab, setActiveTab] = useState<'files' | 'orders'>(initialTab);
   const [openFolderId, setOpenFolderId] = useState<string | null>(null);
   const [selectedFileIds, setSelectedFileIds] = useState<Set<string>>(new Set());
+  const [folders, setFolders] = useState<AccountFolder[]>([]);
+  const [files, setFiles] = useState<AccountFile[]>([]);
+  const [orders, setOrders] = useState<AccountOrder[]>([]);
 
-  const openFolder = ACCOUNT_FOLDERS.find((folder) => folder.id === openFolderId) ?? null;
-  const visibleFiles = openFolder ? openFolder.files : ACCOUNT_ROOT_FILES;
+  // Real data from the web portal (docs/personal-account-requirements.md) —
+  // the kiosk only ever browses/selects/prints what's already there, never
+  // creates/renames/deletes folders or files itself.
+  useEffect(() => {
+    if (!accountId) return;
+    listAccountFolders(accountId).then(setFolders);
+    listAccountFiles(accountId).then(setFiles);
+    listAccountOrders(accountId).then(setOrders);
+  }, [accountId]);
+
+  const openFolder = folders.find((folder) => folder.id === openFolderId) ?? null;
+  const visibleFiles = files.filter((file) => file.folderId === openFolderId);
 
   function toggleFileSelected(id: string) {
     setSelectedFileIds((current) => {
@@ -103,10 +116,10 @@ export function PersonalAccountScreen({
   }
 
   function handleConfigureSelected() {
-    const fileNames = ALL_ACCOUNT_FILES.filter((file) => selectedFileIds.has(file.id)).map(
-      (file) => file.fileName,
-    );
-    onConfigureSelectedFiles(fileNames);
+    const selected = files
+      .filter((file) => selectedFileIds.has(file.id))
+      .map((file) => ({ fileId: file.id, fileName: file.fileName }));
+    onConfigureSelectedFiles(selected);
   }
 
   // Hides a paid order once it's in Cart (docs/personal-account-requirements.md,
@@ -115,7 +128,29 @@ export function PersonalAccountScreen({
   const addedPaidOrderIds = new Set(
     cartItems.map((item) => item.sourcePaidOrderId).filter((id) => id !== undefined),
   );
-  const availablePaidOrders = MOCK_PAID_ORDERS.filter((order) => !addedPaidOrderIds.has(order.id));
+  const availablePaidOrders = orders.filter((order) => !addedPaidOrderIds.has(order.id));
+
+  // `unitPriceCents` -> dollars, matching every other PrintOrder's unitPrice
+  // (src/utils/pricing.ts). `paidQuantity` equals `quantity` — accountOrderStore.ts
+  // only ever creates fully-paid orders, so this Cart item prices at $0
+  // unless the quantity is raised on-site.
+  function toPrintOrder(order: AccountOrder): PrintOrder {
+    return {
+      id: order.id,
+      fileName: order.fileName,
+      paperSize: order.paperSize,
+      sides: order.sides,
+      color: order.color,
+      orientation: order.orientation,
+      scale: order.scale,
+      pageRange: order.pageRange ?? undefined,
+      quantity: order.quantity,
+      unitPrice: order.unitPriceCents / 100,
+      paidQuantity: order.quantity,
+      sourceFileId: order.accountFileId ?? undefined,
+      sourceFileOrigin: 'account',
+    };
+  }
 
   return (
     <KioskScreenLayout
@@ -173,9 +208,9 @@ export function PersonalAccountScreen({
                 <h3 className={styles.folderName}>{openFolder.name}</h3>
               </div>
             ) : (
-              ACCOUNT_FOLDERS.length > 0 && (
+              folders.length > 0 && (
                 <div className={styles.folderList}>
-                  {ACCOUNT_FOLDERS.map((folder) => (
+                  {folders.map((folder) => (
                     <Button
                       key={folder.id}
                       id={`account-folder-${folder.id}`}
@@ -188,21 +223,40 @@ export function PersonalAccountScreen({
             )}
 
             <div className={styles.fileList}>
-              {visibleFiles.map((file) => (
-                <div key={file.id} className={styles.fileRow}>
-                  <input
-                    type="checkbox"
-                    id={`account-file-${file.id}-select`}
-                    checked={selectedFileIds.has(file.id)}
-                    onChange={() => toggleFileSelected(file.id)}
-                  />
-                  <Button
-                    id={`account-file-${file.id}`}
-                    label={file.fileName}
-                    onClick={() => onFileSelect(file.fileName)}
-                  />
-                </div>
-              ))}
+              {visibleFiles.map((file) => {
+                const isReady = file.status === 'ready';
+                // Same scanning-status vocabulary as QR/Email
+                // (src/features/qr-upload/QrUploadScreen.tsx) — files
+                // uploaded via the portal go through the identical
+                // AV-scan/conversion pipeline (server/fileScanning.ts).
+                const description =
+                  file.status === 'ready'
+                    ? t.common.tapToConfigurePrinting
+                    : file.status === 'rejected'
+                      ? t.common.blockedVirusScan
+                      : file.status === 'scan-unavailable'
+                        ? t.common.scanUnavailable
+                        : file.status === 'converting'
+                          ? t.common.preparingForPrint
+                          : t.common.scanningForViruses;
+                return (
+                  <div key={file.id} className={styles.fileRow}>
+                    <input
+                      type="checkbox"
+                      id={`account-file-${file.id}-select`}
+                      checked={selectedFileIds.has(file.id)}
+                      onChange={() => toggleFileSelected(file.id)}
+                      disabled={!isReady}
+                    />
+                    <Button
+                      id={`account-file-${file.id}`}
+                      label={`${file.fileName} — ${description}`}
+                      onClick={isReady ? () => onFileSelect(file.id, file.fileName) : undefined}
+                      disabled={!isReady}
+                    />
+                  </div>
+                );
+              })}
             </div>
 
             <Button
@@ -226,7 +280,7 @@ export function PersonalAccountScreen({
                     id={`account-order-${order.id}`}
                     title={order.fileName}
                     description={t.personalAccount.orderDescription(order.quantity)}
-                    onActivate={() => onAddPaidOrderToCart(order)}
+                    onActivate={() => onAddPaidOrderToCart(toPrintOrder(order))}
                   />
                 ))}
               </div>

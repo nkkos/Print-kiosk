@@ -10,7 +10,8 @@ try {
   // no .env file locally (or on Railway, where env vars are injected directly) — fine either way
 }
 
-const { router, DEFAULT_PORT, getLanIPv4 } = await import('./routes.js');
+const { router, DEFAULT_PORT } = await import('./routes.js');
+const { getLanIPv4 } = await import('./lanIp.js');
 const { db } = await import('./db/client.js');
 const { sweepExpiredFiles, ORPHAN_FILE_TTL_MS } = await import('./sessionLifecycle.js');
 const { warmUpLibreOffice } = await import('./documentConverter.js');

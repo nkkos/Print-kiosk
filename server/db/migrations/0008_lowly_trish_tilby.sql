@@ -1,0 +1,1 @@
+ALTER TABLE "print_orders" ADD COLUMN "page_range" text;

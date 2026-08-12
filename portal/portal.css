@@ -61,3 +61,116 @@ button:disabled {
 a {
   color: #1a1a1a;
 }
+
+.plainList {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 var(--space-m) 0;
+}
+
+.plainList li {
+  padding: var(--space-s) 0;
+  border-bottom: 1px solid #eee;
+}
+
+.plainList button {
+  margin-right: var(--space-xs);
+  margin-top: var(--space-xs);
+}
+
+.configurePanel {
+  margin-top: var(--space-s);
+  padding: var(--space-s);
+  border: 1px solid #eee;
+  border-radius: var(--radius-small);
+}
+
+/* Overrides the global `input { display: block; width: 100% }` above, which
+   would otherwise stretch radios and the small page-range number inputs. */
+input[type='radio'] {
+  display: inline-block;
+  width: auto;
+  margin: 0 var(--space-xs) 0 0;
+}
+
+fieldset {
+  margin: 0 0 var(--space-m) 0;
+  padding: var(--space-s);
+  border: 1px solid #ccc;
+  border-radius: var(--radius-small);
+}
+
+fieldset label {
+  display: inline-block;
+  margin-right: var(--space-m);
+  margin-bottom: 0;
+}
+
+.pageRangeInputs {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  margin-top: var(--space-s);
+}
+
+.pageRangeInputs input {
+  display: inline-block;
+  width: 4rem;
+}
+
+/* Real document preview (src/utils/documentPreview.ts) — same data/rendering
+   logic as the kiosk's Print Order Configuration, own markup here since this
+   is a plain scrolling page, not the kiosk's fixed header/footer shell. */
+.previewThumbnail {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 10rem;
+  height: 10rem;
+  margin-bottom: var(--space-m);
+  overflow: hidden;
+  border: 1px solid #ccc;
+  border-radius: var(--radius-small);
+  text-align: center;
+  font-size: 0.875rem;
+}
+
+.previewThumbnail canvas,
+.previewThumbnailImg {
+  max-width: 100%;
+  max-height: 100%;
+}
+
+.previewOverlayBackdrop {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgb(0 0 0 / 50%);
+  z-index: 10;
+}
+
+.previewOverlayBox {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-s);
+  max-width: 90vw;
+  max-height: 90vh;
+  overflow: auto;
+  padding: var(--space-m);
+  border-radius: var(--radius-large);
+  background: Canvas;
+}
+
+.previewOverlayBox canvas,
+.previewOverlayImg {
+  max-width: 100%;
+}
+
+.previewNav {
+  display: flex;
+  align-items: center;
+  gap: var(--space-s);
+}

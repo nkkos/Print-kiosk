@@ -7,6 +7,13 @@ const rootDir = import.meta.dirname;
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
+  // Listens on all interfaces (not just localhost) so a phone on the same
+  // Wi-Fi can actually reach the portal pages the kiosk QR-encodes (e.g.
+  // register.html) — the backend (server/index.ts) already does this via
+  // plain app.listen(port); Vite's dev server needs it explicitly.
+  server: {
+    host: true,
+  },
   build: {
     // Multi-page build: the kiosk (index.html) plus the minimal portal
     // (portal/, deployed separately to Cloudflare Pages — see README.md,
@@ -21,6 +28,7 @@ export default defineConfig({
         forgotPassword: resolve(rootDir, 'portal/forgot-password.html'),
         resetPassword: resolve(rootDir, 'portal/reset-password.html'),
         account: resolve(rootDir, 'portal/account.html'),
+        files: resolve(rootDir, 'portal/files.html'),
       },
     },
   },

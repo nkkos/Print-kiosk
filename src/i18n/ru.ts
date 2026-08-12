@@ -68,6 +68,11 @@ export const ru: Translations = {
     logIn: 'Войти',
     incorrectCredentials: 'Неверный email или пароль.',
     forgotPassword: 'Забыли пароль?',
+    register: 'Регистрация',
+    registerTitle: 'Создать аккаунт',
+    registerQrHint: 'Отсканируйте этот QR-код телефоном, чтобы создать аккаунт на веб-портале.',
+    registerQrImageAlt: 'QR-код для регистрации аккаунта',
+    preparingQrCode: 'Подготовка QR-кода...',
   },
   welcome: {
     print: 'Печать',

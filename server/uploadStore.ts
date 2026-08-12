@@ -1,12 +1,9 @@
-import { unlink } from 'node:fs/promises';
 import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { eq } from 'drizzle-orm';
-import NodeClam from 'clamscan';
 import { db } from './db/client.js';
 import { uploadedFiles } from './db/schema.js';
-import { hasPrintableExtension } from './fileValidation.js';
-import { convertToPrintable } from './documentConverter.js';
+import { scanAndConvert } from './fileScanning.js';
 
 // Real, DB-backed store for QR/Email-uploaded files, keyed by Kiosk Session
 // id or the email session-address prefix (see server/routes.ts, server/emailStore.ts).
@@ -22,92 +19,12 @@ export interface UploadedFile {
   status: 'scanning' | 'converting' | 'ready' | 'rejected' | 'scan-unavailable';
 }
 
-// Real antivirus scanning (docs/domain/kiosk-session.md, "File scanning
-// status") via a clamd daemon over TCP — connected lazily and cached only on
-// success, so a scan simply retries the connection next time rather than
-// crashing or wedging into a permanently-failed state. This matters
-// especially on Railway, where `clamav` and `backend` start independently —
-// backend can easily come up before clamd is ready to accept connections.
-let clamscanPromise: Promise<NodeClam> | null = null;
-
-function getClamscan(): Promise<NodeClam> {
-  if (!clamscanPromise) {
-    clamscanPromise = new NodeClam()
-      .init({
-        removeInfected: false, // we delete ourselves, after updating our own store
-        clamdscan: {
-          host: process.env.CLAMD_HOST ?? '127.0.0.1',
-          port: Number(process.env.CLAMD_PORT ?? 3310),
-          timeout: 60000,
-          active: true,
-        },
-        clamscan: { active: false },
-        preference: 'clamdscan',
-      })
-      .catch((err: unknown) => {
-        clamscanPromise = null; // let the next scan try again instead of reusing this failure forever
-        throw err;
-      });
-  }
-  return clamscanPromise;
-}
-
 async function updateStatus(fileId: string, status: UploadedFile['status']) {
   await db.update(uploadedFiles).set({ status }).where(eq(uploadedFiles.id, fileId));
 }
 
-// Converts to a printable format right after a clean scan (server/documentConverter.ts)
-// — so by the time a file can be selected on QR/Email screens (status
-// 'ready'), printing it later is fast and its real content is known to be
-// printable or not. A conversion failure doesn't reject the upload itself
-// (the file passed the virus scan and is legitimate) — it's remembered
-// implicitly by the cached output file not existing, which
-// POST /api/print-tasks (server/routes.ts) checks at print time.
-async function convertIfNeeded(fileId: string, filePath: string, fileName: string) {
-  if (hasPrintableExtension(fileName)) return;
-  await updateStatus(fileId, 'converting');
-  try {
-    await convertToPrintable(filePath, fileName);
-  } catch (err) {
-    console.error(`[uploadStore] Conversion failed for ${filePath}:`, err);
-  }
-}
-
 async function scanFile(fileId: string, filePath: string, fileName: string) {
-  try {
-    const clamscan = await getClamscan();
-    const { isInfected } = await clamscan.scanFile(filePath);
-    if (isInfected) {
-      // Deleted immediately rather than waiting for session end — matches
-      // docs/domain/kiosk-session.md's "delete the file content, retain the
-      // metadata/fact" cleanup philosophy, just applied right away since
-      // there's no reason to keep a flagged file around any longer than
-      // necessary. The DB record (fileName + 'rejected') stays, so the
-      // kiosk can still show the user what happened.
-      await unlink(filePath).catch(() => {});
-      await updateStatus(fileId, 'rejected');
-      return;
-    }
-  } catch (err) {
-    if (process.env.NODE_ENV === 'production') {
-      // Fail closed in production (docs/domain/kiosk-session.md, "File
-      // scanning status"): an unscanned file must never reach the user as
-      // if it were clean. Deleted immediately, same as a confirmed-infected
-      // file, but kept as a distinct status ('scan-unavailable', not
-      // 'rejected') — this is "couldn't verify," not "confirmed a threat,"
-      // and the kiosk shows a different message for it.
-      console.error(`[uploadStore] Scan failed for ${filePath}, failing closed:`, err);
-      await unlink(filePath).catch(() => {});
-      await updateStatus(fileId, 'scan-unavailable');
-      return;
-    }
-    // Dev-only fail-open: if clamd itself is unreachable (e.g. a developer
-    // forgot to start it), don't silently block every QR upload — log
-    // clearly and let the file through instead.
-    console.error(`[uploadStore] Scan failed for ${filePath}, failing open:`, err);
-  }
-  await convertIfNeeded(fileId, filePath, fileName);
-  await updateStatus(fileId, 'ready');
+  await scanAndConvert(filePath, fileName, (status) => updateStatus(fileId, status));
 }
 
 export async function addFile(

@@ -78,12 +78,18 @@ export interface PrintOrder {
    * Cart item traces back to it) — extra copies beyond what was paid for
    * are obtained by raising this item's `quantity`, not by re-adding it. */
   sourcePaidOrderId?: string;
-  /** The real `uploadedFiles.id` this Cart item was configured from — present
-   * only for QR/Email-sourced files (the only sources with real bytes on
-   * disk, server/uploadStore.ts). Absent for Personal Account/paid-order
-   * items, which stay mocked; Print Status falls back to a placeholder
-   * document for any item without this id (server/printerAdapter.ts). */
+  /** The real backing file's id this Cart item was configured from — either
+   * `uploadedFiles.id` (QR/Email) or `accountFiles.id` (Personal Account's
+   * real "My files"/paid orders, server/accountFileStore.ts), disambiguated
+   * by `sourceFileOrigin`. Absent only for the rare item with no real file at
+   * all; Print Status falls back to a placeholder document for those
+   * (server/printerAdapter.ts). */
   sourceFileId?: string;
+  /** Which store `sourceFileId` resolves against (server/routes.ts's
+   * POST /api/print-tasks). Absent/`'upload'` = `uploadedFiles.ts` (QR/Email,
+   * the original behavior); `'account'` = `accountFileStore.ts` (Personal
+   * Account). */
+  sourceFileOrigin?: 'upload' | 'account';
 }
 
 /**

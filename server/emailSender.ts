@@ -1,4 +1,5 @@
 import { Resend } from 'resend';
+import { getLanIPv4 } from './lanIp.js';
 
 // Sends account-lifecycle emails (verification, password reset) via Resend
 // — see README.md, "Portal," for domain-verification setup. Dev fallback:
@@ -9,7 +10,11 @@ import { Resend } from 'resend';
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 const FROM_EMAIL = process.env.RESEND_FROM_EMAIL ?? 'noreply@kiosk.example';
-const PORTAL_URL = process.env.PORTAL_URL ?? 'http://localhost:5173';
+// Falls back to this dev machine's LAN IP (not `localhost`) — the console-
+// logged link is meant to be opened on whatever device is testing the flow,
+// which during local kiosk testing is commonly a phone (a separate device),
+// same reasoning as GET /api/config's portalUrl (server/routes.ts).
+const PORTAL_URL = process.env.PORTAL_URL ?? `http://${getLanIPv4()}:5173`;
 
 async function sendEmail(to: string, subject: string, html: string, consoleLink: string) {
   if (!resend) {

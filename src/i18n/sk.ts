@@ -68,6 +68,11 @@ export const sk: Translations = {
     logIn: 'Prihlásiť sa',
     incorrectCredentials: 'Nesprávny e-mail alebo heslo.',
     forgotPassword: 'Zabudli ste heslo?',
+    register: 'Registrácia',
+    registerTitle: 'Vytvoriť účet',
+    registerQrHint: 'Naskenujte tento QR kód telefónom a vytvorte si účet na webovom portáli.',
+    registerQrImageAlt: 'QR kód na registráciu účtu',
+    preparingQrCode: 'Príprava QR kódu...',
   },
   welcome: {
     print: 'Tlač',

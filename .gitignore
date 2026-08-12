@@ -15,6 +15,9 @@ dist-ssr
 # QR upload backend's stored files (dev-only, never committed)
 server/uploads/
 
+# Personal Account's permanently-stored files (dev-only, never committed)
+server/account-uploads/
+
 # Environment variables (real secrets — .env.example is tracked separately)
 .env
 .env.*

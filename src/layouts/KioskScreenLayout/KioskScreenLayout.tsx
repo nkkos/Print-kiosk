@@ -7,6 +7,7 @@ import { Modal } from '../../components/Modal/Modal';
 import { CartPanel } from '../../components/CartPanel/CartPanel';
 import { Notification } from '../../components/Notification/Notification';
 import { LoginPanel } from '../../components/LoginPanel/LoginPanel';
+import { useRegisterQrImageUrl } from '../../components/LoginPanel/useRegisterQrImageUrl';
 import { useTranslation, LANGUAGE_NAMES } from '../../i18n';
 import type { Language } from '../../i18n';
 import type { EndSessionReason, PrintOrder } from '../../types/kiosk';
@@ -138,6 +139,7 @@ export function KioskScreenLayout({
   const [isIdleWarningOpen, setIsIdleWarningOpen] = useState(false);
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [isLanguageOpen, setIsLanguageOpen] = useState(false);
+  const registerQrImageUrl = useRegisterQrImageUrl();
 
   // Shows immediately when connection is lost, then keeps reappearing every
   // 30s regardless of dismissal, for as long as it stays lost.
@@ -321,7 +323,7 @@ export function KioskScreenLayout({
 
         {isLoginOpen && (
           <Modal onClose={() => setIsLoginOpen(false)}>
-            <LoginPanel onLogin={handleLoginSuccess} />
+            <LoginPanel onLogin={handleLoginSuccess} registerQrImageUrl={registerQrImageUrl} />
           </Modal>
         )}
 

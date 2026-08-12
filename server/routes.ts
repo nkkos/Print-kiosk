@@ -4,13 +4,25 @@ import multer from 'multer';
 import bcrypt from 'bcryptjs';
 import rateLimit from 'express-rate-limit';
 import { simpleParser } from 'mailparser';
-import { networkInterfaces } from 'node:os';
 import { mkdirSync } from 'node:fs';
 import { writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
+import { getLanIPv4 } from './lanIp.js';
 import { addFile, listFiles, uploadsDir, getUploadedFile } from './uploadStore.js';
 import { addEmail, listEmails } from './emailStore.js';
+import {
+  addFile as addAccountFile,
+  listFiles as listAccountFiles,
+  deleteFile as deleteAccountFile,
+  getAccountFile,
+  accountUploadsDir,
+  addFolder,
+  listFolders,
+  renameFolder,
+  deleteFolder,
+} from './accountFileStore.js';
+import { createPaidOrder, listPaidOrders } from './accountOrderStore.js';
 import {
   startSession,
   touchSessionActivity,
@@ -46,35 +58,6 @@ import {
 } from './printTaskStore.js';
 
 export const DEFAULT_PORT = 3001;
-
-// Auto-detects the dev machine's LAN-facing IPv4 so the QR code can encode a
-// URL the phone (a different device, on the same Wi-Fi) can actually reach —
-// "localhost" only works for the kiosk browser itself, which runs on this
-// same machine (docs/qr-upload-requirements.md, "How it works"). Dev
-// machines commonly also have VPN/virtual adapters (Radmin VPN, Hamachi,
-// Hyper-V, Docker, etc.) that also report a non-internal IPv4 but aren't
-// reachable from another device on the physical Wi-Fi — picking the first
-// non-internal address (the old approach) could return one of those
-// instead. Preferring an interface whose name actually says Wi-Fi/Ethernet
-// avoids that.
-export function getLanIPv4(): string {
-  const interfaces = Object.entries(networkInterfaces());
-
-  const wifiOrEthernet = interfaces.find(([name]) => /wi-?fi|wireless|ethernet/i.test(name));
-  const wifiAddress = wifiOrEthernet?.[1]?.find(
-    (entry) => entry.family === 'IPv4' && !entry.internal,
-  );
-  if (wifiAddress) return wifiAddress.address;
-
-  for (const [, entries] of interfaces) {
-    for (const entry of entries ?? []) {
-      if (entry.family === 'IPv4' && !entry.internal) {
-        return entry.address;
-      }
-    }
-  }
-  return 'localhost';
-}
 
 // Express 5 types route params as `string | string[]` in general (repeating
 // segments can produce arrays) — our routes only ever use plain `:sessionId`
@@ -144,7 +127,14 @@ router.get('/api/config', (_req, res) => {
   const lanUploadUrl = railwayDomain
     ? `https://${railwayDomain}`
     : `http://${getLanIPv4()}:${port}`;
-  res.json({ lanUploadUrl });
+  // The deployed portal's real, globally-reachable URL (Cloudflare Pages —
+  // same env var server/emailSender.ts already uses for email links) when
+  // set. Falls back to this dev machine's LAN IP at Vite's default port —
+  // same reasoning as lanUploadUrl above: a phone scanning the kiosk's
+  // "Register" QR code is a separate device, for which "localhost" would
+  // resolve to the phone itself, not this machine.
+  const portalUrl = process.env.PORTAL_URL ?? `http://${getLanIPv4()}:5173`;
+  res.json({ lanUploadUrl, portalUrl });
 });
 
 // The "lightweight web page (file picker / take-a-photo)" from
@@ -503,6 +493,229 @@ router.post('/api/accounts/delete-account', async (req, res) => {
   res.json({ ok: true });
 });
 
+// Personal Account's "My files"/"My orders" (docs/personal-account-requirements.md).
+// Folder/file/order management is portal-only (session-token-authenticated,
+// same requireSession as change-password/delete-account above) — the kiosk
+// only ever reads (accountId-only, no token, matching every other kiosk-
+// facing route today — see the block further below).
+interface AuthenticatedRequest extends Request {
+  accountId?: string;
+}
+
+async function requireAccountAuth(req: Request, res: Response, next: NextFunction) {
+  const account = await requireSession(req);
+  if (!account) {
+    res.status(401).json({ error: 'Not authenticated' });
+    return;
+  }
+  (req as AuthenticatedRequest).accountId = account.id;
+  next();
+}
+
+router.post('/api/accounts/folders', requireAccountAuth, async (req, res) => {
+  const { name } = (req.body ?? {}) as { name?: unknown };
+  if (typeof name !== 'string' || !name.trim()) {
+    res.status(400).json({ error: 'Folder name is required' });
+    return;
+  }
+  res.status(201).json(await addFolder((req as AuthenticatedRequest).accountId!, name.trim()));
+});
+
+router.get('/api/accounts/folders', requireAccountAuth, async (req, res) => {
+  res.json(await listFolders((req as AuthenticatedRequest).accountId!));
+});
+
+router.patch('/api/accounts/folders/:id', requireAccountAuth, async (req, res) => {
+  const { name } = (req.body ?? {}) as { name?: unknown };
+  if (typeof name !== 'string' || !name.trim()) {
+    res.status(400).json({ error: 'Folder name is required' });
+    return;
+  }
+  await renameFolder(
+    (req as AuthenticatedRequest).accountId!,
+    paramString(req.params.id),
+    name.trim(),
+  );
+  res.json({ ok: true });
+});
+
+router.delete('/api/accounts/folders/:id', requireAccountAuth, async (req, res) => {
+  await deleteFolder((req as AuthenticatedRequest).accountId!, paramString(req.params.id));
+  res.json({ ok: true });
+});
+
+// Separate multer instance from the QR one above — different destination
+// (server/accountFileStore.ts's accountUploadsDir, keyed by accountId, not
+// uploadsDir keyed by sessionId) — same format/size rules either way
+// (server/fileValidation.ts).
+const accountUpload = multer({
+  storage: multer.diskStorage({
+    destination: (req, _file, callback) => {
+      const accountId = (req as AuthenticatedRequest).accountId!;
+      const dir = join(accountUploadsDir, accountId);
+      mkdirSync(dir, { recursive: true });
+      callback(null, dir);
+    },
+    filename: (_req, file, callback) => {
+      callback(null, `${randomUUID()}-${file.originalname}`);
+    },
+  }),
+  limits: { fileSize: MAX_FILE_SIZE_BYTES },
+  fileFilter: (_req, file, callback) => {
+    file.originalname = decodeOriginalName(file.originalname);
+    if (hasAcceptedExtension(file.originalname)) {
+      callback(null, true);
+    } else {
+      callback(new InvalidFileFormatError());
+    }
+  },
+});
+
+// JSON-error variant of handleFileUpload above — this is a React portal page
+// consuming a JSON API, not a plain HTML form, so errors come back as JSON
+// instead of a redirect.
+function handleAccountFileUpload(req: Request, res: Response, next: NextFunction) {
+  accountUpload.array('files')(req, res, (err: unknown) => {
+    if (err instanceof multer.MulterError && err.code === 'LIMIT_FILE_SIZE') {
+      res
+        .status(400)
+        .json({ error: `File is too large — maximum size is ${MAX_FILE_SIZE_MB} MB.` });
+    } else if (err instanceof InvalidFileFormatError) {
+      res
+        .status(400)
+        .json({ error: `Unsupported file format. Accepted: ${ACCEPTED_EXTENSIONS.join(', ')}.` });
+    } else if (err) {
+      next(err);
+    } else {
+      next();
+    }
+  });
+}
+
+router.post(
+  '/api/accounts/files',
+  requireAccountAuth,
+  handleAccountFileUpload,
+  async (req, res) => {
+    const accountId = (req as AuthenticatedRequest).accountId!;
+    const files = Array.isArray(req.files) ? req.files : [];
+    const folderId = typeof req.body.folderId === 'string' ? req.body.folderId : undefined;
+    const results = await Promise.all(
+      files.map((file) => addAccountFile(accountId, file.originalname, file.path, folderId)),
+    );
+    res.status(201).json(results);
+  },
+);
+
+router.get('/api/accounts/files', requireAccountAuth, async (req, res) => {
+  res.json(await listAccountFiles((req as AuthenticatedRequest).accountId!));
+});
+
+router.delete('/api/accounts/files/:id', requireAccountAuth, async (req, res) => {
+  await deleteAccountFile((req as AuthenticatedRequest).accountId!, paramString(req.params.id));
+  res.json({ ok: true });
+});
+
+// Same shape as GET /api/uploaded-files/:fileId/content above — real preview
+// for My-files items, both on the portal and (no token available there) the
+// kiosk's own Print Order Configuration preview. Deliberately unauthenticated
+// to support that second, tokenless consumer — matches the existing
+// uploaded-files content endpoint's same posture.
+router.get('/api/account-files/:fileId/content', async (req, res) => {
+  const file = await getAccountFile(paramString(req.params.fileId));
+  if (!file || file.status !== 'ready') {
+    res.status(404).end();
+    return;
+  }
+  const printablePath = resolvePrintablePath(file.absolutePath, file.fileName);
+  if (!printablePath) {
+    res.status(404).end();
+    return;
+  }
+  res.sendFile(printablePath);
+});
+
+// Creates a paid-in-advance Print Order (docs/personal-account-requirements.md,
+// "Paid orders awaiting print"). "Payment" is simulated — there's no real
+// payment gateway anywhere in this project yet (Cart/Payment Status stay
+// mocked on the kiosk too) — so this creates an already-`'paid'`
+// paymentOrders row directly, in one step, rather than modeling a real
+// pending → paid transition. The price itself is trusted from the client
+// (src/utils/pricing.ts's computeUnitPrice) rather than recomputed
+// server-side — acceptable since no real money is involved here.
+router.post('/api/accounts/orders', requireAccountAuth, async (req, res) => {
+  const accountId = (req as AuthenticatedRequest).accountId!;
+  const {
+    accountFileId,
+    fileName,
+    paperSize,
+    sides,
+    color,
+    orientation,
+    scale,
+    pageRange,
+    quantity,
+    unitPriceCents,
+  } = (req.body ?? {}) as {
+    accountFileId?: unknown;
+    fileName?: unknown;
+    paperSize?: unknown;
+    sides?: unknown;
+    color?: unknown;
+    orientation?: unknown;
+    scale?: unknown;
+    pageRange?: unknown;
+    quantity?: unknown;
+    unitPriceCents?: unknown;
+  };
+  if (
+    typeof accountFileId !== 'string' ||
+    typeof fileName !== 'string' ||
+    (paperSize !== 'A4' && paperSize !== 'A5') ||
+    (sides !== 'single' && sides !== 'double') ||
+    (color !== 'bw' && color !== 'color') ||
+    (orientation !== 'portrait' && orientation !== 'landscape') ||
+    (scale !== 'fit' && scale !== 'original') ||
+    (pageRange !== undefined && typeof pageRange !== 'string') ||
+    typeof quantity !== 'number' ||
+    quantity < 1 ||
+    typeof unitPriceCents !== 'number' ||
+    unitPriceCents < 0
+  ) {
+    res.status(400).json({ error: 'Invalid order' });
+    return;
+  }
+  const order = await createPaidOrder({
+    accountId,
+    accountFileId,
+    fileName,
+    paperSize,
+    sides,
+    color,
+    orientation,
+    scale,
+    pageRange,
+    quantity,
+    unitPriceCents,
+  });
+  res.status(201).json(order);
+});
+
+// Kiosk-facing reads for My files/My orders — accountId-only, no token,
+// matching every other kiosk-facing route today (the kiosk has never carried
+// a session token; see CLAUDE.md, "the kiosk still doesn't need one").
+router.get('/api/accounts/:accountId/files', async (req, res) => {
+  res.json(await listAccountFiles(paramString(req.params.accountId)));
+});
+
+router.get('/api/accounts/:accountId/folders', async (req, res) => {
+  res.json(await listFolders(paramString(req.params.accountId)));
+});
+
+router.get('/api/accounts/:accountId/orders', async (req, res) => {
+  res.json(await listPaidOrders(paramString(req.params.accountId)));
+});
+
 // Print Tasks (docs/domain/kiosk-session.md, "Related entities" — "the
 // execution unit that actually drives the physical printer"). Only
 // job-submission is real (server/printerAdapter.ts); a plain OS print API
@@ -510,33 +723,47 @@ router.post('/api/accounts/delete-account', async (req, res) => {
 // manual "Simulate ..." outcomes below — both paths update the same record,
 // so the frontend only ever reacts to real status, never to how it got there.
 router.post('/api/print-tasks', async (req, res) => {
-  const { sessionId, fileId, paperSize, sides, color, copies, orientation, scale, pages } =
-    (req.body ?? {}) as {
-      sessionId?: unknown;
-      fileId?: unknown;
-      paperSize?: unknown;
-      sides?: unknown;
-      color?: unknown;
-      copies?: unknown;
-      orientation?: unknown;
-      scale?: unknown;
-      pages?: unknown;
-    };
+  const {
+    sessionId,
+    fileId,
+    sourceFileOrigin,
+    paperSize,
+    sides,
+    color,
+    copies,
+    orientation,
+    scale,
+    pages,
+  } = (req.body ?? {}) as {
+    sessionId?: unknown;
+    fileId?: unknown;
+    sourceFileOrigin?: unknown;
+    paperSize?: unknown;
+    sides?: unknown;
+    color?: unknown;
+    copies?: unknown;
+    orientation?: unknown;
+    scale?: unknown;
+    pages?: unknown;
+  };
   const task = await createPrintTask(typeof sessionId === 'string' ? sessionId : null);
 
-  // Only print the real uploaded file when it's actually resolvable and
-  // scanned 'ready' — otherwise fall back to the placeholder
-  // (server/printerAdapter.ts), same as when no fileId is given at all (e.g.
-  // still-mocked Personal Account items). Formats pdf-to-printer can't
-  // handle directly are converted at upload time already
-  // (server/uploadStore.ts's scanFile → server/documentConverter.ts) — this
-  // just checks whether that conversion actually left a usable cached file.
-  // If it was expected but didn't happen (conversion failed, e.g. a
+  // Only print the real file when it's actually resolvable and scanned
+  // 'ready' — otherwise fall back to the placeholder
+  // (server/printerAdapter.ts), same as when no fileId is given at all.
+  // `sourceFileOrigin: 'account'` resolves against Personal Account's real
+  // "My files" (server/accountFileStore.ts); anything else (the default)
+  // resolves against QR/Email's session-scoped uploads
+  // (server/uploadStore.ts), unchanged from before. Formats pdf-to-printer
+  // can't handle directly are converted at upload time already — this just
+  // checks whether that conversion actually left a usable cached file. If it
+  // was expected but didn't happen (conversion failed, e.g. a
   // password-protected file), that's a real failure worth surfacing — not
   // silently printing a placeholder instead.
   let filePath = PLACEHOLDER_PDF_PATH;
   if (typeof fileId === 'string') {
-    const file = await getUploadedFile(fileId);
+    const file =
+      sourceFileOrigin === 'account' ? await getAccountFile(fileId) : await getUploadedFile(fileId);
     if (file && file.status === 'ready') {
       const resolvedPath = resolvePrintablePath(file.absolutePath, file.fileName);
       if (resolvedPath) {

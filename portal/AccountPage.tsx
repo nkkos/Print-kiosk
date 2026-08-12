@@ -108,6 +108,9 @@ export function AccountPage() {
     <>
       <h1>My account</h1>
       <p>Logged in as {session.email}.</p>
+      <p>
+        <a href="./files.html">My files</a>
+      </p>
       <h2>Change password</h2>
       <form onSubmit={handleChangePassword}>
         <label>

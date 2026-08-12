@@ -71,6 +71,11 @@ export const en = {
     logIn: 'Log in',
     incorrectCredentials: 'Incorrect email or password.',
     forgotPassword: 'Forgot password?',
+    register: 'Register',
+    registerTitle: 'Create an account',
+    registerQrHint: 'Scan this QR code with your phone to create an account on the web portal.',
+    registerQrImageAlt: 'QR code to register for an account',
+    preparingQrCode: 'Preparing QR code...',
   },
   welcome: {
     print: 'Print',

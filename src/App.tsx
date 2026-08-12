@@ -5,7 +5,6 @@ import { EmailAddressScreen } from './features/email-upload/EmailAddressScreen';
 import { EmailFileListScreen } from './features/email-upload/EmailFileListScreen';
 import { QrUploadScreen } from './features/qr-upload/QrUploadScreen';
 import { PersonalAccountScreen } from './features/personal-account/PersonalAccountScreen';
-import { MOCK_PAID_ORDERS } from './features/personal-account/mockAccountData';
 import { PrintOrderConfigurationScreen } from './features/print-order-configuration/PrintOrderConfigurationScreen';
 import { PaymentStatusScreen } from './features/payment-status/PaymentStatusScreen';
 import { PrintStatusScreen } from './features/print-status/PrintStatusScreen';
@@ -16,6 +15,7 @@ import { computeItemPrice } from './utils/pricing';
 import { getUploadConfig, listQrFiles } from './services/qrUploadApi';
 import { listEmailMessages } from './services/emailApi';
 import { login } from './services/accountApi';
+import { listAccountOrders } from './services/accountFileApi';
 import { submitPrintJob, getPrintTask, simulatePrintOutcome } from './services/printApi';
 import type { PrintTask } from './services/printApi';
 import { startSession, touchSessionActivity, endSession } from './services/sessionApi';
@@ -293,6 +293,7 @@ function App() {
         submitPrintJob({
           sessionId: session?.id ?? null,
           fileId: item.sourceFileId,
+          sourceFileOrigin: item.sourceFileOrigin,
           paperSize: item.paperSize,
           sides: item.sides,
           color: item.color,
@@ -425,8 +426,14 @@ function App() {
     );
   }
 
-  function handleConfigureSelectedAccountFiles(fileNames: string[]) {
-    startBatch(fileNames.map((fileName) => ({ fileName, sourceMethod: 'upload-method-account' })));
+  function handleConfigureSelectedAccountFiles(files: { fileId: string; fileName: string }[]) {
+    startBatch(
+      files.map((file) => ({
+        fileId: file.fileId,
+        fileName: file.fileName,
+        sourceMethod: 'upload-method-account',
+      })),
+    );
   }
 
   function handleAddPaidOrderToCart(order: PrintOrder) {
@@ -496,9 +503,8 @@ function App() {
 
     // Detection and prompt (docs/personal-account-requirements.md, "Paid
     // orders awaiting print") — checked on every login, from any screen.
-    // Still mock data — real "My orders" needs the future portal + Phase 3
-    // payments (see docs/personal-account-requirements.md).
-    if (MOCK_PAID_ORDERS.length > 0) {
+    const orders = await listAccountOrders(account.id);
+    if (orders.length > 0) {
       setHasPendingPaidOrders(true);
     }
   }
@@ -802,8 +808,8 @@ function App() {
       <LanguageProvider language={language}>
         <PersonalAccountScreen
           key={personalAccountRenderKey}
-          onFileSelect={(fileName) =>
-            selectFileForConfiguration(undefined, fileName, 'upload-method-account')
+          onFileSelect={(fileId, fileName) =>
+            selectFileForConfiguration(fileId, fileName, 'upload-method-account')
           }
           onConfigureSelectedFiles={handleConfigureSelectedAccountFiles}
           onAddPaidOrderToCart={handleAddPaidOrderToCart}
@@ -839,6 +845,9 @@ function App() {
           key={selectedFile.instanceKey}
           fileName={selectedFile.fileName}
           sourceFileId={selectedFile.fileId}
+          sourceFileOrigin={
+            selectedFile.sourceMethod === 'upload-method-account' ? 'account' : undefined
+          }
           onAddToCart={handleAddToCart}
           onBack={() => {
             // Leaving mid-batch abandons the rest of the queue — continuing a

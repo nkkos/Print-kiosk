@@ -68,6 +68,11 @@ export const uk: Translations = {
     logIn: 'Увійти',
     incorrectCredentials: 'Неправильний email або пароль.',
     forgotPassword: 'Забули пароль?',
+    register: 'Реєстрація',
+    registerTitle: 'Створити акаунт',
+    registerQrHint: 'Відскануйте цей QR-код телефоном, щоб створити акаунт на веб-порталі.',
+    registerQrImageAlt: 'QR-код для реєстрації акаунта',
+    preparingQrCode: 'Підготовка QR-коду...',
   },
   welcome: {
     print: 'Друк',

@@ -20,9 +20,13 @@ export interface PrintTask {
 
 export interface SubmitPrintJobRequest {
   sessionId: string | null;
-  /** The real `uploadedFiles.id` to print (QR/Email only) — omitted or
-   * unresolvable falls back to a placeholder document (server/printerAdapter.ts). */
+  /** The real backing file's id to print — omitted or unresolvable falls
+   * back to a placeholder document (server/printerAdapter.ts). */
   fileId?: string;
+  /** Which store `fileId` resolves against (server/routes.ts) — absent or
+   * `'upload'` = QR/Email's `uploadedFiles`; `'account'` = Personal
+   * Account's real `accountFiles`. */
+  sourceFileOrigin?: 'upload' | 'account';
   paperSize?: 'A4' | 'A5';
   sides?: 'single' | 'double';
   color?: 'bw' | 'color';
