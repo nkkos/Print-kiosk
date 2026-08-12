@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 // bundle isn't statically analyzable for named exports) — import the
 // default (the whole `module.exports` object) and destructure instead.
 import pdfToPrinter from 'pdf-to-printer';
+import { runExclusive } from './printQueue.js';
 const { print, getDefaultPrinter } = pdfToPrinter;
 
 // Thin wrapper around the actual printer-talking library (server/db/migrations
@@ -57,17 +58,27 @@ export async function submitPrintJob(
   if (!resolvedPrinter) {
     throw new PrintSubmitError('printer-not-found');
   }
+  // Open item, found while testing this queue: unlike libreoffice-convert
+  // (server/documentConverter.ts), pdf-to-printer's print() takes no
+  // execFile options at all — no timeout/kill hook is exposed, so a hung
+  // SumatraPDF invocation (confirmed reproducible against a printer that
+  // shows its own blocking dialog, e.g. "Microsoft Print to PDF") hangs this
+  // call forever with nothing we can do about it from here. Not fixed here
+  // — would mean reimplementing the library's argument-building instead of
+  // just calling it.
   try {
-    await print(filePath, {
-      printer: resolvedPrinter,
-      copies: options.copies,
-      paperSize: options.paperSize,
-      side: options.side,
-      monochrome: options.monochrome,
-      orientation: options.orientation,
-      scale: options.scale,
-      pages: options.pages,
-    });
+    await runExclusive(() =>
+      print(filePath, {
+        printer: resolvedPrinter,
+        copies: options.copies,
+        paperSize: options.paperSize,
+        side: options.side,
+        monochrome: options.monochrome,
+        orientation: options.orientation,
+        scale: options.scale,
+        pages: options.pages,
+      }),
+    );
   } catch {
     throw new PrintSubmitError('submit-failed');
   }
