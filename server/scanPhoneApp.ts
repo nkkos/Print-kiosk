@@ -143,7 +143,7 @@ export function renderScanPhoneApp(scanSessionId: string, portalUrl: string): st
 (function () {
   var scanSessionId = ${JSON.stringify(scanSessionId)};
   var portalUrl = ${JSON.stringify(portalUrl)};
-  document.getElementById('login-register-link').href = portalUrl + '/register.html';
+  document.getElementById('login-register-link').href = portalUrl + '/portal/register.html';
 
   var currentPhoto = null;
   var currentCorners = null;
