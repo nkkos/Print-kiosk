@@ -17,6 +17,7 @@ const { sweepExpiredFiles, ORPHAN_FILE_TTL_MS } = await import('./sessionLifecyc
 const { sweepExpiredAccountFiles } = await import('./accountFileStore.js');
 const { ACCOUNT_FILE_RETENTION_DAYS } = await import('./accountFileLimits.js');
 const { sweepExpiredScanSessions, SCAN_SESSION_RETENTION_HOURS } = await import('./scanStore.js');
+const { sweepOrphanedCopySessions } = await import('./copyStore.js');
 const { warmUpLibreOffice } = await import('./documentConverter.js');
 
 // Dev-only backend for the QR/Email upload methods (docs/qr-upload-requirements.md,
@@ -80,6 +81,22 @@ async function main() {
       .catch((err: unknown) => console.error('[index] Scan session retention sweep failed:', err));
   void runScanSweep();
   setInterval(runScanSweep, 30 * 60 * 1000);
+
+  // Copy's own orphan safety-net (server/copyStore.ts) — the primary
+  // cleanup path is the explicit session-end hook in sessionLifecycle.ts's
+  // endSession; this only catches a capture abandoned without ever reaching
+  // "Finish" and without a clean session-end signal either (crash,
+  // connectivity loss) — same role/window as ORPHAN_FILE_TTL_MS above, not
+  // Scan's separate 24h retention.
+  const runCopySweep = () =>
+    sweepOrphanedCopySessions(ORPHAN_FILE_TTL_MS)
+      .then((count) => {
+        if (count > 0)
+          console.log(`[index] Orphaned copy-session sweep deleted ${count} session(s)`);
+      })
+      .catch((err: unknown) => console.error('[index] Orphaned copy-session sweep failed:', err));
+  void runCopySweep();
+  setInterval(runCopySweep, 30 * 60 * 1000);
 
   // Pays LibreOffice's cold-start cost once now instead of during a real
   // user's first .doc/.docx conversion (server/documentConverter.ts).

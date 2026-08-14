@@ -124,6 +124,16 @@ export const ru: Translations = {
     methodAccount: 'Личный кабинет',
     restart: 'Сканировать другой документ',
   },
+  copy: {
+    qrImageAlt: 'QR-код для открытия камеры копирования на телефоне',
+    preparingQrCode: 'Подготовка QR-кода...',
+    qrHint: 'Отсканируйте камерой телефона, чтобы начать копирование',
+    waitingMessage: 'Ожидание захвата страницы...',
+    pageCountMessage: (count: number) => `Захвачено страниц: ${count}`,
+    readyMessage: (count: number) => `Документ готов (${count} стр.)`,
+    configurePrinting: 'Настроить печать',
+    anotherDocument: 'Скопировать другой документ',
+  },
   personalAccount: {
     myFiles: 'Мои файлы',
     myOrders: 'Мои заказы',

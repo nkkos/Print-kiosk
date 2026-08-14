@@ -125,6 +125,16 @@ export const sk: Translations = {
     methodAccount: 'Osobný účet',
     restart: 'Skenovať ďalší dokument',
   },
+  copy: {
+    qrImageAlt: 'QR kód na otvorenie kopírovacej kamery vo vašom telefóne',
+    preparingQrCode: 'Pripravuje sa QR kód...',
+    qrHint: 'Naskenujte fotoaparátom telefónu a začnite kopírovať',
+    waitingMessage: 'Čaká sa na zachytenie strany...',
+    pageCountMessage: (count: number) => `Zatiaľ zachytených strán: ${count}`,
+    readyMessage: (count: number) => `Dokument pripravený (${count} strán)`,
+    configurePrinting: 'Nastaviť tlač',
+    anotherDocument: 'Kopírovať ďalší dokument',
+  },
   personalAccount: {
     myFiles: 'Moje súbory',
     myOrders: 'Moje objednávky',

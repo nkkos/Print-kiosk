@@ -5,6 +5,7 @@ import { db } from './db/client.js';
 import { kioskSessions, receivedEmails, uploadedFiles } from './db/schema.js';
 import { uploadsDir } from './uploadStore.js';
 import { getConvertedPath } from './documentConverter.js';
+import { deleteCopySessionsForKioskSessions } from './copyStore.js';
 
 // Owns every write to `kiosk_sessions` across a session's lifecycle — start,
 // activity heartbeats, and end (docs/data-privacy-requirements.md,
@@ -154,6 +155,10 @@ export async function endSession(
   let status: 'ended' | 'cleanup-failed' = 'ended';
   try {
     await deleteFilesForSessionKeys([sessionId, sessionId.slice(0, 8)]);
+    // Copy sessions (server/copyStore.ts) are session-scoped, unlike Scan's
+    // anonymous/24h-retained ones — an abandoned mid-capture attempt should
+    // not outlive the Kiosk Session it belongs to.
+    await deleteCopySessionsForKioskSessions([sessionId]);
   } catch (err) {
     console.error(`[sessionLifecycle] Cleanup failed for session ${sessionId}:`, err);
     status = 'cleanup-failed';

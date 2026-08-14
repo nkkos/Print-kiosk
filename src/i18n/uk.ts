@@ -124,6 +124,16 @@ export const uk: Translations = {
     methodAccount: 'Особистий кабінет',
     restart: 'Сканувати інший документ',
   },
+  copy: {
+    qrImageAlt: 'QR-код для відкриття камери копіювання на телефоні',
+    preparingQrCode: 'Підготовка QR-коду...',
+    qrHint: 'Відскануйте камерою телефону, щоб почати копіювання',
+    waitingMessage: 'Очікування захоплення сторінки...',
+    pageCountMessage: (count: number) => `Захоплено сторінок: ${count}`,
+    readyMessage: (count: number) => `Документ готовий (${count} стор.)`,
+    configurePrinting: 'Налаштувати друк',
+    anotherDocument: 'Скопіювати інший документ',
+  },
   personalAccount: {
     myFiles: 'Мої файли',
     myOrders: 'Мої замовлення',

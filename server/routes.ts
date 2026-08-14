@@ -58,6 +58,17 @@ import type { Corners } from './scanProcessor.js';
 import { renderScanPhoneApp } from './scanPhoneApp.js';
 import { detectDocumentCorners } from './documentCornerDetector.js';
 import {
+  createCopySession,
+  addPage as addCopyPage,
+  listPages as listCopyPages,
+  getProcessedPagePath as getProcessedCopyPagePath,
+  getCopySession,
+  copiesDir,
+  finishCopySession,
+  NoReadyPagesError as NoReadyCopyPagesError,
+} from './copyStore.js';
+import { renderCopyPhoneApp } from './copyPhoneApp.js';
+import {
   ACCEPTED_EXTENSIONS,
   MAX_FILE_SIZE_BYTES,
   MAX_FILE_SIZE_MB,
@@ -1187,4 +1198,163 @@ router.get('/api/scan-sessions/:id/download', (req, res) => {
     return;
   }
   res.download(path, 'scan.pdf');
+});
+
+// Copy (docs/copy-upload-requirements.md, docs/screens/copy-spec.md) —
+// reuses Scan's own capture architecture (anonymous, session-scoped QR
+// flow, same server-side warp/cleanup pipeline) but has no delivery step;
+// see server/copyStore.ts's own header comment for why there's no
+// deliver/download route here the way Scan has one.
+router.post('/api/copy-sessions', async (req, res) => {
+  const { sessionId } = (req.body ?? {}) as { sessionId?: unknown };
+  if (typeof sessionId !== 'string' || !sessionId) {
+    res.status(400).json({ error: 'sessionId is required' });
+    return;
+  }
+  res.status(201).json(await createCopySession(sessionId));
+});
+
+router.get('/api/copy-sessions/:id', async (req, res) => {
+  const copySessionId = paramString(req.params.id);
+  const copySession = await getCopySession(copySessionId);
+  if (!copySession) {
+    res.status(404).json({ error: 'Copy session not found' });
+    return;
+  }
+  res.json({ ...copySession, pages: await listCopyPages(copySessionId) });
+});
+
+// Phone-facing entry point for `copy-qr-code` (docs/screens/copy-spec.md) —
+// same "served directly by this backend, no CORS needed" reasoning as
+// /scan/:id above.
+router.get('/copy/:id', async (req, res) => {
+  const copySessionId = paramString(req.params.id);
+  const copySession = await getCopySession(copySessionId);
+  if (!copySession) {
+    res.status(404).send('Copy session not found.');
+    return;
+  }
+  res.type('html').send(renderCopyPhoneApp(copySessionId));
+});
+
+// Separate multer instances, mirroring the scan ones above exactly (own
+// destination directories, same size/format rules) — see those for the
+// reasoning behind each.
+const copyUpload = multer({
+  storage: multer.diskStorage({
+    destination: (req, _file, callback) => {
+      const dir = join(copiesDir, paramString(req.params.id));
+      mkdirSync(dir, { recursive: true });
+      callback(null, dir);
+    },
+    filename: (_req, _file, callback) => {
+      callback(null, `raw-${randomUUID()}.jpg`);
+    },
+  }),
+  limits: { fileSize: MAX_FILE_SIZE_BYTES },
+  fileFilter: (_req, file, callback) => {
+    callback(null, file.mimetype.startsWith('image/'));
+  },
+});
+
+function handleCopyPhotoUpload(req: Request, res: Response, next: NextFunction) {
+  copyUpload.single('photo')(req, res, (err: unknown) => {
+    if (err instanceof multer.MulterError && err.code === 'LIMIT_FILE_SIZE') {
+      res
+        .status(400)
+        .json({ error: `File is too large — maximum size is ${MAX_FILE_SIZE_MB} MB.` });
+    } else if (err) {
+      next(err);
+    } else {
+      next();
+    }
+  });
+}
+
+const copyDetectUpload = multer({
+  storage: multer.diskStorage({
+    destination: (_req, _file, callback) => callback(null, tmpdir()),
+    filename: (_req, _file, callback) => callback(null, `copy-detect-${randomUUID()}.jpg`),
+  }),
+  limits: { fileSize: MAX_FILE_SIZE_BYTES },
+  fileFilter: (_req, file, callback) => {
+    callback(null, file.mimetype.startsWith('image/'));
+  },
+});
+
+// Same detection function as /api/scan-sessions/:id/detect-corners
+// (server/documentCornerDetector.ts) — stateless image processing, no
+// coupling to either store, so both routes share it directly rather than
+// duplicating the call.
+router.post(
+  '/api/copy-sessions/:id/detect-corners',
+  (req, res, next) => {
+    copyDetectUpload.single('photo')(req, res, (err: unknown) => {
+      if (err) {
+        next(err);
+      } else {
+        next();
+      }
+    });
+  },
+  async (req, res) => {
+    if (!req.file) {
+      res.status(400).json({ error: 'A photo is required' });
+      return;
+    }
+    try {
+      const corners = await detectDocumentCorners(req.file.path);
+      res.json({ corners });
+    } catch (err) {
+      console.error('[routes] detectDocumentCorners (copy) failed:', err);
+      res.status(500).json({ error: 'Corner detection failed' });
+    } finally {
+      await unlink(req.file.path).catch(() => {});
+    }
+  },
+);
+
+router.post('/api/copy-sessions/:id/pages', handleCopyPhotoUpload, async (req, res) => {
+  const copySessionId = paramString(req.params.id);
+  const corners = parseCorners(req.body.corners);
+  if (!req.file || !corners) {
+    if (req.file) await unlink(req.file.path).catch(() => {});
+    res.status(400).json({ error: 'A photo and four corner points are required' });
+    return;
+  }
+  const existingPages = await listCopyPages(copySessionId);
+  res
+    .status(201)
+    .json(await addCopyPage(copySessionId, existingPages.length + 1, req.file.path, corners));
+});
+
+router.get('/api/copy-sessions/:id/pages/:pageId/content', async (req, res) => {
+  const path = await getProcessedCopyPagePath(
+    paramString(req.params.id),
+    paramString(req.params.pageId),
+  );
+  if (!path) {
+    res.status(404).end();
+    return;
+  }
+  res.sendFile(path);
+});
+
+// `copy-finish` (docs/screens/copy-spec.md) — combines every ready page
+// into one PDF and hands it to the real, session-scoped upload store
+// (server/uploadStore.ts), exactly as server/copyStore.ts's own
+// finishCopySession describes. No method choice, no auth — unlike Scan's
+// /deliver, there's nothing to choose here.
+router.post('/api/copy-sessions/:id/finish', async (req, res) => {
+  const copySessionId = paramString(req.params.id);
+  try {
+    const result = await finishCopySession(copySessionId);
+    res.json(result);
+  } catch (err) {
+    if (err instanceof NoReadyCopyPagesError) {
+      res.status(400).json({ error: 'No pages are ready yet' });
+      return;
+    }
+    throw err;
+  }
 });

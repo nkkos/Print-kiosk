@@ -240,6 +240,50 @@ export const scanPages = pgTable(
   (table) => [index('scan_pages_scan_session_id_idx').on(table.scanSessionId)],
 );
 
+// Copy (docs/copy-upload-requirements.md, docs/screens/copy-spec.md) —
+// reuses Scan's capture pipeline (same shape as scanSessions/scanPages) but
+// has no delivery step: `resultFileId` is set once the captured pages are
+// combined into one PDF and handed to `uploadedFiles` (server/uploadStore.ts)
+// — from that point on it's a normal session-scoped uploaded file, printed
+// exactly like a QR upload. `id` is what the QR code encodes; `sessionId` is
+// the owning Kiosk Session, letting a session run several Copy attempts
+// (`copy-another-document`, docs/screens/copy-spec.md) over time.
+export const copySessions = pgTable(
+  'copy_sessions',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    sessionId: uuid('session_id').notNull(),
+    resultFileId: uuid('result_file_id').references(() => uploadedFiles.id, {
+      onDelete: 'set null',
+    }),
+    // Set alongside resultFileId once finishCopySession combines the pages —
+    // copyPages rows themselves are deleted at that point (server/copyStore.ts),
+    // so the kiosk's "Document ready (N pages)" status (docs/screens/copy-spec.md)
+    // needs its own preserved count rather than counting live page rows.
+    resultPageCount: integer('result_page_count'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index('copy_sessions_session_id_idx').on(table.sessionId)],
+);
+
+export const copyPages = pgTable(
+  'copy_pages',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    copySessionId: uuid('copy_session_id')
+      .notNull()
+      .references(() => copySessions.id, { onDelete: 'cascade' }),
+    pageNumber: integer('page_number').notNull(),
+    // paths relative to server/copies/, not absolute
+    rawStoragePath: text('raw_storage_path').notNull(),
+    processedStoragePath: text('processed_storage_path'),
+    // 'processing' | 'ready' | 'failed'
+    status: text('status').notNull().default('processing'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index('copy_pages_copy_session_id_idx').on(table.copySessionId)],
+);
+
 // A Print Task — "the execution unit that actually drives the physical
 // printer" (docs/domain/kiosk-session.md, "Related entities"). Deliberately
 // independent of `printOrders` (still unwired to the real Cart/pricing

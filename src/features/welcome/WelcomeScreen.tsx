@@ -32,6 +32,10 @@ interface WelcomeScreenProps {
    * Kiosk Session first if none exists yet, same Trigger A mechanics as
    * onPrintActivate. */
   onScanActivate: () => void;
+  /** Navigates to the Copy screen (docs/screens/copy-spec.md). Creates a
+   * Kiosk Session first if none exists yet, same Trigger A mechanics as
+   * onPrintActivate. */
+  onCopyActivate: () => void;
   /** Whether a Kiosk Session is currently active (logged in, or anonymous
    * after returning via Back) — controls end-session's visibility. */
   sessionActive: boolean;
@@ -65,6 +69,7 @@ interface WelcomeScreenProps {
 export function WelcomeScreen({
   onPrintActivate,
   onScanActivate,
+  onCopyActivate,
   sessionActive,
   onEndSession,
   cartItems,
@@ -130,7 +135,12 @@ export function WelcomeScreen({
           status="available"
           onActivate={onScanActivate}
         />
-        <ServiceCard serviceId="copy" title={t.welcome.copy} status="coming-soon" />
+        <ServiceCard
+          serviceId="copy"
+          title={t.welcome.copy}
+          status="available"
+          onActivate={onCopyActivate}
+        />
       </div>
 
       {isHardwareUnavailable ? (

@@ -127,6 +127,16 @@ export const en = {
     methodAccount: 'Personal Account',
     restart: 'Scan another document',
   },
+  copy: {
+    qrImageAlt: 'QR code to open the copy camera on your phone',
+    preparingQrCode: 'Preparing QR code...',
+    qrHint: "Scan with your phone's camera to start copying",
+    waitingMessage: 'Waiting for a page to be captured...',
+    pageCountMessage: (count: number) => `${count} page(s) captured so far`,
+    readyMessage: (count: number) => `Document ready (${count} page(s))`,
+    configurePrinting: 'Configure printing',
+    anotherDocument: 'Copy another document',
+  },
   personalAccount: {
     myFiles: 'My files',
     myOrders: 'My orders',

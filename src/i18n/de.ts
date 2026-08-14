@@ -129,6 +129,16 @@ export const de: Translations = {
     methodAccount: 'Persönliches Konto',
     restart: 'Weiteres Dokument scannen',
   },
+  copy: {
+    qrImageAlt: 'QR-Code zum Öffnen der Kopierkamera auf Ihrem Telefon',
+    preparingQrCode: 'QR-Code wird vorbereitet...',
+    qrHint: 'Scannen Sie mit der Kamera Ihres Telefons, um mit dem Kopieren zu beginnen',
+    waitingMessage: 'Warten auf die Erfassung einer Seite...',
+    pageCountMessage: (count: number) => `${count} Seite(n) bisher erfasst`,
+    readyMessage: (count: number) => `Dokument bereit (${count} Seite(n))`,
+    configurePrinting: 'Druck konfigurieren',
+    anotherDocument: 'Weiteres Dokument kopieren',
+  },
   personalAccount: {
     myFiles: 'Meine Dateien',
     myOrders: 'Meine Bestellungen',

@@ -5,6 +5,7 @@ import { EmailAddressScreen } from './features/email-upload/EmailAddressScreen';
 import { EmailFileListScreen } from './features/email-upload/EmailFileListScreen';
 import { QrUploadScreen } from './features/qr-upload/QrUploadScreen';
 import { ScanScreen } from './features/scan/ScanScreen';
+import { CopyScreen } from './features/copy/CopyScreen';
 import { PersonalAccountScreen } from './features/personal-account/PersonalAccountScreen';
 import { PrintOrderConfigurationScreen } from './features/print-order-configuration/PrintOrderConfigurationScreen';
 import { PaymentStatusScreen } from './features/payment-status/PaymentStatusScreen';
@@ -16,6 +17,8 @@ import { computeItemPrice } from './utils/pricing';
 import { getUploadConfig, listQrFiles } from './services/qrUploadApi';
 import { createScanSession, getScanSession } from './services/scanApi';
 import type { ScanSession } from './services/scanApi';
+import { createCopySession, getCopySession } from './services/copyApi';
+import type { CopySession } from './services/copyApi';
 import { listEmailMessages } from './services/emailApi';
 import { login } from './services/accountApi';
 import { listAccountOrders } from './services/accountFileApi';
@@ -39,6 +42,7 @@ type Screen =
   | 'email-file-list'
   | 'qr-upload'
   | 'scan'
+  | 'copy'
   | 'personal-account'
   | 'print-order-configuration'
   | 'payment-status'
@@ -169,6 +173,24 @@ function App() {
   // Polled scan session state (pages captured, delivery status) — null
   // until the first poll resolves (docs/screens/scan-spec.md, "Screen states").
   const [scanSession, setScanSession] = useState<ScanSession | null>(null);
+  // Same shape as the scan trio above, for the Copy service
+  // (server/copyStore.ts, docs/screens/copy-spec.md) — a distinct id from
+  // both the Kiosk Session and any scan attempt, since one Kiosk Session can
+  // go through several copy attempts over time via copy-another-document.
+  const [copySessionId, setCopySessionId] = useState<string | null>(null);
+  const [copyQrUrl, setCopyQrUrl] = useState<string | null>(null);
+  const [copySession, setCopySession] = useState<CopySession | null>(null);
+  // The real uploaded-file status (server/uploadStore.ts's AV-scan/convert
+  // pipeline) behind copySession.resultFileId — null until that pipeline's
+  // first status is known. Unlike QR/Email's received-files list (which only
+  // ever lets the user tap a file once it's already 'ready'), Copy's own
+  // "Ready" state is reached the instant the capture finishes, before the
+  // resulting PDF has necessarily finished scanning — this tracks that
+  // separately so copy-configure-printing isn't enabled too early (a real
+  // race: ClamAV scanning can take several seconds).
+  const [copyResultFileStatus, setCopyResultFileStatus] = useState<ReceivedFile['status'] | null>(
+    null,
+  );
   // Whether the user has gone through the address/instruction screen at
   // least once this session (docs/email-upload-requirements.md) — not
   // whether mail has actually arrived (see emailMessages for that, which
@@ -192,6 +214,8 @@ function App() {
   const [openCartOnEmailFileList, setOpenCartOnEmailFileList] = useState(false);
   // Same idea, but for the QR upload screen.
   const [openCartOnQrUpload, setOpenCartOnQrUpload] = useState(false);
+  // Same idea, but for the Copy screen.
+  const [openCartOnCopy, setOpenCartOnCopy] = useState(false);
   // Same idea, but for the Personal Account screen.
   const [openCartOnPersonalAccount, setOpenCartOnPersonalAccount] = useState(false);
   // Which tab Personal Account should show when it (re)mounts — set
@@ -316,6 +340,41 @@ function App() {
     };
   }, [screen, scanSessionId]);
 
+  // Polls the current copy attempt's state while the Copy screen is open —
+  // pages/result-file live server-side (server/copyStore.ts), same 3s
+  // interval and "resume on revisit" pattern as Scan's own polling effect
+  // above (docs/screens/copy-spec.md: "reuse the exact interval/pattern
+  // already established").
+  useEffect(() => {
+    if (screen !== 'copy' || !copySessionId || !session) return;
+    let cancelled = false;
+    function poll() {
+      if (!copySessionId || !session) return;
+      getCopySession(copySessionId).then((data) => {
+        if (cancelled) return;
+        setCopySession(data);
+        if (!data.resultFileId) {
+          setCopyResultFileStatus(null);
+          return;
+        }
+        // Copy's finished PDF is added via the same uploadStore.ts addFile
+        // call QR upload uses, under the same sessionKey (the Kiosk Session
+        // id) — so it shows up in the same list QR upload already polls.
+        listQrFiles(session.id).then((files) => {
+          if (cancelled) return;
+          const resultFile = files.find((file) => file.id === data.resultFileId);
+          setCopyResultFileStatus(resultFile?.status ?? null);
+        });
+      });
+    }
+    poll();
+    const intervalId = setInterval(poll, QR_POLL_INTERVAL_MS);
+    return () => {
+      cancelled = true;
+      clearInterval(intervalId);
+    };
+  }, [screen, copySessionId, session]);
+
   // Submits one real Print Task per `printingItems` entry
   // (server/printerAdapter.ts) once, on entering Print Status — this screen
   // is "fully system-controlled" (docs/domain/kiosk-session.md), so
@@ -413,6 +472,11 @@ function App() {
   function goToQrUpload(openCart: boolean) {
     setOpenCartOnQrUpload(openCart);
     setScreen('qr-upload');
+  }
+
+  function goToCopy(openCart: boolean) {
+    setOpenCartOnCopy(openCart);
+    setScreen('copy');
   }
 
   function goToPersonalAccount(openCart: boolean, tab: 'files' | 'orders' = 'files') {
@@ -561,6 +625,65 @@ function App() {
     if (session) startScanSession(session.id);
   }
 
+  // Creates a fresh copy attempt under the given Kiosk Session id
+  // (server/copyStore.ts) and resolves the QR code it should encode — shared
+  // by both first activation and copy-another-document (docs/screens/copy-spec.md).
+  function startCopySession(kioskSessionId: string) {
+    createCopySession(kioskSessionId)
+      .then(({ id }) => {
+        setCopySessionId(id);
+        setCopySession(null);
+        setCopyResultFileStatus(null);
+        return getUploadConfig().then(({ lanUploadUrl }) => {
+          setCopyQrUrl(`${lanUploadUrl}/copy/${id}`);
+        });
+      })
+      .catch((err: unknown) => {
+        console.error('[App] createCopySession request failed:', err);
+      });
+  }
+
+  function handleCopyActivate() {
+    // Trigger A (docs/domain/kiosk-session.md), same mechanics as
+    // handleScanActivate. Only starts a new copy attempt if none exists yet
+    // for this Kiosk Session — revisiting the Copy screen otherwise
+    // preserves the same QR code and current state (docs/screens/copy-spec.md,
+    // "Navigation").
+    if (!session) {
+      const newSession: KioskSession = { id: crypto.randomUUID(), accountId: null };
+      localStorage.setItem(SESSION_ID_STORAGE_KEY, newSession.id);
+      setSession(newSession);
+      startSession(newSession.id, null, 'service-copy').catch((err: unknown) => {
+        console.error('[App] startSession request failed:', err);
+      });
+      startCopySession(newSession.id);
+    } else if (!copySessionId) {
+      startCopySession(session.id);
+    }
+    goToCopy(false);
+  }
+
+  function handleCopyAnotherDocument() {
+    // copy-another-document (docs/screens/copy-spec.md) — starts a second,
+    // independent capture under the same Kiosk Session, same mechanism as
+    // scan-restart.
+    if (session) startCopySession(session.id);
+  }
+
+  function handleCopyConfigurePrinting() {
+    // copy-configure-printing (docs/screens/copy-spec.md) — the finished
+    // document is already a normal uploaded file by this point
+    // (server/copyStore.ts's finishCopySession hands it to uploadStore.ts),
+    // so this is exactly the same navigation QR upload's received-files list
+    // already triggers for a ready file.
+    if (!copySession?.resultFileId || copyResultFileStatus !== 'ready') return;
+    selectFileForConfiguration(
+      copySession.resultFileId,
+      'Copied document.pdf',
+      'upload-method-copy',
+    );
+  }
+
   async function handleLogin(email: string, password: string) {
     // Real backend authentication (server/routes.ts, POST /api/accounts/login)
     // — throws on failure, which LoginPanel catches and displays.
@@ -669,6 +792,12 @@ function App() {
       goToQrUpload(true);
     } else if (selectedFile.sourceMethod === 'upload-method-account') {
       goToPersonalAccount(true, 'files');
+    } else if (selectedFile.sourceMethod === 'upload-method-copy') {
+      // Ready state is still correct (the document is unchanged) — the
+      // Cart popup opens automatically so the person sees what was just
+      // added, same as every other source (docs/screens/copy-spec.md,
+      // "Confirmed flow ordering").
+      goToCopy(true);
     } else {
       goToEmailFileList(true);
     }
@@ -915,6 +1044,38 @@ function App() {
     );
   }
 
+  if (screen === 'copy') {
+    return (
+      <LanguageProvider language={language}>
+        <CopyScreen
+          copyQrUrl={copyQrUrl}
+          copySession={copySession}
+          resultFileStatus={copyResultFileStatus}
+          cartOpenOnMount={openCartOnCopy}
+          onConfigurePrinting={handleCopyConfigurePrinting}
+          onAnotherDocument={handleCopyAnotherDocument}
+          onBack={() => setScreen('welcome')}
+          onHome={() => setScreen('welcome')}
+          onEndSession={handleEndSession}
+          cartItems={cart}
+          onQuantityChange={handleQuantityChange}
+          onRemoveItem={handleRemoveItem}
+          onProceedToPayment={handleProceedToPayment}
+          isConnectionLost={isConnectionLost}
+          onSimulateConnectionLost={handleSimulateConnectionLost}
+          onSimulateConnectionRestored={handleSimulateConnectionRestored}
+          onLogin={handleLogin}
+          accountId={session?.accountId ?? null}
+          onGoToPersonalAccount={() => goToPersonalAccount(false)}
+          hasPendingPaidOrders={hasPendingPaidOrders}
+          onDismissPaidOrdersPrompt={handleDismissPaidOrdersPrompt}
+          onGoToPaidOrders={handleGoToPaidOrders}
+          onLanguageChange={setLanguage}
+        />
+      </LanguageProvider>
+    );
+  }
+
   if (screen === 'personal-account' && session?.accountId) {
     return (
       <LanguageProvider language={language}>
@@ -970,6 +1131,8 @@ function App() {
               goToQrUpload(false);
             } else if (selectedFile.sourceMethod === 'upload-method-account') {
               goToPersonalAccount(false, 'files');
+            } else if (selectedFile.sourceMethod === 'upload-method-copy') {
+              goToCopy(false);
             } else {
               setScreen('email-file-list');
             }
@@ -1098,6 +1261,7 @@ function App() {
       <WelcomeScreen
         onPrintActivate={handlePrintActivate}
         onScanActivate={handleScanActivate}
+        onCopyActivate={handleCopyActivate}
         sessionActive={session !== null}
         onEndSession={handleEndSession}
         cartItems={cart}

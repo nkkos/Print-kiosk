@@ -1,0 +1,1 @@
+ALTER TABLE "copy_sessions" ADD COLUMN "result_page_count" integer;
