@@ -1,4 +1,5 @@
 import sharp from 'sharp';
+import type { Channels } from 'sharp';
 import PerspT from 'perspective-transform';
 
 // Turns one raw phone photo + four confirmed corners (docs/screens/scan-spec.md,
@@ -84,9 +85,50 @@ function sampleBilinear(
   return result;
 }
 
+// Corrects uneven lighting (e.g. a shadow across one corner of the photo) —
+// this, not a plain global normalize(), is what makes a phone photo actually
+// read as a flat, evenly-lit scan rather than a photo of paper. Standard
+// "flat-fielding"/background-subtraction technique: a heavily blurred copy
+// of the page approximates just the illumination/shading, since blurring at
+// this radius erases the actual text/graphics entirely — dividing the
+// original by that blurred copy cancels the shading out while preserving
+// how dark the ink is relative to the paper immediately around it. Tried
+// CLAHE (local adaptive histogram equalization, sharp/libvips's usual
+// "improve local contrast" tool) first, but it targets local *contrast*
+// rather than correcting a slow-varying shading gradient, and left a test
+// shadow almost untouched; this division approach is the actual fix,
+// empirically verified against a synthetic shadowed test page.
+async function flattenIllumination(
+  pixels: Buffer,
+  width: number,
+  height: number,
+  channels: Channels,
+): Promise<Buffer> {
+  // Large enough that the blur erases page content (text/lines), leaving
+  // only the smooth lighting gradient — proportional to page size so it
+  // scales with MAX_OUTPUT_DIMENSION above rather than assuming one fixed
+  // photo resolution.
+  const backgroundSigma = Math.max(20, Math.round(Math.min(width, height) / 9));
+  const background = await sharp(pixels, { raw: { width, height, channels } })
+    .blur(backgroundSigma)
+    .raw()
+    .toBuffer();
+
+  const flattened = Buffer.alloc(pixels.length);
+  for (let i = 0; i < pixels.length; i++) {
+    const backgroundLevel = background[i] || 1;
+    // Target a bit under full white (235, not 255) so the trailing
+    // normalize() in warpAndCleanPage still has headroom to stretch against
+    // instead of clipping straight to a flat, slightly-blown-out white.
+    flattened[i] = Math.max(0, Math.min(255, Math.round((pixels[i] / backgroundLevel) * 235)));
+  }
+  return flattened;
+}
+
 /** Perspective-corrects `rawImageBuffer` to the rectangle implied by
- * `corners`, then cleans it up (contrast normalize + sharpen) and encodes
- * it as a JPEG. Throws InvalidCornersError for a degenerate quad. */
+ * `corners`, then cleans it up (illumination flattening + contrast
+ * normalize + sharpen) and encodes it as a JPEG. Throws InvalidCornersError
+ * for a degenerate quad. */
 export async function warpAndCleanPage(rawImageBuffer: Buffer, corners: Corners): Promise<Buffer> {
   if (quadArea(corners) < MIN_QUAD_AREA) {
     throw new InvalidCornersError('The marked corners are too small or degenerate.');
@@ -135,9 +177,18 @@ export async function warpAndCleanPage(rawImageBuffer: Buffer, corners: Corners)
     }
   }
 
-  return sharp(outData, { raw: { width: outWidth, height: outHeight, channels } })
-    .normalize()
-    .sharpen()
+  const flattened = await flattenIllumination(outData, outWidth, outHeight, channels);
+
+  // Plain normalize() (no args) stretches to the image's actual min/max —
+  // weak in practice, since even one outlier pixel (a stray dark speck,
+  // JPEG ringing) pins the white end short of true white; a real phone
+  // photo tested against the pre-this-change pipeline visibly left the
+  // paper grey, not white. Clipping the top/bottom 1% instead pushes the
+  // background reliably to white and text reliably darker, matching the
+  // punchier contrast a tool like CamScanner's enhance mode produces.
+  return sharp(flattened, { raw: { width: outWidth, height: outHeight, channels } })
+    .normalize({ lower: 1, upper: 99 })
+    .sharpen({ sigma: 1, m1: 1.5, m2: 3 })
     .jpeg({ quality: 92 })
     .toBuffer();
 }
