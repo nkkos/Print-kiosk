@@ -1074,7 +1074,13 @@ router.post('/api/scan-sessions/:id/deliver', async (req, res) => {
   const pdfBuffer = await readFile(pdfPath);
 
   if (methods.includes('email')) {
-    await sendScanEmail(email as string, pdfBuffer);
+    try {
+      await sendScanEmail(email as string, pdfBuffer);
+    } catch (err) {
+      console.error('[routes] sendScanEmail failed:', err);
+      res.status(502).json({ error: 'Failed to send the email. Please try again.' });
+      return;
+    }
   }
 
   let accountFileId: string | null = null;
@@ -1083,13 +1089,25 @@ router.post('/api/scan-sessions/:id/deliver', async (req, res) => {
     mkdirSync(accountDir, { recursive: true });
     const accountCopyPath = join(accountDir, `scan-${scanSessionId}.pdf`);
     await writeFile(accountCopyPath, pdfBuffer);
-    const file = await addAccountFile(
-      account.id,
-      `Scan ${new Date().toISOString().slice(0, 10)}.pdf`,
-      accountCopyPath,
-      pdfBuffer.length,
-    );
-    accountFileId = file.id;
+    try {
+      const file = await addAccountFile(
+        account.id,
+        `Scan ${new Date().toISOString().slice(0, 10)}.pdf`,
+        accountCopyPath,
+        pdfBuffer.length,
+      );
+      accountFileId = file.id;
+    } catch (err) {
+      // addAccountFile already wrote accountCopyPath before validating quota
+      // — clean it up on rejection rather than leaving an orphaned file,
+      // same pattern as POST /api/accounts/files above.
+      await unlink(accountCopyPath).catch(() => {});
+      if (err instanceof AccountStorageQuotaExceededError) {
+        res.status(400).json({ error: 'Storage quota exceeded for this account.' });
+        return;
+      }
+      throw err;
+    }
   }
 
   await markDelivered(

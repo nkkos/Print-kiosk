@@ -53,11 +53,17 @@ export async function sendScanEmail(email: string, pdfBuffer: Buffer): Promise<v
     console.log(`[emailSender] RESEND_API_KEY not set — would send scanned PDF to ${email}`);
     return;
   }
+  // Despite the SDK's `content?: string | Buffer` type, it does NOT convert
+  // a Buffer for you — parseAttachments() (resend/dist/index.mjs) passes
+  // `content` straight into the request body, which then goes through a
+  // plain JSON.stringify(). A raw Buffer serializes to `{"type":"Buffer",
+  // "data":[...]}`, not a valid attachment, which the API rejects — base64
+  // ourselves first.
   await resend.emails.send({
     from: FROM_EMAIL,
     to: email,
     subject: 'Your scanned document',
     html: '<p>Your scanned document is attached as a PDF.</p>',
-    attachments: [{ filename: 'scan.pdf', content: pdfBuffer }],
+    attachments: [{ filename: 'scan.pdf', content: pdfBuffer.toString('base64') }],
   });
 }
