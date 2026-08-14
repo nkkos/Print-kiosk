@@ -98,90 +98,141 @@ export async function detectDocumentCorners(imagePath: string): Promise<Corners 
   // OpenCV.js's own Node.js tutorial, which does this via jimp's .bitmap;
   // sharp's raw RGBA output already matches that same shape).
   const img = cv.matFromImageData({ width: workWidth, height: workHeight, data: workingData });
+  try {
+    // Two-pass: try without dilation first (clean edge case, no risk of
+    // merging the page with something touching it), and only retry with
+    // dilation — which bridges small gaps in a broken Canny boundary but
+    // can also fuse the page's contour with clutter physically touching
+    // it — if the first pass found nothing at all. No detection is a
+    // strictly worse outcome than an occasionally-off corner, but a clean
+    // no-dilate result beats a dilate-merged one whenever it's available.
+    return (
+      findQuad(cv, img, workWidth, workHeight, detectScale, false) ??
+      findQuad(cv, img, workWidth, workHeight, detectScale, true)
+    );
+  } finally {
+    img.delete();
+  }
+}
+
+function findQuad(
+  cv: any,
+  img: any,
+  workWidth: number,
+  workHeight: number,
+  detectScale: number,
+  useDilate: boolean,
+): Corners | null {
   const imgGray = new cv.Mat();
   const imgBlur = new cv.Mat();
   const imgThresh = new cv.Mat();
+  const imgDilated = useDilate ? new cv.Mat() : null;
+  const dilateKernel = useDilate ? cv.Mat.ones(3, 3, cv.CV_8U) : null;
   const contours = new cv.MatVector();
   const hierarchy = new cv.Mat();
+  let bestQuad: any = null;
 
-  let result: Corners | null = null;
   try {
     cv.Canny(img, imgGray, 50, 200);
     cv.GaussianBlur(imgGray, imgBlur, new cv.Size(3, 3), 0, 0, cv.BORDER_DEFAULT);
     cv.threshold(imgBlur, imgThresh, 0, 255, cv.THRESH_OTSU);
-    cv.findContours(imgThresh, contours, hierarchy, cv.RETR_CCOMP, cv.CHAIN_APPROX_SIMPLE);
 
-    let maxArea = 0;
-    let maxContourIndex = -1;
-    for (let i = 0; i < contours.size(); i++) {
-      const area = cv.contourArea(contours.get(i));
-      if (area > maxArea) {
-        maxArea = area;
-        maxContourIndex = i;
-      }
+    let contourSource = imgThresh;
+    if (useDilate) {
+      cv.dilate(imgThresh, imgDilated, dilateKernel, new cv.Point(-1, -1), 1);
+      contourSource = imgDilated;
     }
+    cv.findContours(contourSource, contours, hierarchy, cv.RETR_CCOMP, cv.CHAIN_APPROX_SIMPLE);
 
     const workingArea = workWidth * workHeight;
-    if (maxContourIndex >= 0 && maxArea >= workingArea * MIN_AREA_RATIO) {
-      const contour: any = contours.get(maxContourIndex);
-      const rect = cv.minAreaRect(contour);
-      const center: Point = rect.center;
-
-      let tl: Point | undefined;
-      let tlDist = 0;
-      let tr: Point | undefined;
-      let trDist = 0;
-      let bl: Point | undefined;
-      let blDist = 0;
-      let br: Point | undefined;
-      let brDist = 0;
-
-      // Same quadrant + furthest-from-center heuristic jscanify uses to
-      // pick the four extreme corners out of a (possibly noisy, many-point)
-      // contour, once we already know it's the page's own outline.
-      for (let i = 0; i < contour.data32S.length; i += 2) {
-        const point: Point = { x: contour.data32S[i], y: contour.data32S[i + 1] };
-        const dist = distance(point, center);
-        if (point.x < center.x && point.y < center.y) {
-          if (dist > tlDist) {
-            tl = point;
-            tlDist = dist;
-          }
-        } else if (point.x > center.x && point.y < center.y) {
-          if (dist > trDist) {
-            tr = point;
-            trDist = dist;
-          }
-        } else if (point.x < center.x && point.y > center.y) {
-          if (dist > blDist) {
-            bl = point;
-            blDist = dist;
-          }
-        } else if (point.x > center.x && point.y > center.y) {
-          if (dist > brDist) {
-            br = point;
-            brDist = dist;
-          }
-        }
+    // Prefer a contour that genuinely approximates to a clean quadrilateral
+    // (the standard "cv2.approxPolyDP -> exactly 4 points" document-scanner
+    // check) over just trusting the single largest contour by raw area —
+    // clutter near the page can produce a larger, messier contour that
+    // isn't actually the page. Falls back to the largest contour's own
+    // extreme points (jscanify's original approach) only if nothing
+    // approximates cleanly, rather than giving up immediately.
+    let bestQuadArea = 0;
+    let largestContour: any = null;
+    let largestArea = 0;
+    for (let i = 0; i < contours.size(); i++) {
+      const contour = contours.get(i);
+      const area = cv.contourArea(contour);
+      if (area < workingArea * MIN_AREA_RATIO) continue;
+      if (area > largestArea) {
+        largestArea = area;
+        largestContour = contour;
       }
-
-      if (tl && tr && bl && br) {
-        result = [
-          { x: tl.x / detectScale, y: tl.y / detectScale },
-          { x: tr.x / detectScale, y: tr.y / detectScale },
-          { x: br.x / detectScale, y: br.y / detectScale },
-          { x: bl.x / detectScale, y: bl.y / detectScale },
-        ];
+      const perimeter = cv.arcLength(contour, true);
+      const approx = new cv.Mat();
+      cv.approxPolyDP(contour, approx, 0.02 * perimeter, true);
+      if (approx.rows === 4 && area > bestQuadArea) {
+        bestQuadArea = area;
+        bestQuad = approx;
+      } else {
+        approx.delete();
       }
     }
+
+    const sourceContour = bestQuad || largestContour;
+    if (!sourceContour) return null;
+
+    const rect = cv.minAreaRect(sourceContour);
+    const center: Point = rect.center;
+
+    let tl: Point | undefined;
+    let tlDist = 0;
+    let tr: Point | undefined;
+    let trDist = 0;
+    let bl: Point | undefined;
+    let blDist = 0;
+    let br: Point | undefined;
+    let brDist = 0;
+
+    // Same quadrant + furthest-from-center heuristic jscanify uses to pick
+    // the four extreme corners out of a (possibly noisy, many-point)
+    // contour, once we already know it's the page's own outline.
+    for (let i = 0; i < sourceContour.data32S.length; i += 2) {
+      const point: Point = { x: sourceContour.data32S[i], y: sourceContour.data32S[i + 1] };
+      const dist = distance(point, center);
+      if (point.x < center.x && point.y < center.y) {
+        if (dist > tlDist) {
+          tl = point;
+          tlDist = dist;
+        }
+      } else if (point.x > center.x && point.y < center.y) {
+        if (dist > trDist) {
+          tr = point;
+          trDist = dist;
+        }
+      } else if (point.x < center.x && point.y > center.y) {
+        if (dist > blDist) {
+          bl = point;
+          blDist = dist;
+        }
+      } else if (point.x > center.x && point.y > center.y) {
+        if (dist > brDist) {
+          br = point;
+          brDist = dist;
+        }
+      }
+    }
+
+    if (!tl || !tr || !bl || !br) return null;
+    return [
+      { x: tl.x / detectScale, y: tl.y / detectScale },
+      { x: tr.x / detectScale, y: tr.y / detectScale },
+      { x: br.x / detectScale, y: br.y / detectScale },
+      { x: bl.x / detectScale, y: bl.y / detectScale },
+    ];
   } finally {
-    img.delete();
+    if (bestQuad) bestQuad.delete();
     imgGray.delete();
     imgBlur.delete();
     imgThresh.delete();
+    if (imgDilated) imgDilated.delete();
+    if (dilateKernel) dilateKernel.delete();
     contours.delete();
     hierarchy.delete();
   }
-
-  return result;
 }
