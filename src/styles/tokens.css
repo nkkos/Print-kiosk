@@ -1,11 +1,12 @@
 /*
- * Design tokens — names only.
- * Values below are placeholders so `var(--token-name)` resolves during
- * development. They are not final design decisions — see
- * docs/design/design-system.md ("To be defined") for the source of truth.
+ * Design tokens — real values (docs/design/design-system.md).
+ * Structure (token names, spacing/radius/elevation scale levels, type
+ * roles) was already confirmed before these values existed; this fills in
+ * the "To be defined" values referenced throughout that document. See its
+ * changelog note for the rationale behind each choice.
  */
 :root {
-  /* Spacing scale (docs/design/design-system.md, Section 4) */
+  /* Spacing scale (Section 4) — already confirmed, unchanged */
   --space-unit: 8px;
   --space-xs: calc(var(--space-unit) * 0.5);
   --space-s: var(--space-unit);
@@ -14,12 +15,78 @@
   --space-xl: calc(var(--space-unit) * 6);
 
   /* Border radius scale (Section 5) */
-  --radius-small: 4px;
-  --radius-medium: 8px;
-  --radius-large: 16px;
+  --radius-small: 6px;
+  --radius-medium: 12px;
+  --radius-large: 24px;
 
-  /* Elevation (Section 6) — placeholder shadow values only */
+  /* Color (Section 16, `color-*`) — a cool, teal-leaning neutral scale (the
+     grey itself is tinted toward the accent, not a generic mid-grey) plus
+     one confident accent. The accent is deep teal — a deliberate nod to
+     cyan, one of the four process-printing inks, not an arbitrary "safe"
+     blue. Semantic colors (danger/success/warning) are independent of it. */
+  --color-background: #f2f6f5;
+  --color-surface: #ffffff;
+  --color-surface-sunken: #e8eeec;
+  --color-border: #d7e0de;
+  --color-border-strong: #b7c4c1;
+  --color-ink: #101817;
+  --color-ink-soft: #56635f;
+
+  --color-accent: #0c6e68;
+  --color-accent-strong: #094f4b;
+  --color-accent-soft: #dcefec;
+  --color-on-accent: #ffffff;
+
+  --color-danger: #b3261e;
+  --color-danger-strong: #8c1d17;
+  --color-success: #2e7d4f;
+  --color-warning: #a6710a;
+  --color-warning-soft: #f5e9d0;
+
+  --color-disabled-bg: #e7ebea;
+  --color-disabled-text: #98a29f;
+
+  /* Elevation (Section 6) — soft, low-opacity shadows tinted toward ink
+     rather than pure black, kept subtle per the "premium, never
+     distracting" motion/elevation philosophy (Sections 1, 14). */
   --elevation-base: none;
-  --elevation-raised: none;
-  --elevation-modal: none;
+  --elevation-raised: 0 1px 2px rgb(16 24 23 / 6%), 0 4px 14px rgb(16 24 23 / 6%);
+  --elevation-modal: 0 12px 32px rgb(16 24 23 / 18%), 0 4px 10px rgb(16 24 23 / 10%);
+
+  /* Typography (Section 7) — one variable family (Manrope, self-hosted via
+     @fontsource-variable so the kiosk never depends on a font CDN being
+     reachable), carrying the whole type scale through weight/size rather
+     than pairing in a second face — appropriate for a UI made mostly of
+     short labels and headings, not long-form reading. */
+  --font-family-base: 'Manrope Variable', 'Manrope', system-ui, sans-serif;
+  --font-display: 800 3rem/1.1 var(--font-family-base);
+  --font-h1: 700 2rem/1.2 var(--font-family-base);
+  --font-h2: 700 1.5rem/1.3 var(--font-family-base);
+  --font-h3: 600 1.25rem/1.35 var(--font-family-base);
+  --font-body: 500 1rem/1.5 var(--font-family-base);
+  --font-caption: 500 0.8125rem/1.4 var(--font-family-base);
+  --font-button: 600 1rem/1.2 var(--font-family-base);
+
+  /* Buttons (Section 9) — color assignments for the confirmed semantic
+     variants. The shared `Button` component itself doesn't take a variant
+     prop yet (no confirmed use case needs it — see its own TODO comment),
+     so only `button-secondary-*` is actually applied there today; the rest
+     are defined now so they're ready once that differentiation is needed,
+     without another round of "To be defined" token churn. */
+  --button-primary-bg: var(--color-accent);
+  --button-primary-bg-hover: var(--color-accent-strong);
+  --button-primary-text: var(--color-on-accent);
+  --button-secondary-border: var(--color-border-strong);
+  --button-secondary-text: var(--color-ink);
+  --button-secondary-bg-hover: var(--color-surface-sunken);
+  --button-tertiary-text: var(--color-ink-soft);
+  --button-danger-bg: var(--color-danger);
+  --button-danger-bg-hover: var(--color-danger-strong);
+  --button-danger-text: #ffffff;
+  --button-disabled-bg: var(--color-disabled-bg);
+  --button-disabled-text: var(--color-disabled-text);
+
+  /* Motion (Section 14) — fast and subtle, per the confirmed philosophy. */
+  --motion-duration-fast: 120ms;
+  --motion-easing: cubic-bezier(0.4, 0, 0.2, 1);
 }

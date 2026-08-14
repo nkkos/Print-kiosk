@@ -1,6 +1,3 @@
-/* TODO: exact colors/typography values pending Design System sign-off
-   (docs/design/design-system.md). */
-
 .root {
   display: flex;
   flex-direction: column;
@@ -15,11 +12,29 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-xs);
+  font: var(--font-caption);
+  color: var(--color-ink-soft);
+}
+
+.field input {
+  padding: var(--space-s) var(--space-m);
+  border: 1.5px solid var(--color-border-strong);
+  border-radius: var(--radius-medium);
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font: var(--font-body);
+}
+
+.field input:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 1px;
+  border-color: var(--color-accent);
 }
 
 .error {
   margin: 0;
-  font-weight: bold;
+  color: var(--color-danger);
+  font-weight: 600;
 }
 
 /* Mirrors src/features/qr-upload/QrUploadScreen.module.css's .qrBox — same
@@ -31,8 +46,9 @@
   align-self: center;
   width: 12rem;
   height: 12rem;
-  border: 1px solid currentColor;
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-medium);
+  background: var(--color-surface);
 }
 
 .qrBox img {

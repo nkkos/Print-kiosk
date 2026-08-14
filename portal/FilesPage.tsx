@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
-import { login, type Account } from '../src/services/accountApi';
+import { usePortalSession } from './useSession';
+import { PortalShell } from './PortalShell';
+import { LoginForm } from './LoginForm';
 import {
   createFolder,
   listMyFolders,
@@ -9,10 +11,13 @@ import {
   listMyFiles,
   deleteFile,
   getAccountFileContentUrl,
-  createPaidOrder,
+  getAccountFileLimits,
+  createOrder,
+  payOrder,
   type AccountFolder,
   type AccountFile,
-  type CreatePaidOrderParams,
+  type AccountFileLimits,
+  type CreateOrderParams,
 } from '../src/services/accountFileApi';
 import { computeUnitPrice } from '../src/utils/pricing';
 import {
@@ -21,10 +26,10 @@ import {
   renderPdfPageToCanvas,
 } from '../src/utils/documentPreview';
 
-// The portal's file/folder/paid-order management — see
+// The portal's file/folder/order management — see
 // docs/personal-account-requirements.md: "folder creation/management happens
-// only on the web portal," and paid-in-advance orders originate here too.
-// The kiosk's Personal Account screen only ever reads what's created here
+// only on the web portal," and orders originate here too. The kiosk's
+// Personal Account screen only ever reads what's created here
 // (src/features/personal-account/PersonalAccountScreen.tsx).
 //
 // "Payment" is simulated (a button) — there's no real payment gateway
@@ -48,15 +53,15 @@ interface ConfigureAndPayProps {
 }
 
 function ConfigureAndPay({ sessionToken, file }: ConfigureAndPayProps) {
-  const [paperSize, setPaperSize] = useState<CreatePaidOrderParams['paperSize']>('A4');
-  const [sides, setSides] = useState<CreatePaidOrderParams['sides']>('single');
-  const [color, setColor] = useState<CreatePaidOrderParams['color']>('bw');
-  const [orientation, setOrientation] = useState<CreatePaidOrderParams['orientation']>('portrait');
-  const [scale, setScale] = useState<CreatePaidOrderParams['scale']>('fit');
+  const [paperSize, setPaperSize] = useState<CreateOrderParams['paperSize']>('A4');
+  const [sides, setSides] = useState<CreateOrderParams['sides']>('single');
+  const [color, setColor] = useState<CreateOrderParams['color']>('bw');
+  const [orientation, setOrientation] = useState<CreateOrderParams['orientation']>('portrait');
+  const [scale, setScale] = useState<CreateOrderParams['scale']>('fit');
   const [quantity, setQuantity] = useState(1);
   const [error, setError] = useState<string | null>(null);
-  const [isPaying, setIsPaying] = useState(false);
-  const [paid, setPaid] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [result, setResult] = useState<'none' | 'saved' | 'paid'>('none');
 
   const preview = usePreview(getAccountFileContentUrl(file.id));
   const {
@@ -102,35 +107,65 @@ function ConfigureAndPay({ sessionToken, file }: ConfigureAndPayProps) {
 
   const isPreviewClickable = preview.state === 'ready';
 
-  async function handlePay() {
-    setIsPaying(true);
+  function buildOrderParams(): CreateOrderParams {
+    return {
+      accountFileId: file.id,
+      fileName: file.fileName,
+      paperSize,
+      sides,
+      color,
+      orientation,
+      scale,
+      pageRange,
+      quantity,
+      unitPriceCents: Math.round(unitPrice * 100),
+    };
+  }
+
+  // Two distinct actions, not one (docs/screens/portal-personal-account-spec.md,
+  // "My files") — "Save" makes the order status lifecycle's 'created,
+  // awaiting payment' state actually reachable, without forcing an
+  // immediate payment. "Pay now" still does both in one click for a user
+  // who just wants the old single-step behavior.
+  async function handleSave() {
+    setIsSubmitting(true);
     setError(null);
     try {
-      await createPaidOrder(sessionToken, {
-        accountFileId: file.id,
-        fileName: file.fileName,
-        paperSize,
-        sides,
-        color,
-        orientation,
-        scale,
-        pageRange,
-        quantity,
-        unitPriceCents: Math.round(unitPrice * 100),
-      });
-      setPaid(true);
+      await createOrder(sessionToken, buildOrderParams());
+      setResult('saved');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Payment failed');
+      setError(err instanceof Error ? err.message : 'Save failed');
     } finally {
-      setIsPaying(false);
+      setIsSubmitting(false);
     }
   }
 
-  if (paid) {
+  async function handlePay() {
+    setIsSubmitting(true);
+    setError(null);
+    try {
+      const order = await createOrder(sessionToken, buildOrderParams());
+      await payOrder(sessionToken, order.id);
+      setResult('paid');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Payment failed');
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  if (result === 'paid') {
     // Stays open (the parent's "Close" toggle dismisses it) rather than
     // auto-collapsing — closing immediately on success would unmount this
     // component before the confirmation ever painted.
     return <p className="success">Paid — this order is now waiting to be printed at the kiosk.</p>;
+  }
+  if (result === 'saved') {
+    return (
+      <p className="success">
+        Saved — pay for it from <a href="./orders.html">My orders</a> to have it printed.
+      </p>
+    );
   }
 
   return (
@@ -190,7 +225,7 @@ function ConfigureAndPay({ sessionToken, file }: ConfigureAndPayProps) {
         Paper size
         <select
           value={paperSize}
-          onChange={(e) => setPaperSize(e.target.value as CreatePaidOrderParams['paperSize'])}
+          onChange={(e) => setPaperSize(e.target.value as CreateOrderParams['paperSize'])}
         >
           <option value="A4">A4</option>
           <option value="A5">A5</option>
@@ -200,7 +235,7 @@ function ConfigureAndPay({ sessionToken, file }: ConfigureAndPayProps) {
         Sides
         <select
           value={sides}
-          onChange={(e) => setSides(e.target.value as CreatePaidOrderParams['sides'])}
+          onChange={(e) => setSides(e.target.value as CreateOrderParams['sides'])}
         >
           <option value="single">Single-sided</option>
           <option value="double">Double-sided</option>
@@ -210,7 +245,7 @@ function ConfigureAndPay({ sessionToken, file }: ConfigureAndPayProps) {
         Color
         <select
           value={color}
-          onChange={(e) => setColor(e.target.value as CreatePaidOrderParams['color'])}
+          onChange={(e) => setColor(e.target.value as CreateOrderParams['color'])}
         >
           <option value="bw">Black & white</option>
           <option value="color">Color</option>
@@ -220,7 +255,7 @@ function ConfigureAndPay({ sessionToken, file }: ConfigureAndPayProps) {
         Orientation
         <select
           value={orientation}
-          onChange={(e) => setOrientation(e.target.value as CreatePaidOrderParams['orientation'])}
+          onChange={(e) => setOrientation(e.target.value as CreateOrderParams['orientation'])}
         >
           <option value="portrait">Portrait</option>
           <option value="landscape">Landscape</option>
@@ -230,7 +265,7 @@ function ConfigureAndPay({ sessionToken, file }: ConfigureAndPayProps) {
         Scale
         <select
           value={scale}
-          onChange={(e) => setScale(e.target.value as CreatePaidOrderParams['scale'])}
+          onChange={(e) => setScale(e.target.value as CreateOrderParams['scale'])}
         >
           <option value="fit">Fit to page</option>
           <option value="original">Original size</option>
@@ -303,7 +338,10 @@ function ConfigureAndPay({ sessionToken, file }: ConfigureAndPayProps) {
       </label>
       <p>Price: ${(unitPrice * quantity).toFixed(2)}</p>
       {error && <p className="error">{error}</p>}
-      <button type="button" onClick={handlePay} disabled={isPaying}>
+      <button type="button" onClick={handleSave} disabled={isSubmitting}>
+        Save
+      </button>
+      <button type="button" onClick={handlePay} disabled={isSubmitting}>
         Pay now (simulated)
       </button>
     </div>
@@ -311,14 +349,11 @@ function ConfigureAndPay({ sessionToken, file }: ConfigureAndPayProps) {
 }
 
 export function FilesPage() {
-  const [session, setSession] = useState<(Account & { sessionToken: string }) | null>(null);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [loginError, setLoginError] = useState<string | null>(null);
-  const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const { session, login, logout } = usePortalSession();
 
   const [folders, setFolders] = useState<AccountFolder[]>([]);
   const [files, setFiles] = useState<AccountFile[]>([]);
+  const [limits, setLimits] = useState<AccountFileLimits | null>(null);
   const [newFolderName, setNewFolderName] = useState('');
   const [renamingFolderId, setRenamingFolderId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState('');
@@ -343,18 +378,9 @@ export function FilesPage() {
     if (session) refresh(session.sessionToken);
   }, [session]);
 
-  async function handleLogin(event: React.FormEvent) {
-    event.preventDefault();
-    setIsLoggingIn(true);
-    setLoginError(null);
-    try {
-      setSession(await login(email, password));
-    } catch (err) {
-      setLoginError(err instanceof Error ? err.message : 'Login failed');
-    } finally {
-      setIsLoggingIn(false);
-    }
-  }
+  useEffect(() => {
+    getAccountFileLimits().then(setLimits);
+  }, []);
 
   async function handleCreateFolder(event: React.FormEvent) {
     event.preventDefault();
@@ -406,31 +432,12 @@ export function FilesPage() {
 
   if (!session) {
     return (
-      <>
-        <h1>My files</h1>
-        <form onSubmit={handleLogin}>
-          <label>
-            Email
-            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-          </label>
-          <label>
-            Password
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
-          </label>
-          {loginError && <p className="error">{loginError}</p>}
-          <button type="submit" disabled={isLoggingIn}>
-            Log in
-          </button>
-        </form>
-        <p>
-          <a href="./account.html">My account</a>
-        </p>
-      </>
+      <LoginForm
+        onLogin={async (email, password) => {
+          await login(email, password);
+          window.location.href = './start.html';
+        }}
+      />
     );
   }
 
@@ -438,12 +445,14 @@ export function FilesPage() {
     id === null ? 'Root' : (folders.find((f) => f.id === id)?.name ?? 'Root');
 
   return (
-    <>
+    <PortalShell email={session.email} active="files" onLogout={logout}>
       <h1>My files</h1>
-      <p>Logged in as {session.email}.</p>
-      <p>
-        <a href="./account.html">My account</a>
-      </p>
+      {limits && (
+        <p className="limitsNotice">
+          Allowed formats are {limits.acceptedExtensions.join(', ')}. Files are kept for{' '}
+          {limits.retentionDays} days. Maximum storage size {limits.maxTotalStorageMb} MB.
+        </p>
+      )}
 
       <h2>Folders</h2>
       <ul className="plainList">
@@ -494,7 +503,9 @@ export function FilesPage() {
           New folder
           <input value={newFolderName} onChange={(e) => setNewFolderName(e.target.value)} />
         </label>
-        <button type="submit">Create folder</button>
+        <button type="submit" id="add-folder">
+          ADD FOLDER
+        </button>
       </form>
 
       <h2>Upload files</h2>
@@ -515,8 +526,8 @@ export function FilesPage() {
           </select>
         </label>
         {uploadError && <p className="error">{uploadError}</p>}
-        <button type="submit" disabled={isUploading}>
-          Upload
+        <button type="submit" id="add-files" disabled={isUploading}>
+          ADD FILES
         </button>
       </form>
 
@@ -565,6 +576,6 @@ export function FilesPage() {
           ))}
         </ul>
       )}
-    </>
+    </PortalShell>
   );
 }

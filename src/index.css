@@ -1,10 +1,92 @@
+/* Self-hosted (not a CDN link) — the kiosk shouldn't depend on external
+   network access just to render its own text. */
+@import '@fontsource-variable/manrope';
 @import './styles/tokens.css';
 
 :root {
-  color-scheme: light dark;
-  font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
+  color-scheme: light;
+  font-family: var(--font-family-base);
 }
 
 body {
   margin: 0;
+  background: var(--color-background);
+  color: var(--color-ink);
+  font: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+button {
+  font-family: inherit;
+}
+
+/* Base heading/paragraph styles — applied globally rather than per screen,
+   since every screen composes plain <h1>-<h3>/<p> tags rather than a
+   typography component (docs/design/design-system.md, Section 7). A
+   screen's own CSS module class still wins where it sets its own font. */
+h1 {
+  margin: 0;
+  font: var(--font-h1);
+}
+
+h2 {
+  margin: 0;
+  font: var(--font-h2);
+}
+
+h3 {
+  margin: 0;
+  font: var(--font-h3);
+}
+
+p {
+  margin: 0;
+  font: var(--font-body);
+}
+
+/* Native form controls, styled globally rather than per screen (several
+   screens use plain <fieldset>/radio inputs directly — no shared
+   RadioGroup component yet). Radio/checkbox are enlarged past the browser
+   default specifically for the confirmed large-touch-target requirement
+   (docs/design/design-system.md, Section 15). */
+fieldset {
+  margin: 0;
+  padding: var(--space-m);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-medium);
+}
+
+legend {
+  padding: 0 var(--space-xs);
+  font: var(--font-caption);
+  color: var(--color-ink-soft);
+}
+
+input[type='radio'],
+input[type='checkbox'] {
+  width: 1.25rem;
+  height: 1.25rem;
+  accent-color: var(--color-accent);
+  cursor: pointer;
+}
+
+input[type='number'],
+input[type='email'],
+input[type='password'],
+input[type='text'] {
+  padding: var(--space-s) var(--space-m);
+  border: 1.5px solid var(--color-border-strong);
+  border-radius: var(--radius-medium);
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font: var(--font-body);
+}
+
+input[type='number']:focus-visible,
+input[type='email']:focus-visible,
+input[type='password']:focus-visible,
+input[type='text']:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 1px;
+  border-color: var(--color-accent);
 }

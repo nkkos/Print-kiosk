@@ -1,17 +1,16 @@
 import { useState } from 'react';
-import { login, changePassword, deleteAccount, type Account } from '../src/services/accountApi';
+import { changePassword, deleteAccount } from '../src/services/accountApi';
+import { usePortalSession } from './useSession';
+import { PortalShell } from './PortalShell';
+import { LoginForm } from './LoginForm';
 
-// Login + change-password — the only portal page that needs a session
-// token (docs/personal-account-requirements.md; the kiosk itself never
-// needs one). Kept in component state only, never persisted — a page
-// reload always requires logging in again, same "no smart session
-// restore" principle the kiosk already follows for its own login.
+// "Account information" (docs/screens/portal-personal-account-spec.md) —
+// change-password and delete-account, now inside the shared shell as the
+// sidebar's fourth real destination (confirmed to be shown enabled, not
+// disabled/"coming soon" like Invoices/My promo codes/Payment methods,
+// since this functionality already existed).
 export function AccountPage() {
-  const [session, setSession] = useState<(Account & { sessionToken: string }) | null>(null);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [loginError, setLoginError] = useState<string | null>(null);
-  const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const { session, login, logout } = usePortalSession();
 
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -22,20 +21,6 @@ export function AccountPage() {
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [accountDeleted, setAccountDeleted] = useState(false);
-
-  async function handleLogin(event: React.FormEvent) {
-    event.preventDefault();
-    setIsLoggingIn(true);
-    setLoginError(null);
-    try {
-      setSession(await login(email, password));
-    } catch (err) {
-      setLoginError(err instanceof Error ? err.message : 'Login failed');
-    } finally {
-      setIsLoggingIn(false);
-    }
-  }
 
   async function handleChangePassword(event: React.FormEvent) {
     event.preventDefault();
@@ -63,54 +48,28 @@ export function AccountPage() {
     setDeleteError(null);
     try {
       await deleteAccount(session.sessionToken);
-      setSession(null);
-      setAccountDeleted(true);
+      logout();
+      window.location.href = './start.html';
     } catch (err) {
       setDeleteError(err instanceof Error ? err.message : 'Account deletion failed');
-    } finally {
       setIsDeleting(false);
     }
   }
 
   if (!session) {
     return (
-      <>
-        <h1>Log in</h1>
-        {accountDeleted && <p className="success">Your account has been deleted.</p>}
-        <form onSubmit={handleLogin}>
-          <label>
-            Email
-            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-          </label>
-          <label>
-            Password
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
-          </label>
-          {loginError && <p className="error">{loginError}</p>}
-          <button type="submit" disabled={isLoggingIn}>
-            Log in
-          </button>
-        </form>
-        <p>
-          <a href="./forgot-password.html">Forgot password?</a> ·{' '}
-          <a href="./register.html">Create account</a>
-        </p>
-      </>
+      <LoginForm
+        onLogin={async (email, password) => {
+          await login(email, password);
+          window.location.href = './start.html';
+        }}
+      />
     );
   }
 
   return (
-    <>
-      <h1>My account</h1>
-      <p>Logged in as {session.email}.</p>
-      <p>
-        <a href="./files.html">My files</a>
-      </p>
+    <PortalShell email={session.email} active="account" onLogout={logout}>
+      <h1>Account information</h1>
       <h2>Change password</h2>
       <form onSubmit={handleChangePassword}>
         <label>
@@ -156,6 +115,6 @@ export function AccountPage() {
           Delete account
         </button>
       )}
-    </>
+    </PortalShell>
   );
 }

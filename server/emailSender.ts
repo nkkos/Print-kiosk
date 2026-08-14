@@ -44,3 +44,20 @@ export async function sendPasswordResetEmail(email: string, token: string): Prom
     link,
   );
 }
+
+// Phone-Camera Scan delivery (docs/scan-upload-requirements.md) — the only
+// email this project sends with an attachment, so this doesn't go through
+// the plain-HTML sendEmail() helper above (which has no attachment param).
+export async function sendScanEmail(email: string, pdfBuffer: Buffer): Promise<void> {
+  if (!resend) {
+    console.log(`[emailSender] RESEND_API_KEY not set — would send scanned PDF to ${email}`);
+    return;
+  }
+  await resend.emails.send({
+    from: FROM_EMAIL,
+    to: email,
+    subject: 'Your scanned document',
+    html: '<p>Your scanned document is attached as a PDF.</p>',
+    attachments: [{ filename: 'scan.pdf', content: pdfBuffer }],
+  });
+}

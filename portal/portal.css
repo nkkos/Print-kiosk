@@ -174,3 +174,81 @@ fieldset label {
   align-items: center;
   gap: var(--space-s);
 }
+
+/* The shared shell (docs/screens/portal-personal-account-spec.md) — Start/My
+   files/My orders/Account information all render through this. Needs more
+   width than the plain login/account-lifecycle forms above (body's
+   max-width: 24rem), so it's widened only on pages where the shell is
+   actually present. */
+body:has(.shell) {
+  max-width: 60rem;
+}
+
+.shell {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-l);
+}
+
+.shellHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: var(--space-m);
+  border-bottom: 1px solid #eee;
+}
+
+.shellWelcome {
+  font-size: 1.1rem;
+  font-weight: bold;
+}
+
+.shellBody {
+  display: flex;
+  gap: var(--space-l);
+}
+
+.shellSidebar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  width: 12rem;
+  flex-shrink: 0;
+}
+
+.shellSidebar a,
+.shellSidebar span {
+  display: block;
+  padding: var(--space-s);
+  border: 1px solid #ccc;
+  border-radius: var(--radius-small);
+  color: #1a1a1a;
+  text-decoration: none;
+}
+
+.shellSidebar a.shellNavActive {
+  background: #1a1a1a;
+  color: #fff;
+}
+
+.shellNavDisabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.shellContent {
+  flex: 1;
+  min-width: 0;
+}
+
+.limitsNotice {
+  color: #555;
+  font-size: 0.875rem;
+}
+
+.promoBlock {
+  min-height: 20rem;
+  border: 1px solid #eee;
+  border-radius: var(--radius-small);
+  background: #fafafa;
+}

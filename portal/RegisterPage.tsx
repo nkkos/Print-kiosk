@@ -60,7 +60,7 @@ export function RegisterPage() {
         </button>
       </form>
       <p>
-        <a href="./account.html">Already have an account?</a>
+        <a href="./start.html">Already have an account?</a>
       </p>
     </>
   );

@@ -1,3 +1,9 @@
-/* TODO: styling pending Design System sign-off (docs/design/design-system.md) */
+/* Styled as a wordmark so the placeholder text (BrandMark.tsx) reads as
+   intentional branding rather than debug output — still a placeholder
+   pending a real logo asset/product name (see that component's own TODO). */
 .root {
+  font: var(--font-h2);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--color-ink);
 }

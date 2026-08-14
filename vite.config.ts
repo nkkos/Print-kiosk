@@ -29,6 +29,8 @@ export default defineConfig({
         resetPassword: resolve(rootDir, 'portal/reset-password.html'),
         account: resolve(rootDir, 'portal/account.html'),
         files: resolve(rootDir, 'portal/files.html'),
+        start: resolve(rootDir, 'portal/start.html'),
+        orders: resolve(rootDir, 'portal/orders.html'),
       },
     },
   },

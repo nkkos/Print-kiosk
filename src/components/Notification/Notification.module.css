@@ -1,10 +1,21 @@
-/* TODO: exact colors/typography per variant pending Design System sign-off
-   (docs/design/design-system.md). */
-
 .root {
   display: flex;
   flex-direction: column;
   gap: var(--space-s);
+  padding-inline-start: var(--space-m);
+  border-inline-start: 4px solid var(--color-ink-soft);
+}
+
+.root[data-variant='warning'] {
+  border-inline-start-color: var(--color-warning);
+}
+
+.root[data-variant='error'] {
+  border-inline-start-color: var(--color-danger);
+}
+
+.root[data-variant='success'] {
+  border-inline-start-color: var(--color-success);
 }
 
 .title {
@@ -13,4 +24,5 @@
 
 .message {
   margin: 0;
+  color: var(--color-ink-soft);
 }

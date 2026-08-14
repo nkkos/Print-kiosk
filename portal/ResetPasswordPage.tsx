@@ -37,7 +37,7 @@ export function ResetPasswordPage() {
       <>
         <h1>Password updated</h1>
         <p className="success">
-          Your password was changed. You can now <a href="./account.html">log in</a>.
+          Your password was changed. You can now <a href="./start.html">log in</a>.
         </p>
       </>
     );

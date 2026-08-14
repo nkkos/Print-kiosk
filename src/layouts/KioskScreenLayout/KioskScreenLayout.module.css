@@ -43,4 +43,6 @@
 
 .footer {
   display: flex;
+  padding-top: var(--space-m);
+  border-top: 1px solid var(--color-border);
 }

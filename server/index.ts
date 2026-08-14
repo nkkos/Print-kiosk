@@ -14,6 +14,9 @@ const { router, DEFAULT_PORT } = await import('./routes.js');
 const { getLanIPv4 } = await import('./lanIp.js');
 const { db } = await import('./db/client.js');
 const { sweepExpiredFiles, ORPHAN_FILE_TTL_MS } = await import('./sessionLifecycle.js');
+const { sweepExpiredAccountFiles } = await import('./accountFileStore.js');
+const { ACCOUNT_FILE_RETENTION_DAYS } = await import('./accountFileLimits.js');
+const { sweepExpiredScanSessions, SCAN_SESSION_RETENTION_HOURS } = await import('./scanStore.js');
 const { warmUpLibreOffice } = await import('./documentConverter.js');
 
 // Dev-only backend for the QR/Email upload methods (docs/qr-upload-requirements.md,
@@ -53,15 +56,83 @@ async function main() {
   void runSweep();
   setInterval(runSweep, 30 * 60 * 1000);
 
+  // Personal Account files' own retention sweep (docs/personal-account-requirements.md,
+  // "Open items"; server/accountFileLimits.ts) — separate window/config from
+  // the session-scoped sweep above.
+  const runAccountFileSweep = () =>
+    sweepExpiredAccountFiles(ACCOUNT_FILE_RETENTION_DAYS)
+      .then((count) => {
+        if (count > 0) console.log(`[index] Account-file retention sweep deleted ${count} file(s)`);
+      })
+      .catch((err: unknown) => console.error('[index] Account-file retention sweep failed:', err));
+  void runAccountFileSweep();
+  setInterval(runAccountFileSweep, 30 * 60 * 1000);
+
+  // Phone-Camera Scan's own, much shorter retention sweep
+  // (docs/scan-upload-requirements.md, "Retention (anonymous delivery)") —
+  // 24h, not 30 days like the account-file sweep above.
+  const runScanSweep = () =>
+    sweepExpiredScanSessions(SCAN_SESSION_RETENTION_HOURS)
+      .then((count) => {
+        if (count > 0)
+          console.log(`[index] Scan session retention sweep deleted ${count} session(s)`);
+      })
+      .catch((err: unknown) => console.error('[index] Scan session retention sweep failed:', err));
+  void runScanSweep();
+  setInterval(runScanSweep, 30 * 60 * 1000);
+
   // Pays LibreOffice's cold-start cost once now instead of during a real
   // user's first .doc/.docx conversion (server/documentConverter.ts).
-  // Fire-and-forget — doesn't delay the server accepting requests.
+  // Fire-and-forget — doesn't delay the server accepting requests. The
+  // .catch() here matters, not just style: an unhandled rejection (there was
+  // none before) crashes the whole Node process by default — this was
+  // silently taking the dev server down on an intermittent Windows-only
+  // EPERM from libreoffice-convert's own temp-dir cleanup, unrelated to
+  // whether the actual conversion succeeded.
   console.log('[index] Warming up LibreOffice...');
-  void warmUpLibreOffice().then(() => console.log('[index] LibreOffice warm-up complete'));
+  void warmUpLibreOffice()
+    .then(() => console.log('[index] LibreOffice warm-up complete'))
+    .catch((err: unknown) => console.error('[index] LibreOffice warm-up failed:', err));
 }
 
 main().catch((err: unknown) => {
   console.error('[index] Failed to start:', err);
+  process.exit(1);
+});
+
+// Survives a specific, recurring, external failure: libreoffice-convert's
+// bundled `tmp` package cleans up its temp dir via its own internal
+// callback/exit hook, not as part of the Promise warmUpLibreOffice()
+// returns — so the `.catch()` above (added for exactly this reason) doesn't
+// actually see it. On Windows, that cleanup can race soffice.exe still
+// holding a lock on the directory right after a failed cold-start
+// conversion, throwing EPERM from deep inside `tmp`'s rimraf, well outside
+// any promise chain this codebase controls — and by default Node kills the
+// whole process for an uncaught exception/unhandled rejection, taking the
+// dev server down over one leftover temp folder. Anything else still
+// crashes normally; this only swallows this exact external, non-critical
+// failure signature.
+function isBenignTmpCleanupError(err: unknown): boolean {
+  return (
+    err instanceof Error &&
+    (err as NodeJS.ErrnoException).code === 'EPERM' &&
+    /libreofficeConvert_/.test(err.message)
+  );
+}
+process.on('uncaughtException', (err) => {
+  if (isBenignTmpCleanupError(err)) {
+    console.error('[index] Ignoring benign LibreOffice temp-dir cleanup EPERM:', err.message);
+    return;
+  }
+  console.error('[index] Uncaught exception, exiting:', err);
+  process.exit(1);
+});
+process.on('unhandledRejection', (reason) => {
+  if (isBenignTmpCleanupError(reason)) {
+    console.error('[index] Ignoring benign LibreOffice temp-dir cleanup EPERM:', reason);
+    return;
+  }
+  console.error('[index] Unhandled rejection, exiting:', reason);
   process.exit(1);
 });
 

@@ -27,6 +27,11 @@ export interface SubmitPrintJobRequest {
    * `'upload'` = QR/Email's `uploadedFiles`; `'account'` = Personal
    * Account's real `accountFiles`. */
   sourceFileOrigin?: 'upload' | 'account';
+  /** The portal order (server/accountOrderStore.ts) this print job
+   * fulfills, if any — lets a real or simulated success drive that order's
+   * 'paid' -> 'issued' transition (docs/personal-account-requirements.md,
+   * "Order status lifecycle"). Omitted for QR/Email/unpaid My-files jobs. */
+  printOrderId?: string;
   paperSize?: 'A4' | 'A5';
   sides?: 'single' | 'double';
   color?: 'bw' | 'color';

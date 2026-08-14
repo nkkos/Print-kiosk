@@ -15,5 +15,5 @@ export function StatusBadge({ status }: StatusBadgeProps) {
     'coming-soon': t.common.comingSoon,
     unavailable: t.common.unavailable,
   };
-  return <span className={styles.root}>{STATUS_LABEL[status]}</span>;
+  return <span className={`${styles.root} ${styles[status]}`}>{STATUS_LABEL[status]}</span>;
 }

@@ -1,13 +1,20 @@
-/* TODO: exact colors/typography pending Design System sign-off
-   (docs/design/design-system.md, Sections 5 and 7). Border/font-size below
-   are the least-opinionated placeholders that keep the label legible without
-   relying on color alone. */
+/* Color differentiates 'coming-soon' from 'unavailable' (docs/design/design-system.md,
+   Sections 5 and 7) — never the only cue, the label text always says which
+   is which too. */
 
 .root {
   display: inline-block;
   padding: var(--space-xs) var(--space-s);
-  border: 1px solid currentColor;
   border-radius: var(--radius-small);
-  font-size: 0.875rem;
-  line-height: 1.2;
+  font: var(--font-caption);
+}
+
+.coming-soon {
+  background: var(--color-warning-soft);
+  color: var(--color-warning);
+}
+
+.unavailable {
+  background: var(--color-disabled-bg);
+  color: var(--color-disabled-text);
 }

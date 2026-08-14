@@ -1,8 +1,5 @@
-/* TODO: exact colors/typography values pending Design System sign-off
-   (docs/design/design-system.md). */
-
 .empty {
-  margin: 0;
+  color: var(--color-ink-soft);
 }
 
 .root {
@@ -28,6 +25,10 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-xs);
+  padding: var(--space-m);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-medium);
+  background: var(--color-surface);
 }
 
 .itemRow {
@@ -38,20 +39,28 @@
 }
 
 .fileName {
-  font-weight: bold;
+  font: var(--font-h3);
 }
 
 .details {
-  font-size: 0.875rem;
+  font: var(--font-caption);
+  color: var(--color-ink-soft);
 }
 
 .quantity {
   display: flex;
   align-items: center;
   gap: var(--space-s);
+  font-variant-numeric: tabular-nums;
+}
+
+.price {
+  font: var(--font-h3);
+  font-variant-numeric: tabular-nums;
 }
 
 .total {
   margin: 0;
-  font-weight: bold;
+  font: var(--font-h2);
+  color: var(--color-accent-strong);
 }

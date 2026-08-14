@@ -1,7 +1,5 @@
-/* TODO: exact colors/typography values pending Design System sign-off
-   (docs/design/design-system.md). The preview box is a least-opinionated
-   frame around the real rendered document (or, for items with no real file,
-   the filename placeholder). */
+/* The preview box frames the real rendered document (or, for items with no
+   real file, the filename placeholder). */
 
 .body {
   flex: 1;
@@ -18,8 +16,11 @@
   justify-content: center;
   width: 16rem;
   height: 20rem;
-  border: 1px solid currentColor;
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-medium);
+  background: var(--color-surface);
+  box-shadow: var(--elevation-raised);
+  color: var(--color-ink-soft);
 }
 
 .previewMedia {
@@ -35,8 +36,9 @@
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  border: 1px solid currentColor;
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-medium);
+  background: var(--color-surface);
 }
 
 .previewMediaContain {
@@ -76,5 +78,7 @@
 
 .price {
   margin: 0;
-  font-weight: bold;
+  font: var(--font-h2);
+  color: var(--color-accent-strong);
+  font-variant-numeric: tabular-nums;
 }

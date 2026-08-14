@@ -68,6 +68,9 @@ export const accountFiles = pgTable(
     fileName: text('file_name').notNull(),
     // path relative to server/account-uploads/, not absolute
     storagePath: text('storage_path').notNull(),
+    // Tracked so server/accountFileLimits.ts can enforce a per-account total
+    // storage quota without re-statting every file on disk each time.
+    fileSizeBytes: integer('file_size_bytes').notNull().default(0),
     // 'scanning' | 'converting' | 'ready' | 'rejected' | 'scan-unavailable'
     status: text('status').notNull().default('scanning'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
@@ -141,6 +144,14 @@ export const printOrders = pgTable(
     // present only on orders paid in advance via the portal
     paidQuantity: integer('paid_quantity'),
     sourcePaidOrderId: uuid('source_paid_order_id'),
+    // 'created' | 'paid' | 'issued' — the portal order lifecycle
+    // (docs/personal-account-requirements.md, "Order status lifecycle").
+    // Only meaningful for accountId-owned rows (portal-created orders);
+    // ordinary kiosk Cart items never persist a printOrders row at all, so
+    // this column is unused for those. 'issued' is set automatically once
+    // the printTasks row referencing this order (see printTasks.printOrderId
+    // below) reaches 'succeeded' — real or simulated.
+    status: text('status').notNull().default('created'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
@@ -180,6 +191,55 @@ export const uploadedFiles = pgTable(
   (table) => [index('uploaded_files_session_key_idx').on(table.sessionKey)],
 );
 
+// Phone-Camera Scan (docs/scan-upload-requirements.md, docs/screens/scan-spec.md)
+// — one row per "scan attempt" reached from the kiosk's Scan screen. `id` is
+// what the QR code encodes (not the kiosk sessionId itself) since a single
+// Kiosk Session can go through several scan attempts over time (Finish, then
+// `scan-restart` for another document) — `sessionId` is what lets the kiosk
+// find "the current scan attempt for my session" when polling.
+export const scanSessions = pgTable(
+  'scan_sessions',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    sessionId: uuid('session_id').notNull(),
+    // Comma-separated subset of 'email' | 'link' | 'account' — set together
+    // with deliveredAt once P4 (docs/screens/scan-spec.md) is confirmed.
+    deliveryMethods: text('delivery_methods'),
+    deliveredToEmail: text('delivered_to_email'),
+    // Set only if 'account' was among deliveryMethods — the saved copy in
+    // the account's real "My files" (server/accountFileStore.ts).
+    accountFileId: uuid('account_file_id').references(() => accountFiles.id, {
+      onDelete: 'set null',
+    }),
+    // path relative to server/scans/, not absolute — the final combined
+    // multi-page PDF, set once all pages are captured and delivery is
+    // confirmed (not before — there's nothing to combine while pages are
+    // still being added).
+    finalStoragePath: text('final_storage_path'),
+    deliveredAt: timestamp('delivered_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index('scan_sessions_session_id_idx').on(table.sessionId)],
+);
+
+export const scanPages = pgTable(
+  'scan_pages',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    scanSessionId: uuid('scan_session_id')
+      .notNull()
+      .references(() => scanSessions.id, { onDelete: 'cascade' }),
+    pageNumber: integer('page_number').notNull(),
+    // paths relative to server/scans/, not absolute
+    rawStoragePath: text('raw_storage_path').notNull(),
+    processedStoragePath: text('processed_storage_path'),
+    // 'processing' | 'ready' | 'failed'
+    status: text('status').notNull().default('processing'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index('scan_pages_scan_session_id_idx').on(table.scanSessionId)],
+);
+
 // A Print Task — "the execution unit that actually drives the physical
 // printer" (docs/domain/kiosk-session.md, "Related entities"). Deliberately
 // independent of `printOrders` (still unwired to the real Cart/pricing
@@ -193,6 +253,14 @@ export const printTasks = pgTable(
     // localStorage), so a real client-generated session id would violate a
     // references() constraint here. Kept as a plain column for later.
     sessionId: uuid('session_id'),
+    // Links back to the portal order this task prints, if any — lets a real
+    // or simulated print success drive that order's 'paid' -> 'issued'
+    // transition (docs/personal-account-requirements.md, "Order status
+    // lifecycle"). Null for QR/Email-sourced or unpaid My-files print jobs,
+    // which have no printOrders row to link to.
+    printOrderId: uuid('print_order_id').references(() => printOrders.id, {
+      onDelete: 'set null',
+    }),
     // 'queued' | 'printing' | 'succeeded' | 'failed'
     status: text('status').notNull().default('queued'),
     // 'printer-not-found' | 'submit-failed' | 'paper-jam' | 'out-of-paper' | 'out-of-ink'

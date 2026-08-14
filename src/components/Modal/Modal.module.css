@@ -1,12 +1,11 @@
-/* TODO: exact colors/typography/elevation values pending Design System
-   sign-off (docs/design/design-system.md). Per docs/domain/kiosk-session.md
-   ("End Session" visibility rules), a popup must not cover the header,
-   footer, or even the background of the working screen — so this has no
-   dimming layer and is bounded to the screen's content area (its nearest
-   positioned ancestor, KioskScreenLayout's .content), not the full
-   viewport. `Canvas` is a system color keyword (matches the page's own
-   light/dark background), used only so the panel reads as distinct from
-   what's behind it — not a brand-color decision. */
+/* Per docs/domain/kiosk-session.md ("End Session" visibility rules), a
+   popup must not cover the header, footer, or even the background of the
+   working screen — so this has no dimming layer and is bounded to the
+   screen's content area (its nearest positioned ancestor, KioskScreenLayout's
+   .content), not the full viewport. The surface color (not `Canvas`
+   anymore) is a deliberate, slightly-off-white tone, distinct enough from
+   the screen's own background to read as a floating panel even without a
+   dimming layer behind it. */
 
 .overlay {
   position: absolute;
@@ -18,6 +17,7 @@
      only the panel itself should intercept clicks. */
   pointer-events: none;
   z-index: 10;
+  animation: fade-in var(--motion-duration-fast) var(--motion-easing);
 }
 
 .content {
@@ -30,9 +30,31 @@
   padding: var(--space-l);
   border-radius: var(--radius-large);
   box-shadow: var(--elevation-modal);
-  border: 1px solid currentColor;
-  background: Canvas;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-ink);
   display: flex;
   flex-direction: column;
   gap: var(--space-m);
+  animation: rise-in var(--motion-duration-fast) var(--motion-easing);
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .overlay,
+  .content {
+    animation: none;
+  }
 }

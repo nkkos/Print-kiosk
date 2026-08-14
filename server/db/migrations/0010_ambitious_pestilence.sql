@@ -1,0 +1,1 @@
+ALTER TABLE "account_files" ADD COLUMN "file_size_bytes" integer DEFAULT 0 NOT NULL;

@@ -4,8 +4,8 @@ import multer from 'multer';
 import bcrypt from 'bcryptjs';
 import rateLimit from 'express-rate-limit';
 import { simpleParser } from 'mailparser';
-import { mkdirSync } from 'node:fs';
-import { writeFile } from 'node:fs/promises';
+import { mkdirSync, existsSync } from 'node:fs';
+import { writeFile, readFile, unlink } from 'node:fs/promises';
 import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { getLanIPv4 } from './lanIp.js';
@@ -22,7 +22,7 @@ import {
   renameFolder,
   deleteFolder,
 } from './accountFileStore.js';
-import { createPaidOrder, listPaidOrders } from './accountOrderStore.js';
+import { createOrder, payOrder, listOrders } from './accountOrderStore.js';
 import {
   startSession,
   touchSessionActivity,
@@ -40,7 +40,21 @@ import {
   deleteAccount,
   EmailTakenError,
 } from './accountStore.js';
-import { sendVerificationEmail, sendPasswordResetEmail } from './emailSender.js';
+import { sendVerificationEmail, sendPasswordResetEmail, sendScanEmail } from './emailSender.js';
+import {
+  createScanSession,
+  addPage,
+  listPages,
+  getProcessedPagePath,
+  getScanSession,
+  scansDir,
+  combineToPdf,
+  markDelivered,
+  finalPdfPath,
+  NoReadyPagesError,
+} from './scanStore.js';
+import type { Corners } from './scanProcessor.js';
+import { renderScanPhoneApp } from './scanPhoneApp.js';
 import {
   ACCEPTED_EXTENSIONS,
   MAX_FILE_SIZE_BYTES,
@@ -48,6 +62,13 @@ import {
   hasAcceptedExtension,
   decodeOriginalName,
 } from './fileValidation.js';
+import {
+  ACCOUNT_FILE_ACCEPTED_EXTENSIONS,
+  ACCOUNT_FILE_RETENTION_DAYS,
+  ACCOUNT_FILE_MAX_TOTAL_STORAGE_MB,
+  hasAcceptedAccountFileExtension,
+  AccountStorageQuotaExceededError,
+} from './accountFileLimits.js';
 import { submitPrintJob, PrintSubmitError, PLACEHOLDER_PDF_PATH } from './printerAdapter.js';
 import { getConvertedPath, resolvePrintablePath } from './documentConverter.js';
 import {
@@ -546,8 +567,9 @@ router.delete('/api/accounts/folders/:id', requireAccountAuth, async (req, res) 
 
 // Separate multer instance from the QR one above — different destination
 // (server/accountFileStore.ts's accountUploadsDir, keyed by accountId, not
-// uploadsDir keyed by sessionId) — same format/size rules either way
-// (server/fileValidation.ts).
+// uploadsDir keyed by sessionId). Format/size rules are Personal Account's
+// own, narrower and env-configured (server/accountFileLimits.ts) — not
+// QR/Email's shared server/fileValidation.ts ones.
 const accountUpload = multer({
   storage: multer.diskStorage({
     destination: (req, _file, callback) => {
@@ -563,7 +585,7 @@ const accountUpload = multer({
   limits: { fileSize: MAX_FILE_SIZE_BYTES },
   fileFilter: (_req, file, callback) => {
     file.originalname = decodeOriginalName(file.originalname);
-    if (hasAcceptedExtension(file.originalname)) {
+    if (hasAcceptedAccountFileExtension(file.originalname)) {
       callback(null, true);
     } else {
       callback(new InvalidFileFormatError());
@@ -581,9 +603,9 @@ function handleAccountFileUpload(req: Request, res: Response, next: NextFunction
         .status(400)
         .json({ error: `File is too large — maximum size is ${MAX_FILE_SIZE_MB} MB.` });
     } else if (err instanceof InvalidFileFormatError) {
-      res
-        .status(400)
-        .json({ error: `Unsupported file format. Accepted: ${ACCEPTED_EXTENSIONS.join(', ')}.` });
+      res.status(400).json({
+        error: `Unsupported file format. Accepted: ${ACCOUNT_FILE_ACCEPTED_EXTENSIONS.join(', ')}.`,
+      });
     } else if (err) {
       next(err);
     } else {
@@ -600,12 +622,41 @@ router.post(
     const accountId = (req as AuthenticatedRequest).accountId!;
     const files = Array.isArray(req.files) ? req.files : [];
     const folderId = typeof req.body.folderId === 'string' ? req.body.folderId : undefined;
-    const results = await Promise.all(
-      files.map((file) => addAccountFile(accountId, file.originalname, file.path, folderId)),
-    );
+    const results: Awaited<ReturnType<typeof addAccountFile>>[] = [];
+    for (const file of files) {
+      try {
+        results.push(
+          await addAccountFile(accountId, file.originalname, file.path, file.size, folderId),
+        );
+      } catch (err) {
+        // multer already wrote the file to disk before this handler ran —
+        // clean it up on a rejected (over-quota) upload rather than leaving
+        // an orphaned, never-referenced file behind.
+        await unlink(file.path).catch(() => {});
+        if (err instanceof AccountStorageQuotaExceededError) {
+          res.status(400).json({ error: 'Storage quota exceeded for this account.' });
+          return;
+        }
+        throw err;
+      }
+    }
     res.status(201).json(results);
   },
 );
+
+// Exposes the current, env-configured Personal Account file limits
+// (server/accountFileLimits.ts) so the portal's "My files" notice can show
+// real values instead of a hardcoded string that would silently go stale
+// the moment an operator changes the underlying env var. Not
+// account-specific, no auth needed — same public-config posture as
+// GET /api/config.
+router.get('/api/accounts/file-limits', (_req, res) => {
+  res.json({
+    acceptedExtensions: ACCOUNT_FILE_ACCEPTED_EXTENSIONS,
+    retentionDays: ACCOUNT_FILE_RETENTION_DAYS,
+    maxTotalStorageMb: ACCOUNT_FILE_MAX_TOTAL_STORAGE_MB,
+  });
+});
 
 router.get('/api/accounts/files', requireAccountAuth, async (req, res) => {
   res.json(await listAccountFiles((req as AuthenticatedRequest).accountId!));
@@ -635,14 +686,11 @@ router.get('/api/account-files/:fileId/content', async (req, res) => {
   res.sendFile(printablePath);
 });
 
-// Creates a paid-in-advance Print Order (docs/personal-account-requirements.md,
-// "Paid orders awaiting print"). "Payment" is simulated — there's no real
-// payment gateway anywhere in this project yet (Cart/Payment Status stay
-// mocked on the kiosk too) — so this creates an already-`'paid'`
-// paymentOrders row directly, in one step, rather than modeling a real
-// pending → paid transition. The price itself is trusted from the client
-// (src/utils/pricing.ts's computeUnitPrice) rather than recomputed
-// server-side — acceptable since no real money is involved here.
+// Configures a Print Order for later payment (docs/personal-account-requirements.md,
+// "Order status lifecycle") — created in the 'created' state, not paid yet.
+// The price itself is trusted from the client (src/utils/pricing.ts's
+// computeUnitPrice) rather than recomputed server-side — acceptable since no
+// real money is involved here.
 router.post('/api/accounts/orders', requireAccountAuth, async (req, res) => {
   const accountId = (req as AuthenticatedRequest).accountId!;
   const {
@@ -685,7 +733,7 @@ router.post('/api/accounts/orders', requireAccountAuth, async (req, res) => {
     res.status(400).json({ error: 'Invalid order' });
     return;
   }
-  const order = await createPaidOrder({
+  const order = await createOrder({
     accountId,
     accountFileId,
     fileName,
@@ -701,6 +749,28 @@ router.post('/api/accounts/orders', requireAccountAuth, async (req, res) => {
   res.status(201).json(order);
 });
 
+// Pays a 'created' order — 'created' -> 'paid' (docs/personal-account-requirements.md,
+// "Order status lifecycle"). Still simulated, same convention as everywhere
+// else in this project — no real payment gateway exists yet.
+router.post('/api/accounts/orders/:id/pay', requireAccountAuth, async (req, res) => {
+  const accountId = (req as AuthenticatedRequest).accountId!;
+  const order = await payOrder(accountId, paramString(req.params.id));
+  if (!order) {
+    res.status(404).json({ error: 'Order not found, not owned by this account, or already paid' });
+    return;
+  }
+  res.json(order);
+});
+
+// Portal-facing: every order for the logged-in account, any status — the
+// full "My orders" history (docs/personal-account-requirements.md, "Order
+// status lifecycle"). Session-token-authenticated, unlike the kiosk-facing
+// read below.
+router.get('/api/accounts/orders', requireAccountAuth, async (req, res) => {
+  const accountId = (req as AuthenticatedRequest).accountId!;
+  res.json(await listOrders(accountId));
+});
+
 // Kiosk-facing reads for My files/My orders — accountId-only, no token,
 // matching every other kiosk-facing route today (the kiosk has never carried
 // a session token; see CLAUDE.md, "the kiosk still doesn't need one").
@@ -712,8 +782,12 @@ router.get('/api/accounts/:accountId/folders', async (req, res) => {
   res.json(await listFolders(paramString(req.params.accountId)));
 });
 
+// The kiosk's My orders stays scoped to "paid, awaiting print" only — not
+// the portal's full order history (docs/personal-account-requirements.md,
+// "Two separate surfaces" and "Order status lifecycle").
 router.get('/api/accounts/:accountId/orders', async (req, res) => {
-  res.json(await listPaidOrders(paramString(req.params.accountId)));
+  const orders = await listOrders(paramString(req.params.accountId));
+  res.json(orders.filter((order) => order.status === 'paid'));
 });
 
 // Print Tasks (docs/domain/kiosk-session.md, "Related entities" — "the
@@ -727,6 +801,7 @@ router.post('/api/print-tasks', async (req, res) => {
     sessionId,
     fileId,
     sourceFileOrigin,
+    printOrderId,
     paperSize,
     sides,
     color,
@@ -738,6 +813,7 @@ router.post('/api/print-tasks', async (req, res) => {
     sessionId?: unknown;
     fileId?: unknown;
     sourceFileOrigin?: unknown;
+    printOrderId?: unknown;
     paperSize?: unknown;
     sides?: unknown;
     color?: unknown;
@@ -746,7 +822,10 @@ router.post('/api/print-tasks', async (req, res) => {
     scale?: unknown;
     pages?: unknown;
   };
-  const task = await createPrintTask(typeof sessionId === 'string' ? sessionId : null);
+  const task = await createPrintTask(
+    typeof sessionId === 'string' ? sessionId : null,
+    typeof printOrderId === 'string' ? printOrderId : undefined,
+  );
 
   // Only print the real file when it's actually resolvable and scanned
   // 'ready' — otherwise fall back to the placeholder
@@ -828,4 +907,208 @@ router.post('/api/print-tasks/:id/simulate', async (req, res) => {
     return;
   }
   res.json(task);
+});
+
+// Phone-Camera Scan (docs/scan-upload-requirements.md, docs/screens/scan-spec.md)
+// — same anonymous, session-scoped architecture as QR upload: the kiosk
+// creates a scan session and shows its id as a QR code, the phone-facing
+// page (server/scanPhoneApp.ts, not yet built) uploads photo+corners here,
+// and the kiosk polls GET /api/scan-sessions/:id (scan-status,
+// docs/screens/scan-spec.md) the same 3s-interval way QR upload already does.
+router.post('/api/scan-sessions', async (req, res) => {
+  const { sessionId } = (req.body ?? {}) as { sessionId?: unknown };
+  if (typeof sessionId !== 'string' || !sessionId) {
+    res.status(400).json({ error: 'sessionId is required' });
+    return;
+  }
+  res.status(201).json(await createScanSession(sessionId));
+});
+
+router.get('/api/scan-sessions/:id', async (req, res) => {
+  const scanSessionId = paramString(req.params.id);
+  const scanSession = await getScanSession(scanSessionId);
+  if (!scanSession) {
+    res.status(404).json({ error: 'Scan session not found' });
+    return;
+  }
+  res.json({ ...scanSession, pages: await listPages(scanSessionId) });
+});
+
+// Phone-facing entry point for `scan-qr-code` (docs/screens/scan-spec.md) —
+// same "served directly by this backend, no CORS needed" reasoning as
+// /upload/:sessionId above.
+router.get('/scan/:id', async (req, res) => {
+  const scanSessionId = paramString(req.params.id);
+  const scanSession = await getScanSession(scanSessionId);
+  if (!scanSession) {
+    res.status(404).send('Scan session not found.');
+    return;
+  }
+  const portalUrl = process.env.PORTAL_URL ?? `http://${getLanIPv4()}:5173`;
+  res.type('html').send(renderScanPhoneApp(scanSessionId, portalUrl));
+});
+
+// Separate multer instance from the others above — destination is
+// server/scanStore.ts's scansDir, keyed by scan session id, and there's no
+// format restriction beyond "an image" (this is always a phone camera
+// capture, never an arbitrary file picker).
+const scanUpload = multer({
+  storage: multer.diskStorage({
+    destination: (req, _file, callback) => {
+      const dir = join(scansDir, paramString(req.params.id));
+      mkdirSync(dir, { recursive: true });
+      callback(null, dir);
+    },
+    filename: (_req, _file, callback) => {
+      callback(null, `raw-${randomUUID()}.jpg`);
+    },
+  }),
+  limits: { fileSize: MAX_FILE_SIZE_BYTES },
+  fileFilter: (_req, file, callback) => {
+    callback(null, file.mimetype.startsWith('image/'));
+  },
+});
+
+function handleScanPhotoUpload(req: Request, res: Response, next: NextFunction) {
+  scanUpload.single('photo')(req, res, (err: unknown) => {
+    if (err instanceof multer.MulterError && err.code === 'LIMIT_FILE_SIZE') {
+      res
+        .status(400)
+        .json({ error: `File is too large — maximum size is ${MAX_FILE_SIZE_MB} MB.` });
+    } else if (err) {
+      next(err);
+    } else {
+      next();
+    }
+  });
+}
+
+// `corners` arrives as a JSON-encoded string (multipart form field, not a
+// JSON body) — P2's four confirmed points, `docs/screens/scan-spec.md`'s
+// `scan-corner-handle-tl/-tr/-br/-bl`, in that tl/tr/br/bl order.
+function parseCorners(raw: unknown): Corners | null {
+  if (typeof raw !== 'string') return null;
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    return null;
+  }
+  if (!Array.isArray(parsed) || parsed.length !== 4) return null;
+  const points = parsed.map((entry) => {
+    const point = entry as { x?: unknown; y?: unknown } | null;
+    return point && typeof point.x === 'number' && typeof point.y === 'number'
+      ? { x: point.x, y: point.y }
+      : null;
+  });
+  return points.every((point) => point !== null) ? (points as Corners) : null;
+}
+
+router.post('/api/scan-sessions/:id/pages', handleScanPhotoUpload, async (req, res) => {
+  const scanSessionId = paramString(req.params.id);
+  const corners = parseCorners(req.body.corners);
+  if (!req.file || !corners) {
+    if (req.file) await unlink(req.file.path).catch(() => {});
+    res.status(400).json({ error: 'A photo and four corner points are required' });
+    return;
+  }
+  const existingPages = await listPages(scanSessionId);
+  res
+    .status(201)
+    .json(await addPage(scanSessionId, existingPages.length + 1, req.file.path, corners));
+});
+
+// Real preview for P3's scan-page-preview / the thumbnail strip — same
+// content-endpoint shape as GET /api/uploaded-files/:fileId/content.
+router.get('/api/scan-sessions/:id/pages/:pageId/content', async (req, res) => {
+  const path = await getProcessedPagePath(
+    paramString(req.params.id),
+    paramString(req.params.pageId),
+  );
+  if (!path) {
+    res.status(404).end();
+    return;
+  }
+  res.sendFile(path);
+});
+
+// P4's `scan-deliver-done` — combines every ready page into one PDF, then
+// fans out to whichever method(s) were checked. `scan-deliver-account`
+// requires an Authorization: Bearer session token (same requireSession as
+// change-password above) — enforced here, not just on the phone UI, since
+// the phone-facing page is a separate untrusted client.
+router.post('/api/scan-sessions/:id/deliver', async (req, res) => {
+  const scanSessionId = paramString(req.params.id);
+  const { methods, email } = (req.body ?? {}) as { methods?: unknown; email?: unknown };
+  if (
+    !Array.isArray(methods) ||
+    methods.length === 0 ||
+    !methods.every((method) => method === 'email' || method === 'link' || method === 'account')
+  ) {
+    res.status(400).json({ error: 'At least one valid delivery method is required' });
+    return;
+  }
+  if (methods.includes('email') && (typeof email !== 'string' || !email.includes('@'))) {
+    res.status(400).json({ error: 'A valid email is required for email delivery' });
+    return;
+  }
+  let account: Awaited<ReturnType<typeof requireSession>> = null;
+  if (methods.includes('account')) {
+    account = await requireSession(req);
+    if (!account) {
+      res.status(401).json({ error: 'Not authenticated' });
+      return;
+    }
+  }
+
+  let pdfPath: string;
+  try {
+    pdfPath = await combineToPdf(scanSessionId);
+  } catch (err) {
+    if (err instanceof NoReadyPagesError) {
+      res.status(400).json({ error: 'No pages are ready yet' });
+      return;
+    }
+    throw err;
+  }
+  const pdfBuffer = await readFile(pdfPath);
+
+  if (methods.includes('email')) {
+    await sendScanEmail(email as string, pdfBuffer);
+  }
+
+  let accountFileId: string | null = null;
+  if (methods.includes('account') && account) {
+    const accountDir = join(accountUploadsDir, account.id);
+    mkdirSync(accountDir, { recursive: true });
+    const accountCopyPath = join(accountDir, `scan-${scanSessionId}.pdf`);
+    await writeFile(accountCopyPath, pdfBuffer);
+    const file = await addAccountFile(
+      account.id,
+      `Scan ${new Date().toISOString().slice(0, 10)}.pdf`,
+      accountCopyPath,
+      pdfBuffer.length,
+    );
+    accountFileId = file.id;
+  }
+
+  await markDelivered(
+    scanSessionId,
+    methods,
+    methods.includes('email') ? (email as string) : null,
+    accountFileId,
+  );
+  res.json({ ok: true });
+});
+
+// P5/"download link" delivery — same unguessable-UUID posture the requirements
+// doc calls for (docs/scan-upload-requirements.md, "Retention"): the scan
+// session id itself already is that token, so no separate one is needed.
+router.get('/api/scan-sessions/:id/download', (req, res) => {
+  const path = finalPdfPath(paramString(req.params.id));
+  if (!existsSync(path)) {
+    res.status(404).end();
+    return;
+  }
+  res.download(path, 'scan.pdf');
 });

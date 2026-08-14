@@ -1,8 +1,7 @@
-/* TODO: exact colors, typography, and elevation pending Design System
-   sign-off (docs/design/design-system.md). Values below are the
-   least-opinionated placeholders that keep every service card equal in
-   size, per the approved wireframe (Concept A) — Print must not look
-   larger or more dominant than Scan/Copy. */
+/* Raised elevation (docs/design/design-system.md, Section 6) — every card
+   stays equal in size/prominence per the approved wireframe (Concept A);
+   `available` vs `coming-soon` is differentiated by color/elevation only,
+   never by size, so Print never looks more dominant than Scan/Copy. */
 
 .root {
   display: flex;
@@ -12,23 +11,41 @@
   gap: var(--space-s);
   flex: 1 1 0;
   padding: var(--space-xl);
-  border: 1px solid currentColor;
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-large);
-  background: none;
+  background: var(--color-surface);
+  box-shadow: var(--elevation-raised);
+  color: var(--color-ink);
   font: inherit;
   cursor: pointer;
+  transition:
+    transform var(--motion-duration-fast) var(--motion-easing),
+    box-shadow var(--motion-duration-fast) var(--motion-easing),
+    border-color var(--motion-duration-fast) var(--motion-easing);
+}
+
+.root:hover:not(:disabled) {
+  border-color: var(--color-accent);
+  transform: translateY(-2px);
+}
+
+.root:active:not(:disabled) {
+  transform: translateY(0) scale(0.98);
 }
 
 .root:disabled {
   cursor: not-allowed;
-  opacity: 0.5;
+  border-color: var(--color-border);
+  background: var(--color-surface-sunken);
+  box-shadow: none;
+  color: var(--color-disabled-text);
 }
 
 .root:focus-visible {
-  outline: 2px solid;
-  outline-offset: 2px;
+  outline: 2px solid var(--color-accent);
+  outline-offset: 3px;
 }
 
 .title {
-  font-size: 1.25rem;
+  font: var(--font-h2);
 }

@@ -112,6 +112,18 @@ export const uk: Translations = {
     qrHint: 'Відскануйте камерою телефону, потім завантажте файл(и) зі сторінки, що відкриється',
     waitingForFiles: 'Очікування файлів...',
   },
+  scan: {
+    qrImageAlt: 'QR-код для відкриття камери сканування на телефоні',
+    preparingQrCode: 'Підготовка QR-коду...',
+    qrHint: 'Відскануйте камерою телефону, щоб сфотографувати та обробити документ',
+    waitingMessage: 'Очікування захоплення сторінки...',
+    pageCountMessage: (count: number) => `Захоплено сторінок: ${count}`,
+    deliveredMessage: (methods: string) => `Доставлено через: ${methods}`,
+    methodEmail: 'email',
+    methodLink: 'посилання для завантаження',
+    methodAccount: 'Особистий кабінет',
+    restart: 'Сканувати інший документ',
+  },
   personalAccount: {
     myFiles: 'Мої файли',
     myOrders: 'Мої замовлення',

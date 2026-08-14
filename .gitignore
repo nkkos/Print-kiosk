@@ -18,6 +18,10 @@ server/uploads/
 # Personal Account's permanently-stored files (dev-only, never committed)
 server/account-uploads/
 
+# Phone-Camera Scan's raw/processed files (dev-only, never committed — 24h
+# retention sweep besides)
+server/scans/
+
 # Environment variables (real secrets — .env.example is tracked separately)
 .env
 .env.*

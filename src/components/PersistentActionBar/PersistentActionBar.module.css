@@ -1,7 +1,5 @@
-/* TODO: exact colors/typography/icons pending Design System sign-off
-   (docs/design/design-system.md). Plain text stands in for IconButton
-   until an icon set is approved (docs/design/component-library.md,
-   Section 7). */
+/* Tertiary-weight actions (docs/design/design-system.md, Section 9) — plain
+   text stands in for IconButton until an icon set is approved (Section 7). */
 
 .root {
   display: flex;
@@ -16,21 +14,34 @@
   display: flex;
   flex-direction: row;
   align-items: center;
-  gap: var(--space-m);
+  gap: var(--space-l);
 }
 
 .item {
-  font-size: 0.875rem;
+  font: var(--font-caption);
+  color: var(--button-tertiary-text);
 }
 
 .plainButton {
   border: none;
   background: none;
-  padding: 0;
+  padding: var(--space-xs) 0;
   font: inherit;
+  color: inherit;
   cursor: pointer;
+  transition: color var(--motion-duration-fast) var(--motion-easing);
+}
+
+.plainButton:hover {
+  color: var(--color-accent);
+}
+
+.plainButton:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 4px;
 }
 
 .marker {
   margin-inline-start: var(--space-xs);
+  color: var(--color-accent);
 }

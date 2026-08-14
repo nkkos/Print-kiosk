@@ -18,6 +18,20 @@ export interface AccountFile {
   status: 'scanning' | 'converting' | 'ready' | 'rejected' | 'scan-unavailable';
 }
 
+export interface AccountFileLimits {
+  acceptedExtensions: string[];
+  retentionDays: number;
+  maxTotalStorageMb: number;
+}
+
+/** The current, env-configured Personal Account file limits
+ * (server/accountFileLimits.ts) — fetched live rather than hardcoded on the
+ * frontend, since they're expected to change often. */
+export async function getAccountFileLimits(): Promise<AccountFileLimits> {
+  const response = await fetch(`${API_BASE_URL}/api/accounts/file-limits`);
+  return response.json();
+}
+
 export interface AccountOrder {
   id: string;
   fileName: string;
@@ -32,6 +46,10 @@ export interface AccountOrder {
   pageRange: string | null;
   quantity: number;
   unitPriceCents: number;
+  /** 'created' (configured, not paid) | 'paid' (awaiting fulfillment) |
+   * 'issued' (its print job succeeded at the kiosk) — see
+   * docs/personal-account-requirements.md, "Order status lifecycle". */
+  status: 'created' | 'paid' | 'issued';
 }
 
 async function authedRequest<T>(
@@ -102,7 +120,7 @@ export function getAccountFileContentUrl(fileId: string): string {
   return `${API_BASE_URL}/api/account-files/${fileId}/content`;
 }
 
-export interface CreatePaidOrderParams {
+export interface CreateOrderParams {
   accountFileId: string;
   fileName: string;
   paperSize: 'A4' | 'A5';
@@ -115,15 +133,28 @@ export interface CreatePaidOrderParams {
   unitPriceCents: number;
 }
 
-export async function createPaidOrder(
+/** Configures an order without paying for it yet — 'created' state
+ * (docs/personal-account-requirements.md, "Order status lifecycle"). */
+export async function createOrder(
   sessionToken: string,
-  params: CreatePaidOrderParams,
+  params: CreateOrderParams,
 ): Promise<AccountOrder> {
   return authedRequest('/api/accounts/orders', sessionToken, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(params),
   });
+}
+
+/** Pays a 'created' order — 'created' -> 'paid'. */
+export async function payOrder(sessionToken: string, orderId: string): Promise<AccountOrder> {
+  return authedRequest(`/api/accounts/orders/${orderId}/pay`, sessionToken, { method: 'POST' });
+}
+
+/** Every order for the account, any status — the portal's own full "My
+ * orders" history. */
+export async function listMyOrders(sessionToken: string): Promise<AccountOrder[]> {
+  return authedRequest('/api/accounts/orders', sessionToken);
 }
 
 // --- Kiosk ---

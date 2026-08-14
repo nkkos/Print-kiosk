@@ -116,6 +116,19 @@ export const de: Translations = {
       'Scannen Sie mit der Kamera Ihres Telefons und laden Sie dann Ihre Datei(en) von der sich öffnenden Seite hoch',
     waitingForFiles: 'Warten auf Dateien...',
   },
+  scan: {
+    qrImageAlt: 'QR-Code zum Öffnen der Scan-Kamera auf Ihrem Telefon',
+    preparingQrCode: 'QR-Code wird vorbereitet...',
+    qrHint:
+      'Scannen Sie mit der Kamera Ihres Telefons, um Ihr Dokument zu fotografieren und zu verarbeiten',
+    waitingMessage: 'Warten auf die Erfassung einer Seite...',
+    pageCountMessage: (count: number) => `${count} Seite(n) bisher erfasst`,
+    deliveredMessage: (methods: string) => `Zugestellt über: ${methods}`,
+    methodEmail: 'E-Mail',
+    methodLink: 'Download-Link',
+    methodAccount: 'Persönliches Konto',
+    restart: 'Weiteres Dokument scannen',
+  },
   personalAccount: {
     myFiles: 'Meine Dateien',
     myOrders: 'Meine Bestellungen',

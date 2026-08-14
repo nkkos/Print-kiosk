@@ -115,6 +115,18 @@ export const en = {
     qrHint: "Scan with your phone's camera, then upload your file(s) from the page that opens",
     waitingForFiles: 'Waiting for files...',
   },
+  scan: {
+    qrImageAlt: 'QR code to open the scan camera on your phone',
+    preparingQrCode: 'Preparing QR code...',
+    qrHint: "Scan with your phone's camera to photograph and process your document",
+    waitingMessage: 'Waiting for a page to be captured...',
+    pageCountMessage: (count: number) => `${count} page(s) captured so far`,
+    deliveredMessage: (methods: string) => `Delivered via: ${methods}`,
+    methodEmail: 'email',
+    methodLink: 'download link',
+    methodAccount: 'Personal Account',
+    restart: 'Scan another document',
+  },
   personalAccount: {
     myFiles: 'My files',
     myOrders: 'My orders',

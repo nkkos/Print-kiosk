@@ -1,6 +1,8 @@
 # Kiosk Application — Global Design System
 
-Internal project document. Defines the reusable visual language for the entire kiosk application — not only the Welcome Screen. Every future screen must be implementable using this system. Based on `docs/product-overview.md`, `docs/welcome-screen-requirements.md`, `docs/screens/welcome-screen-spec.md`, and the selected Welcome Screen wireframe (Concept A). No branding, colors, font families, icon library, or animations are chosen yet — such items are marked "To be defined".
+Internal project document. Defines the reusable visual language for the entire kiosk application — not only the Welcome Screen. Every future screen must be implementable using this system. Based on `docs/product-overview.md`, `docs/welcome-screen-requirements.md`, `docs/screens/welcome-screen-spec.md`, and the selected Welcome Screen wireframe (Concept A).
+
+**Visual values filled in (2026-08-13):** color palette, typeface, exact spacing/radius/elevation/motion values, and button-state colors are now real, implemented values (`src/styles/tokens.css`), not placeholders — done to make the prototype demo-ready. Still genuinely undecided and marked "To be defined" below: the icon library, the safe-area/grid-margin exact value, non-uniform-hardware breakpoints, overlay dismiss behavior, and final brand assets (logo/product name — `BrandMark` still renders placeholder text on purpose, see its own TODO comment).
 
 ---
 
@@ -41,7 +43,7 @@ The interface must be:
 
 # 4. Spacing scale
 
-All spacing is expressed as a multiple of a single base unit, `space-unit`. Its absolute value is To be defined (to be set once real hardware/resolution is finalized), so the entire scale can resize proportionally without being redefined.
+All spacing is expressed as a multiple of a single base unit, `space-unit`. Value: `8px` — kept as a single variable specifically so the entire scale can still resize proportionally later if real hardware/resolution ends up needing a different density, without redefining every spacing token individually.
 
 | Level | Intended usage                                                                                                                        |
 | ----- | ------------------------------------------------------------------------------------------------------------------------------------- |
@@ -61,7 +63,7 @@ All spacing is expressed as a multiple of a single base unit, `space-unit`. Its 
 | Medium | Standard interactive elements — buttons, inputs, cards.                                            |
 | Large  | Large containers and overlays — modal dialogs, notification panels, main function-selection cards. |
 
-Exact radius values: To be defined.
+Exact values (`src/styles/tokens.css`): Small 6px, Medium 12px, Large 24px — more rounded than a typical 4/8/16 scale, a deliberate part of reading as "modern" per Section 1.
 
 ---
 
@@ -73,23 +75,23 @@ Exact radius values: To be defined.
 | Raised | Components the user directly interacts with in the main flow (e.g., the service cards on the Welcome Screen). Visually lifted slightly above Base to invite touch.                                                  |
 | Modal  | Pop-ups and overlays (language, help, tariffs, login, service-unavailable notification). Renders above every other layer, consistent with the confirmed behavior that overlays render on top of the current screen. |
 
-No exact shadow/elevation values are defined yet.
+Exact values (`src/styles/tokens.css`): Base has no shadow. Raised is a soft two-layer shadow tinted toward ink rather than pure black (`0 1px 2px rgb(16 24 23 / 6%), 0 4px 14px rgb(16 24 23 / 6%)`). Modal is stronger (`0 12px 32px rgb(16 24 23 / 18%), 0 4px 10px rgb(16 24 23 / 10%)`), since it has no dimming layer behind it (Section 11) and needs to read as floating on shadow alone.
 
 ---
 
 # 7. Typography
 
-No font family is chosen yet. The following styles describe intended usage only:
+**Typeface: Manrope** (variable font, self-hosted via `@fontsource-variable/manrope` — no CDN dependency, so the kiosk never depends on external network access just to render its own text). One family carries the whole scale through weight/size rather than pairing a second face — the interface is mostly short labels and headings, not long-form reading, so a single well-chosen family keeps it simpler and more consistent (Section 1). The following styles describe usage and their real values (`src/styles/tokens.css`):
 
-| Style   | Intended usage                                                                                                                                              |
-| ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Display | Rare, large-scale emphasis (e.g., a full-screen state message). Used minimally, for exceptional situations only.                                            |
-| H1      | Primary screen title/heading — one per screen, establishes what the screen is for.                                                                          |
-| H2      | Section headings within a screen (e.g., a heading inside a popup/overlay).                                                                                  |
-| H3      | Sub-section headings, used sparingly for further grouping within a section.                                                                                 |
-| Body    | Default text style for standard readable content — labels, descriptions, help/tariffs content.                                                              |
-| Caption | Small supporting text — e.g., a "coming soon" status label, helper text beneath a control.                                                                  |
-| Button  | Text style used specifically inside interactive controls, kept visually distinct from Body so button labels stay consistent regardless of surrounding text. |
+| Style   | Intended usage                                                                                                                                              | Value (weight/size/line-height) |
+| ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- |
+| Display | Rare, large-scale emphasis (e.g., a full-screen state message). Used minimally, for exceptional situations only.                                            | 800 / 3rem / 1.1                |
+| H1      | Primary screen title/heading — one per screen, establishes what the screen is for.                                                                          | 700 / 2rem / 1.2                |
+| H2      | Section headings within a screen (e.g., a heading inside a popup/overlay).                                                                                  | 700 / 1.5rem / 1.3              |
+| H3      | Sub-section headings, used sparingly for further grouping within a section.                                                                                 | 600 / 1.25rem / 1.35            |
+| Body    | Default text style for standard readable content — labels, descriptions, help/tariffs content.                                                              | 500 / 1rem / 1.5                |
+| Caption | Small supporting text — e.g., a "coming soon" status label, helper text beneath a control.                                                                  | 500 / 0.8125rem / 1.4           |
+| Button  | Text style used specifically inside interactive controls, kept visually distinct from Body so button labels stay consistent regardless of surrounding text. | 600 / 1rem / 1.2                |
 
 ---
 
@@ -123,7 +125,17 @@ This section distinguishes three separate things that describe a button: its **s
 
 Buttons of any semantic variant support the standard interaction states: default, pressed, focused, disabled, loading. `Disabled` is a state, not a semantic variant — an action that exists conceptually but is not currently available remains disabled within whichever variant it is (e.g., a disabled Primary button is still "Primary," now in the `disabled` state), rather than switching to a separate "Disabled" type. It must remain visible in the layout while being clearly non-interactive.
 
-The Welcome Screen's three service entries (Print, Scan, Copy) are not examples of this Button hierarchy — they are `ServiceCard` instances (Section 10). No button colors are defined yet.
+The Welcome Screen's three service entries (Print, Scan, Copy) are not examples of this Button hierarchy — they are `ServiceCard` instances (Section 10).
+
+**Colors (`src/styles/tokens.css`):** defined for all four variants, but the shared `Button` component has no variant prop yet (no confirmed use case needs one), so only Secondary is actually wired up today — every Button renders with `button-secondary-*` (white surface, `color-border-strong` outline, ink text). Primary emphasis today instead comes from ServiceCard/OptionCard's own bolder (Raised, larger) styling, not from a filled Button. Primary/Tertiary/Danger tokens are defined and ready for whenever that differentiation is actually needed:
+
+| Variant   | Background                                             | Text                      |
+| --------- | ------------------------------------------------------ | ------------------------- |
+| Primary   | `color-accent` (deep teal, `#0c6e68`)                  | `color-on-accent` (white) |
+| Secondary | `color-surface` (white), `color-border-strong` outline | `color-ink`               |
+| Tertiary  | none (text-only)                                       | `color-ink-soft`          |
+| Danger    | `color-danger` (`#b3261e`)                             | white                     |
+| Disabled  | `color-disabled-bg`                                    | `color-disabled-text`     |
 
 ---
 
@@ -135,7 +147,7 @@ The Welcome Screen's three service entries (Print, Scan, Copy) are not examples 
 | Info panel                   | A container presenting read-only information inside an overlay (e.g., help content, tariffs/pricing information).                                                                                                                                                                                                                                                                                                                                                  |
 | Notification panel           | A container for system-level messages (e.g., the service-unavailable notice). Uses Modal elevation and is visually distinct from user-invoked overlays, so it reads as a system state rather than a user-initiated action.                                                                                                                                                                                                                                         |
 
-Exact visual treatment (borders, backgrounds) of each container type: To be defined.
+Exact visual treatment (`src/styles/tokens.css`): `color-surface` (white) background, a 1px `color-border` outline, and Raised elevation for Service/Option cards. Notification panels additionally get a 4px accent-colored left border keyed to their variant (`color-warning` / `color-danger` / `color-success` / `color-ink-soft` for informational) — color is never the only cue, the title/message text always states the same thing.
 
 ---
 
@@ -175,7 +187,7 @@ Motion must be:
 - **Subtle** — used to clarify a state change, not to draw attention to itself.
 - **Never distracting** — no decorative or attention-seeking animation, consistent with the minimalist, premium philosophy in Section 1.
 
-No specific durations, easing curves, or animated effects are defined yet.
+Values (`src/styles/tokens.css`): `120ms`, `cubic-bezier(0.4, 0, 0.2, 1)` — used for hover/press feedback (color, transform, shadow) and the Modal's fade/rise-in. Respects `prefers-reduced-motion` (Modal's entrance animation is disabled under it; nothing else animates beyond quick property transitions).
 
 ---
 
@@ -191,37 +203,44 @@ No specific durations, easing curves, or animated effects are defined yet.
 
 # 16. Design tokens
 
-Token names and their intended meaning. No implementation values are defined except where already confirmed (none are, apart from the grid column count).
+Token names and their intended meaning. Implementation values now exist for spacing/radius/elevation/typography/motion/button-color/color (`src/styles/tokens.css`, filled in 2026-08-13) — icon sizes, `button-icon`, and the grid tokens beyond column count are still genuinely undecided (no icon library chosen, no confirmed safe-area value), left "To be defined" below.
 
-| Token                                         | Intended meaning                                                                                                                                                             |
-| --------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `space-unit`                                  | Base spacing unit; all spacing tokens are multiples of it. Value: To be defined.                                                                                             |
-| `space-xs`                                    | Tightest spacing, for closely related elements.                                                                                                                              |
-| `space-s`                                     | Spacing within a single component.                                                                                                                                           |
-| `space-m`                                     | Spacing between related components in the same section.                                                                                                                      |
-| `space-l`                                     | Spacing between major layout regions.                                                                                                                                        |
-| `space-xl`                                    | Outermost spacing (safe area, overlay margins).                                                                                                                              |
-| `radius-small`                                | Corner rounding for compact controls/icons.                                                                                                                                  |
-| `radius-medium`                               | Corner rounding for standard controls (buttons, inputs, cards).                                                                                                              |
-| `radius-large`                                | Corner rounding for large containers/overlays.                                                                                                                               |
-| `elevation-base`                              | Default screen background layer.                                                                                                                                             |
-| `elevation-raised`                            | Layer for directly-interactive main-flow components.                                                                                                                         |
-| `elevation-modal`                             | Layer for pop-ups, overlays, and system notifications.                                                                                                                       |
-| `font-display`                                | Rare, large-scale emphasis text style.                                                                                                                                       |
-| `font-h1`                                     | Primary screen title style.                                                                                                                                                  |
-| `font-h2`                                     | Section heading style.                                                                                                                                                       |
-| `font-h3`                                     | Sub-section heading style.                                                                                                                                                   |
-| `font-body`                                   | Default readable text style.                                                                                                                                                 |
-| `font-caption`                                | Small supporting text style.                                                                                                                                                 |
-| `font-button`                                 | Text style used inside interactive controls.                                                                                                                                 |
-| `button-primary`                              | Highest-emphasis action button; at most one per screen.                                                                                                                      |
-| `button-secondary`                            | Alternative action button alongside a primary action.                                                                                                                        |
-| `button-tertiary`                             | Supportive/footer action button.                                                                                                                                             |
-| `button-disabled`                             | Visible but non-interactive function button.                                                                                                                                 |
-| `button-icon`                                 | Compact icon-only control.                                                                                                                                                   |
-| `icon-size-s` / `icon-size-m` / `icon-size-l` | Relative icon sizes tied to the spacing/typography scale.                                                                                                                    |
-| `grid-columns`                                | Number of columns in the reusable layout grid. Value: 12 (confirmed in Section 3).                                                                                           |
-| `grid-margin`                                 | Outer grid margin, equal to the safe area.                                                                                                                                   |
-| `grid-gutter`                                 | Space between grid columns.                                                                                                                                                  |
-| `motion-duration-fast`                        | Duration used for interface transitions (fast, subtle). Value: To be defined.                                                                                                |
-| `color-*`                                     | Reserved for future color tokens (e.g., `color-background`, `color-surface`, `color-text`, `color-primary`, `color-disabled`). Values: To be defined — no colors chosen yet. |
+| Token                                                        | Intended meaning                                                                                                                                                                                                                                                       |
+| ------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `space-unit`                                                 | Base spacing unit; all spacing tokens are multiples of it. Value: `8px`.                                                                                                                                                                                               |
+| `space-xs`                                                   | Tightest spacing, for closely related elements.                                                                                                                                                                                                                        |
+| `space-s`                                                    | Spacing within a single component.                                                                                                                                                                                                                                     |
+| `space-m`                                                    | Spacing between related components in the same section.                                                                                                                                                                                                                |
+| `space-l`                                                    | Spacing between major layout regions.                                                                                                                                                                                                                                  |
+| `space-xl`                                                   | Outermost spacing (safe area, overlay margins).                                                                                                                                                                                                                        |
+| `radius-small`                                               | Corner rounding for compact controls/icons.                                                                                                                                                                                                                            |
+| `radius-medium`                                              | Corner rounding for standard controls (buttons, inputs, cards).                                                                                                                                                                                                        |
+| `radius-large`                                               | Corner rounding for large containers/overlays.                                                                                                                                                                                                                         |
+| `elevation-base`                                             | Default screen background layer.                                                                                                                                                                                                                                       |
+| `elevation-raised`                                           | Layer for directly-interactive main-flow components.                                                                                                                                                                                                                   |
+| `elevation-modal`                                            | Layer for pop-ups, overlays, and system notifications.                                                                                                                                                                                                                 |
+| `font-display`                                               | Rare, large-scale emphasis text style.                                                                                                                                                                                                                                 |
+| `font-h1`                                                    | Primary screen title style.                                                                                                                                                                                                                                            |
+| `font-h2`                                                    | Section heading style.                                                                                                                                                                                                                                                 |
+| `font-h3`                                                    | Sub-section heading style.                                                                                                                                                                                                                                             |
+| `font-body`                                                  | Default readable text style.                                                                                                                                                                                                                                           |
+| `font-caption`                                               | Small supporting text style.                                                                                                                                                                                                                                           |
+| `font-button`                                                | Text style used inside interactive controls.                                                                                                                                                                                                                           |
+| `button-primary`                                             | Highest-emphasis action button; at most one per screen.                                                                                                                                                                                                                |
+| `button-secondary`                                           | Alternative action button alongside a primary action.                                                                                                                                                                                                                  |
+| `button-tertiary`                                            | Supportive/footer action button.                                                                                                                                                                                                                                       |
+| `button-disabled`                                            | Visible but non-interactive function button.                                                                                                                                                                                                                           |
+| `button-icon`                                                | Compact icon-only control.                                                                                                                                                                                                                                             |
+| `icon-size-s` / `icon-size-m` / `icon-size-l`                | Relative icon sizes tied to the spacing/typography scale.                                                                                                                                                                                                              |
+| `grid-columns`                                               | Number of columns in the reusable layout grid. Value: 12 (confirmed in Section 3).                                                                                                                                                                                     |
+| `grid-margin`                                                | Outer grid margin, equal to the safe area.                                                                                                                                                                                                                             |
+| `grid-gutter`                                                | Space between grid columns.                                                                                                                                                                                                                                            |
+| `motion-duration-fast`                                       | Duration used for interface transitions (fast, subtle). Value: `120ms`, `cubic-bezier(0.4, 0, 0.2, 1)`.                                                                                                                                                                |
+| `color-background`                                           | Screen background. Value: `#f2f6f5` — a cool, teal-tinted off-white (not pure white; not the cream tone common to generic "premium" palettes) — see Section 1's "Highly readable" requirement.                                                                         |
+| `color-surface`                                              | Raised cards, panels, popups. Value: `#ffffff`.                                                                                                                                                                                                                        |
+| `color-surface-sunken`                                       | Recessed/disabled backgrounds. Value: `#e8eeec`.                                                                                                                                                                                                                       |
+| `color-border` / `color-border-strong`                       | Neutral outlines. Values: `#d7e0de` / `#b7c4c1`.                                                                                                                                                                                                                       |
+| `color-ink` / `color-ink-soft`                               | Primary / secondary text. Values: `#101817` / `#56635f` — near-black rather than pure black, with the same cool cast as the background/border tokens (a deliberately "chosen" neutral, not a generic grey).                                                            |
+| `color-accent` / `color-accent-strong` / `color-accent-soft` | The one brand accent — deep teal, a deliberate reference to cyan (one of the four process-printing inks), not an arbitrary "safe" blue. Values: `#0c6e68` / `#094f4b` (hover/pressed) / `#dcefec` (subtle tint backgrounds).                                           |
+| `color-danger` / `color-success` / `color-warning`           | Semantic colors, independent of the accent hue. Values: `#b3261e` / `#2e7d4f` / `#a6710a`.                                                                                                                                                                             |
+| `color-disabled-bg` / `color-disabled-text`                  | Disabled-state colors. Values: `#e7ebea` / `#98a29f`. (Below the general body-text contrast minimum by design — WCAG exempts inactive UI components from the text-contrast requirement; the disabled _state_ itself, not color alone, communicates non-interactivity.) |

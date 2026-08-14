@@ -113,6 +113,18 @@ export const sk: Translations = {
       'Naskenujte fotoaparátom telefónu a potom nahrajte súbor(y) zo stránky, ktorá sa otvorí',
     waitingForFiles: 'Čakanie na súbory...',
   },
+  scan: {
+    qrImageAlt: 'QR kód na otvorenie skenovacej kamery vo vašom telefóne',
+    preparingQrCode: 'Pripravuje sa QR kód...',
+    qrHint: 'Naskenujte fotoaparátom telefónu a odfotografujte a spracujte svoj dokument',
+    waitingMessage: 'Čaká sa na zachytenie strany...',
+    pageCountMessage: (count: number) => `Zatiaľ zachytených strán: ${count}`,
+    deliveredMessage: (methods: string) => `Doručené cez: ${methods}`,
+    methodEmail: 'email',
+    methodLink: 'odkaz na stiahnutie',
+    methodAccount: 'Osobný účet',
+    restart: 'Skenovať ďalší dokument',
+  },
   personalAccount: {
     myFiles: 'Moje súbory',
     myOrders: 'Moje objednávky',

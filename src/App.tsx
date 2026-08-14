@@ -4,6 +4,7 @@ import { UploadMethodSelectionScreen } from './features/upload-method-selection/
 import { EmailAddressScreen } from './features/email-upload/EmailAddressScreen';
 import { EmailFileListScreen } from './features/email-upload/EmailFileListScreen';
 import { QrUploadScreen } from './features/qr-upload/QrUploadScreen';
+import { ScanScreen } from './features/scan/ScanScreen';
 import { PersonalAccountScreen } from './features/personal-account/PersonalAccountScreen';
 import { PrintOrderConfigurationScreen } from './features/print-order-configuration/PrintOrderConfigurationScreen';
 import { PaymentStatusScreen } from './features/payment-status/PaymentStatusScreen';
@@ -13,6 +14,8 @@ import { EndingSessionScreen } from './features/ending-session/EndingSessionScre
 import { ACTIVITY_EVENTS } from './layouts/KioskScreenLayout/KioskScreenLayout';
 import { computeItemPrice } from './utils/pricing';
 import { getUploadConfig, listQrFiles } from './services/qrUploadApi';
+import { createScanSession, getScanSession } from './services/scanApi';
+import type { ScanSession } from './services/scanApi';
 import { listEmailMessages } from './services/emailApi';
 import { login } from './services/accountApi';
 import { listAccountOrders } from './services/accountFileApi';
@@ -35,6 +38,7 @@ type Screen =
   | 'email-address'
   | 'email-file-list'
   | 'qr-upload'
+  | 'scan'
   | 'personal-account'
   | 'print-order-configuration'
   | 'payment-status'
@@ -153,6 +157,18 @@ function App() {
   // The phone-facing upload URL encoded in the QR image, once known — null
   // until the one-time /api/config fetch (below) resolves.
   const [qrUploadUrl, setQrUploadUrl] = useState<string | null>(null);
+  // The current scan attempt's own id (server/scanStore.ts's scanSessions.id
+  // — distinct from the Kiosk Session id, since one Kiosk Session can go
+  // through several scan attempts over time via scan-restart,
+  // docs/screens/scan-spec.md). Null until service-scan is first activated.
+  const [scanSessionId, setScanSessionId] = useState<string | null>(null);
+  // The phone-facing scan URL encoded in the QR image — null until the scan
+  // session above has been created and the backend's LAN-facing base URL
+  // resolved (docs/scan-upload-requirements.md).
+  const [scanQrUrl, setScanQrUrl] = useState<string | null>(null);
+  // Polled scan session state (pages captured, delivery status) — null
+  // until the first poll resolves (docs/screens/scan-spec.md, "Screen states").
+  const [scanSession, setScanSession] = useState<ScanSession | null>(null);
   // Whether the user has gone through the address/instruction screen at
   // least once this session (docs/email-upload-requirements.md) — not
   // whether mail has actually arrived (see emailMessages for that, which
@@ -278,6 +294,28 @@ function App() {
     };
   }, [screen, session]);
 
+  // Polls the current scan attempt's state while the Scan screen is open —
+  // pages/delivery status live server-side (server/scanStore.ts), same 3s
+  // interval and "resume on revisit" pattern as QR upload's own polling
+  // effect above (docs/screens/scan-spec.md, "reuse the exact
+  // interval/pattern QR upload already established").
+  useEffect(() => {
+    if (screen !== 'scan' || !scanSessionId) return;
+    let cancelled = false;
+    function poll() {
+      if (!scanSessionId) return;
+      getScanSession(scanSessionId).then((data) => {
+        if (!cancelled) setScanSession(data);
+      });
+    }
+    poll();
+    const intervalId = setInterval(poll, QR_POLL_INTERVAL_MS);
+    return () => {
+      cancelled = true;
+      clearInterval(intervalId);
+    };
+  }, [screen, scanSessionId]);
+
   // Submits one real Print Task per `printingItems` entry
   // (server/printerAdapter.ts) once, on entering Print Status — this screen
   // is "fully system-controlled" (docs/domain/kiosk-session.md), so
@@ -294,6 +332,7 @@ function App() {
           sessionId: session?.id ?? null,
           fileId: item.sourceFileId,
           sourceFileOrigin: item.sourceFileOrigin,
+          printOrderId: item.sourcePaidOrderId,
           paperSize: item.paperSize,
           sides: item.sides,
           color: item.color,
@@ -476,6 +515,50 @@ function App() {
       });
     }
     goToUploadMethodSelection(false);
+  }
+
+  // Creates a fresh scan attempt under the given Kiosk Session id
+  // (server/scanStore.ts) and resolves the QR code it should encode — shared
+  // by both first activation and scan-restart (docs/screens/scan-spec.md).
+  function startScanSession(kioskSessionId: string) {
+    createScanSession(kioskSessionId)
+      .then(({ id }) => {
+        setScanSessionId(id);
+        setScanSession(null);
+        return getUploadConfig().then(({ lanUploadUrl }) => {
+          setScanQrUrl(`${lanUploadUrl}/scan/${id}`);
+        });
+      })
+      .catch((err: unknown) => {
+        console.error('[App] createScanSession request failed:', err);
+      });
+  }
+
+  function handleScanActivate() {
+    // Trigger A (docs/domain/kiosk-session.md), same mechanics as
+    // handlePrintActivate. Only starts a new scan attempt if none exists yet
+    // for this Kiosk Session — revisiting the Scan screen otherwise
+    // preserves the same QR code and current state (docs/screens/scan-spec.md,
+    // "Navigation").
+    if (!session) {
+      const newSession: KioskSession = { id: crypto.randomUUID(), accountId: null };
+      localStorage.setItem(SESSION_ID_STORAGE_KEY, newSession.id);
+      setSession(newSession);
+      startSession(newSession.id, null, 'service-scan').catch((err: unknown) => {
+        console.error('[App] startSession request failed:', err);
+      });
+      startScanSession(newSession.id);
+    } else if (!scanSessionId) {
+      startScanSession(session.id);
+    }
+    setScreen('scan');
+  }
+
+  function handleScanRestart() {
+    // scan-restart (docs/screens/scan-spec.md) — ends the previous phone-side
+    // attempt (simply abandoned, nothing to explicitly close server-side)
+    // and starts a fresh one under the same Kiosk Session.
+    if (session) startScanSession(session.id);
   }
 
   async function handleLogin(email: string, password: string) {
@@ -803,6 +886,35 @@ function App() {
     );
   }
 
+  if (screen === 'scan') {
+    return (
+      <LanguageProvider language={language}>
+        <ScanScreen
+          scanQrUrl={scanQrUrl}
+          scanSession={scanSession}
+          onRestart={handleScanRestart}
+          onBack={() => setScreen('welcome')}
+          onHome={() => setScreen('welcome')}
+          onEndSession={handleEndSession}
+          cartItems={cart}
+          onQuantityChange={handleQuantityChange}
+          onRemoveItem={handleRemoveItem}
+          onProceedToPayment={handleProceedToPayment}
+          isConnectionLost={isConnectionLost}
+          onSimulateConnectionLost={handleSimulateConnectionLost}
+          onSimulateConnectionRestored={handleSimulateConnectionRestored}
+          onLogin={handleLogin}
+          accountId={session?.accountId ?? null}
+          onGoToPersonalAccount={() => goToPersonalAccount(false)}
+          hasPendingPaidOrders={hasPendingPaidOrders}
+          onDismissPaidOrdersPrompt={handleDismissPaidOrdersPrompt}
+          onGoToPaidOrders={handleGoToPaidOrders}
+          onLanguageChange={setLanguage}
+        />
+      </LanguageProvider>
+    );
+  }
+
   if (screen === 'personal-account' && session?.accountId) {
     return (
       <LanguageProvider language={language}>
@@ -985,6 +1097,7 @@ function App() {
     <LanguageProvider language={language}>
       <WelcomeScreen
         onPrintActivate={handlePrintActivate}
+        onScanActivate={handleScanActivate}
         sessionActive={session !== null}
         onEndSession={handleEndSession}
         cartItems={cart}

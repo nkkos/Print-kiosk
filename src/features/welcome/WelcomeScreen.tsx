@@ -28,6 +28,10 @@ interface WelcomeScreenProps {
    * docs/screens/upload-method-selection-spec.md). Creates a Kiosk Session
    * first if none exists yet (Trigger A, docs/domain/kiosk-session.md). */
   onPrintActivate: () => void;
+  /** Navigates to the Scan screen (docs/screens/scan-spec.md). Creates a
+   * Kiosk Session first if none exists yet, same Trigger A mechanics as
+   * onPrintActivate. */
+  onScanActivate: () => void;
   /** Whether a Kiosk Session is currently active (logged in, or anonymous
    * after returning via Back) — controls end-session's visibility. */
   sessionActive: boolean;
@@ -60,6 +64,7 @@ interface WelcomeScreenProps {
 
 export function WelcomeScreen({
   onPrintActivate,
+  onScanActivate,
   sessionActive,
   onEndSession,
   cartItems,
@@ -119,7 +124,12 @@ export function WelcomeScreen({
           status={isHardwareUnavailable ? 'unavailable' : 'available'}
           onActivate={onPrintActivate}
         />
-        <ServiceCard serviceId="scan" title={t.welcome.scan} status="coming-soon" />
+        <ServiceCard
+          serviceId="scan"
+          title={t.welcome.scan}
+          status="available"
+          onActivate={onScanActivate}
+        />
         <ServiceCard serviceId="copy" title={t.welcome.copy} status="coming-soon" />
       </div>
 
