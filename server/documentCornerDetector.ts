@@ -99,20 +99,48 @@ export async function detectDocumentCorners(imagePath: string): Promise<Corners 
   // sharp's raw RGBA output already matches that same shape).
   const img = cv.matFromImageData({ width: workWidth, height: workHeight, data: workingData });
   try {
-    // Two-pass: try without dilation first (clean edge case, no risk of
-    // merging the page with something touching it), and only retry with
-    // dilation — which bridges small gaps in a broken Canny boundary but
-    // can also fuse the page's contour with clutter physically touching
-    // it — if the first pass found nothing at all. No detection is a
-    // strictly worse outcome than an occasionally-off corner, but a clean
-    // no-dilate result beats a dilate-merged one whenever it's available.
-    return (
-      findQuad(cv, img, workWidth, workHeight, detectScale, false) ??
-      findQuad(cv, img, workWidth, workHeight, detectScale, true)
-    );
+    // Real phone photos vary a lot in lighting/contrast, and a single fixed
+    // Canny threshold pair (jscanify's own defaults, 50/200) doesn't
+    // generalize across them — confirmed live: multiple real photos found
+    // nothing at all despite every synthetic test photo working fine.
+    // "Auto Canny" (thresholds derived from the image's own mean
+    // brightness, not a fixed guess) is the standard fix for exactly this;
+    // tried alongside the fixed defaults rather than replacing them
+    // outright, since neither is strictly better on every photo.
+    const [adaptiveLow, adaptiveHigh] = computeAdaptiveCannyThresholds(cv, img);
+    const thresholdPairs: Array<[number, number]> = [
+      [50, 200],
+      [adaptiveLow, adaptiveHigh],
+      [30, 100],
+    ];
+
+    // Two-pass per threshold pair: try without dilation first (clean edge
+    // case, no risk of merging the page with something touching it), and
+    // only retry with dilation — which bridges small gaps in a broken Canny
+    // boundary but can also fuse the page's contour with clutter physically
+    // touching it — if that pair's no-dilation pass found nothing. No
+    // detection is a strictly worse outcome than an occasionally-off
+    // corner, but a clean no-dilate result beats a dilate-merged one
+    // whenever it's available.
+    for (const [low, high] of thresholdPairs) {
+      const found =
+        findQuad(cv, img, workWidth, workHeight, detectScale, false, low, high) ??
+        findQuad(cv, img, workWidth, workHeight, detectScale, true, low, high);
+      if (found) return found;
+    }
+    return null;
   } finally {
     img.delete();
   }
+}
+
+function computeAdaptiveCannyThresholds(cv: any, img: any): [number, number] {
+  const grayForStats = new cv.Mat();
+  cv.cvtColor(img, grayForStats, cv.COLOR_RGBA2GRAY);
+  const mean = cv.mean(grayForStats)[0];
+  grayForStats.delete();
+  const sigma = 0.33;
+  return [Math.max(0, (1 - sigma) * mean), Math.min(255, (1 + sigma) * mean)];
 }
 
 function findQuad(
@@ -122,6 +150,8 @@ function findQuad(
   workHeight: number,
   detectScale: number,
   useDilate: boolean,
+  cannyLow: number,
+  cannyHigh: number,
 ): Corners | null {
   const imgGray = new cv.Mat();
   const imgBlur = new cv.Mat();
@@ -133,7 +163,7 @@ function findQuad(
   let bestQuad: any = null;
 
   try {
-    cv.Canny(img, imgGray, 50, 200);
+    cv.Canny(img, imgGray, cannyLow, cannyHigh);
     cv.GaussianBlur(imgGray, imgBlur, new cv.Size(3, 3), 0, 0, cv.BORDER_DEFAULT);
     cv.threshold(imgBlur, imgThresh, 0, 255, cv.THRESH_OTSU);
 
