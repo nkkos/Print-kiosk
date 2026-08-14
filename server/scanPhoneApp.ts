@@ -172,6 +172,101 @@ export function renderScanPhoneApp(scanSessionId: string, portalUrl: string): st
     openAdjustScreen(file);
   });
 
+  // Best-effort auto-detection (docs/scan-upload-requirements.md: "not a
+  // hard requirement... manual adjustment is the actual requirement") — a
+  // plain-Canvas Sobel-edge heuristic, not a full CV pipeline (OpenCV.js's
+  // WASM build is an 8-10MB one-time download, which would work against
+  // this page's own "lightweight" design goal, docs/screens/scan-spec.md's
+  // "Design system reuse"). Downscales for speed, finds the strongest edge
+  // pixels, then picks each corner as the extreme point of x+y/x-y among
+  // them — a standard cheap approximation for a convex quad's corners from
+  // a point cloud, without a real contour-finding step. Returns null (falls
+  // back to the plain inset-rectangle default) whenever the result looks
+  // unreliable, rather than handing back a bad guess: too few strong edges,
+  // or a quad suspiciously smaller than the photo.
+  function shoelaceArea(pts) {
+    var area = 0;
+    for (var i = 0; i < pts.length; i++) {
+      var a = pts[i], b = pts[(i + 1) % pts.length];
+      area += a.x * b.y - b.x * a.y;
+    }
+    return Math.abs(area) / 2;
+  }
+
+  function detectDocumentCorners(image) {
+    var workingMax = 400;
+    var detectScale = Math.min(1, workingMax / Math.max(image.naturalWidth, image.naturalHeight));
+    var w = Math.max(1, Math.round(image.naturalWidth * detectScale));
+    var h = Math.max(1, Math.round(image.naturalHeight * detectScale));
+
+    var work = document.createElement('canvas');
+    work.width = w;
+    work.height = h;
+    var wctx = work.getContext('2d');
+    wctx.drawImage(image, 0, 0, w, h);
+    var pixels = wctx.getImageData(0, 0, w, h).data;
+
+    var gray = new Float32Array(w * h);
+    for (var i = 0; i < w * h; i++) {
+      gray[i] = 0.299 * pixels[i * 4] + 0.587 * pixels[i * 4 + 1] + 0.114 * pixels[i * 4 + 2];
+    }
+
+    var mag = new Float32Array(w * h);
+    var maxMag = 0;
+    for (var y = 1; y < h - 1; y++) {
+      for (var x = 1; x < w - 1; x++) {
+        var i00 = gray[(y - 1) * w + (x - 1)], i01 = gray[(y - 1) * w + x], i02 = gray[(y - 1) * w + (x + 1)];
+        var i10 = gray[y * w + (x - 1)], i12 = gray[y * w + (x + 1)];
+        var i20 = gray[(y + 1) * w + (x - 1)], i21 = gray[(y + 1) * w + x], i22 = gray[(y + 1) * w + (x + 1)];
+        var gx = i02 + 2 * i12 + i22 - (i00 + 2 * i10 + i20);
+        var gy = i20 + 2 * i21 + i22 - (i00 + 2 * i01 + i02);
+        var m = Math.sqrt(gx * gx + gy * gy);
+        mag[y * w + x] = m;
+        if (m > maxMag) maxMag = m;
+      }
+    }
+    if (maxMag < 1) return null;
+
+    var threshold = maxMag * 0.3;
+    var points = [];
+    for (var yy = 1; yy < h - 1; yy++) {
+      for (var xx = 1; xx < w - 1; xx++) {
+        if (mag[yy * w + xx] >= threshold) points.push({ x: xx, y: yy });
+      }
+    }
+    if (points.length < 20) return null;
+
+    var tl = points[0], br = points[0], tr = points[0], bl = points[0];
+    points.forEach(function (p) {
+      if (p.x + p.y < tl.x + tl.y) tl = p;
+      if (p.x + p.y > br.x + br.y) br = p;
+      if (p.x - p.y > tr.x - tr.y) tr = p;
+      if (p.x - p.y < bl.x - bl.y) bl = p;
+    });
+
+    var corners = {
+      tl: { x: tl.x / detectScale, y: tl.y / detectScale },
+      tr: { x: tr.x / detectScale, y: tr.y / detectScale },
+      br: { x: br.x / detectScale, y: br.y / detectScale },
+      bl: { x: bl.x / detectScale, y: bl.y / detectScale },
+    };
+
+    var area = shoelaceArea([corners.tl, corners.tr, corners.br, corners.bl]);
+    var imageArea = image.naturalWidth * image.naturalHeight;
+    if (area < imageArea * 0.15) return null;
+
+    return corners;
+  }
+
+  function defaultCorners(w, h) {
+    return {
+      tl: { x: w * 0.1, y: h * 0.1 },
+      tr: { x: w * 0.9, y: h * 0.1 },
+      br: { x: w * 0.9, y: h * 0.9 },
+      bl: { x: w * 0.1, y: h * 0.9 },
+    };
+  }
+
   function openAdjustScreen(file) {
     var url = URL.createObjectURL(file);
     img = new Image();
@@ -182,13 +277,7 @@ export function renderScanPhoneApp(scanSessionId: string, portalUrl: string): st
       canvas.width = wrap.clientWidth;
       canvas.height = img.naturalHeight * scale;
       ctx = canvas.getContext('2d');
-      var w = img.naturalWidth, h = img.naturalHeight;
-      currentCorners = {
-        tl: { x: w * 0.1, y: h * 0.1 },
-        tr: { x: w * 0.9, y: h * 0.1 },
-        br: { x: w * 0.9, y: h * 0.9 },
-        bl: { x: w * 0.1, y: h * 0.9 },
-      };
+      currentCorners = detectDocumentCorners(img) || defaultCorners(img.naturalWidth, img.naturalHeight);
       drawCanvas();
       URL.revokeObjectURL(url);
     };
