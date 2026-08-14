@@ -89,6 +89,7 @@ export function renderScanPhoneApp(scanSessionId: string, portalUrl: string): st
     <h1>Adjust corners</h1>
     <p id="adjust-hint">Drag the corners to match the edges of the page.</p>
     <p id="adjust-detecting" hidden>Detecting document edges…</p>
+    <p id="adjust-detect-status" class="error" hidden></p>
     <div class="canvas-wrap" id="canvas-wrap" hidden><canvas id="adjust-canvas"></canvas></div>
     <div class="actions">
       <button id="scan-retake" class="secondary">Retake</button>
@@ -199,10 +200,17 @@ export function renderScanPhoneApp(scanSessionId: string, portalUrl: string): st
     return { tl: cornersArray[0], tr: cornersArray[1], br: cornersArray[2], bl: cornersArray[3] };
   }
 
+  function showDetectStatus(message) {
+    var el = document.getElementById('adjust-detect-status');
+    el.textContent = message;
+    el.hidden = false;
+  }
+
   function openAdjustScreen(file) {
     show('screen-adjust');
     document.getElementById('adjust-hint').hidden = true;
     document.getElementById('adjust-detecting').hidden = false;
+    document.getElementById('adjust-detect-status').hidden = true;
     document.getElementById('canvas-wrap').hidden = true;
     document.getElementById('scan-confirm-corners').disabled = true;
 
@@ -222,15 +230,29 @@ export function renderScanPhoneApp(scanSessionId: string, portalUrl: string): st
       img.src = url;
     });
 
+    // Temporary diagnostic surface (adjust-detect-status) — a prior silent
+    // catch-and-fall-back made it impossible to tell "detection legitimately
+    // found nothing" apart from "the request itself failed," which is
+    // exactly the ambiguity blocking a live bug report right now.
     var formData = new FormData();
     formData.append('photo', file);
     var detectionDone = fetch('/api/scan-sessions/' + scanSessionId + '/detect-corners', {
       method: 'POST',
       body: formData,
+      signal: AbortSignal.timeout(15000),
     })
-      .then(function (res) { return res.json(); })
-      .then(function (data) { return data.corners ? toCornersObject(data.corners) : null; })
-      .catch(function () { return null; });
+      .then(function (res) {
+        if (!res.ok) throw new Error('detect-corners returned HTTP ' + res.status);
+        return res.json();
+      })
+      .then(function (data) {
+        if (!data.corners) showDetectStatus('Auto-detect found no document — using default corners.');
+        return data.corners ? toCornersObject(data.corners) : null;
+      })
+      .catch(function (err) {
+        showDetectStatus('Auto-detect request failed (' + err.message + ') — using default corners.');
+        return null;
+      });
 
     Promise.all([imageReady, detectionDone]).then(function (results) {
       currentCorners = results[1] || defaultCorners(img.naturalWidth, img.naturalHeight);

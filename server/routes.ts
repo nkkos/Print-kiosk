@@ -1025,6 +1025,16 @@ router.post(
     try {
       const corners = await detectDocumentCorners(req.file.path);
       res.json({ corners });
+    } catch (err) {
+      // Logged, not swallowed — a live bug report ("corners always default,
+      // never match the real photo") turned out to be impossible to diagnose
+      // without server-side visibility into *why* detection was failing
+      // (OpenCV.js's WASM init is memory-hungry; this project's own README
+      // already notes the default Railway plan's 1GB limit isn't enough for
+      // ClamAV's signature DB, so the same class of failure is plausible
+      // here too).
+      console.error('[routes] detectDocumentCorners failed:', err);
+      res.status(500).json({ error: 'Corner detection failed' });
     } finally {
       await unlink(req.file.path).catch(() => {});
     }
