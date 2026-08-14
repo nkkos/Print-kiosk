@@ -35,6 +35,13 @@ export function renderScanPhoneApp(scanSessionId: string, portalUrl: string): st
     --font-family-base: 'Manrope', system-ui, sans-serif;
   }
   * { box-sizing: border-box; }
+  /* The [hidden] attribute's UA-stylesheet display:none is low-specificity
+     and gets silently overridden by any later same-specificity type
+     selector (button { display: inline-flex } below, in particular) —
+     confirmed live: #reset-submit stayed visible after being hidden by JS.
+     !important pins "hidden means hidden" regardless of what else targets
+     the element. */
+  [hidden] { display: none !important; }
   body {
     margin: 0; font-family: var(--font-family-base); background: var(--color-background);
     color: var(--color-ink); padding: var(--space-m);
@@ -42,7 +49,6 @@ export function renderScanPhoneApp(scanSessionId: string, portalUrl: string): st
   h1 { font: 700 1.5rem/1.3 var(--font-family-base); margin: 0 0 var(--space-s); }
   p { font: 500 1rem/1.5 var(--font-family-base); color: var(--color-ink-soft); }
   .screen { max-width: 480px; margin: 0 auto; }
-  .screen[hidden] { display: none; }
   button, .button-like {
     display: inline-flex; align-items: center; justify-content: center;
     font: 600 1rem/1.2 var(--font-family-base); border-radius: var(--radius-medium);
@@ -106,12 +112,22 @@ export function renderScanPhoneApp(scanSessionId: string, portalUrl: string): st
     <label class="checkbox-row"><input type="checkbox" id="scan-deliver-link" /> Give me a download link</label>
     <label class="checkbox-row"><input type="checkbox" id="scan-deliver-account" /> Save to my Personal Account</label>
     <div id="account-login" hidden>
-      <p style="margin-top:0">Log in to save this scan to your account.</p>
-      <input type="email" id="login-email" placeholder="Email" />
-      <input type="password" id="login-password" placeholder="Password" />
-      <p class="error" id="login-error" hidden>Incorrect email or password.</p>
-      <button id="login-submit" class="secondary">Log in</button>
-      <p>No account? <a id="login-register-link" href="#" target="_blank" rel="noopener">Register on the portal</a>, then come back here.</p>
+      <div id="login-form">
+        <p style="margin-top:0">Log in to save this scan to your account.</p>
+        <input type="email" id="login-email" placeholder="Email" />
+        <input type="password" id="login-password" placeholder="Password" />
+        <p class="error" id="login-error" hidden>Incorrect email or password.</p>
+        <button id="login-submit" class="secondary">Log in</button>
+        <p><a id="login-forgot-password" href="#">Forgot password?</a></p>
+        <p>No account? <a id="login-register-link" href="#" target="_blank" rel="noopener">Register on the portal</a>, then come back here.</p>
+      </div>
+      <div id="login-forgot-panel" hidden>
+        <p style="margin-top:0">Enter your email and we'll send reset instructions.</p>
+        <input type="email" id="reset-email" placeholder="Email" />
+        <button id="reset-submit" class="secondary">Send reset instructions</button>
+        <p id="reset-sent" hidden>If an account with that email exists, reset instructions were sent.</p>
+        <p><a id="login-back-to-login" href="#">Back to log in</a></p>
+      </div>
     </div>
     <button id="scan-deliver-done" class="primary" disabled>Finish</button>
   </section>
@@ -338,6 +354,41 @@ export function renderScanPhoneApp(scanSessionId: string, portalUrl: string): st
         updateDoneButton();
       })
       .catch(function () { errorEl.hidden = false; });
+  });
+
+  var loginForm = document.getElementById('login-form');
+  var forgotPanel = document.getElementById('login-forgot-panel');
+  var resetSubmit = document.getElementById('reset-submit');
+  var resetSent = document.getElementById('reset-sent');
+
+  document.getElementById('login-forgot-password').addEventListener('click', function (e) {
+    e.preventDefault();
+    loginForm.hidden = true;
+    forgotPanel.hidden = false;
+  });
+  document.getElementById('login-back-to-login').addEventListener('click', function (e) {
+    e.preventDefault();
+    forgotPanel.hidden = true;
+    loginForm.hidden = false;
+    resetSent.hidden = true;
+    resetSubmit.hidden = false;
+  });
+  resetSubmit.addEventListener('click', function () {
+    var email = document.getElementById('reset-email').value;
+    // Same response either way regardless of outcome (docs/personal-account-requirements.md
+    // / server/routes.ts's request-password-reset — never confirms whether an
+    // email exists), so this always ends on "check your email," including on
+    // a network error, same as the kiosk's own LoginPanel.
+    fetch('/api/accounts/request-password-reset', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: email }),
+    })
+      .catch(function () {})
+      .then(function () {
+        resetSent.hidden = false;
+        resetSubmit.hidden = true;
+      });
   });
 
   doneButton.addEventListener('click', function () {
