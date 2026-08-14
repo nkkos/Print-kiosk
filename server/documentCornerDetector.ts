@@ -227,6 +227,7 @@ function findQuad(
       workHeight,
       detectScale,
       `canny ${cannyLow.toFixed(1)}/${cannyHigh.toFixed(1)} dilate=${useDilate}`,
+      false,
     );
   } finally {
     imgPreBlur.delete();
@@ -275,6 +276,7 @@ function findQuadByBrightness(
         workHeight,
         detectScale,
         'brightness normal',
+        true,
       ) ??
       extractCorners(
         cv,
@@ -283,6 +285,7 @@ function findQuadByBrightness(
         workHeight,
         detectScale,
         'brightness inverted',
+        true,
       )
     );
   } finally {
@@ -303,6 +306,7 @@ function extractCorners(
   workHeight: number,
   detectScale: number,
   label: string,
+  requireCleanQuad: boolean,
 ): Corners | null {
   const contours = new cv.MatVector();
   const hierarchy = new cv.Mat();
@@ -316,9 +320,14 @@ function extractCorners(
     // (the standard "cv2.approxPolyDP -> exactly 4 points" document-scanner
     // check) over just trusting the single largest contour by raw area —
     // clutter near the page can produce a larger, messier contour that
-    // isn't actually the page. Falls back to the largest contour's own
-    // extreme points (jscanify's original approach) only if nothing
-    // approximates cleanly, rather than giving up immediately.
+    // isn't actually the page. `requireCleanQuad=false` (Canny) falls back
+    // to the largest contour's own extreme points (jscanify's original
+    // approach) when nothing approximates cleanly; `requireCleanQuad=true`
+    // (brightness) doesn't — confirmed live that a brightness-thresholded
+    // region failing to approximate to 4 points usually means it bled into
+    // an adjacent similarly-bright area or lost part of the page to a
+    // shadow, and the raw extreme-point fallback on that messy a shape
+    // produced a wildly wrong quad, not just a slightly-off one.
     let bestQuadArea = 0;
     let largestContour: any = null;
     let largestArea = 0;
@@ -347,7 +356,7 @@ function extractCorners(
       `[documentCornerDetector]   ${label}: ${contours.size()} contours total, ${candidatesAboveMinArea} above min-area (${(MIN_AREA_RATIO * 100).toFixed(0)}% of ${workingArea}), largest=${largestArea.toFixed(0)}, cleanQuadArea=${bestQuadArea || 'none'}`,
     );
 
-    const sourceContour = bestQuad || largestContour;
+    const sourceContour = bestQuad || (requireCleanQuad ? null : largestContour);
     if (!sourceContour) return null;
 
     const rect = cv.minAreaRect(sourceContour);
