@@ -114,6 +114,16 @@ export async function detectDocumentCorners(imagePath: string): Promise<Corners 
       [30, 100],
     ];
 
+    // Temporary diagnostic logging (visible in Railway's logs) — repeated
+    // real-photo failures that no synthetic reproduction has matched so
+    // far mean guessing at parameters blind isn't working; this turns the
+    // next real failed attempt into actual data (image size, computed
+    // thresholds, per-attempt contour counts/areas) instead of another
+    // guess.
+    console.log(
+      `[documentCornerDetector] photo ${info.width}x${info.height} -> working ${workWidth}x${workHeight}, adaptive Canny thresholds: ${adaptiveLow.toFixed(1)}/${adaptiveHigh.toFixed(1)}`,
+    );
+
     // Two-pass per threshold pair: try without dilation first (clean edge
     // case, no risk of merging the page with something touching it), and
     // only retry with dilation — which bridges small gaps in a broken Canny
@@ -128,6 +138,7 @@ export async function detectDocumentCorners(imagePath: string): Promise<Corners 
         findQuad(cv, img, workWidth, workHeight, detectScale, true, low, high);
       if (found) return found;
     }
+    console.log('[documentCornerDetector] no attempt found a usable contour — returning null');
     return null;
   } finally {
     img.delete();
@@ -185,10 +196,12 @@ function findQuad(
     let bestQuadArea = 0;
     let largestContour: any = null;
     let largestArea = 0;
+    let candidatesAboveMinArea = 0;
     for (let i = 0; i < contours.size(); i++) {
       const contour = contours.get(i);
       const area = cv.contourArea(contour);
       if (area < workingArea * MIN_AREA_RATIO) continue;
+      candidatesAboveMinArea++;
       if (area > largestArea) {
         largestArea = area;
         largestContour = contour;
@@ -203,6 +216,10 @@ function findQuad(
         approx.delete();
       }
     }
+
+    console.log(
+      `[documentCornerDetector]   canny ${cannyLow.toFixed(1)}/${cannyHigh.toFixed(1)} dilate=${useDilate}: ${contours.size()} contours total, ${candidatesAboveMinArea} above min-area (${(MIN_AREA_RATIO * 100).toFixed(0)}% of ${workingArea}), largest=${largestArea.toFixed(0)}, cleanQuadArea=${bestQuadArea || 'none'}`,
+    );
 
     const sourceContour = bestQuad || largestContour;
     if (!sourceContour) return null;
