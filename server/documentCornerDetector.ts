@@ -64,6 +64,22 @@ const WORKING_MAX_DIMENSION = 700;
 // photo — almost certainly not the actual page, better to fall back to
 // the phone's own default inset-rectangle than hand back a bad guess.
 const MIN_AREA_RATIO = 0.15;
+// A quad whose corners all sit within this many pixels (at working-image
+// scale) of the photo's own four corners is almost certainly not a real
+// detection — it's Otsu finding no real page-vs-background split (too low
+// contrast) and lumping the *entire photo* into one "region," which reads
+// as a perfectly plausible large contour otherwise. Confirmed live via
+// findQuadByBrightness on a deliberately very-low-contrast test: the
+// rejected result's corners landed exactly on (0,0)/(W,0)/(W,H)/(0,H) — the
+// image bounds themselves. A plain "reject if area is too close to 100% of
+// the frame" guard was tried first and reverted: a real photo where the
+// page genuinely fills nearly the whole frame (a deliberately close-up
+// shot, a completely legitimate and previously-working case) has a nearly
+// identical area ratio to this failure case, so area alone can't tell them
+// apart — but their corner positions can, since a real page (even a
+// tightly-cropped one) still has a few pixels of margin on every side,
+// while this failure mode has none at all.
+const FRAME_EDGE_TOLERANCE_PX = 3;
 
 /** Detects the page's four corners in `imagePath`, in the original photo's
  * own pixel coordinates. Returns null whenever detection doesn't find a
@@ -138,6 +154,17 @@ export async function detectDocumentCorners(imagePath: string): Promise<Corners 
         findQuad(cv, img, workWidth, workHeight, detectScale, true, low, high);
       if (found) return found;
     }
+
+    // Every Canny variant needs a real local gradient at the page boundary
+    // to find it — confirmed live: pre-blur cut a real photo's contour
+    // count from 690+ down to a clean 11, but still zero were large enough,
+    // meaning the boundary itself wasn't registering as an edge at all, not
+    // that it was buried in noise. Brightness-based region splitting doesn't
+    // need a local edge, only an overall page-vs-background brightness
+    // difference, so it's tried as a last resort for exactly that case.
+    const brightnessResult = findQuadByBrightness(cv, img, workWidth, workHeight, detectScale);
+    if (brightnessResult) return brightnessResult;
+
     console.log('[documentCornerDetector] no attempt found a usable contour — returning null');
     return null;
   } finally {
@@ -170,9 +197,6 @@ function findQuad(
   const imgThresh = new cv.Mat();
   const imgDilated = useDilate ? new cv.Mat() : null;
   const dilateKernel = useDilate ? cv.Mat.ones(3, 3, cv.CV_8U) : null;
-  const contours = new cv.MatVector();
-  const hierarchy = new cv.Mat();
-  let bestQuad: any = null;
 
   try {
     // Real-photo diagnostic logs confirmed this: a full-resolution phone
@@ -195,7 +219,97 @@ function findQuad(
       cv.dilate(imgThresh, imgDilated, dilateKernel, new cv.Point(-1, -1), 1);
       contourSource = imgDilated;
     }
-    cv.findContours(contourSource, contours, hierarchy, cv.RETR_CCOMP, cv.CHAIN_APPROX_SIMPLE);
+
+    return extractCorners(
+      cv,
+      contourSource,
+      workWidth,
+      workHeight,
+      detectScale,
+      `canny ${cannyLow.toFixed(1)}/${cannyHigh.toFixed(1)} dilate=${useDilate}`,
+    );
+  } finally {
+    imgPreBlur.delete();
+    imgGray.delete();
+    imgBlur.delete();
+    imgThresh.delete();
+    if (imgDilated) imgDilated.delete();
+    if (dilateKernel) dilateKernel.delete();
+  }
+}
+
+// Edge detection (findQuad above) needs a real local gradient at the page's
+// boundary to find it at all — confirmed live: a real photo's contour count
+// dropped from 690+ to a clean 11 once the pre-blur fix landed, but still
+// zero of them were large enough, meaning the boundary itself just wasn't
+// registering as an edge anywhere, not that it was buried in noise. A
+// region-based split (Otsu on brightness directly, then the single largest
+// resulting region) doesn't need a local edge at all — only an overall
+// brightness difference between page and background — so it can succeed on
+// exactly the low-local-contrast photos that defeat every Canny variant.
+// Tried both polarities since the page could come out as the bright region
+// or the dark one depending on lighting.
+function findQuadByBrightness(
+  cv: any,
+  img: any,
+  workWidth: number,
+  workHeight: number,
+  detectScale: number,
+): Corners | null {
+  const imgGray = new cv.Mat();
+  const imgPreBlur = new cv.Mat();
+  const imgThreshNormal = new cv.Mat();
+  const imgThreshInverted = new cv.Mat();
+
+  try {
+    cv.cvtColor(img, imgGray, cv.COLOR_RGBA2GRAY);
+    cv.GaussianBlur(imgGray, imgPreBlur, new cv.Size(7, 7), 0, 0, cv.BORDER_DEFAULT);
+    cv.threshold(imgPreBlur, imgThreshNormal, 0, 255, cv.THRESH_OTSU + cv.THRESH_BINARY);
+    cv.threshold(imgPreBlur, imgThreshInverted, 0, 255, cv.THRESH_OTSU + cv.THRESH_BINARY_INV);
+
+    return (
+      extractCorners(
+        cv,
+        imgThreshNormal,
+        workWidth,
+        workHeight,
+        detectScale,
+        'brightness normal',
+      ) ??
+      extractCorners(
+        cv,
+        imgThreshInverted,
+        workWidth,
+        workHeight,
+        detectScale,
+        'brightness inverted',
+      )
+    );
+  } finally {
+    imgGray.delete();
+    imgPreBlur.delete();
+    imgThreshNormal.delete();
+    imgThreshInverted.delete();
+  }
+}
+
+// Shared by both detection strategies above: given a binary Mat (an edge
+// map or a brightness-threshold mask), finds the largest region that
+// plausibly is the page and extracts its four corners.
+function extractCorners(
+  cv: any,
+  binary: any,
+  workWidth: number,
+  workHeight: number,
+  detectScale: number,
+  label: string,
+): Corners | null {
+  const contours = new cv.MatVector();
+  const hierarchy = new cv.Mat();
+  let bestQuad: any = null;
+
+  try {
+    cv.findContours(binary, contours, hierarchy, cv.RETR_CCOMP, cv.CHAIN_APPROX_SIMPLE);
 
     const workingArea = workWidth * workHeight;
     // Prefer a contour that genuinely approximates to a clean quadrilateral
@@ -230,7 +344,7 @@ function findQuad(
     }
 
     console.log(
-      `[documentCornerDetector]   canny ${cannyLow.toFixed(1)}/${cannyHigh.toFixed(1)} dilate=${useDilate}: ${contours.size()} contours total, ${candidatesAboveMinArea} above min-area (${(MIN_AREA_RATIO * 100).toFixed(0)}% of ${workingArea}), largest=${largestArea.toFixed(0)}, cleanQuadArea=${bestQuadArea || 'none'}`,
+      `[documentCornerDetector]   ${label}: ${contours.size()} contours total, ${candidatesAboveMinArea} above min-area (${(MIN_AREA_RATIO * 100).toFixed(0)}% of ${workingArea}), largest=${largestArea.toFixed(0)}, cleanQuadArea=${bestQuadArea || 'none'}`,
     );
 
     const sourceContour = bestQuad || largestContour;
@@ -278,6 +392,19 @@ function findQuad(
     }
 
     if (!tl || !tr || !bl || !br) return null;
+
+    const looksLikeWholeFrame =
+      distance(tl, { x: 0, y: 0 }) < FRAME_EDGE_TOLERANCE_PX &&
+      distance(tr, { x: workWidth, y: 0 }) < FRAME_EDGE_TOLERANCE_PX &&
+      distance(br, { x: workWidth, y: workHeight }) < FRAME_EDGE_TOLERANCE_PX &&
+      distance(bl, { x: 0, y: workHeight }) < FRAME_EDGE_TOLERANCE_PX;
+    if (looksLikeWholeFrame) {
+      console.log(
+        `[documentCornerDetector]   ${label}: rejected — quad matches the photo's own frame`,
+      );
+      return null;
+    }
+
     return [
       { x: tl.x / detectScale, y: tl.y / detectScale },
       { x: tr.x / detectScale, y: tr.y / detectScale },
@@ -286,12 +413,6 @@ function findQuad(
     ];
   } finally {
     if (bestQuad) bestQuad.delete();
-    imgPreBlur.delete();
-    imgGray.delete();
-    imgBlur.delete();
-    imgThresh.delete();
-    if (imgDilated) imgDilated.delete();
-    if (dilateKernel) dilateKernel.delete();
     contours.delete();
     hierarchy.delete();
   }
