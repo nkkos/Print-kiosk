@@ -117,10 +117,9 @@ async function flattenIllumination(
   const flattened = Buffer.alloc(pixels.length);
   for (let i = 0; i < pixels.length; i++) {
     const backgroundLevel = background[i] || 1;
-    // Target a bit under full white (235, not 255) so the trailing
-    // normalize() in warpAndCleanPage still has headroom to stretch against
-    // instead of clipping straight to a flat, slightly-blown-out white.
-    flattened[i] = Math.max(0, Math.min(255, Math.round((pixels[i] / backgroundLevel) * 235)));
+    // Targets full white (255) directly — no trailing normalize() call
+    // stretches this further (see warpAndCleanPage's comment for why).
+    flattened[i] = Math.max(0, Math.min(255, Math.round((pixels[i] / backgroundLevel) * 255)));
   }
   return flattened;
 }
@@ -179,15 +178,18 @@ export async function warpAndCleanPage(rawImageBuffer: Buffer, corners: Corners)
 
   const flattened = await flattenIllumination(outData, outWidth, outHeight, channels);
 
-  // Plain normalize() (no args) stretches to the image's actual min/max —
-  // weak in practice, since even one outlier pixel (a stray dark speck,
-  // JPEG ringing) pins the white end short of true white; a real phone
-  // photo tested against the pre-this-change pipeline visibly left the
-  // paper grey, not white. Clipping the top/bottom 1% instead pushes the
-  // background reliably to white and text reliably darker, matching the
-  // punchier contrast a tool like CamScanner's enhance mode produces.
+  // No normalize() call here — tried both plain normalize() and
+  // normalize({lower,upper}) (percentile clipping, for a punchier
+  // CamScanner-like contrast) and both produced a confirmed, serious
+  // regression on pages with a large, near-uniform background and only
+  // sparse dark content (a very common real case — e.g. a mostly-blank
+  // page, or a page with just a few text lines): the background inverted to
+  // near-black instead of staying white. flattenIllumination above already
+  // targets true white (255) for the background directly, so there's
+  // nothing left for a normalize() stretch to usefully do — it was only
+  // ever there to compensate for the old, weaker illumination-flattening
+  // approach and should have been dropped once that got fixed.
   return sharp(flattened, { raw: { width: outWidth, height: outHeight, channels } })
-    .normalize({ lower: 1, upper: 99 })
     .sharpen({ sigma: 1, m1: 1.5, m2: 3 })
     .jpeg({ quality: 92 })
     .toBuffer();

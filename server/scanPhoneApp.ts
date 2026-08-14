@@ -428,6 +428,28 @@ export function renderScanPhoneApp(scanSessionId: string, portalUrl: string): st
     document.getElementById('scan-done-summary').innerHTML = lines.join('');
     show('screen-done');
   }
+
+  // Resume on load — this page previously kept every bit of progress in JS
+  // memory only, so any full reload (a real crash/refresh, or navigating
+  // away to register an account and using its "Return to your scan" link,
+  // which lands back here as a fresh page load, not a restored tab) silently
+  // reset all the way back to Start even though the server still has the
+  // captured pages. Checking the server's real state on load and jumping
+  // straight to wherever it actually leaves off fixes both cases at once —
+  // matches the "leaving and returning ... preserves ... current state"
+  // persistence rule docs/screens/scan-spec.md already established for the
+  // kiosk side of this same screen.
+  fetch('/api/scan-sessions/' + scanSessionId)
+    .then(function (res) { return res.json(); })
+    .then(function (data) {
+      pages = data.pages || [];
+      if (data.deliveredAt) {
+        openDoneScreen(data.deliveryMethods || []);
+      } else if (pages.length > 0) {
+        openPreviewScreen();
+      }
+    })
+    .catch(function () {});
 })();
 </script>
 </body>
