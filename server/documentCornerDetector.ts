@@ -164,6 +164,7 @@ function findQuad(
   cannyLow: number,
   cannyHigh: number,
 ): Corners | null {
+  const imgPreBlur = new cv.Mat();
   const imgGray = new cv.Mat();
   const imgBlur = new cv.Mat();
   const imgThresh = new cv.Mat();
@@ -174,7 +175,18 @@ function findQuad(
   let bestQuad: any = null;
 
   try {
-    cv.Canny(img, imgGray, cannyLow, cannyHigh);
+    // Real-photo diagnostic logs confirmed this: a full-resolution phone
+    // camera photo (sensor noise, real wood-grain texture, JPEG blocking)
+    // produced 690+ tiny contours before Canny even ran here, none of them
+    // the actual page — jscanify's own algorithm (which this was ported
+    // from) only blurs *after* Canny, smoothing the edge map but not
+    // suppressing the fine texture that created all those spurious edges
+    // in the first place. A real pre-blur, before Canny, is the standard
+    // fix: it costs some sensitivity to the page's own boundary, but that
+    // boundary is a large, low-frequency feature that survives blurring
+    // far better than per-pixel noise does.
+    cv.GaussianBlur(img, imgPreBlur, new cv.Size(5, 5), 0, 0, cv.BORDER_DEFAULT);
+    cv.Canny(imgPreBlur, imgGray, cannyLow, cannyHigh);
     cv.GaussianBlur(imgGray, imgBlur, new cv.Size(3, 3), 0, 0, cv.BORDER_DEFAULT);
     cv.threshold(imgBlur, imgThresh, 0, 255, cv.THRESH_OTSU);
 
@@ -274,6 +286,7 @@ function findQuad(
     ];
   } finally {
     if (bestQuad) bestQuad.delete();
+    imgPreBlur.delete();
     imgGray.delete();
     imgBlur.delete();
     imgThresh.delete();
