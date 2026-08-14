@@ -143,7 +143,11 @@ export function renderScanPhoneApp(scanSessionId: string, portalUrl: string): st
 (function () {
   var scanSessionId = ${JSON.stringify(scanSessionId)};
   var portalUrl = ${JSON.stringify(portalUrl)};
-  document.getElementById('login-register-link').href = portalUrl + '/portal/register.html';
+  // returnTo (portal/RegisterPage.tsx) — so registering doesn't strand the
+  // person on the portal's "check your email" screen with no way back to
+  // this scan.
+  document.getElementById('login-register-link').href =
+    portalUrl + '/portal/register.html?returnTo=' + encodeURIComponent(window.location.href);
 
   var currentPhoto = null;
   var currentCorners = null;

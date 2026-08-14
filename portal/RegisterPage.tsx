@@ -4,12 +4,19 @@ import { register } from '../src/services/accountApi';
 // Minimal registration page (docs/personal-account-requirements.md — account
 // creation is a portal concern). Deliberately plain, not reusing the kiosk's
 // component library — see portal.css.
+//
+// `returnTo` (optional query param): the phone-facing Scan flow's P4 links
+// here with its own current URL so the person isn't stranded on this
+// "check your email" screen once they're done — they still need to go back
+// and log in with the new account (this page never logs them in itself),
+// so this is a plain link back, not an automatic redirect.
 export function RegisterPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [done, setDone] = useState(false);
+  const returnTo = new URLSearchParams(window.location.search).get('returnTo');
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -32,6 +39,11 @@ export function RegisterPage() {
         <p className="success">
           We sent a verification link to {email}. Click it to verify your account.
         </p>
+        {returnTo && (
+          <p>
+            <a href={returnTo}>Return to your scan</a> and log in with your new account.
+          </p>
+        )}
       </>
     );
   }
