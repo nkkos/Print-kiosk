@@ -174,16 +174,21 @@ export function renderScanPhoneApp(scanSessionId: string, portalUrl: string): st
 
   // Best-effort auto-detection (docs/scan-upload-requirements.md: "not a
   // hard requirement... manual adjustment is the actual requirement") — a
-  // plain-Canvas Sobel-edge heuristic, not a full CV pipeline (OpenCV.js's
-  // WASM build is an 8-10MB one-time download, which would work against
-  // this page's own "lightweight" design goal, docs/screens/scan-spec.md's
-  // "Design system reuse"). Downscales for speed, finds the strongest edge
-  // pixels, then picks each corner as the extreme point of x+y/x-y among
-  // them — a standard cheap approximation for a convex quad's corners from
-  // a point cloud, without a real contour-finding step. Returns null (falls
-  // back to the plain inset-rectangle default) whenever the result looks
-  // unreliable, rather than handing back a bad guess: too few strong edges,
-  // or a quad suspiciously smaller than the photo.
+  // plain-Canvas heuristic, not a full CV pipeline (OpenCV.js's WASM build
+  // is an 8-10MB one-time download, which would work against this page's
+  // own "lightweight" design goal, docs/screens/scan-spec.md's "Design
+  // system reuse"). First attempt used a Sobel-edge-strength heuristic
+  // (strongest-gradient pixels -> extreme x+y/x-y points), but a real photo
+  // on a textured wood desk broke it badly: wood grain produces plenty of
+  // its own strong edges unrelated to the page boundary, so the "strongest
+  // edges" set was mostly desk texture, not paper edge. Brightness +
+  // connectivity is more robust for the actual common case (a light/white
+  // page against a comparatively darker, textured surface): paper is
+  // reliably one large, brightly, *contiguous* region, whereas even a
+  // high-contrast background's bright spots (grain highlights, glare) tend
+  // to be small and disconnected, and shouldn't out-compete the page as the
+  // single largest bright blob. Falls back to the plain inset-rectangle
+  // default whenever the result looks unreliable, same as before.
   function shoelaceArea(pts) {
     var area = 0;
     for (var i = 0; i < pts.length; i++) {
@@ -191,6 +196,63 @@ export function renderScanPhoneApp(scanSessionId: string, portalUrl: string): st
       area += a.x * b.y - b.x * a.y;
     }
     return Math.abs(area) / 2;
+  }
+
+  // Otsu's method — picks the brightness threshold that best splits the
+  // image into two classes (page vs. background) by maximizing between-
+  // class variance, rather than a fixed guess that would only work under
+  // one specific lighting condition.
+  function otsuThreshold(gray, w, h) {
+    var hist = new Array(256).fill(0);
+    for (var i = 0; i < w * h; i++) hist[Math.min(255, Math.max(0, Math.round(gray[i])))]++;
+    var total = w * h;
+    var sum = 0;
+    for (var t = 0; t < 256; t++) sum += t * hist[t];
+    var sumB = 0, weightB = 0, maxVariance = 0, threshold = 127;
+    for (var tt = 0; tt < 256; tt++) {
+      weightB += hist[tt];
+      if (weightB === 0) continue;
+      var weightF = total - weightB;
+      if (weightF === 0) break;
+      sumB += tt * hist[tt];
+      var meanB = sumB / weightB;
+      var meanF = (sum - sumB) / weightF;
+      var variance = weightB * weightF * (meanB - meanF) * (meanB - meanF);
+      if (variance > maxVariance) {
+        maxVariance = variance;
+        threshold = tt;
+      }
+    }
+    return threshold;
+  }
+
+  // Largest 4-connected component of "mask" (a Uint8Array of 0/1), by pixel
+  // count — iterative flood fill (a stack, not recursion, since a 400px-ish
+  // working canvas can have tens of thousands of connected pixels).
+  function largestConnectedComponent(mask, w, h) {
+    var visited = new Uint8Array(w * h);
+    var best = null;
+    var bestSize = 0;
+    for (var start = 0; start < w * h; start++) {
+      if (!mask[start] || visited[start]) continue;
+      var stack = [start];
+      visited[start] = 1;
+      var points = [];
+      while (stack.length) {
+        var idx = stack.pop();
+        var x = idx % w, y = (idx / w) | 0;
+        points.push({ x: x, y: y });
+        if (x > 0 && mask[idx - 1] && !visited[idx - 1]) { visited[idx - 1] = 1; stack.push(idx - 1); }
+        if (x < w - 1 && mask[idx + 1] && !visited[idx + 1]) { visited[idx + 1] = 1; stack.push(idx + 1); }
+        if (idx - w >= 0 && mask[idx - w] && !visited[idx - w]) { visited[idx - w] = 1; stack.push(idx - w); }
+        if (idx + w < w * h && mask[idx + w] && !visited[idx + w]) { visited[idx + w] = 1; stack.push(idx + w); }
+      }
+      if (points.length > bestSize) {
+        bestSize = points.length;
+        best = points;
+      }
+    }
+    return best;
   }
 
   function detectDocumentCorners(image) {
@@ -211,33 +273,15 @@ export function renderScanPhoneApp(scanSessionId: string, portalUrl: string): st
       gray[i] = 0.299 * pixels[i * 4] + 0.587 * pixels[i * 4 + 1] + 0.114 * pixels[i * 4 + 2];
     }
 
-    var mag = new Float32Array(w * h);
-    var maxMag = 0;
-    for (var y = 1; y < h - 1; y++) {
-      for (var x = 1; x < w - 1; x++) {
-        var i00 = gray[(y - 1) * w + (x - 1)], i01 = gray[(y - 1) * w + x], i02 = gray[(y - 1) * w + (x + 1)];
-        var i10 = gray[y * w + (x - 1)], i12 = gray[y * w + (x + 1)];
-        var i20 = gray[(y + 1) * w + (x - 1)], i21 = gray[(y + 1) * w + x], i22 = gray[(y + 1) * w + (x + 1)];
-        var gx = i02 + 2 * i12 + i22 - (i00 + 2 * i10 + i20);
-        var gy = i20 + 2 * i21 + i22 - (i00 + 2 * i01 + i02);
-        var m = Math.sqrt(gx * gx + gy * gy);
-        mag[y * w + x] = m;
-        if (m > maxMag) maxMag = m;
-      }
-    }
-    if (maxMag < 1) return null;
+    var threshold = otsuThreshold(gray, w, h);
+    var mask = new Uint8Array(w * h);
+    for (var j = 0; j < w * h; j++) mask[j] = gray[j] > threshold ? 1 : 0;
 
-    var threshold = maxMag * 0.3;
-    var points = [];
-    for (var yy = 1; yy < h - 1; yy++) {
-      for (var xx = 1; xx < w - 1; xx++) {
-        if (mag[yy * w + xx] >= threshold) points.push({ x: xx, y: yy });
-      }
-    }
-    if (points.length < 20) return null;
+    var component = largestConnectedComponent(mask, w, h);
+    if (!component || component.length < 20) return null;
 
-    var tl = points[0], br = points[0], tr = points[0], bl = points[0];
-    points.forEach(function (p) {
+    var tl = component[0], br = component[0], tr = component[0], bl = component[0];
+    component.forEach(function (p) {
       if (p.x + p.y < tl.x + tl.y) tl = p;
       if (p.x + p.y > br.x + br.y) br = p;
       if (p.x - p.y > tr.x - tr.y) tr = p;

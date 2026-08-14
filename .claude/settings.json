@@ -6,7 +6,10 @@
       "Bash(curl -s -X POST http://localhost:3001/api/accounts/register -H \"Content-Type: application/json\" -d '{\"email\":\"email-test@example.com\",\"password\":\"TestPass123\"}' -w \"\\\\nHTTP: %{http_code}\\\\n\")",
       "Bash(tail -3 /tmp/server-restart-test.log 2>/dev/null | grep \"Link:\")",
       "Read(//tmp/**)",
-      "Bash(npx tsc *)"
+      "Bash(npx tsc *)",
+      "Bash(rm -f ./_tmp_gen_wood_photo.mjs ./_tmp_check_v2.mjs ./_tmp_p1_p5_v2.mjs)",
+      "Bash(npm uninstall *)",
+      "Bash(npm run *)"
     ]
   }
 }
