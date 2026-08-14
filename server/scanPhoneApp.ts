@@ -87,11 +87,12 @@ export function renderScanPhoneApp(scanSessionId: string, portalUrl: string): st
 
   <section id="screen-adjust" class="screen" hidden>
     <h1>Adjust corners</h1>
-    <p>Drag the corners to match the edges of the page.</p>
-    <div class="canvas-wrap"><canvas id="adjust-canvas"></canvas></div>
+    <p id="adjust-hint">Drag the corners to match the edges of the page.</p>
+    <p id="adjust-detecting" hidden>Detecting document edges…</p>
+    <div class="canvas-wrap" id="canvas-wrap" hidden><canvas id="adjust-canvas"></canvas></div>
     <div class="actions">
       <button id="scan-retake" class="secondary">Retake</button>
-      <button id="scan-confirm-corners" class="primary">Confirm</button>
+      <button id="scan-confirm-corners" class="primary" disabled>Confirm</button>
     </div>
   </section>
 
@@ -173,135 +174,18 @@ export function renderScanPhoneApp(scanSessionId: string, portalUrl: string): st
   });
 
   // Best-effort auto-detection (docs/scan-upload-requirements.md: "not a
-  // hard requirement... manual adjustment is the actual requirement") — a
-  // plain-Canvas heuristic, not a full CV pipeline (OpenCV.js's WASM build
-  // is an 8-10MB one-time download, which would work against this page's
-  // own "lightweight" design goal, docs/screens/scan-spec.md's "Design
-  // system reuse"). First attempt used a Sobel-edge-strength heuristic
-  // (strongest-gradient pixels -> extreme x+y/x-y points), but a real photo
-  // on a textured wood desk broke it badly: wood grain produces plenty of
-  // its own strong edges unrelated to the page boundary, so the "strongest
-  // edges" set was mostly desk texture, not paper edge. Brightness +
-  // connectivity is more robust for the actual common case (a light/white
-  // page against a comparatively darker, textured surface): paper is
-  // reliably one large, brightly, *contiguous* region, whereas even a
-  // high-contrast background's bright spots (grain highlights, glare) tend
-  // to be small and disconnected, and shouldn't out-compete the page as the
-  // single largest bright blob. Falls back to the plain inset-rectangle
-  // default whenever the result looks unreliable, same as before.
-  function shoelaceArea(pts) {
-    var area = 0;
-    for (var i = 0; i < pts.length; i++) {
-      var a = pts[i], b = pts[(i + 1) % pts.length];
-      area += a.x * b.y - b.x * a.y;
-    }
-    return Math.abs(area) / 2;
-  }
-
-  // Otsu's method — picks the brightness threshold that best splits the
-  // image into two classes (page vs. background) by maximizing between-
-  // class variance, rather than a fixed guess that would only work under
-  // one specific lighting condition.
-  function otsuThreshold(gray, w, h) {
-    var hist = new Array(256).fill(0);
-    for (var i = 0; i < w * h; i++) hist[Math.min(255, Math.max(0, Math.round(gray[i])))]++;
-    var total = w * h;
-    var sum = 0;
-    for (var t = 0; t < 256; t++) sum += t * hist[t];
-    var sumB = 0, weightB = 0, maxVariance = 0, threshold = 127;
-    for (var tt = 0; tt < 256; tt++) {
-      weightB += hist[tt];
-      if (weightB === 0) continue;
-      var weightF = total - weightB;
-      if (weightF === 0) break;
-      sumB += tt * hist[tt];
-      var meanB = sumB / weightB;
-      var meanF = (sum - sumB) / weightF;
-      var variance = weightB * weightF * (meanB - meanF) * (meanB - meanF);
-      if (variance > maxVariance) {
-        maxVariance = variance;
-        threshold = tt;
-      }
-    }
-    return threshold;
-  }
-
-  // Largest 4-connected component of "mask" (a Uint8Array of 0/1), by pixel
-  // count — iterative flood fill (a stack, not recursion, since a 400px-ish
-  // working canvas can have tens of thousands of connected pixels).
-  function largestConnectedComponent(mask, w, h) {
-    var visited = new Uint8Array(w * h);
-    var best = null;
-    var bestSize = 0;
-    for (var start = 0; start < w * h; start++) {
-      if (!mask[start] || visited[start]) continue;
-      var stack = [start];
-      visited[start] = 1;
-      var points = [];
-      while (stack.length) {
-        var idx = stack.pop();
-        var x = idx % w, y = (idx / w) | 0;
-        points.push({ x: x, y: y });
-        if (x > 0 && mask[idx - 1] && !visited[idx - 1]) { visited[idx - 1] = 1; stack.push(idx - 1); }
-        if (x < w - 1 && mask[idx + 1] && !visited[idx + 1]) { visited[idx + 1] = 1; stack.push(idx + 1); }
-        if (idx - w >= 0 && mask[idx - w] && !visited[idx - w]) { visited[idx - w] = 1; stack.push(idx - w); }
-        if (idx + w < w * h && mask[idx + w] && !visited[idx + w]) { visited[idx + w] = 1; stack.push(idx + w); }
-      }
-      if (points.length > bestSize) {
-        bestSize = points.length;
-        best = points;
-      }
-    }
-    return best;
-  }
-
-  function detectDocumentCorners(image) {
-    var workingMax = 400;
-    var detectScale = Math.min(1, workingMax / Math.max(image.naturalWidth, image.naturalHeight));
-    var w = Math.max(1, Math.round(image.naturalWidth * detectScale));
-    var h = Math.max(1, Math.round(image.naturalHeight * detectScale));
-
-    var work = document.createElement('canvas');
-    work.width = w;
-    work.height = h;
-    var wctx = work.getContext('2d');
-    wctx.drawImage(image, 0, 0, w, h);
-    var pixels = wctx.getImageData(0, 0, w, h).data;
-
-    var gray = new Float32Array(w * h);
-    for (var i = 0; i < w * h; i++) {
-      gray[i] = 0.299 * pixels[i * 4] + 0.587 * pixels[i * 4 + 1] + 0.114 * pixels[i * 4 + 2];
-    }
-
-    var threshold = otsuThreshold(gray, w, h);
-    var mask = new Uint8Array(w * h);
-    for (var j = 0; j < w * h; j++) mask[j] = gray[j] > threshold ? 1 : 0;
-
-    var component = largestConnectedComponent(mask, w, h);
-    if (!component || component.length < 20) return null;
-
-    var tl = component[0], br = component[0], tr = component[0], bl = component[0];
-    component.forEach(function (p) {
-      if (p.x + p.y < tl.x + tl.y) tl = p;
-      if (p.x + p.y > br.x + br.y) br = p;
-      if (p.x - p.y > tr.x - tr.y) tr = p;
-      if (p.x - p.y < bl.x - bl.y) bl = p;
-    });
-
-    var corners = {
-      tl: { x: tl.x / detectScale, y: tl.y / detectScale },
-      tr: { x: tr.x / detectScale, y: tr.y / detectScale },
-      br: { x: br.x / detectScale, y: br.y / detectScale },
-      bl: { x: bl.x / detectScale, y: bl.y / detectScale },
-    };
-
-    var area = shoelaceArea([corners.tl, corners.tr, corners.br, corners.bl]);
-    var imageArea = image.naturalWidth * image.naturalHeight;
-    if (area < imageArea * 0.15) return null;
-
-    return corners;
-  }
-
+  // hard requirement... manual adjustment is the actual requirement").
+  // Two prior in-house Canvas heuristics (Sobel-edge extremes, then
+  // brightness + largest-connected-component) each failed on a different
+  // real photo (a wood-grain desk, then a light desk) — real document-
+  // boundary detection is a genuinely non-trivial CV problem. This now
+  // asks the backend (server/documentCornerDetector.ts, OpenCV.js's real
+  // Canny+contour pipeline) instead of guessing client-side again — the
+  // photo is uploaded once here (a throwaway copy, deleted server-side
+  // right after detection; the real, kept copy is still only uploaded on
+  // Confirm) and the backend hands back a suggested quad, or null if it
+  // isn't confident, in which case this falls back to the same plain
+  // inset-rectangle default as before.
   function defaultCorners(w, h) {
     return {
       tl: { x: w * 0.1, y: h * 0.1 },
@@ -311,22 +195,58 @@ export function renderScanPhoneApp(scanSessionId: string, portalUrl: string): st
     };
   }
 
+  function toCornersObject(cornersArray) {
+    return { tl: cornersArray[0], tr: cornersArray[1], br: cornersArray[2], bl: cornersArray[3] };
+  }
+
   function openAdjustScreen(file) {
+    show('screen-adjust');
+    document.getElementById('adjust-hint').hidden = true;
+    document.getElementById('adjust-detecting').hidden = false;
+    document.getElementById('canvas-wrap').hidden = true;
+    document.getElementById('scan-confirm-corners').disabled = true;
+
+    // Waits on both the image decode (fast, local) and the detection
+    // round-trip (network) before drawing — neither is guaranteed to
+    // finish first. Sizing the canvas itself has to wait until canvas-wrap
+    // is actually unhidden below, not here: reading wrap.clientWidth while
+    // it's still display:none (the global [hidden] rule) returns 0, which
+    // collapsed the canvas to zero height entirely (confirmed live).
     var url = URL.createObjectURL(file);
-    img = new Image();
-    img.onload = function () {
+    var imageReady = new Promise(function (resolve) {
+      img = new Image();
+      img.onload = function () {
+        URL.revokeObjectURL(url);
+        resolve();
+      };
+      img.src = url;
+    });
+
+    var formData = new FormData();
+    formData.append('photo', file);
+    var detectionDone = fetch('/api/scan-sessions/' + scanSessionId + '/detect-corners', {
+      method: 'POST',
+      body: formData,
+    })
+      .then(function (res) { return res.json(); })
+      .then(function (data) { return data.corners ? toCornersObject(data.corners) : null; })
+      .catch(function () { return null; });
+
+    Promise.all([imageReady, detectionDone]).then(function (results) {
+      currentCorners = results[1] || defaultCorners(img.naturalWidth, img.naturalHeight);
+      document.getElementById('adjust-hint').hidden = false;
+      document.getElementById('adjust-detecting').hidden = true;
+      document.getElementById('canvas-wrap').hidden = false;
+      document.getElementById('scan-confirm-corners').disabled = false;
+
       canvas = document.getElementById('adjust-canvas');
-      var wrap = canvas.parentElement;
+      var wrap = document.getElementById('canvas-wrap');
       scale = wrap.clientWidth / img.naturalWidth;
       canvas.width = wrap.clientWidth;
       canvas.height = img.naturalHeight * scale;
       ctx = canvas.getContext('2d');
-      currentCorners = detectDocumentCorners(img) || defaultCorners(img.naturalWidth, img.naturalHeight);
       drawCanvas();
-      URL.revokeObjectURL(url);
-    };
-    img.src = url;
-    show('screen-adjust');
+    });
   }
 
   function drawCanvas() {

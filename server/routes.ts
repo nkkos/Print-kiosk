@@ -7,6 +7,7 @@ import { simpleParser } from 'mailparser';
 import { mkdirSync, existsSync } from 'node:fs';
 import { writeFile, readFile, unlink } from 'node:fs/promises';
 import { join } from 'node:path';
+import { tmpdir } from 'node:os';
 import { randomUUID } from 'node:crypto';
 import { getLanIPv4 } from './lanIp.js';
 import { addFile, listFiles, uploadsDir, getUploadedFile } from './uploadStore.js';
@@ -55,6 +56,7 @@ import {
 } from './scanStore.js';
 import type { Corners } from './scanProcessor.js';
 import { renderScanPhoneApp } from './scanPhoneApp.js';
+import { detectDocumentCorners } from './documentCornerDetector.js';
 import {
   ACCEPTED_EXTENSIONS,
   MAX_FILE_SIZE_BYTES,
@@ -982,6 +984,52 @@ function handleScanPhotoUpload(req: Request, res: Response, next: NextFunction) 
     }
   });
 }
+
+// Separate multer instance again — this one's uploads are ephemeral (used
+// once for detection, then deleted), so it writes to the OS temp dir
+// instead of scansDir, keeping scan sessions' real directories limited to
+// files that are actually part of the finished document.
+const detectUpload = multer({
+  storage: multer.diskStorage({
+    destination: (_req, _file, callback) => callback(null, tmpdir()),
+    filename: (_req, _file, callback) => callback(null, `scan-detect-${randomUUID()}.jpg`),
+  }),
+  limits: { fileSize: MAX_FILE_SIZE_BYTES },
+  fileFilter: (_req, file, callback) => {
+    callback(null, file.mimetype.startsWith('image/'));
+  },
+});
+
+// P1->P2 best-effort corner auto-detection (docs/screens/scan-spec.md,
+// server/documentCornerDetector.ts) — the phone uploads its just-taken
+// photo here before showing the draggable corner UI, gets back a suggested
+// quad (or null), and always deletes this temp copy immediately after: it's
+// never part of the scan session's own record, only the later confirmed
+// upload to POST /api/scan-sessions/:id/pages is.
+router.post(
+  '/api/scan-sessions/:id/detect-corners',
+  (req, res, next) => {
+    detectUpload.single('photo')(req, res, (err: unknown) => {
+      if (err) {
+        next(err);
+      } else {
+        next();
+      }
+    });
+  },
+  async (req, res) => {
+    if (!req.file) {
+      res.status(400).json({ error: 'A photo is required' });
+      return;
+    }
+    try {
+      const corners = await detectDocumentCorners(req.file.path);
+      res.json({ corners });
+    } finally {
+      await unlink(req.file.path).catch(() => {});
+    }
+  },
+);
 
 // `corners` arrives as a JSON-encoded string (multipart form field, not a
 // JSON body) — P2's four confirmed points, `docs/screens/scan-spec.md`'s

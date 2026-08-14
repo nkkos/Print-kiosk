@@ -9,7 +9,8 @@
       "Bash(npx tsc *)",
       "Bash(rm -f ./_tmp_gen_wood_photo.mjs ./_tmp_check_v2.mjs ./_tmp_p1_p5_v2.mjs)",
       "Bash(npm uninstall *)",
-      "Bash(npm run *)"
+      "Bash(npm run *)",
+      "WebSearch"
     ]
   }
 }
