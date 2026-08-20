@@ -3,6 +3,7 @@ import { db } from './db/client.js';
 import { printTasks } from './db/schema.js';
 import type { SubmitFailureReason } from './printerAdapter.js';
 import { markOrderIssued } from './accountOrderStore.js';
+import { reportIncident } from './incidentStore.js';
 
 // Real, DB-backed store for Print Tasks — see server/routes.ts and
 // docs/domain/kiosk-session.md, "Related entities" (Print Task).
@@ -40,6 +41,18 @@ export async function createPrintTask(
 // (server/routes.ts's POST /api/print-tasks) or the manual `simulate`
 // outcome (POST /api/print-tasks/:id/simulate) alike, since both update
 // status through this same function.
+// Maps a print task's own error vocabulary onto the shared incident `code`
+// namespace (docs/equipment-monitoring-requirements.md, Section B).
+const PRINTER_INCIDENT_CODE: Record<PrintTaskErrorReason, string> = {
+  'printer-not-found': 'printer.offline',
+  'submit-failed': 'printer.driver-crash',
+  'submit-timeout': 'printer.submit-timeout',
+  'paper-jam': 'printer.paper-jam',
+  'out-of-paper': 'printer.out-of-paper',
+  'out-of-ink': 'printer.out-of-ink',
+  'conversion-failed': 'printer.conversion-failed',
+};
+
 export async function updatePrintTaskStatus(
   id: string,
   status: PrintTaskStatus,
@@ -54,6 +67,21 @@ export async function updatePrintTaskStatus(
 
   if (status === 'succeeded' && updated?.printOrderId) {
     await markOrderIssued(updated.printOrderId);
+  }
+
+  // Every real submission failure (server/printerAdapter.ts) or manually
+  // simulated terminal outcome (POST /api/print-tasks/:id/simulate,
+  // PrintStatusScreen.tsx) flows through this one function — the single
+  // choke point for turning either into a structured incident, rather than
+  // hooking both call sites separately.
+  if (status === 'failed' && errorReason) {
+    void reportIncident({
+      source: 'printer',
+      code: PRINTER_INCIDENT_CODE[errorReason],
+      severity: 'critical',
+      message: `Print task ${id} failed: ${errorReason}`,
+      context: { printTaskId: id, errorReason, printerName },
+    });
   }
 }
 

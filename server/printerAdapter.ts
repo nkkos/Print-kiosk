@@ -23,7 +23,18 @@ export const PLACEHOLDER_PDF_PATH = join(
   'print-test-page.pdf',
 );
 
-export type SubmitFailureReason = 'printer-not-found' | 'submit-failed';
+export type SubmitFailureReason = 'printer-not-found' | 'submit-failed' | 'submit-timeout';
+
+// Confirmed reproducible against a real, unreachable default printer
+// (docs/equipment-monitoring-requirements.md, Section B —
+// `printer.submit-timeout`): pdf-to-printer's print() has no timeout hook of
+// its own (see the comment on submitPrintJob below), so a printer that never
+// responds hangs this call forever. Racing it against this timeout is the
+// only way to turn that into a diagnosable failure instead of a silently
+// stuck print task — and, just as importantly, to let runExclusive's queue
+// (server/printQueue.ts) advance to the next job at all, since it waits for
+// each task to settle before starting the next one.
+const PRINT_SUBMIT_TIMEOUT_MS = 25000;
 
 export class PrintSubmitError extends Error {
   reason: SubmitFailureReason;
@@ -68,18 +79,24 @@ export async function submitPrintJob(
   // just calling it.
   try {
     await runExclusive(() =>
-      print(filePath, {
-        printer: resolvedPrinter,
-        copies: options.copies,
-        paperSize: options.paperSize,
-        side: options.side,
-        monochrome: options.monochrome,
-        orientation: options.orientation,
-        scale: options.scale,
-        pages: options.pages,
-      }),
+      Promise.race([
+        print(filePath, {
+          printer: resolvedPrinter,
+          copies: options.copies,
+          paperSize: options.paperSize,
+          side: options.side,
+          monochrome: options.monochrome,
+          orientation: options.orientation,
+          scale: options.scale,
+          pages: options.pages,
+        }),
+        new Promise<never>((_, reject) => {
+          setTimeout(() => reject(new PrintSubmitError('submit-timeout')), PRINT_SUBMIT_TIMEOUT_MS);
+        }),
+      ]),
     );
-  } catch {
+  } catch (err) {
+    if (err instanceof PrintSubmitError) throw err;
     throw new PrintSubmitError('submit-failed');
   }
 }

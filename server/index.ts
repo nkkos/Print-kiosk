@@ -128,12 +128,19 @@ main().catch((err: unknown) => {
 // whole process for an uncaught exception/unhandled rejection, taking the
 // dev server down over one leftover temp folder. Anything else still
 // crashes normally; this only swallows this exact external, non-critical
-// failure signature.
+// failure signature. Two known temp-dir prefixes have been observed causing
+// this — `libreofficeConvert_...` (a real conversion) and `soffice-<pid>-...`
+// (the warm-up call's own UserInstallation profile dir, confirmed
+// reproducible while testing server/printerAdapter.ts's new submit-timeout
+// path — a tsx-watch restart re-runs the warm-up, and this raced again) —
+// both are the same underlying soffice.exe-holds-a-lock-during-rimraf issue,
+// just from different internal call sites inside libreoffice-convert.
 function isBenignTmpCleanupError(err: unknown): boolean {
+  if (!(err instanceof Error) || (err as NodeJS.ErrnoException).code !== 'EPERM') return false;
+  const path = (err as NodeJS.ErrnoException).path ?? '';
   return (
-    err instanceof Error &&
-    (err as NodeJS.ErrnoException).code === 'EPERM' &&
-    /libreofficeConvert_/.test(err.message)
+    /libreofficeConvert_|soffice-\d+-/.test(err.message) ||
+    /libreofficeConvert_|soffice-\d+-/.test(path)
   );
 }
 process.on('uncaughtException', (err) => {

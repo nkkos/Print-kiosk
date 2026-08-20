@@ -284,6 +284,41 @@ export const copyPages = pgTable(
   (table) => [index('copy_pages_copy_session_id_idx').on(table.copySessionId)],
 );
 
+// Central incident log (docs/equipment-monitoring-requirements.md) — every
+// equipment/service failure across the pavilion, regardless of source,
+// shares this one shape so the admin panel (docs/screens/admin-panel-spec.md)
+// can show a single cross-equipment feed/log instead of one ad-hoc error
+// format per subsystem. `context`/`autoRemediation` are free-form JSON
+// (stringified — no jsonb precedent elsewhere in this schema yet, and
+// nothing here needs to query inside them).
+export const incidents = pgTable(
+  'incidents',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    // 'pc' | 'printer' | 'display' | 'network' | 'backend' | 'payment-terminal'
+    source: text('source').notNull(),
+    // namespaced by source, e.g. 'printer.paper-jam'
+    code: text('code').notNull(),
+    // 'info' | 'warning' | 'critical' | 'emergency'
+    severity: text('severity').notNull(),
+    message: text('message').notNull(),
+    context: text('context'),
+    autoRemediation: text('auto_remediation'),
+    // Groups related events into one incident timeline (e.g. jam -> retry ->
+    // alert) — not a real FK, just a shared grouping value.
+    correlationId: uuid('correlation_id'),
+    resolvedAt: timestamp('resolved_at', { withTimezone: true }),
+    // 'auto' | 'operator' — null while still open
+    resolvedBy: text('resolved_by'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index('incidents_source_idx').on(table.source),
+    index('incidents_correlation_id_idx').on(table.correlationId),
+    index('incidents_resolved_at_idx').on(table.resolvedAt),
+  ],
+);
+
 // A Print Task — "the execution unit that actually drives the physical
 // printer" (docs/domain/kiosk-session.md, "Related entities"). Deliberately
 // independent of `printOrders` (still unwired to the real Cart/pricing
