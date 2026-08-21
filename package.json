@@ -10,6 +10,7 @@
     "start": "tsx server/index.ts",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
+    "seed:staff": "tsx server/scripts/seedStaffAccount.ts",
     "format": "prettier --write .",
     "preview": "vite preview"
   },

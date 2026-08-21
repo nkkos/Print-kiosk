@@ -12,6 +12,7 @@ try {
 }
 
 const { router, DEFAULT_PORT } = await import('./routes.js');
+const { adminRouter } = await import('./adminRoutes.js');
 const { getLanIPv4 } = await import('./lanIp.js');
 const { db } = await import('./db/client.js');
 const { sweepExpiredFiles, ORPHAN_FILE_TTL_MS } = await import('./sessionLifecycle.js');
@@ -40,6 +41,7 @@ async function main() {
   app.use(cors());
   app.use(express.json());
   app.use(router);
+  app.use(adminRouter);
 
   // Catch-all safety net (docs/equipment-monitoring-requirements.md's own
   // "Notes for implementation" open item): Express 5 auto-forwards a

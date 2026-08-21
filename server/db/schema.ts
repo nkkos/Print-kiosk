@@ -37,6 +37,40 @@ export const accountTokens = pgTable(
   (table) => [index('account_tokens_account_id_idx').on(table.accountId)],
 );
 
+// Admin panel staff (docs/screens/admin-panel-wireframes.md,
+// docs/screens/admin-panel-spec.md) — deliberately a SEPARATE table from
+// `accounts` above, not that table plus a role column. `accounts` is
+// self-service (anyone can POST /api/accounts/register); mixing pavilion
+// staff privilege into the same table as public customer self-registration
+// would risk a customer ending up in the same place a role check reads
+// from. No public registration route exists for this table — provisioning
+// is out-of-band (server/scripts/seedStaffAccount.ts).
+export const staffAccounts = pgTable('staff_accounts', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  email: text('email').notNull().unique(),
+  passwordHash: text('password_hash').notNull(),
+  // 'operator' | 'senior'
+  role: text('role').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+// Session tokens only — unlike accountTokens, staff accounts have no
+// email-verification/password-reset flow yet (no public self-service
+// surface to drive one), so there's no need for the multi-type shape.
+export const staffSessions = pgTable(
+  'staff_sessions',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    staffAccountId: uuid('staff_account_id')
+      .notNull()
+      .references(() => staffAccounts.id, { onDelete: 'cascade' }),
+    tokenHash: text('token_hash').notNull().unique(),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index('staff_sessions_staff_account_id_idx').on(table.staffAccountId)],
+);
+
 // Personal Account's "My files" (docs/personal-account-requirements.md) —
 // permanent, account-owned storage, deliberately separate from
 // `uploadedFiles` (session-scoped, subject to server/sessionLifecycle.ts's
