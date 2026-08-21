@@ -664,6 +664,63 @@ button {
   color: var(--ink);
 }
 
+/* ---------- Alerts & on-call ---------- */
+
+.alerts-panel {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+  margin-bottom: 1.25rem;
+  overflow: hidden;
+}
+
+.alerts-panel-head {
+  padding: 0.7rem 1rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-raised);
+}
+
+.alerts-oncall-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.85rem 1rem;
+  flex-wrap: wrap;
+}
+
+.alerts-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.alerts-table th {
+  text-align: left;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  padding: 0.6rem 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.alerts-table td {
+  padding: 0.6rem 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.alerts-table tr:last-child td {
+  border-bottom: none;
+}
+
 /* ---------- Modal ---------- */
 
 .modal-overlay {

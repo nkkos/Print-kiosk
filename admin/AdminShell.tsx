@@ -54,13 +54,17 @@ export function AdminShell({ session, screen, onNavigate, onLogout }: AdminShell
         >
           Лог инцидентов
         </button>
-        {/* Alerts / Failure catalog aren't built yet in this pass (see
+        <button
+          id="admin-nav-alerts"
+          className={`nav-link${screen === 'alerts' ? ' current' : ''}`}
+          onClick={() => onNavigate('alerts')}
+        >
+          Алерты и дежурства
+        </button>
+        {/* Failure catalog isn't built yet in this pass (see
             docs/screens/admin-panel-spec.md's sequencing) — disabled the
             same way "Статистика" already is below, not hidden, so the
             panel's eventual full scope stays visible. */}
-        <button id="admin-nav-alerts" className="nav-link" disabled title="Ещё не реализовано">
-          Алерты и дежурства
-        </button>
         <button id="admin-nav-catalog" className="nav-link" disabled title="Ещё не реализовано">
           Справочник неисправностей
         </button>
