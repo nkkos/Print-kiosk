@@ -4,6 +4,7 @@ import { LoginScreen } from './LoginScreen';
 import { AdminShell, type AdminScreen } from './AdminShell';
 import { OverviewScreen } from './screens/OverviewScreen';
 import { EquipmentDetailScreen } from './screens/EquipmentDetailScreen';
+import { IncidentLogScreen } from './screens/IncidentLogScreen';
 
 // Composition root — same "no router yet" pattern as src/App.tsx (a plain
 // Screen union + useState), appropriate here for the same reason: five
@@ -32,6 +33,9 @@ export function AdminApp() {
     <div className="app">
       <AdminShell session={session} screen={screen} onNavigate={setScreen} onLogout={logout} />
       {screen === 'overview' && <OverviewScreen session={session} onSelectSource={selectSource} />}
+      {screen === 'incident-log' && (
+        <IncidentLogScreen session={session} onSelectSource={selectSource} />
+      )}
       {screen === 'equipment-detail' && equipmentSource && (
         <EquipmentDetailScreen
           session={session}

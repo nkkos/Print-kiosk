@@ -615,6 +615,55 @@ button {
   background: none;
 }
 
+/* ---------- Incident log filters ---------- */
+
+.log-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.filter-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.filter-chip {
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  color: var(--ink-soft);
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 0.32rem 0.65rem;
+  border-radius: 999px;
+  cursor: pointer;
+}
+.filter-chip:hover {
+  border-color: var(--ink-faint);
+  color: var(--ink);
+}
+.filter-chip.active {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.filter-reset {
+  border: none;
+  background: none;
+  color: var(--ink-faint);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-left: auto;
+}
+.filter-reset:hover {
+  color: var(--ink);
+}
+
 /* ---------- Modal ---------- */
 
 .modal-overlay {
