@@ -71,6 +71,20 @@ export const staffSessions = pgTable(
   (table) => [index('staff_sessions_staff_account_id_idx').on(table.staffAccountId)],
 );
 
+// Fixed weekly on-call schedule (docs/screens/admin-panel-wireframes.md,
+// Alerts & on-call screen) — confirmed view-only in the admin panel itself;
+// this table is edited directly (DB), not through a UI, per that
+// confirmed decision. One row per day of the week, repeating indefinitely
+// — not date-specific shifts.
+export const staffRoster = pgTable('staff_roster', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  // 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday'
+  dayOfWeek: text('day_of_week').notNull().unique(),
+  staffAccountId: uuid('staff_account_id')
+    .notNull()
+    .references(() => staffAccounts.id, { onDelete: 'cascade' }),
+});
+
 // Personal Account's "My files" (docs/personal-account-requirements.md) —
 // permanent, account-owned storage, deliberately separate from
 // `uploadedFiles` (session-scoped, subject to server/sessionLifecycle.ts's
@@ -344,6 +358,13 @@ export const incidents = pgTable(
     resolvedAt: timestamp('resolved_at', { withTimezone: true }),
     // 'auto' | 'operator' — null while still open
     resolvedBy: text('resolved_by'),
+    // Set once a Telegram alert has actually been sent for this row
+    // (server/telegramNotifier.ts). Since no real reportIncident() call site
+    // populates correlationId yet, deduplication uses a (source, code,
+    // recent notifiedAt) time-window check instead of a correlation chain —
+    // a simplification from the original design, not an oversight (see
+    // docs/equipment-monitoring-requirements.md's Open items).
+    notifiedAt: timestamp('notified_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [

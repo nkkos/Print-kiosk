@@ -1,6 +1,6 @@
 import { unlink } from 'node:fs/promises';
 import { join } from 'node:path';
-import { and, eq, inArray, lt, sql } from 'drizzle-orm';
+import { and, eq, gt, inArray, lt, sql } from 'drizzle-orm';
 import { db } from './db/client.js';
 import { kioskSessions, receivedEmails, uploadedFiles } from './db/schema.js';
 import { uploadsDir } from './uploadStore.js';
@@ -170,4 +170,30 @@ export async function endSession(
       target: kioskSessions.id,
       set: { status, endedReason: reason, accountId },
     });
+}
+
+// The "real consumer" this file's own header comment anticipated — the
+// admin panel's fix-confirmation dialog (docs/screens/admin-panel-spec.md's
+// `equipment-fix-confirm-session-warning`) needs to know whether hitting a
+// PC/Display fix action right now would interrupt an actual customer. Since
+// there's still no staleness sweep for an abandoned 'active' row (same
+// header comment), a session with no activity in the last 10 minutes is
+// treated as effectively over even if its status row never got updated —
+// otherwise a crashed browser tab could show a false warning forever. 10
+// minutes, not the kiosk's own ~6-minute idle-timeout window, as a safety
+// margin against this check itself racing that timeout.
+const STALE_SESSION_THRESHOLD_MS = 10 * 60 * 1000;
+
+export async function hasActiveKioskSession(): Promise<boolean> {
+  const [row] = await db
+    .select({ id: kioskSessions.id })
+    .from(kioskSessions)
+    .where(
+      and(
+        eq(kioskSessions.status, 'active'),
+        gt(kioskSessions.lastActivityAt, new Date(Date.now() - STALE_SESSION_THRESHOLD_MS)),
+      ),
+    )
+    .limit(1);
+  return !!row;
 }

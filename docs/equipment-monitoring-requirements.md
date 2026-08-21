@@ -50,6 +50,14 @@ A dead process can't log its own death. Two complementary detection paths are ne
 - **Deduplication:** repeated occurrences of the same `correlationId` don't re-notify on every retry — only on first occurrence, on severity escalation, or after a cooldown window if still unresolved.
 - **Known risk, accepted for now:** since there's no SMS/call fallback, an `emergency` alert that nobody sees on Telegram in time has no other path to a human. Worth revisiting once the team/pavilion count grows — see Open items.
 
+**Implemented and verified live (2026-08-21), with two deliberate simplifications from the design above** (`server/telegramNotifier.ts`):
+
+- **One shared chat, not a personal DM to whoever's on duty.** A Telegram bot can't message an arbitrary person until they've started a chat with it first — a real onboarding step this pass doesn't build — and there's no public webhook endpoint available locally to capture per-person chat ids even if it did. The on-duty person is still named in the message text (resolved from the new weekly roster — see below), just not DM'd individually. Escalation-to-group-chat and the "direct" alert collapse into the same channel for now.
+- **Deduplication is a plain `(source, code, notifiedAt within a 10-minute cooldown)` check, not a correlationId chain** — no real `reportIncident(...)` call site anywhere in this codebase actually populates `correlationId` yet, so there was nothing to chain against. Verified live: a second identical `printer.paper-jam` reported within the cooldown window left `notifiedAt` null (no Telegram call attempted), confirming dedup actually suppresses the resend rather than just being reasoned about.
+- Dev fallback matches Resend/ClamAV's own pattern: missing `TELEGRAM_BOT_TOKEN`/`TELEGRAM_CHAT_ID` logs the would-be message instead of sending — verified this path live too (the on-call name correctly resolved into the logged message).
+- The **daily digest for `warning`-level events is not implemented** — batching requires a scheduled job, and there was no practical way to verify a 24h cadence live in this session. Only `critical`/`emergency` actually notify today.
+- **On-call roster is real**, not a placeholder: `staffRoster`/`staffAccounts` (a genuinely separate table from the kiosk/portal's own `accounts` — see `docs/screens/admin-panel-wireframes.md`'s note on why), a fixed weekly (not date-specific) schedule, edited only via `server/scripts/setRosterDay.ts` — no UI, per the confirmed decision.
+
 ### Auto-remediation — general principle
 
 Try a bounded, safe automatic fix for known-transient failures before escalating — but:
@@ -210,8 +218,7 @@ Deliberately **not** covered in this document, tracked as separate future topics
 
 ## Open items
 
-- Exact cooldown/retry-count thresholds per failure type — the numbers used above (1 retry here, N minutes there) are illustrative starting points from this discussion, not tuned/confirmed values.
-- On-call roster mechanism — not designed yet (see Scope boundaries).
+- Exact cooldown/retry-count thresholds per failure type — the numbers used above (1 retry here, N minutes there) are illustrative starting points from this discussion, not tuned/confirmed values. The Telegram notify cooldown (10 minutes) is the one number in this bucket that's actually implemented and live-verified now, still not "tuned" in any real sense.
 - Managed relay/smart-plug hardware selection for the PC power-cycle — confirmed as planned, but no specific product chosen yet.
 - Whether "Telegram only, no SMS/call" escalation remains sufficient once the team or pavilion count grows — explicitly accepted as a known gap for now (see Methodology, "Notification & escalation").
 - A dedicated synthetic touch-input self-test for the display section — currently just inherits the PC's app-level health-check, which may not actually catch `display.touch-unresponsive` reliably.
@@ -222,3 +229,7 @@ Deliberately **not** covered in this document, tracked as separate future topics
 - **New (2026-08-21):** whether `backend.scan-processing-failed` deserves its own equipment source (e.g. a seventh "capture"/"scan" category) instead of being bucketed under `backend` — flagged when adding it, not resolved; the admin panel's six-source assumption (`docs/screens/admin-panel-spec.md`'s Notes for implementation) would need revisiting either way.
 - **New (2026-08-21):** `backend.email-send-failed` is implemented but only verified by code-pattern review, not a live-forced Resend failure (would have meant breaking the real, working `RESEND_API_KEY`) — lower confidence than everything else wired today, which was all verified live.
 - **New (2026-08-21):** reproducing a genuine `.doc`/`.docx` conversion failure — a plain-text file with a `.docx` extension didn't trigger one; LibreOffice converted it anyway. A real malformed-OOXML test file is still needed to verify that path as thoroughly as `.heic` was verified.
+- **New (2026-08-21):** Telegram's daily digest for `warning`-level events — not implemented at all (only `critical`/`emergency` notify today).
+- **New (2026-08-21):** escalation-to-group-chat-on-timeout — not implemented; today's Telegram wiring only sends the initial alert, nothing checks whether it went unacknowledged and reposts anywhere.
+- **New (2026-08-21):** per-person Telegram DM (vs. today's one shared chat) would need each staff member to message the bot first (to obtain a chat id) plus a public webhook endpoint to capture that — neither exists; revisit once deployed somewhere with a real public URL (Railway), not locally.
+- **New (2026-08-21):** `hasActiveKioskSession()`'s 10-minute staleness threshold (`server/sessionLifecycle.ts`) is a reasonable-guess safety margin against the kiosk's own ~6-minute idle-timeout, not a tuned value — same honesty as every other threshold in this list.

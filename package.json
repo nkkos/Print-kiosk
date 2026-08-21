@@ -11,6 +11,7 @@
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "seed:staff": "tsx server/scripts/seedStaffAccount.ts",
+    "set:roster": "tsx server/scripts/setRosterDay.ts",
     "format": "prettier --write .",
     "preview": "vite preview"
   },

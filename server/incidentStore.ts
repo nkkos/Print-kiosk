@@ -1,6 +1,7 @@
 import { and, desc, eq, isNull } from 'drizzle-orm';
 import { db } from './db/client.js';
 import { incidents } from './db/schema.js';
+import { notifyIfNeeded } from './telegramNotifier.js';
 
 // Central incident log (docs/equipment-monitoring-requirements.md) — every
 // equipment/service failure is recorded here in one shared shape, called
@@ -23,6 +24,7 @@ export interface IncidentRow {
   correlationId: string | null;
   resolvedAt: Date | null;
   resolvedBy: string | null;
+  notifiedAt: Date | null;
   createdAt: Date;
 }
 
@@ -50,6 +52,7 @@ export async function reportIncident(input: ReportIncidentInput): Promise<Incide
         correlationId: input.correlationId ?? null,
       })
       .returning();
+    void notifyIfNeeded(row as IncidentRow);
     return row as IncidentRow;
   } catch (err) {
     console.error('[incidentStore] Failed to report incident:', input.code, err);

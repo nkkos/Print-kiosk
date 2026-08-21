@@ -8,7 +8,14 @@ import {
   findStaffAccountBySessionToken,
   type StaffAccount,
 } from './staffAccountStore.js';
-import { listIncidents, type IncidentSource, type IncidentSeverity } from './incidentStore.js';
+import {
+  listIncidents,
+  resolveIncident,
+  type IncidentSource,
+  type IncidentSeverity,
+} from './incidentStore.js';
+import { listRoster, getCurrentOnCall } from './rosterStore.js';
+import { hasActiveKioskSession } from './sessionLifecycle.js';
 
 // Admin panel backend (docs/screens/admin-panel-wireframes.md,
 // docs/screens/admin-panel-spec.md) — a distinct router mounted under
@@ -126,5 +133,52 @@ adminRouter.get('/api/admin/incidents', requireStaffSession, async (req, res) =>
   });
   res.json(incidents);
 });
+
+// Alerts & on-call screen (docs/screens/admin-panel-spec.md's
+// `alerts-roster`/`alerts-oncall-now`) — view-only, matches the confirmed
+// "no editing UI in this pass" decision (server/scripts/setRosterDay.ts is
+// the only write path).
+adminRouter.get('/api/admin/roster', requireStaffSession, async (_req, res) => {
+  const [roster, current] = await Promise.all([listRoster(), getCurrentOnCall()]);
+  res.json({ roster, current });
+});
+
+// Equipment detail's `equipment-fix-confirm-session-warning`
+// (docs/screens/admin-panel-spec.md) — whether hitting a PC/Display fix
+// action right now would interrupt a real customer.
+adminRouter.get('/api/admin/kiosk-session-active', requireStaffSession, async (_req, res) => {
+  res.json({ active: await hasActiveKioskSession() });
+});
+
+// The one real fix action implemented so far (docs/equipment-monitoring-requirements.md,
+// Section E) — every other equipment-fix-* route in docs/screens/admin-panel-spec.md
+// needs infrastructure that doesn't exist yet (a watchdog process, a
+// managed relay). `incidentId` is optional — the route still restarts the
+// process without one, but resolving the specific incident that prompted
+// the action is what actually gives it an audit trail (who confirmed, when).
+adminRouter.post(
+  '/api/admin/equipment/backend/restart-process',
+  requireStaffSession,
+  requireSeniorRole,
+  async (req, res) => {
+    const { incidentId } = (req.body ?? {}) as { incidentId?: unknown };
+    const staffAccount = (req as AuthenticatedStaffRequest).staffAccount!;
+    if (typeof incidentId === 'string') {
+      await resolveIncident(incidentId, 'operator', {
+        action: 'restart-backend-process',
+        triggeredBy: staffAccount.email,
+      });
+    }
+    res.json({ ok: true });
+    // Flushes the response above before exiting — same reasoning already
+    // documented in docs/equipment-monitoring-requirements.md, Section E:
+    // Railway's restart-on-crash policy brings a fresh instance up, the
+    // same platform behavior server/index.ts's SIGTERM/SIGINT handling
+    // already coexists with for routine redeploys. Locally (no such
+    // policy), this takes the dev backend down until it's manually
+    // restarted — a real, deliberate difference from production, not a bug.
+    setTimeout(() => process.exit(1), 250);
+  },
+);
 
 export { requireStaffSession, requireSeniorRole };
