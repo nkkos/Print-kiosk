@@ -4,6 +4,7 @@ import type { AdminSession } from '../adminSession';
 
 interface OverviewScreenProps {
   session: AdminSession;
+  onSelectSource: (source: string) => void;
 }
 
 const SOURCE_NAMES: Record<string, string> = {
@@ -34,11 +35,8 @@ function SevChip({ severity, label }: { severity: string; label?: string }) {
 
 // Ports docs/screens/admin-panel-spec.md's Overview screen from the
 // approved HTML mockup — same markup/ids, now driven by real
-// GET /api/admin/incidents (openOnly=true) instead of hardcoded data. Card
-// click-through to Equipment detail isn't wired yet — that screen doesn't
-// exist yet in this pass (see docs/screens/admin-panel-spec.md's own
-// sequencing; this is the very next slice).
-export function OverviewScreen({ session }: OverviewScreenProps) {
+// GET /api/admin/incidents (openOnly=true) instead of hardcoded data.
+export function OverviewScreen({ session, onSelectSource }: OverviewScreenProps) {
   const [incidents, setIncidents] = useState<Incident[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -92,7 +90,13 @@ export function OverviewScreen({ session }: OverviewScreenProps) {
             Активные инциденты ({sortedIncidents.length})
           </div>
           {sortedIncidents.map((incident) => (
-            <div className="incident-row" key={incident.id} id={`incident-row-${incident.id}`}>
+            <button
+              type="button"
+              className="incident-row"
+              key={incident.id}
+              id={`incident-row-${incident.id}`}
+              onClick={() => onSelectSource(incident.source)}
+            >
               <span className="incident-time">
                 {new Date(incident.createdAt).toLocaleTimeString([], {
                   hour: '2-digit',
@@ -104,7 +108,7 @@ export function OverviewScreen({ session }: OverviewScreenProps) {
               <span className="incident-target">
                 → {SOURCE_NAMES[incident.source] ?? incident.source}
               </span>
-            </div>
+            </button>
           ))}
         </div>
       )}
@@ -120,13 +124,20 @@ export function OverviewScreen({ session }: OverviewScreenProps) {
               ? '— не подключён'
               : 'Нет открытых инцидентов';
           return (
-            <div className="equip-card" id={`equipment-card-${source}`} data-sev={sev} key={source}>
+            <button
+              type="button"
+              className="equip-card"
+              id={`equipment-card-${source}`}
+              data-sev={sev}
+              key={source}
+              onClick={() => onSelectSource(source)}
+            >
               <div className="equip-card-top">
                 <span className="equip-name">{SOURCE_NAMES[source]}</span>
                 <SevChip severity={sev} label={isPaymentTerminal && !worst ? '—' : undefined} />
               </div>
               <div className="equip-metric">{metric}</div>
-            </div>
+            </button>
           );
         })}
       </div>

@@ -563,6 +563,105 @@ button {
   filter: brightness(1.05);
 }
 
+/* ---------- Equipment detail ---------- */
+
+.back-link {
+  border: none;
+  background: none;
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+  margin-bottom: 0.5rem;
+}
+.back-link:hover {
+  color: var(--ink);
+}
+
+.fix-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-bottom: 1.25rem;
+}
+
+.fix-actions .btn {
+  width: auto;
+}
+
+.nofix-notice {
+  color: var(--ink-soft);
+  font-size: 0.88rem;
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  margin: 0 0 1.25rem;
+}
+
+.detail-history {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+}
+
+.incident-row-static {
+  cursor: default;
+}
+.incident-row-static:hover {
+  background: none;
+}
+
+/* ---------- Modal ---------- */
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 14, 18, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  z-index: 20;
+}
+
+.modal-card {
+  width: 100%;
+  max-width: 24rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--shadow-modal);
+  padding: 1.5rem;
+}
+
+.modal-card h2 {
+  font-size: 1.05rem;
+  margin: 0 0 0.75rem;
+}
+
+.session-warning {
+  color: var(--sev-critical);
+  font-size: 0.85rem;
+  background: var(--sev-critical-soft);
+  border-radius: 8px;
+  padding: 0.6rem 0.75rem;
+  margin: 0 0 1rem;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 0.6rem;
+  justify-content: flex-end;
+}
+
+.modal-actions .btn {
+  width: auto;
+}
+
 @media (max-width: 640px) {
   .topbar {
     flex-wrap: wrap;

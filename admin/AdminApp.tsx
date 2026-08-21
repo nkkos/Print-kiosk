@@ -3,6 +3,7 @@ import { useAdminSession } from './useAdminSession';
 import { LoginScreen } from './LoginScreen';
 import { AdminShell, type AdminScreen } from './AdminShell';
 import { OverviewScreen } from './screens/OverviewScreen';
+import { EquipmentDetailScreen } from './screens/EquipmentDetailScreen';
 
 // Composition root — same "no router yet" pattern as src/App.tsx (a plain
 // Screen union + useState), appropriate here for the same reason: five
@@ -12,6 +13,7 @@ import { OverviewScreen } from './screens/OverviewScreen';
 export function AdminApp() {
   const { session, isValidating, login, logout } = useAdminSession();
   const [screen, setScreen] = useState<AdminScreen>('overview');
+  const [equipmentSource, setEquipmentSource] = useState<string | null>(null);
 
   if (isValidating) {
     return <div className="login-wrap">Загрузка…</div>;
@@ -21,10 +23,22 @@ export function AdminApp() {
     return <LoginScreen onLogin={login} />;
   }
 
+  function selectSource(source: string) {
+    setEquipmentSource(source);
+    setScreen('equipment-detail');
+  }
+
   return (
     <div className="app">
       <AdminShell session={session} screen={screen} onNavigate={setScreen} onLogout={logout} />
-      {screen === 'overview' && <OverviewScreen session={session} />}
+      {screen === 'overview' && <OverviewScreen session={session} onSelectSource={selectSource} />}
+      {screen === 'equipment-detail' && equipmentSource && (
+        <EquipmentDetailScreen
+          session={session}
+          source={equipmentSource}
+          onBack={() => setScreen('overview')}
+        />
+      )}
     </div>
   );
 }
