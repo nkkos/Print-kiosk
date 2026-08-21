@@ -41,6 +41,8 @@ This only needs to run once — the container keeps its data between `docker sta
 | `RESEND_API_KEY`            | backend  | unset                                                     | Sends verification/password-reset emails via [Resend](https://resend.com). Unset locally logs the email link to the console instead of sending — no real account needed.                                                                                             |
 | `RESEND_FROM_EMAIL`         | backend  | `noreply@kiosk.example`                                   | The sending address — needs Resend's domain verification (DNS records in Cloudflare) first, see "Portal" below.                                                                                                                                                      |
 | `PORTAL_URL`                | backend  | `http://localhost:5173`                                   | Used to build the links inside those emails — set to the deployed Cloudflare Pages URL in production.                                                                                                                                                                |
+| `TELEGRAM_BOT_TOKEN`        | backend  | unset                                                     | Sends `critical`/`emergency` incident alerts via Telegram (`server/telegramNotifier.ts`, see `docs/equipment-monitoring-requirements.md`). Unset locally logs the would-be message to the console instead of sending — no real bot needed for dev.                   |
+| `TELEGRAM_CHAT_ID`          | backend  | unset                                                     | The shared chat the alerts post to — see "Admin panel" below for how to obtain it.                                                                                                                                                                                   |
 | `VITE_API_BASE_URL`         | frontend | `http://localhost:3001`                                   | Where the frontend itself (not the phone) reaches the backend.                                                                                                                                                                                                       |
 | `VITE_EMAIL_DOMAIN`         | frontend | `kiosk.example`                                           | The domain the Email screen builds its `upload-<prefix>@<domain>` address from — must match a domain with Cloudflare Email Routing enabled and the Worker below bound to it.                                                                                         |
 
@@ -62,6 +64,18 @@ A minimal, separate set of account pages — registration, email verification, p
 3. Once deployed, note the Pages URL (e.g. `https://print-kiosk.pages.dev`) and set it as `PORTAL_URL` on the Railway `backend` service, so email links point at the right place.
 
 Known quirk: since it's one Vite build (`vite.config.ts`'s multi-page `rollupOptions.input`), the kiosk's own `index.html` bundle also ends up published on the Pages domain alongside the portal pages — harmless (nothing here is auth-gated beyond the account endpoints anyway), just not hidden.
+
+## Admin panel
+
+The staff-only operations console (`admin/`, `docs/screens/admin-panel-spec.md`) — Overview, Equipment detail, Incident log, Alerts & on-call, Failure catalog. Its backend (`server/adminRoutes.ts`, `staffAccounts`/`staffSessions`/`staffRoster`/`incidents` tables) deploys automatically as part of the `backend` Railway service — no separate service needed. The frontend bundle (`dist/admin/index.html`) is part of the same multi-page Vite build as the kiosk and portal, so it publishes to the Cloudflare Pages domain alongside them the same way the portal does (see the "known quirk" note above) — it's real, staff-login-gated (bearer session tokens, bcrypt-hashed passwords), so being reachable on that shared domain isn't a security concern by itself.
+
+**One-time setup after deploying/redeploying `backend`:**
+
+1. **Seed a real staff account** — there's no self-registration route by design (`server/scripts/seedStaffAccount.ts`). Run it against the production database via `railway run npm run seed:staff -- someone@example.com aStrongPassword senior` (or `operator`) from a machine with the Railway CLI linked to this project, or via Railway's dashboard shell for the `backend` service.
+2. **Set the on-call roster** — also no UI by design (`server/scripts/setRosterDay.ts`): `railway run npm run set:roster -- monday someone@example.com` for each day that needs an assignment.
+3. **Wire up real Telegram alerts** — create a bot via [@BotFather](https://t.me/BotFather), message it once, then fetch `https://api.telegram.org/bot<TOKEN>/getUpdates` (or message any "get my ID" bot like `@userinfobot`) to get the numeric chat id for a 1:1 chat — the same id works across any bot messaging that person privately. Set `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID` on the `backend` service. Left unset, alerts just log to the console instead (same fail-open pattern as Resend/ClamAV).
+
+Without the Railway CLI, steps 1–2 have no other path — there's no admin-panel UI for either by the confirmed design (`docs/screens/admin-panel-spec.md`'s Alerts & on-call screen is view-only), so a first real staff login literally cannot exist on a fresh deploy until one of these runs once.
 
 ## Deploying to Railway
 
