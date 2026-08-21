@@ -6,6 +6,7 @@ import { PDFDocument } from 'pdf-lib';
 import { db } from './db/client.js';
 import { scanSessions, scanPages } from './db/schema.js';
 import { warpAndCleanPage, InvalidCornersError, type Corners } from './scanProcessor.js';
+import { reportIncident } from './incidentStore.js';
 
 // Phone-Camera Scan (docs/scan-upload-requirements.md, docs/screens/scan-spec.md)
 // — real, DB-backed store. Separate on-disk tree from every other upload
@@ -72,8 +73,22 @@ async function processPage(
   } catch (err) {
     if (err instanceof InvalidCornersError) {
       console.error('[scanStore] Page processing failed — invalid corners:', err.message);
+      void reportIncident({
+        source: 'backend',
+        code: 'backend.scan-processing-failed',
+        severity: 'info',
+        message: `Scan page processing failed — invalid corners (page ${pageId}). Self-resolvable: the person just retakes the photo.`,
+        context: { scanSessionId, pageId, error: err.message },
+      });
     } else {
       console.error('[scanStore] Page processing failed:', err);
+      void reportIncident({
+        source: 'backend',
+        code: 'backend.scan-processing-failed',
+        severity: 'warning',
+        message: `Scan page processing failed unexpectedly (page ${pageId}).`,
+        context: { scanSessionId, pageId, error: String(err) },
+      });
     }
     await updatePageStatus(pageId, 'failed');
   }

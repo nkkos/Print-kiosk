@@ -22,6 +22,10 @@ server/account-uploads/
 # retention sweep besides)
 server/scans/
 
+# Copy's raw/processed page captures (dev-only, never committed — same
+# reasoning as server/scans/ above; missing here until 2026-08-21)
+server/copies/
+
 # Environment variables (real secrets — .env.example is tracked separately)
 .env
 .env.*

@@ -8,6 +8,7 @@ import { db } from './db/client.js';
 import { copySessions, copyPages } from './db/schema.js';
 import { warpAndCleanPage, InvalidCornersError, type Corners } from './scanProcessor.js';
 import { addFile as addUploadedFile, uploadsDir } from './uploadStore.js';
+import { reportIncident } from './incidentStore.js';
 
 // Copy (docs/copy-upload-requirements.md, docs/screens/copy-spec.md) —
 // reuses Scan's own capture pipeline (server/scanProcessor.ts for the actual
@@ -72,8 +73,22 @@ async function processPage(
   } catch (err) {
     if (err instanceof InvalidCornersError) {
       console.error('[copyStore] Page processing failed — invalid corners:', err.message);
+      void reportIncident({
+        source: 'backend',
+        code: 'backend.scan-processing-failed',
+        severity: 'info',
+        message: `Copy page processing failed — invalid corners (page ${pageId}). Self-resolvable: the person just retakes the photo.`,
+        context: { copySessionId, pageId, error: err.message },
+      });
     } else {
       console.error('[copyStore] Page processing failed:', err);
+      void reportIncident({
+        source: 'backend',
+        code: 'backend.scan-processing-failed',
+        severity: 'warning',
+        message: `Copy page processing failed unexpectedly (page ${pageId}).`,
+        context: { copySessionId, pageId, error: String(err) },
+      });
     }
     await updatePageStatus(pageId, 'failed');
   }

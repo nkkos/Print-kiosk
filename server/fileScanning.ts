@@ -59,6 +59,13 @@ async function convertIfNeeded(
     await convertToPrintable(filePath, fileName);
   } catch (err) {
     console.error(`[fileScanning] Conversion failed for ${filePath}:`, err);
+    void reportIncident({
+      source: 'printer',
+      code: 'printer.conversion-failed',
+      severity: 'warning',
+      message: `Conversion to printable format failed for ${fileName} — falls back to the placeholder PDF at print time.`,
+      context: { filePath, fileName, error: String(err) },
+    });
   }
 }
 

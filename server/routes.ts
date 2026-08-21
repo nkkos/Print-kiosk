@@ -42,6 +42,7 @@ import {
   EmailTakenError,
 } from './accountStore.js';
 import { sendVerificationEmail, sendPasswordResetEmail, sendScanEmail } from './emailSender.js';
+import { reportIncident } from './incidentStore.js';
 import {
   createScanSession,
   addPage,
@@ -404,7 +405,18 @@ router.post('/api/accounts/register', accountRateLimiter, async (req, res) => {
     'email-verification',
     VERIFICATION_TOKEN_EXPIRY_MS,
   );
-  await sendVerificationEmail(email, verificationToken);
+  try {
+    await sendVerificationEmail(email, verificationToken);
+  } catch (err) {
+    void reportIncident({
+      source: 'backend',
+      code: 'backend.email-send-failed',
+      severity: 'warning',
+      message: `Failed to send verification email to ${email}.`,
+      context: { email, error: String(err) },
+    });
+    throw err;
+  }
   res.status(201).json(account);
 });
 
@@ -461,7 +473,18 @@ router.post('/api/accounts/request-password-reset', accountRateLimiter, async (r
       'password-reset',
       PASSWORD_RESET_TOKEN_EXPIRY_MS,
     );
-    await sendPasswordResetEmail(account.email, resetToken);
+    try {
+      await sendPasswordResetEmail(account.email, resetToken);
+    } catch (err) {
+      void reportIncident({
+        source: 'backend',
+        code: 'backend.email-send-failed',
+        severity: 'warning',
+        message: `Failed to send password-reset email to ${account.email}.`,
+        context: { email: account.email, error: String(err) },
+      });
+      throw err;
+    }
   }
   res.json({ ok: true });
 });
@@ -1147,6 +1170,13 @@ router.post('/api/scan-sessions/:id/deliver', async (req, res) => {
       await sendScanEmail(email as string, pdfBuffer);
     } catch (err) {
       console.error('[routes] sendScanEmail failed:', err);
+      void reportIncident({
+        source: 'backend',
+        code: 'backend.email-send-failed',
+        severity: 'warning',
+        message: `Failed to send scanned document to ${email as string}.`,
+        context: { email, scanSessionId, error: String(err) },
+      });
       res.status(502).json({ error: 'Failed to send the email. Please try again.' });
       return;
     }

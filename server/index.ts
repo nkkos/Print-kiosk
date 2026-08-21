@@ -1,4 +1,5 @@
 import express from 'express';
+import type { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import { migrate } from 'drizzle-orm/node-postgres/migrator';
 import { dirname, join } from 'node:path';
@@ -19,6 +20,7 @@ const { ACCOUNT_FILE_RETENTION_DAYS } = await import('./accountFileLimits.js');
 const { sweepExpiredScanSessions, SCAN_SESSION_RETENTION_HOURS } = await import('./scanStore.js');
 const { sweepOrphanedCopySessions } = await import('./copyStore.js');
 const { warmUpLibreOffice } = await import('./documentConverter.js');
+const { reportIncident } = await import('./incidentStore.js');
 
 // Dev-only backend for the QR/Email upload methods (docs/qr-upload-requirements.md,
 // docs/email-upload-requirements.md). Permissive CORS is intentional here — see
@@ -38,6 +40,29 @@ async function main() {
   app.use(cors());
   app.use(express.json());
   app.use(router);
+
+  // Catch-all safety net (docs/equipment-monitoring-requirements.md's own
+  // "Notes for implementation" open item): Express 5 auto-forwards a
+  // rejected async route handler's error here even without an explicit
+  // try/catch at the call site — this is the backstop for whatever wasn't
+  // explicitly wired to reportIncident(...) elsewhere (uploadStore.ts,
+  // fileScanning.ts, printTaskStore.ts, scanStore.ts/copyStore.ts,
+  // the two account-email call sites in routes.ts). Must be registered
+  // after every other app.use()/route — Express identifies an error
+  // handler by its 4-argument signature, not by name.
+  app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
+    console.error('[index] Unhandled route error:', err);
+    void reportIncident({
+      source: 'backend',
+      code: 'backend.unhandled-route-error',
+      severity: 'critical',
+      message:
+        'An unhandled exception reached the catch-all error handler — not explicitly wired to reportIncident anywhere else.',
+      context: { error: err instanceof Error ? (err.stack ?? err.message) : String(err) },
+    });
+    if (res.headersSent) return;
+    res.status(500).json({ error: 'Internal server error' });
+  });
 
   const port = Number(process.env.PORT ?? DEFAULT_PORT);
   app.listen(port, () => {
