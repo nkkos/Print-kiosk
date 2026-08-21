@@ -721,6 +721,84 @@ button {
   border-bottom: none;
 }
 
+/* ---------- Failure catalog ---------- */
+
+.catalog-search {
+  width: 100%;
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  color: var(--ink);
+  border-radius: 8px;
+  padding: 0.6rem 0.85rem;
+  font-size: 0.9rem;
+  font-family: inherit;
+  margin-bottom: 1.25rem;
+}
+
+.catalog-group {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+  margin-bottom: 0.9rem;
+  overflow: hidden;
+}
+
+.catalog-group-head {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border: none;
+  background: var(--surface-raised);
+  color: var(--ink);
+  font-weight: 600;
+  font-size: 0.92rem;
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+}
+.catalog-group-head:disabled {
+  cursor: default;
+}
+
+.catalog-group-toggle {
+  font-family: var(--font-mono);
+  color: var(--ink-faint);
+}
+
+.catalog-entries {
+  border-top: 1px solid var(--border);
+}
+
+.catalog-entry {
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid var(--border);
+}
+.catalog-entry:last-child {
+  border-bottom: none;
+}
+
+.catalog-entry-top {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0.35rem;
+}
+
+.catalog-entry-message {
+  margin: 0 0 0.4rem;
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+}
+
+.catalog-entry-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1.25rem;
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+}
+
 /* ---------- Modal ---------- */
 
 .modal-overlay {
