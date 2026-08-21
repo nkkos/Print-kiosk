@@ -10,15 +10,16 @@ Internal project document. Low-fidelity layout exploration for the admin panel t
 
 ## Information architecture (confirmed)
 
-Five screens total. Four are wireframed in this pass:
+Six screens total. Five are wireframed in this pass:
 
 1. **Overview** (this document) — real-time status cards per equipment element + the active-incidents feed. The "home" screen everything else opens from.
 2. **Equipment detail** (this document) — one element's incident history + the role-gated "Remote fix" action.
 3. **Incident log** (this document) — cross-equipment feed with filters (severity / source / open-closed).
 4. **Alerts & on-call** (this document) — who's on duty now, escalation history, threshold values (view-only for this pass per `docs/equipment-monitoring-requirements.md`'s open items).
-5. **Statistics** — deliberately deferred until real incident data exists to design against (confirmed earlier in this same discussion).
+5. **Failure catalog** (this document) — a static reference of every known failure code per equipment element (severity, whether it's auto-fixable, whether detection is actually implemented yet) — what an operator looks up when they see an unfamiliar `code` and want to know what it means before doing anything.
+6. **Statistics** — deliberately deferred until real incident data exists to design against (confirmed earlier in this same discussion).
 
-All four wireframed screens also exist as a clickable HTML mockup (built to visually validate this document's layout choices before committing to them) — role switch, working filters, and a real confirm-then-resolve loop on the fix actions, not just static frames.
+All five wireframed screens also exist as a clickable HTML mockup (built to visually validate this document's layout choices before committing to them) — role switch, working filters, and a real confirm-then-resolve loop on the fix actions, not just static frames.
 
 ## Overview screen
 
@@ -207,6 +208,48 @@ Who's on duty, what's escalated recently, and the current (unconfirmed) auto-rem
 - **История эскалаций** — one row per incident that crossed the "unacknowledged past threshold → reposted to the shared ops group chat" path (`docs/equipment-monitoring-requirements.md`, Methodology → Notification & escalation). Empty is the common/good case, not called out with special styling — an empty table reads clearly enough on its own.
 - **Пороги** — the same illustrative numbers already written into `docs/equipment-monitoring-requirements.md`'s equipment sections, surfaced here so an operator can see them without reading the source doc — explicitly labeled as unconfirmed, matching that document's own honesty about them, and explicitly not editable in this pass.
 
+## Failure catalog screen
+
+A static reference, not a live feed — every known failure `code` this system recognizes, grouped by equipment source, straight out of `docs/equipment-monitoring-requirements.md`'s own equipment sections. Exists because an operator who sees an unfamiliar code in the Incident log or on a card shouldn't have to go find and read the source markdown file to understand what it means, whether it fixes itself, and whether it's even really being watched for yet.
+
+### Layout
+
+```
++----------------------------------------------------------------------------+
+| Справочник неисправностей                          [Поиск по коду...    ] |
++----------------------------------------------------------------------------+
+| ПК                                                                          |
+|  pc.os-crash             ● CRITICAL   Авто: нет         Мониторинг: план   |
+|  pc.dead                 ● EMERGENCY  Авто: hard-cycle  Мониторинг: план   |
+|  pc.unresponsive         ● WARNING    Авто: рестарт     Мониторинг: план   |
+|  ...                                                                        |
++----------------------------------------------------------------------------+
+| Принтер                                                                     |
+|  printer.paper-jam       ● CRITICAL   Авто: нет         Мониторинг: да     |
+|  printer.submit-timeout  ● CRITICAL   Авто: нет*        Мониторинг: да     |
+|  printer.interactive-port ● CRITICAL  Авто: нет         Мониторинг: план   |
+|  printer.queue-stuck     ● CRITICAL   Авто: да**        Мониторинг: план   |
+|  ...                                                                        |
++----------------------------------------------------------------------------+
+| Экран / Сеть / Бэкенд / Платёжный терминал  (те же карточки, свёрнуты)     |
++----------------------------------------------------------------------------+
+| * ретрай проверен вживую и не помогает — не будет добавлен                 |
+| ** требует прав на перезапуск spooler-сервиса, которых сейчас нет           |
++----------------------------------------------------------------------------+
+```
+
+### Elements
+
+- **Поиск по коду** — a plain text filter across every code/message in the catalog (not the same as the Incident log's severity/source/status chips — this searches the reference text itself, e.g. typing "timeout" should surface `printer.submit-timeout`).
+- **One collapsible group per equipment source** — same six sources as everywhere else in this panel (ПК, Принтер, Экран, Сеть, Бэкенд, Платёжный терминал). Printer is shown expanded above since it has the most entries confirmed live this session; the rest collapse by default to keep the page scannable.
+- **Per-code row**: the `code` itself (monospace, matching every other screen's convention), its severity, whether an automatic fix exists (and a footnote when that auto-fix has a real caveat — e.g. `queue-stuck`'s spooler-restart needing privileges this backend doesn't have yet, or `submit-timeout`'s retry being tested and rejected, not just "not built"), and whether detection is actually implemented today or still planned (`printer.*` is mostly "да" after this session's wiring; every other source is still "план").
+- **Not a live table** — no severity filter, no click-through to real incidents (that's the Incident log's job). This screen answers "what does this mean and is it real yet," not "show me what's currently happening."
+
+### Navigation
+
+- Reached via a new `admin-nav-catalog` link in the shared top nav.
+- No drill-down — this is the terminal screen for "look something up," not a hub.
+
 ## Open items
 
 - Exact color mapping for the four severity dots — the mockup's actual hex values are a reasonable starting point once real design tokens are needed, but not formally promoted to a design-system decision yet.
@@ -214,5 +257,6 @@ Who's on duty, what's escalated recently, and the current (unconfirmed) auto-rem
 - The Incident log's date-range filter — dropped from this pass (see that screen's own notes) until there's real volume to filter against.
 - Roster editing UI — deliberately out of scope; the schedule lives in config/DB, edited directly rather than through this panel, for now.
 - Real-time update mechanism (polling vs. WebSocket/SSE) for the status cards, incident feed, and log — an implementation decision, not addressed at the wireframe level.
+- **New, Failure catalog screen:** where its content actually lives — hardcoded in frontend code mirroring `docs/equipment-monitoring-requirements.md` by hand (fast, but the two can drift), vs. a small backend-served catalog the doc's own content feeds into somehow. Not decided; today's mockup just hardcodes it for the demo.
 
 **Resolved since this document was first written** (kept here for the record, not as open items anymore): login/role-assignment reuses the existing account system (`server/accountStore.ts`, extended with a role field) — not a separate mechanism; the panel gets its own plain/technical visual style, not the kiosk's design system (see the intro above); "restart backend process" is a real, confirmed action (`docs/equipment-monitoring-requirements.md`, Section E — implemented via the process calling `process.exit(1)` and relying on Railway's restart-on-crash policy).

@@ -1,6 +1,6 @@
 # Admin Panel — Spec
 
-Internal project document. Confirms the approved layout (`docs/screens/admin-panel-wireframes.md`, validated against the clickable HTML mockup built alongside it) and defines interactive elements, states, and navigation for the four wireframed screens — Overview, Equipment detail, Incident log, Alerts & on-call. Requirements: `docs/equipment-monitoring-requirements.md`. Statistics (screen 5) stays deferred, per that document's own confirmed decision. Nothing described here is implemented yet.
+Internal project document. Confirms the approved layout (`docs/screens/admin-panel-wireframes.md`, validated against the clickable HTML mockup built alongside it) and defines interactive elements, states, and navigation for the five wireframed screens — Overview, Equipment detail, Incident log, Alerts & on-call, Failure catalog. Requirements: `docs/equipment-monitoring-requirements.md`. Statistics (screen 6) stays deferred, per that document's own confirmed decision. Nothing described here is implemented yet.
 
 ## Confirmed scope (carried over from the wireframes)
 
@@ -14,6 +14,7 @@ Internal project document. Confirms the approved layout (`docs/screens/admin-pan
 | `admin-nav-overview`     | Top nav — Overview                   | Visible        | Enabled                            | → Overview                                             |
 | `admin-nav-log`          | Top nav — Incident log               | Visible        | Enabled                            | → Incident log                                         |
 | `admin-nav-alerts`       | Top nav — Alerts & on-call           | Visible        | Enabled                            | → Alerts & on-call                                     |
+| `admin-nav-catalog`      | Top nav — Failure catalog            | Visible        | Enabled                            | → Failure catalog                                      |
 | `admin-nav-stats`        | Top nav — Statistics                 | Visible        | Disabled — screen not designed yet | None                                                   |
 | `admin-oncall-indicator` | Shows who's on duty now + their role | Always visible | Not interactive                    | None — same data the Alerts screen shows in more depth |
 
@@ -125,6 +126,33 @@ This screen is entirely **view-only** in this pass — every element below is di
 - Reached via `admin-nav-alerts`.
 - No further navigation from this screen in this pass (no drill-down into a specific escalation's own incident — could be added later, not confirmed now).
 
+## Failure catalog screen
+
+### Interactive elements
+
+Static reference content — nothing here is a live feed of real incidents (that's the Incident log's job).
+
+| Identifier                       | Purpose                                                                      | Default state                                                        | Enabled/disabled | Action after click / Navigation                                                             |
+| -------------------------------- | ---------------------------------------------------------------------------- | -------------------------------------------------------------------- | ---------------- | ------------------------------------------------------------------------------------------- |
+| `catalog-search`                 | Free-text filter across every code/message in the catalog                    | Empty                                                                | Enabled          | Filters the groups/rows below live                                                          |
+| `catalog-group-pc`               | Collapsible group — ПК's known codes                                         | Collapsed by default                                                 | Enabled          | Toggles expand/collapse                                                                     |
+| `catalog-group-printer`          | Collapsible group — Принтер's known codes                                    | **Expanded by default** (most entries confirmed live this session)   | Enabled          | Toggles expand/collapse                                                                     |
+| `catalog-group-display`          | Collapsible group — Экран's known codes                                      | Collapsed by default                                                 | Enabled          | Toggles expand/collapse                                                                     |
+| `catalog-group-network`          | Collapsible group — Сеть's known codes                                       | Collapsed by default                                                 | Enabled          | Toggles expand/collapse                                                                     |
+| `catalog-group-backend`          | Collapsible group — Бэкенд's known codes                                     | Collapsed by default                                                 | Enabled          | Toggles expand/collapse                                                                     |
+| `catalog-group-payment-terminal` | Collapsible group — Платёжный терминал's known codes                         | Collapsed by default                                                 | Enabled          | Toggles expand/collapse                                                                     |
+| `catalog-entry-<source>-<code>`  | One row per known failure code (e.g. `catalog-entry-printer-submit-timeout`) | Visible when its group is expanded and it matches the current search | Not interactive  | None — display only (severity, whether auto-fixable, whether monitoring is implemented yet) |
+
+### Screen states
+
+1. **Unfiltered** — every group present; only Принтер expanded by default, matching how much of it is actually implemented today.
+2. **Searching** — typing in `catalog-search` expands any group with a matching row and hides non-matching rows/groups, same "filter, don't navigate away" pattern as the Incident log.
+
+### Navigation
+
+- Reached via `admin-nav-catalog`.
+- No drill-down to real incidents or Equipment detail — this screen is a dead end by design (see the wireframes' own note: "look something up," not a hub).
+
 ## Accessibility
 
 Same bar as the rest of this project (`docs/design/design-system.md`, Section 15): every severity state is conveyed by both color and text/label (never color alone — matches the mockup's `sev` chip always pairing a colored dot with an uppercase text label), keyboard focus is visible on every interactive element, and the confirmation modal traps focus and closes on Escape (already proven in the HTML mockup).
@@ -142,5 +170,6 @@ Same bar as the rest of this project (`docs/design/design-system.md`, Section 15
 - The admin panel's own need for live Kiosk Session visibility (`docs/domain/kiosk-session.md`) before enabling `equipment-fix-pc-*`/`equipment-fix-display-*` — confirmed needed, not yet built.
 - Incident log's date-range filtering — deliberately absent from both the wireframes and this spec until real incident volume exists to design against.
 - Threshold editing — the Alerts & on-call screen shows thresholds read-only; editing is a future decision, not scoped here.
+- Failure catalog's actual content source — hardcoded to mirror `docs/equipment-monitoring-requirements.md` by hand for now (see that document's own Open items) vs. a backend-served version; not decided.
 
 **Resolved since this document was first written**: login/role-assignment reuses the existing account system (`server/accountStore.ts`, extended with a role field); this panel gets its own plain/technical visual style, not the kiosk's design system; `equipment-fix-backend-restart-process` is a real, confirmed action; the on-call roster lives in config/DB with no editing UI in this pass.
