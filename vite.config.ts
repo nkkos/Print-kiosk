@@ -15,11 +15,17 @@ export default defineConfig({
     host: true,
   },
   build: {
-    // Multi-page build: the kiosk (index.html) plus the minimal portal
+    // Multi-page build: the kiosk (index.html), the minimal portal
     // (portal/, deployed separately to Cloudflare Pages — see README.md,
-    // "Portal"). Local dev already serves both without any extra config
-    // (npm run dev, then visit /portal/register.html etc.). Output mirrors
-    // input paths, so these land at dist/portal/*.html.
+    // "Portal"), and the admin panel (admin/ — a third mini-app in this
+    // same repo, same "separate concern, separate entry" reasoning as
+    // portal's own split, but a single page with client-side view
+    // switching rather than portal's several separate HTML pages, since an
+    // operator navigates between its screens repeatedly across a shift —
+    // see docs/screens/admin-panel-wireframes.md). Local dev already
+    // serves all of these without any extra config (npm run dev, then
+    // visit /portal/register.html or /admin/ etc.). Output mirrors input
+    // paths, so these land at dist/portal/*.html / dist/admin/index.html.
     rollupOptions: {
       input: {
         main: resolve(rootDir, 'index.html'),
@@ -31,6 +37,7 @@ export default defineConfig({
         files: resolve(rootDir, 'portal/files.html'),
         start: resolve(rootDir, 'portal/start.html'),
         orders: resolve(rootDir, 'portal/orders.html'),
+        admin: resolve(rootDir, 'admin/index.html'),
       },
     },
   },
