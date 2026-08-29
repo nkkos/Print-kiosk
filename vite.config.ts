@@ -38,6 +38,12 @@ export default defineConfig({
         start: resolve(rootDir, 'portal/start.html'),
         orders: resolve(rootDir, 'portal/orders.html'),
         admin: resolve(rootDir, 'admin/index.html'),
+        // The shop (shop/, docs/shop-requirements.md) — a fourth mini-app, same
+        // reasoning as admin/'s own entry: real integration with the account
+        // system (not something a separately-hosted landing tool can own), and a
+        // single page with client-side view switching since a customer moves
+        // between catalog/cart/checkout/orders repeatedly in one visit.
+        shop: resolve(rootDir, 'shop/index.html'),
       },
     },
   },
