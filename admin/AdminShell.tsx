@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { getRoster, type RosterEntry } from './services/adminApi';
 import type { AdminSession } from './adminSession';
 
-export type AdminScreen = 'overview' | 'equipment-detail' | 'incident-log' | 'alerts' | 'catalog';
+export type AdminScreen =
+  'overview' | 'equipment-detail' | 'incident-log' | 'alerts' | 'catalog' | 'shop-catalog';
 
 interface AdminShellProps {
   session: AdminSession;
@@ -67,6 +68,13 @@ export function AdminShell({ session, screen, onNavigate, onLogout }: AdminShell
           onClick={() => onNavigate('catalog')}
         >
           Справочник неисправностей
+        </button>
+        <button
+          id="admin-nav-shop"
+          className={`nav-link${screen === 'shop-catalog' ? ' current' : ''}`}
+          onClick={() => onNavigate('shop-catalog')}
+        >
+          Каталог магазина
         </button>
         {/* Statistics (screen 6) stays deferred per
             docs/screens/admin-panel-spec.md's own confirmed decision. */}

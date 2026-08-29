@@ -16,6 +16,7 @@ import {
 } from './incidentStore.js';
 import { listRoster, getCurrentOnCall } from './rosterStore.js';
 import { hasActiveKioskSession } from './sessionLifecycle.js';
+import { listAllProducts, createProduct, updateProduct } from './productStore.js';
 
 // Admin panel backend (docs/screens/admin-panel-wireframes.md,
 // docs/screens/admin-panel-spec.md) — a distinct router mounted under
@@ -23,6 +24,13 @@ import { hasActiveKioskSession } from './sessionLifecycle.js';
 // further (that file already covers the kiosk/portal's own routes).
 
 export const adminRouter = Router();
+
+// Same rationale as server/routes.ts's own paramString — Express 5 types route
+// params as `string | string[]` in general, but every route here only ever uses a
+// plain `:id` segment, always a single string at runtime.
+function paramString(value: string | string[]): string {
+  return Array.isArray(value) ? value[0] : value;
+}
 
 const STAFF_SESSION_EXPIRY_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -180,5 +188,91 @@ adminRouter.post(
     setTimeout(() => process.exit(1), 250);
   },
 );
+
+// Shop catalog management (docs/shop-requirements.md's "Back office / admin" —
+// confirmed 2026-08-25 as a real form here rather than a script-only workaround).
+// Open to either staff role — unlike the equipment fix actions above, editing the
+// catalog isn't destructive/session-interrupting enough to need requireSeniorRole.
+adminRouter.get('/api/admin/products', requireStaffSession, async (_req, res) => {
+  res.json(await listAllProducts());
+});
+
+adminRouter.post('/api/admin/products', requireStaffSession, async (req, res) => {
+  const { name, description, category, fulfillmentType, priceCents, variantLabel, imageUrl } =
+    (req.body ?? {}) as {
+      name?: unknown;
+      description?: unknown;
+      category?: unknown;
+      fulfillmentType?: unknown;
+      priceCents?: unknown;
+      variantLabel?: unknown;
+      imageUrl?: unknown;
+    };
+  if (
+    typeof name !== 'string' ||
+    !name.trim() ||
+    typeof category !== 'string' ||
+    !category.trim() ||
+    (fulfillmentType !== 'self-service' && fulfillmentType !== 'staff-fulfilled') ||
+    typeof priceCents !== 'number' ||
+    priceCents < 0
+  ) {
+    res.status(400).json({ error: 'Invalid product' });
+    return;
+  }
+  const product = await createProduct({
+    name,
+    description: typeof description === 'string' ? description : undefined,
+    category,
+    fulfillmentType,
+    priceCents,
+    variantLabel: typeof variantLabel === 'string' ? variantLabel : undefined,
+    imageUrl: typeof imageUrl === 'string' ? imageUrl : undefined,
+  });
+  res.status(201).json(product);
+});
+
+adminRouter.patch('/api/admin/products/:id', requireStaffSession, async (req, res) => {
+  const {
+    name,
+    description,
+    category,
+    fulfillmentType,
+    priceCents,
+    variantLabel,
+    imageUrl,
+    active,
+  } = (req.body ?? {}) as {
+    name?: unknown;
+    description?: unknown;
+    category?: unknown;
+    fulfillmentType?: unknown;
+    priceCents?: unknown;
+    variantLabel?: unknown;
+    imageUrl?: unknown;
+    active?: unknown;
+  };
+  const product = await updateProduct(paramString(req.params.id), {
+    ...(typeof name === 'string' && { name }),
+    ...(description !== undefined && {
+      description: typeof description === 'string' ? description : null,
+    }),
+    ...(typeof category === 'string' && { category }),
+    ...((fulfillmentType === 'self-service' || fulfillmentType === 'staff-fulfilled') && {
+      fulfillmentType,
+    }),
+    ...(typeof priceCents === 'number' && priceCents >= 0 && { priceCents }),
+    ...(variantLabel !== undefined && {
+      variantLabel: typeof variantLabel === 'string' ? variantLabel : null,
+    }),
+    ...(imageUrl !== undefined && { imageUrl: typeof imageUrl === 'string' ? imageUrl : null }),
+    ...(typeof active === 'boolean' && { active }),
+  });
+  if (!product) {
+    res.status(404).json({ error: 'Product not found' });
+    return;
+  }
+  res.json(product);
+});
 
 export { requireStaffSession, requireSeniorRole };

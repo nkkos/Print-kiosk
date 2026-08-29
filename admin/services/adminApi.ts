@@ -32,8 +32,21 @@ export interface RosterEntry {
   role: string;
 }
 
+export interface Product {
+  id: string;
+  name: string;
+  description: string | null;
+  category: string;
+  fulfillmentType: 'self-service' | 'staff-fulfilled';
+  priceCents: number;
+  variantLabel: string | null;
+  imageUrl: string | null;
+  stockQuantity: number | null;
+  active: boolean;
+}
+
 async function request<T>(
-  method: 'GET' | 'POST',
+  method: 'GET' | 'POST' | 'PATCH',
   path: string,
   sessionToken?: string,
   body?: unknown,
@@ -106,4 +119,33 @@ export async function restartBackendProcess(
   await request('POST', '/api/admin/equipment/backend/restart-process', sessionToken, {
     incidentId,
   });
+}
+
+export interface ProductFormFields {
+  name: string;
+  description?: string;
+  category: string;
+  fulfillmentType: 'self-service' | 'staff-fulfilled';
+  priceCents: number;
+  variantLabel?: string;
+  imageUrl?: string;
+}
+
+export async function listProducts(sessionToken: string): Promise<Product[]> {
+  return request('GET', '/api/admin/products', sessionToken);
+}
+
+export async function createProduct(
+  sessionToken: string,
+  fields: ProductFormFields,
+): Promise<Product> {
+  return request('POST', '/api/admin/products', sessionToken, fields);
+}
+
+export async function updateProduct(
+  sessionToken: string,
+  id: string,
+  fields: Partial<ProductFormFields & { active: boolean }>,
+): Promise<Product> {
+  return request('PATCH', `/api/admin/products/${id}`, sessionToken, fields);
 }

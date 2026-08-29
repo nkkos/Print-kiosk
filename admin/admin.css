@@ -529,6 +529,20 @@ button {
   font-family: inherit;
 }
 
+/* Plain form input, shared by any form outside the login card (e.g. the shop
+   catalog's add/edit form) — same look as .login-field input, without needing
+   that wrapper div. */
+.admin-input {
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  color: var(--ink);
+  border-radius: 8px;
+  padding: 0.6rem 0.75rem;
+  font-size: 0.9rem;
+  font-family: inherit;
+  width: 100%;
+}
+
 .login-error {
   color: var(--sev-critical);
   font-size: 0.82rem;
