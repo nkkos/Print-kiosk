@@ -24,6 +24,15 @@ import {
   deleteFolder,
 } from './accountFileStore.js';
 import { createOrder, payOrder, listOrders } from './accountOrderStore.js';
+import { listActiveProducts } from './productStore.js';
+import {
+  checkout,
+  listShopOrders,
+  EmptyCheckoutError,
+  InvalidPrintOrderError,
+  InvalidProductError,
+  EmailNotVerifiedError,
+} from './shopOrderStore.js';
 import {
   startSession,
   touchSessionActivity,
@@ -39,6 +48,8 @@ import {
   createAccountToken,
   consumeAccountToken,
   deleteAccount,
+  getAccountProfile,
+  updateInvoiceDetails,
   EmailTakenError,
 } from './accountStore.js';
 import { sendVerificationEmail, sendPasswordResetEmail, sendScanEmail } from './emailSender.js';
@@ -805,6 +816,100 @@ router.post('/api/accounts/orders/:id/pay', requireAccountAuth, async (req, res)
 router.get('/api/accounts/orders', requireAccountAuth, async (req, res) => {
   const accountId = (req as AuthenticatedRequest).accountId!;
   res.json(await listOrders(accountId));
+});
+
+// Backs the shop checkout's email-verification polling
+// (docs/shop-checkout-requirements.md's "Email verification gate") — the checkout
+// screen polls this after creating a new account to detect `emailVerified` flipping
+// true, without requiring the customer to log in again after clicking the email link.
+// Generically useful beyond checkout too (any "who am I" need), not checkout-specific.
+router.get('/api/accounts/me', requireAccountAuth, async (req, res) => {
+  const accountId = (req as AuthenticatedRequest).accountId!;
+  const profile = await getAccountProfile(accountId);
+  if (!profile) {
+    res.status(404).json({ error: 'Account not found' });
+    return;
+  }
+  res.json(profile);
+});
+
+// Optional invoice details (docs/shop-checkout-requirements.md) — reachable both from
+// the shop checkout and from account settings, both write to the same two columns.
+router.patch('/api/accounts/invoice-details', requireAccountAuth, async (req, res) => {
+  const accountId = (req as AuthenticatedRequest).accountId!;
+  const { invoiceCompanyName, invoiceTaxId } = (req.body ?? {}) as {
+    invoiceCompanyName?: unknown;
+    invoiceTaxId?: unknown;
+  };
+  if (
+    (invoiceCompanyName !== undefined &&
+      invoiceCompanyName !== null &&
+      typeof invoiceCompanyName !== 'string') ||
+    (invoiceTaxId !== undefined && invoiceTaxId !== null && typeof invoiceTaxId !== 'string')
+  ) {
+    res.status(400).json({ error: 'Invalid invoice details' });
+    return;
+  }
+  await updateInvoiceDetails(accountId, {
+    invoiceCompanyName: invoiceCompanyName ?? null,
+    invoiceTaxId: invoiceTaxId ?? null,
+  });
+  res.json({ ok: true });
+});
+
+// Shop catalog (docs/shop-requirements.md) — public, no auth, same as the
+// kiosk's other read-only catalog-shaped endpoints.
+router.get('/api/shop/products', async (_req, res) => {
+  res.json(await listActiveProducts());
+});
+
+// Portal-facing "My orders" for the staff-fulfilled half of the shop
+// (docs/shop-checkout-requirements.md) — session-token-authenticated like the
+// account's print-order history, never exposed on the accountId-only kiosk reads.
+router.get('/api/accounts/shop-orders', requireAccountAuth, async (req, res) => {
+  const accountId = (req as AuthenticatedRequest).accountId!;
+  res.json(await listShopOrders(accountId));
+});
+
+// Shop checkout (docs/shop-checkout-requirements.md) — one payment for the whole
+// cart, split server-side into the printOrders rows being paid (self-service) and/or
+// a new shopOrders row (staff-fulfilled). Account required (requireAccountAuth) per
+// the confirmed "no guest checkout" decision.
+router.post('/api/shop/checkout', requireAccountAuth, async (req, res) => {
+  const accountId = (req as AuthenticatedRequest).accountId!;
+  const { printOrderIds, shopItems } = (req.body ?? {}) as {
+    printOrderIds?: unknown;
+    shopItems?: unknown;
+  };
+  if (
+    !Array.isArray(printOrderIds) ||
+    !printOrderIds.every((id) => typeof id === 'string') ||
+    !Array.isArray(shopItems) ||
+    !shopItems.every(
+      (item): item is { productId: string; quantity: number } =>
+        typeof item === 'object' &&
+        item !== null &&
+        typeof (item as { productId?: unknown }).productId === 'string' &&
+        typeof (item as { quantity?: unknown }).quantity === 'number',
+    )
+  ) {
+    res.status(400).json({ error: 'Invalid checkout request' });
+    return;
+  }
+  try {
+    const result = await checkout({ accountId, printOrderIds, shopItems });
+    res.status(201).json(result);
+  } catch (err) {
+    if (err instanceof EmptyCheckoutError) {
+      res.status(400).json({ error: 'Cart is empty' });
+    } else if (err instanceof EmailNotVerifiedError) {
+      res.status(403).json({ error: 'Email must be verified before checkout can complete' });
+    } else if (err instanceof InvalidPrintOrderError || err instanceof InvalidProductError) {
+      res.status(400).json({ error: (err as Error).message });
+    } else {
+      throw err;
+    }
+  }
 });
 
 // Kiosk-facing reads for My files/My orders — accountId-only, no token,

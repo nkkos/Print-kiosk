@@ -1,16 +1,22 @@
 import { pgTable, uuid, text, integer, timestamp, index, boolean } from 'drizzle-orm/pg-core';
 
 // Real database schema (docs/domain/kiosk-session.md, docs/personal-account-requirements.md,
-// docs/cart-requirements.md) — see README.md, "Database." `printOrders`/`paymentOrders` exist
-// now so a later real-payments phase doesn't need another migration, but nothing writes to them
-// yet — the Cart/Print Order/Payment pipeline in the frontend is still fully mocked. Money is
-// stored as integer cents to avoid float-precision bugs.
+// docs/cart-requirements.md) — see README.md, "Database." The kiosk's own Cart/Print
+// Order/Payment screens are still fully mocked, but the portal's account-order path
+// (server/accountOrderStore.ts) and the shop checkout (docs/shop-checkout-requirements.md,
+// server/shopOrderStore.ts) are both real and do write to `paymentOrders`/`printOrders`. Money
+// is stored as integer cents to avoid float-precision bugs.
 
 export const accounts = pgTable('accounts', {
   id: uuid('id').primaryKey().defaultRandom(),
   email: text('email').notNull().unique(),
   emailVerified: boolean('email_verified').notNull().default(false),
   passwordHash: text('password_hash').notNull(),
+  // Optional invoice details (docs/shop-checkout-requirements.md's "Optional invoice
+  // fields") — set either at shop checkout or later from account settings; both write
+  // to the same two columns, there's no separate per-order copy.
+  invoiceCompanyName: text('invoice_company_name'),
+  invoiceTaxId: text('invoice_tax_id'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
@@ -153,6 +159,11 @@ export const kioskSessions = pgTable(
 export const paymentOrders = pgTable('payment_orders', {
   id: uuid('id').primaryKey().defaultRandom(),
   sessionId: uuid('session_id').references(() => kioskSessions.id),
+  // Set for shop checkouts (docs/shop-checkout-requirements.md) — one payment can cover
+  // both a printOrders row and a shopOrders row at once, so this lives here rather than
+  // being inferred by joining through either child table. Not set for the kiosk's own
+  // (still-mocked) Cart/Payment flow, which has no account requirement.
+  accountId: uuid('account_id').references(() => accounts.id, { onDelete: 'set null' }),
   // 'ready-for-payment' | 'paid' | 'cancelled-by-client'
   status: text('status').notNull().default('ready-for-payment'),
   amountCents: integer('amount_cents').notNull(),
@@ -206,6 +217,70 @@ export const printOrders = pgTable(
     index('print_orders_session_id_idx').on(table.sessionId),
     index('print_orders_account_id_idx').on(table.accountId),
   ],
+);
+
+// Shop catalog (docs/shop-requirements.md, docs/shop-checkout-requirements.md) — deliberately
+// minimal for a small catalog: one flat `variantLabel` string instead of a real
+// size/material/color variant matrix, revisit once the catalog outgrows this.
+export const products = pgTable('products', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  name: text('name').notNull(),
+  description: text('description'),
+  category: text('category').notNull(),
+  // 'self-service' | 'staff-fulfilled' — docs/shop-checkout-requirements.md's two
+  // fundamentally different order types. Print itself stays modeled as printOrders,
+  // not as a product row, so this is 'staff-fulfilled' for every product today; the
+  // column still exists because the catalog is expected to grow into both kinds.
+  fulfillmentType: text('fulfillment_type').notNull(),
+  priceCents: integer('price_cents').notNull(),
+  variantLabel: text('variant_label'),
+  // A plain URL for MVP — no upload/storage pipeline for product photos yet, admin
+  // pastes a link. Nullable: the catalog card falls back to a placeholder.
+  imageUrl: text('image_url'),
+  // null = not stock-tracked (e.g. a made-to-order item)
+  stockQuantity: integer('stock_quantity'),
+  active: boolean('active').notNull().default(true),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+// The "staff-fulfilled" order half of a shop checkout — the pavilion (or a partner)
+// produces and hands these over, unlike printOrders' self-service pickup. Deliberately
+// a separate table from printOrders rather than one polymorphic "orders" table: the two
+// have almost nothing in common in shape (print config vs. a list of catalog items) and
+// different visibility rules (docs/shop-checkout-requirements.md — kiosk never shows these).
+export const shopOrders = pgTable(
+  'shop_orders',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    accountId: uuid('account_id').references(() => accounts.id, { onDelete: 'set null' }),
+    paymentOrderId: uuid('payment_order_id').references(() => paymentOrders.id),
+    // 'self-pickup' only for now — the column exists so a delivery option can be added
+    // later without a schema change (docs/shop-requirements.md's Fulfillment table).
+    fulfillmentMethod: text('fulfillment_method').notNull().default('self-pickup'),
+    // 'paid' -> 'preparing' -> 'ready' -> 'picked-up'
+    status: text('status').notNull().default('paid'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index('shop_orders_account_id_idx').on(table.accountId)],
+);
+
+export const shopOrderItems = pgTable(
+  'shop_order_items',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    shopOrderId: uuid('shop_order_id')
+      .notNull()
+      .references(() => shopOrders.id, { onDelete: 'cascade' }),
+    // set null (not cascaded) if the catalog row is later removed — the line item
+    // itself, snapshotted below, is what actually matters for order history.
+    productId: uuid('product_id').references(() => products.id, { onDelete: 'set null' }),
+    // Denormalized at purchase time, same reasoning as a real invoice line never
+    // silently changing if the catalog product is edited or deleted afterward.
+    productName: text('product_name').notNull(),
+    unitPriceCents: integer('unit_price_cents').notNull(),
+    quantity: integer('quantity').notNull(),
+  },
+  (table) => [index('shop_order_items_shop_order_id_idx').on(table.shopOrderId)],
 );
 
 export const receivedEmails = pgTable(

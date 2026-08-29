@@ -15,6 +15,12 @@ export interface AccountWithHash extends Account {
   passwordHash: string;
 }
 
+export interface AccountProfile extends Account {
+  emailVerified: boolean;
+  invoiceCompanyName: string | null;
+  invoiceTaxId: string | null;
+}
+
 export type AccountTokenType = 'email-verification' | 'password-reset' | 'session';
 
 // Thrown by createAccount() when the email's UNIQUE constraint is violated —
@@ -70,6 +76,43 @@ export async function findAccountByEmail(email: string): Promise<AccountWithHash
 
 export async function verifyAccountEmail(accountId: string): Promise<void> {
   await db.update(accounts).set({ emailVerified: true }).where(eq(accounts.id, accountId));
+}
+
+// Backs GET /api/accounts/me — in particular the shop checkout's email-verification
+// polling (docs/shop-checkout-requirements.md's "Email verification gate"), which
+// needs to see `emailVerified` flip without the account having to log in again.
+export async function getAccountProfile(accountId: string): Promise<AccountProfile | null> {
+  const [row] = await db
+    .select({
+      id: accounts.id,
+      email: accounts.email,
+      emailVerified: accounts.emailVerified,
+      invoiceCompanyName: accounts.invoiceCompanyName,
+      invoiceTaxId: accounts.invoiceTaxId,
+    })
+    .from(accounts)
+    .where(eq(accounts.id, accountId));
+  return row ?? null;
+}
+
+export interface UpdateInvoiceDetailsParams {
+  invoiceCompanyName: string | null;
+  invoiceTaxId: string | null;
+}
+
+// Also reachable from account settings, not just checkout (docs/shop-checkout-requirements.md:
+// "these same fields are also editable later from the account's own settings").
+export async function updateInvoiceDetails(
+  accountId: string,
+  params: UpdateInvoiceDetailsParams,
+): Promise<void> {
+  await db
+    .update(accounts)
+    .set({
+      invoiceCompanyName: params.invoiceCompanyName,
+      invoiceTaxId: params.invoiceTaxId,
+    })
+    .where(eq(accounts.id, accountId));
 }
 
 export async function updateAccountPassword(
