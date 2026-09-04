@@ -17,6 +17,14 @@ import {
 import { listRoster, getCurrentOnCall } from './rosterStore.js';
 import { hasActiveKioskSession } from './sessionLifecycle.js';
 import { listAllProducts, createProduct, updateProduct } from './productStore.js';
+import {
+  listCountries,
+  createCountry,
+  deleteCountry,
+  listAllDocuments,
+  createDocument,
+  updateDocument,
+} from './photoDocumentStore.js';
 
 // Admin panel backend (docs/screens/admin-panel-wireframes.md,
 // docs/screens/admin-panel-spec.md) — a distinct router mounted under
@@ -273,6 +281,117 @@ adminRouter.patch('/api/admin/products/:id', requireStaffSession, async (req, re
     return;
   }
   res.json(product);
+});
+
+// Photo kiosk's Country/Document requirement data (docs/photo-kiosk-requirements.md's
+// "Requirement data model") — managed here, same "real form, not a script" decision
+// already made for the shop catalog above.
+adminRouter.get('/api/admin/photo-countries', requireStaffSession, async (_req, res) => {
+  res.json(await listCountries());
+});
+
+adminRouter.post('/api/admin/photo-countries', requireStaffSession, async (req, res) => {
+  const { name } = (req.body ?? {}) as { name?: unknown };
+  if (typeof name !== 'string' || !name.trim()) {
+    res.status(400).json({ error: 'Country name is required' });
+    return;
+  }
+  res.status(201).json(await createCountry(name.trim()));
+});
+
+adminRouter.delete('/api/admin/photo-countries/:id', requireStaffSession, async (req, res) => {
+  await deleteCountry(paramString(req.params.id));
+  res.json({ ok: true });
+});
+
+adminRouter.get('/api/admin/photo-documents', requireStaffSession, async (_req, res) => {
+  res.json(await listAllDocuments());
+});
+
+interface PhotoDocumentBody {
+  countryId?: unknown;
+  label?: unknown;
+  photoWidthMm?: unknown;
+  photoHeightMm?: unknown;
+  dpi?: unknown;
+  headHeightMinMm?: unknown;
+  headHeightMaxMm?: unknown;
+  eyeLineFromBottomMm?: unknown;
+  backgroundRequirement?: unknown;
+  printNotes?: unknown;
+  copiesPerSheet?: unknown;
+  instructions?: unknown;
+  active?: unknown;
+}
+
+function isFiniteNumber(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value);
+}
+
+adminRouter.post('/api/admin/photo-documents', requireStaffSession, async (req, res) => {
+  const body = (req.body ?? {}) as PhotoDocumentBody;
+  if (
+    typeof body.countryId !== 'string' ||
+    typeof body.label !== 'string' ||
+    !body.label.trim() ||
+    !isFiniteNumber(body.photoWidthMm) ||
+    !isFiniteNumber(body.photoHeightMm) ||
+    !isFiniteNumber(body.dpi) ||
+    !isFiniteNumber(body.headHeightMinMm) ||
+    !isFiniteNumber(body.headHeightMaxMm) ||
+    !isFiniteNumber(body.eyeLineFromBottomMm)
+  ) {
+    res.status(400).json({ error: 'Invalid document' });
+    return;
+  }
+  const document = await createDocument({
+    countryId: body.countryId,
+    label: body.label,
+    photoWidthMm: body.photoWidthMm,
+    photoHeightMm: body.photoHeightMm,
+    dpi: body.dpi,
+    headHeightMinMm: body.headHeightMinMm,
+    headHeightMaxMm: body.headHeightMaxMm,
+    eyeLineFromBottomMm: body.eyeLineFromBottomMm,
+    backgroundRequirement:
+      typeof body.backgroundRequirement === 'string' ? body.backgroundRequirement : undefined,
+    printNotes: typeof body.printNotes === 'string' ? body.printNotes : undefined,
+    copiesPerSheet: isFiniteNumber(body.copiesPerSheet) ? body.copiesPerSheet : undefined,
+    instructions: typeof body.instructions === 'string' ? body.instructions : undefined,
+  });
+  res.status(201).json(document);
+});
+
+adminRouter.patch('/api/admin/photo-documents/:id', requireStaffSession, async (req, res) => {
+  const body = (req.body ?? {}) as PhotoDocumentBody;
+  const document = await updateDocument(paramString(req.params.id), {
+    ...(typeof body.label === 'string' && { label: body.label }),
+    ...(isFiniteNumber(body.photoWidthMm) && { photoWidthMm: body.photoWidthMm }),
+    ...(isFiniteNumber(body.photoHeightMm) && { photoHeightMm: body.photoHeightMm }),
+    ...(isFiniteNumber(body.dpi) && { dpi: body.dpi }),
+    ...(isFiniteNumber(body.headHeightMinMm) && { headHeightMinMm: body.headHeightMinMm }),
+    ...(isFiniteNumber(body.headHeightMaxMm) && { headHeightMaxMm: body.headHeightMaxMm }),
+    ...(isFiniteNumber(body.eyeLineFromBottomMm) && {
+      eyeLineFromBottomMm: body.eyeLineFromBottomMm,
+    }),
+    ...(body.backgroundRequirement !== undefined && {
+      backgroundRequirement:
+        typeof body.backgroundRequirement === 'string' ? body.backgroundRequirement : null,
+    }),
+    ...(body.printNotes !== undefined && {
+      printNotes: typeof body.printNotes === 'string' ? body.printNotes : null,
+    }),
+    ...(isFiniteNumber(body.copiesPerSheet) && { copiesPerSheet: body.copiesPerSheet }),
+    ...(body.instructions !== undefined && {
+      instructions: typeof body.instructions === 'string' ? body.instructions : null,
+    }),
+    ...(typeof body.active === 'boolean' && { active: body.active }),
+  });
+  if (!document) {
+    res.status(404).json({ error: 'Document not found' });
+    return;
+  }
+  res.json(document);
 });
 
 export { requireStaffSession, requireSeniorRole };

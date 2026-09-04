@@ -44,6 +44,15 @@ export default defineConfig({
         // single page with client-side view switching since a customer moves
         // between catalog/cart/checkout/orders repeatedly in one visit.
         shop: resolve(rootDir, 'shop/index.html'),
+        // The photo kiosk (photo-kiosk/, docs/photo-kiosk-requirements.md) — a
+        // fifth mini-app. Genuinely separate hardware, not just a separate
+        // concern: it runs on its own dedicated PC/touchscreen at a different
+        // spot in the pavilion (the camera corner), not the document-printing
+        // kiosk's machine — so it can't just be more screens in src/App.tsx's
+        // own Screen union. Single page, client-side view switching, same
+        // reasoning as admin/shop (a customer moves between menu → capture →
+        // review → cart repeatedly in one visit).
+        photoKiosk: resolve(rootDir, 'photo-kiosk/index.html'),
       },
     },
   },

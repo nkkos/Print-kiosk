@@ -46,7 +46,7 @@ export interface Product {
 }
 
 async function request<T>(
-  method: 'GET' | 'POST' | 'PATCH',
+  method: 'GET' | 'POST' | 'PATCH' | 'DELETE',
   path: string,
   sessionToken?: string,
   body?: unknown,
@@ -148,4 +148,75 @@ export async function updateProduct(
   fields: Partial<ProductFormFields & { active: boolean }>,
 ): Promise<Product> {
   return request('PATCH', `/api/admin/products/${id}`, sessionToken, fields);
+}
+
+export interface PhotoCountry {
+  id: string;
+  name: string;
+}
+
+export interface PhotoDocument {
+  id: string;
+  countryId: string;
+  label: string;
+  photoWidthMm: number;
+  photoHeightMm: number;
+  dpi: number;
+  headHeightMinMm: number;
+  headHeightMaxMm: number;
+  eyeLineFromBottomMm: number;
+  backgroundRequirement: string | null;
+  printNotes: string | null;
+  copiesPerSheet: number;
+  instructions: string | null;
+  active: boolean;
+}
+
+export interface PhotoDocumentFormFields {
+  countryId: string;
+  label: string;
+  photoWidthMm: number;
+  photoHeightMm: number;
+  dpi: number;
+  headHeightMinMm: number;
+  headHeightMaxMm: number;
+  eyeLineFromBottomMm: number;
+  backgroundRequirement?: string;
+  printNotes?: string;
+  copiesPerSheet: number;
+  instructions?: string;
+}
+
+export async function listPhotoCountries(sessionToken: string): Promise<PhotoCountry[]> {
+  return request('GET', '/api/admin/photo-countries', sessionToken);
+}
+
+export async function createPhotoCountry(
+  sessionToken: string,
+  name: string,
+): Promise<PhotoCountry> {
+  return request('POST', '/api/admin/photo-countries', sessionToken, { name });
+}
+
+export async function deletePhotoCountry(sessionToken: string, id: string): Promise<void> {
+  await request('DELETE', `/api/admin/photo-countries/${id}`, sessionToken);
+}
+
+export async function listPhotoDocuments(sessionToken: string): Promise<PhotoDocument[]> {
+  return request('GET', '/api/admin/photo-documents', sessionToken);
+}
+
+export async function createPhotoDocument(
+  sessionToken: string,
+  fields: PhotoDocumentFormFields,
+): Promise<PhotoDocument> {
+  return request('POST', '/api/admin/photo-documents', sessionToken, fields);
+}
+
+export async function updatePhotoDocument(
+  sessionToken: string,
+  id: string,
+  fields: Partial<Omit<PhotoDocumentFormFields, 'countryId'> & { active: boolean }>,
+): Promise<PhotoDocument> {
+  return request('PATCH', `/api/admin/photo-documents/${id}`, sessionToken, fields);
 }

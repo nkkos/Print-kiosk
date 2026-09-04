@@ -3,7 +3,13 @@ import { getRoster, type RosterEntry } from './services/adminApi';
 import type { AdminSession } from './adminSession';
 
 export type AdminScreen =
-  'overview' | 'equipment-detail' | 'incident-log' | 'alerts' | 'catalog' | 'shop-catalog';
+  | 'overview'
+  | 'equipment-detail'
+  | 'incident-log'
+  | 'alerts'
+  | 'catalog'
+  | 'shop-catalog'
+  | 'photo-documents';
 
 interface AdminShellProps {
   session: AdminSession;
@@ -75,6 +81,13 @@ export function AdminShell({ session, screen, onNavigate, onLogout }: AdminShell
           onClick={() => onNavigate('shop-catalog')}
         >
           Каталог магазина
+        </button>
+        <button
+          id="admin-nav-photo-documents"
+          className={`nav-link${screen === 'photo-documents' ? ' current' : ''}`}
+          onClick={() => onNavigate('photo-documents')}
+        >
+          Фото на документы
         </button>
         {/* Statistics (screen 6) stays deferred per
             docs/screens/admin-panel-spec.md's own confirmed decision. */}

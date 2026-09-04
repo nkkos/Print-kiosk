@@ -1,0 +1,1 @@
+ALTER TABLE "photo_documents" ADD COLUMN "copies_per_sheet" integer DEFAULT 6 NOT NULL;

@@ -1,4 +1,4 @@
-import { pgTable, uuid, text, integer, timestamp, index, boolean } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, text, integer, real, timestamp, index, boolean } from 'drizzle-orm/pg-core';
 
 // Real database schema (docs/domain/kiosk-session.md, docs/personal-account-requirements.md,
 // docs/cart-requirements.md) — see README.md, "Database." The kiosk's own Cart/Print
@@ -479,4 +479,76 @@ export const printTasks = pgTable(
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [index('print_tasks_session_id_idx').on(table.sessionId)],
+);
+
+// Photo kiosk's document-photo requirement data (docs/photo-kiosk-requirements.md,
+// "Requirement data model") — a genuine two-level Country -> Document hierarchy,
+// confirmed deliberately NOT a shared/reusable spec: different documents within the
+// same country can have genuinely different photo requirements in practice, so each
+// Document carries its own complete spec rather than referencing one.
+export const photoCountries = pgTable('photo_countries', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  name: text('name').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const photoDocuments = pgTable(
+  'photo_documents',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    countryId: uuid('country_id')
+      .notNull()
+      .references(() => photoCountries.id, { onDelete: 'cascade' }),
+    // e.g. "Туристическая виза" — shown in the document-type list once a country
+    // is picked (docs/photo-kiosk-requirements.md's wireframe walkthrough).
+    label: text('label').notNull(),
+    // Crop-driving fields — feed directly into the crop/scale calculation
+    // (docs/photo-kiosk-requirements.md's "Confirmed technical approach," layer 2).
+    photoWidthMm: real('photo_width_mm').notNull(),
+    photoHeightMm: real('photo_height_mm').notNull(),
+    dpi: integer('dpi').notNull(),
+    headHeightMinMm: real('head_height_min_mm').notNull(),
+    headHeightMaxMm: real('head_height_max_mm').notNull(),
+    eyeLineFromBottomMm: real('eye_line_from_bottom_mm').notNull(),
+    // Format/print fields — don't affect the crop itself. copiesPerSheet:
+    // real-world ID-photo printing convention is N copies of the ONE
+    // confirmed shot on one A4 sheet (confirmed with the product owner:
+    // one photo -> 6 copies is the default, not a gallery of distinct shots).
+    backgroundRequirement: text('background_requirement'),
+    printNotes: text('print_notes'),
+    copiesPerSheet: integer('copies_per_sheet').notNull().default(6),
+    // Shown to the customer before capture, not automatically validated yet
+    // (confirmed deliberate phase boundary — expected to become real automatic
+    // validation later, not dropped as a rejected idea).
+    instructions: text('instructions'),
+    active: boolean('active').notNull().default(true),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index('photo_documents_country_id_idx').on(table.countryId)],
+);
+
+// Photo kiosk's audit-only order record (docs/domain/kiosk-session.md's "delete
+// the file content; retain the metadata/fact of the transaction" — applied even
+// more strictly here: no photo content is ever written server-side at all, since
+// A4 sheet composition happens entirely client-side (photo privacy is confirmed
+// more sensitive than document privacy). A separate table from printOrders, not a
+// polymorphic one, same reasoning as shopOrders' own split by fulfillment shape.
+export const photoOrders = pgTable(
+  'photo_orders',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    sessionId: uuid('session_id').references(() => kioskSessions.id),
+    specLabel: text('spec_label').notNull(),
+    specWidthMm: real('spec_width_mm').notNull(),
+    specHeightMm: real('spec_height_mm').notNull(),
+    specDpi: integer('spec_dpi'),
+    shotCount: integer('shot_count').notNull(),
+    // 'paid' -> 'printed'. No 'cancelled' state: a row is only ever created once
+    // payment is simulated-confirmed, so a cancelled payment never reaches this
+    // table at all.
+    status: text('status').notNull().default('paid'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    printedAt: timestamp('printed_at', { withTimezone: true }),
+  },
+  (table) => [index('photo_orders_session_id_idx').on(table.sessionId)],
 );

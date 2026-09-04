@@ -26,6 +26,12 @@ import {
 import { createOrder, payOrder, listOrders } from './accountOrderStore.js';
 import { listActiveProducts } from './productStore.js';
 import {
+  listCountries,
+  listActiveDocumentsForCountry,
+  getDocument as getPhotoDocument,
+} from './photoDocumentStore.js';
+import { recordPhotoOrder, markPhotoOrdersPrinted } from './photoOrderStore.js';
+import {
   checkout,
   listShopOrders,
   EmptyCheckoutError,
@@ -861,6 +867,68 @@ router.patch('/api/accounts/invoice-details', requireAccountAuth, async (req, re
 // kiosk's other read-only catalog-shaped endpoints.
 router.get('/api/shop/products', async (_req, res) => {
   res.json(await listActiveProducts());
+});
+
+// Photo kiosk's document-photo picker (docs/photo-kiosk-requirements.md's "Выбрать
+// страну" screen) — public, no auth, same reasoning as the shop catalog above: this
+// is read-only reference data, not anything account-specific.
+router.get('/api/photo-countries', async (_req, res) => {
+  res.json(await listCountries());
+});
+
+router.get('/api/photo-countries/:id/documents', async (req, res) => {
+  res.json(await listActiveDocumentsForCountry(paramString(req.params.id)));
+});
+
+router.get('/api/photo-documents/:id', async (req, res) => {
+  const document = await getPhotoDocument(paramString(req.params.id));
+  if (!document) {
+    res.status(404).json({ error: 'Document not found' });
+    return;
+  }
+  res.json(document);
+});
+
+// Photo kiosk order fact-of-purchase (docs/domain/kiosk-session.md's "delete the
+// file content, retain the metadata/fact" principle, applied to photos) — public,
+// no auth, same as the other photo-kiosk routes above. Records metadata only; no
+// photo content is ever sent here, since A4 composition happens entirely
+// client-side (photo privacy is confirmed more sensitive than document privacy).
+router.post('/api/photo-orders', async (req, res) => {
+  const body = req.body as {
+    sessionId?: unknown;
+    spec?: { label?: unknown; widthMm?: unknown; heightMm?: unknown; dpi?: unknown };
+    shotCount?: unknown;
+  } | null;
+  const spec = body?.spec;
+  if (
+    typeof spec?.label !== 'string' ||
+    typeof spec?.widthMm !== 'number' ||
+    typeof spec?.heightMm !== 'number' ||
+    typeof body?.shotCount !== 'number'
+  ) {
+    res.status(400).json({ error: 'Invalid photo order' });
+    return;
+  }
+  const order = await recordPhotoOrder({
+    sessionId: typeof body?.sessionId === 'string' ? body.sessionId : null,
+    specLabel: spec.label,
+    specWidthMm: spec.widthMm,
+    specHeightMm: spec.heightMm,
+    specDpi: typeof spec.dpi === 'number' ? spec.dpi : null,
+    shotCount: body.shotCount,
+  });
+  res.status(201).json(order);
+});
+
+router.post('/api/photo-orders/printed', async (req, res) => {
+  const { ids } = (req.body ?? {}) as { ids?: unknown };
+  if (!Array.isArray(ids) || !ids.every((id) => typeof id === 'string')) {
+    res.status(400).json({ error: 'Invalid ids' });
+    return;
+  }
+  await markPhotoOrdersPrinted(ids);
+  res.json({ ok: true });
 });
 
 // Portal-facing "My orders" for the staff-fulfilled half of the shop
