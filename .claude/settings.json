@@ -10,7 +10,10 @@
       "Bash(rm -f ./_tmp_gen_wood_photo.mjs ./_tmp_check_v2.mjs ./_tmp_p1_p5_v2.mjs)",
       "Bash(npm uninstall *)",
       "Bash(npm run *)",
-      "WebSearch"
+      "WebSearch",
+      "Bash(curl -sL -o public/models/face_landmarker.task \"https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/latest/face_landmarker.task\")",
+      "Bash(curl -sL -o public/models/selfie_segmenter.tflite \"https://storage.googleapis.com/mediapipe-models/image_segmenter/selfie_segmenter/float16/latest/selfie_segmenter.tflite\")",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:5173/photo-kiosk/index.html)"
     ]
   }
 }

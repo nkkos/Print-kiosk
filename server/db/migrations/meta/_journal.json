@@ -169,6 +169,13 @@
       "when": 1788861177008,
       "tag": "0023_blue_nebula",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1788868119784,
+      "tag": "0024_needy_mantis",
+      "breakpoints": true
     }
   ]
 }

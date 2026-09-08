@@ -317,6 +317,9 @@ interface PhotoDocumentBody {
   headHeightMinMm?: unknown;
   headHeightMaxMm?: unknown;
   eyeLineFromBottomMm?: unknown;
+  marginTopMm?: unknown;
+  headWidthMinMm?: unknown;
+  headWidthMaxMm?: unknown;
   backgroundRequirement?: unknown;
   printNotes?: unknown;
   copiesPerSheet?: unknown;
@@ -340,7 +343,10 @@ adminRouter.post('/api/admin/photo-documents', requireStaffSession, async (req, 
     !isFiniteNumber(body.dpi) ||
     !isFiniteNumber(body.headHeightMinMm) ||
     !isFiniteNumber(body.headHeightMaxMm) ||
-    !isFiniteNumber(body.eyeLineFromBottomMm)
+    // A document needs at least one vertical crop anchor — an eye-line
+    // figure (most issuers) or a top-margin figure (China-style) — but not
+    // necessarily both.
+    (!isFiniteNumber(body.eyeLineFromBottomMm) && !isFiniteNumber(body.marginTopMm))
   ) {
     res.status(400).json({ error: 'Invalid document' });
     return;
@@ -353,7 +359,12 @@ adminRouter.post('/api/admin/photo-documents', requireStaffSession, async (req, 
     dpi: body.dpi,
     headHeightMinMm: body.headHeightMinMm,
     headHeightMaxMm: body.headHeightMaxMm,
-    eyeLineFromBottomMm: body.eyeLineFromBottomMm,
+    eyeLineFromBottomMm: isFiniteNumber(body.eyeLineFromBottomMm)
+      ? body.eyeLineFromBottomMm
+      : undefined,
+    marginTopMm: isFiniteNumber(body.marginTopMm) ? body.marginTopMm : undefined,
+    headWidthMinMm: isFiniteNumber(body.headWidthMinMm) ? body.headWidthMinMm : undefined,
+    headWidthMaxMm: isFiniteNumber(body.headWidthMaxMm) ? body.headWidthMaxMm : undefined,
     backgroundRequirement:
       typeof body.backgroundRequirement === 'string' ? body.backgroundRequirement : undefined,
     printNotes: typeof body.printNotes === 'string' ? body.printNotes : undefined,
@@ -373,8 +384,19 @@ adminRouter.patch('/api/admin/photo-documents/:id', requireStaffSession, async (
     ...(isFiniteNumber(body.dpi) && { dpi: body.dpi }),
     ...(isFiniteNumber(body.headHeightMinMm) && { headHeightMinMm: body.headHeightMinMm }),
     ...(isFiniteNumber(body.headHeightMaxMm) && { headHeightMaxMm: body.headHeightMaxMm }),
-    ...(isFiniteNumber(body.eyeLineFromBottomMm) && {
-      eyeLineFromBottomMm: body.eyeLineFromBottomMm,
+    ...(body.eyeLineFromBottomMm !== undefined && {
+      eyeLineFromBottomMm: isFiniteNumber(body.eyeLineFromBottomMm)
+        ? body.eyeLineFromBottomMm
+        : null,
+    }),
+    ...(body.marginTopMm !== undefined && {
+      marginTopMm: isFiniteNumber(body.marginTopMm) ? body.marginTopMm : null,
+    }),
+    ...(body.headWidthMinMm !== undefined && {
+      headWidthMinMm: isFiniteNumber(body.headWidthMinMm) ? body.headWidthMinMm : null,
+    }),
+    ...(body.headWidthMaxMm !== undefined && {
+      headWidthMaxMm: isFiniteNumber(body.headWidthMaxMm) ? body.headWidthMaxMm : null,
     }),
     ...(body.backgroundRequirement !== undefined && {
       backgroundRequirement:

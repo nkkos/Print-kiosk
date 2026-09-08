@@ -15,7 +15,7 @@ interface CustomSizeScreenProps {
 export function CustomSizeScreen({ onConfirm }: CustomSizeScreenProps) {
   const [widthMm, setWidthMm] = useState('35');
   const [heightMm, setHeightMm] = useState('45');
-  const [marginMm, setMarginMm] = useState('');
+  const [marginTopMm, setMarginTopMm] = useState('');
   const [eyeLevelMm, setEyeLevelMm] = useState('');
 
   function handleSubmit(e: React.FormEvent) {
@@ -27,7 +27,7 @@ export function CustomSizeScreen({ onConfirm }: CustomSizeScreenProps) {
       label: `Свой размер ${width}×${height} мм`,
       widthMm: width,
       heightMm: height,
-      marginMm: marginMm ? Number(marginMm) : undefined,
+      marginTopMm: marginTopMm ? Number(marginTopMm) : undefined,
       eyeLineFromBottomMm: eyeLevelMm ? Number(eyeLevelMm) : undefined,
     });
   }
@@ -69,8 +69,8 @@ export function CustomSizeScreen({ onConfirm }: CustomSizeScreenProps) {
               type="number"
               id="custom-size-margin"
               className="pk-input"
-              value={marginMm}
-              onChange={(e) => setMarginMm(e.target.value)}
+              value={marginTopMm}
+              onChange={(e) => setMarginTopMm(e.target.value)}
             />
           </label>
           <label>

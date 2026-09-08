@@ -20,7 +20,15 @@ export interface PhotoDocument {
   dpi: number;
   headHeightMinMm: number;
   headHeightMaxMm: number;
-  eyeLineFromBottomMm: number;
+  // Vertical crop anchor — a document sets at least one of these two; some
+  // issuers (US, EU) publish an eye-line, others (China) publish a top
+  // margin instead and never give an eye-line figure at all.
+  eyeLineFromBottomMm: number | null;
+  marginTopMm: number | null;
+  // Distinct from photoWidthMm/photoHeightMm — how wide the HEAD itself must
+  // be, not the frame. Most issuers don't publish this; nullable.
+  headWidthMinMm: number | null;
+  headWidthMaxMm: number | null;
   backgroundRequirement: string | null;
   printNotes: string | null;
   copiesPerSheet: number;
@@ -41,6 +49,9 @@ const DOCUMENT_COLUMNS = {
   headHeightMinMm: photoDocuments.headHeightMinMm,
   headHeightMaxMm: photoDocuments.headHeightMaxMm,
   eyeLineFromBottomMm: photoDocuments.eyeLineFromBottomMm,
+  marginTopMm: photoDocuments.marginTopMm,
+  headWidthMinMm: photoDocuments.headWidthMinMm,
+  headWidthMaxMm: photoDocuments.headWidthMaxMm,
   backgroundRequirement: photoDocuments.backgroundRequirement,
   printNotes: photoDocuments.printNotes,
   copiesPerSheet: photoDocuments.copiesPerSheet,
@@ -71,7 +82,10 @@ export interface CreateDocumentParams {
   dpi: number;
   headHeightMinMm: number;
   headHeightMaxMm: number;
-  eyeLineFromBottomMm: number;
+  eyeLineFromBottomMm?: number;
+  marginTopMm?: number;
+  headWidthMinMm?: number;
+  headWidthMaxMm?: number;
   backgroundRequirement?: string;
   printNotes?: string;
   copiesPerSheet?: number;
@@ -90,7 +104,10 @@ export async function createDocument(params: CreateDocumentParams): Promise<Phot
       dpi: params.dpi,
       headHeightMinMm: params.headHeightMinMm,
       headHeightMaxMm: params.headHeightMaxMm,
-      eyeLineFromBottomMm: params.eyeLineFromBottomMm,
+      eyeLineFromBottomMm: params.eyeLineFromBottomMm ?? null,
+      marginTopMm: params.marginTopMm ?? null,
+      headWidthMinMm: params.headWidthMinMm ?? null,
+      headWidthMaxMm: params.headWidthMaxMm ?? null,
       backgroundRequirement: params.backgroundRequirement ?? null,
       printNotes: params.printNotes ?? null,
       ...(params.copiesPerSheet != null ? { copiesPerSheet: params.copiesPerSheet } : {}),
@@ -108,7 +125,10 @@ export interface UpdateDocumentParams {
   dpi?: number;
   headHeightMinMm?: number;
   headHeightMaxMm?: number;
-  eyeLineFromBottomMm?: number;
+  eyeLineFromBottomMm?: number | null;
+  marginTopMm?: number | null;
+  headWidthMinMm?: number | null;
+  headWidthMaxMm?: number | null;
   backgroundRequirement?: string | null;
   printNotes?: string | null;
   copiesPerSheet?: number;

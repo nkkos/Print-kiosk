@@ -164,7 +164,10 @@ export interface PhotoDocument {
   dpi: number;
   headHeightMinMm: number;
   headHeightMaxMm: number;
-  eyeLineFromBottomMm: number;
+  eyeLineFromBottomMm: number | null;
+  marginTopMm: number | null;
+  headWidthMinMm: number | null;
+  headWidthMaxMm: number | null;
   backgroundRequirement: string | null;
   printNotes: string | null;
   copiesPerSheet: number;
@@ -181,7 +184,11 @@ export interface PhotoDocumentFormFields {
   dpi: number;
   headHeightMinMm: number;
   headHeightMaxMm: number;
-  eyeLineFromBottomMm: number;
+  // A document sets at least one of these two vertical anchors.
+  eyeLineFromBottomMm?: number;
+  marginTopMm?: number;
+  headWidthMinMm?: number;
+  headWidthMaxMm?: number;
   backgroundRequirement?: string;
   printNotes?: string;
   copiesPerSheet: number;

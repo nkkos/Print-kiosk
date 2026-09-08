@@ -3,8 +3,10 @@ import {
   computeGuideRect,
   computeGuideMarkers,
   computeSourceCropRect,
+  computeDetectedCropRect,
   cropAndScaleToDataUrl,
 } from '../cropUtil';
+import { detectFace, preloadFaceDetection } from '../faceDetection';
 import type { CaptureSpec } from '../types';
 
 interface CaptureScreenProps {
@@ -18,9 +20,17 @@ interface CaptureScreenProps {
 // real-device integration in this project is tested against real hardware rather
 // than faked, even before the final production hardware is picked.
 //
-// Crop is frame-guide + geometry only this pass (cropUtil.ts) — the customer
-// self-aligns against an on-screen guide box, no face detection. Automatic
-// face-centered cropping (MediaPipe) is a deliberate, separate follow-up.
+// The on-screen guide is a loose self-alignment aid only (cropUtil.ts). For any
+// document with a head-height band (headHeightMinMm/MaxMm — every real DB
+// PhotoDocument), the actual crop is refined from real MediaPipe face-landmark
+// detection run on the captured frame (jiggly-beaming-dragonfly.md) — but
+// detection is strictly an opportunistic precision layer, never a gate: the
+// kiosk must take whatever photo the customer gives it (confirmed after real
+// testing kept getting rejected over ordinary seating distance). If detection
+// can't find exactly one face, or the ideal detected-crop geometry doesn't
+// fit the frame, capture silently falls back to (or clamps toward) the same
+// guide-based crop "Произвольный размер" always uses — the customer never
+// sees a retry prompt over any of this.
 export function CaptureScreen({ spec, onCaptured }: CaptureScreenProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const frameRef = useRef<HTMLDivElement>(null);
@@ -29,6 +39,13 @@ export function CaptureScreen({ spec, onCaptured }: CaptureScreenProps) {
   const [error, setError] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
   const [frameSize, setFrameSize] = useState({ width: 0, height: 0 });
+  const [processing, setProcessing] = useState(false);
+
+  const hasHeadHeightBand = spec.headHeightMinMm != null && spec.headHeightMaxMm != null;
+
+  useEffect(() => {
+    if (hasHeadHeightBand) preloadFaceDetection();
+  }, [hasHeadHeightBand]);
 
   useEffect(() => {
     let cancelled = false;
@@ -68,14 +85,40 @@ export function CaptureScreen({ spec, onCaptured }: CaptureScreenProps) {
     frameSize.width > 0 ? computeGuideRect(frameSize.width, frameSize.height, spec) : null;
   const guideMarkers = guideRect ? computeGuideMarkers(guideRect, spec) : null;
 
-  const capture = useCallback(() => {
+  const captureWithGuide = useCallback(
+    (video: HTMLVideoElement) => {
+      const guide =
+        frameSize.width > 0 ? computeGuideRect(frameSize.width, frameSize.height, spec) : null;
+      if (!guide) return;
+      const sourceRect = computeSourceCropRect(video, frameSize, guide);
+      onCaptured(cropAndScaleToDataUrl(video, sourceRect, spec));
+    },
+    [frameSize, spec, onCaptured],
+  );
+
+  const capture = useCallback(async () => {
     const video = videoRef.current;
-    const guide =
-      frameSize.width > 0 ? computeGuideRect(frameSize.width, frameSize.height, spec) : null;
-    if (!video || !guide) return;
-    const sourceRect = computeSourceCropRect(video, frameSize, guide);
-    onCaptured(cropAndScaleToDataUrl(video, sourceRect, spec));
-  }, [frameSize, spec, onCaptured]);
+    if (!video) return;
+
+    if (!hasHeadHeightBand) {
+      captureWithGuide(video);
+      return;
+    }
+
+    setProcessing(true);
+    const detected = await detectFace(video);
+    setProcessing(false);
+
+    if (!detected.ok) {
+      // Couldn't find exactly one face (no-face / multiple-faces) — fall
+      // back to the plain guide crop rather than ever refusing the shot.
+      captureWithGuide(video);
+      return;
+    }
+
+    const rect = computeDetectedCropRect(detected, spec, video.videoWidth, video.videoHeight);
+    onCaptured(cropAndScaleToDataUrl(video, rect, spec));
+  }, [spec, onCaptured, hasHeadHeightBand, captureWithGuide]);
 
   // Capture fires from an effect (not inside the setCountdown updater below) —
   // calling onCaptured's parent setState directly from a functional state
@@ -83,7 +126,7 @@ export function CaptureScreen({ spec, onCaptured }: CaptureScreenProps) {
   // about even though it "works."
   useEffect(() => {
     if (countdown === 0) {
-      capture();
+      void capture();
       setCountdown(null);
     }
   }, [countdown, capture]);
@@ -124,7 +167,7 @@ export function CaptureScreen({ spec, onCaptured }: CaptureScreenProps) {
                 }}
               />
             )}
-            {guideMarkers && (
+            {guideMarkers?.eyeLineY !== undefined && (
               <div className="pk-guide-eyeline" style={{ top: guideMarkers.eyeLineY }} />
             )}
             {guideMarkers?.headTopY !== undefined && (
@@ -133,9 +176,20 @@ export function CaptureScreen({ spec, onCaptured }: CaptureScreenProps) {
             {guideMarkers?.headBottomY !== undefined && (
               <div className="pk-guide-headband" style={{ top: guideMarkers.headBottomY }} />
             )}
+            {guideMarkers?.headLeftX !== undefined && (
+              <div className="pk-guide-widthband" style={{ left: guideMarkers.headLeftX }} />
+            )}
+            {guideMarkers?.headRightX !== undefined && (
+              <div className="pk-guide-widthband" style={{ left: guideMarkers.headRightX }} />
+            )}
             {countdown !== null && (
               <div className="pk-countdown" id="capture-countdown">
                 {countdown}
+              </div>
+            )}
+            {processing && (
+              <div className="pk-countdown" id="capture-processing">
+                Обрабатываем…
               </div>
             )}
           </div>
@@ -144,9 +198,9 @@ export function CaptureScreen({ spec, onCaptured }: CaptureScreenProps) {
             className="pk-btn pk-btn-primary"
             id="capture-start"
             onClick={startCountdown}
-            disabled={!ready || countdown !== null}
+            disabled={!ready || countdown !== null || processing}
           >
-            {ready ? 'Снять кадр (3-2-1)' : 'Подключаем камеру…'}
+            {processing ? 'Обрабатываем…' : ready ? 'Снять кадр (3-2-1)' : 'Подключаем камеру…'}
           </button>
         </>
       )}

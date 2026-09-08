@@ -17,7 +17,10 @@ export interface PhotoDocument {
   dpi: number;
   headHeightMinMm: number;
   headHeightMaxMm: number;
-  eyeLineFromBottomMm: number;
+  eyeLineFromBottomMm: number | null;
+  marginTopMm: number | null;
+  headWidthMinMm: number | null;
+  headWidthMaxMm: number | null;
   backgroundRequirement: string | null;
   printNotes: string | null;
   copiesPerSheet: number;

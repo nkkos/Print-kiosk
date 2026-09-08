@@ -509,7 +509,21 @@ export const photoDocuments = pgTable(
     dpi: integer('dpi').notNull(),
     headHeightMinMm: real('head_height_min_mm').notNull(),
     headHeightMaxMm: real('head_height_max_mm').notNull(),
-    eyeLineFromBottomMm: real('eye_line_from_bottom_mm').notNull(),
+    // Vertical anchor for the crop — most countries (US, EU) publish this;
+    // some (China) instead publish marginTopMm below and never give an
+    // eye-line figure at all. Nullable now that we know both conventions
+    // exist in the wild (docs/photo-kiosk-requirements.md's country research);
+    // a document should set at least one of the two.
+    eyeLineFromBottomMm: real('eye_line_from_bottom_mm'),
+    // Alternative vertical anchor: empty space between the top of the photo
+    // and the crown of the head (China: 3-5mm), used instead of an eye-line
+    // figure when the issuer doesn't publish one.
+    marginTopMm: real('margin_top_mm'),
+    // Distinct from photoWidthMm — constrains how wide the HEAD itself must
+    // be within the frame (China: 15-22mm). Most issuers don't publish this;
+    // nullable.
+    headWidthMinMm: real('head_width_min_mm'),
+    headWidthMaxMm: real('head_width_max_mm'),
     // Format/print fields — don't affect the crop itself. copiesPerSheet:
     // real-world ID-photo printing convention is N copies of the ONE
     // confirmed shot on one A4 sheet (confirmed with the product owner:

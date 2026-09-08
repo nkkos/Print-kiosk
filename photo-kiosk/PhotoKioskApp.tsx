@@ -326,7 +326,10 @@ export function PhotoKioskApp() {
               dpi: document.dpi,
               headHeightMinMm: document.headHeightMinMm,
               headHeightMaxMm: document.headHeightMaxMm,
-              eyeLineFromBottomMm: document.eyeLineFromBottomMm,
+              eyeLineFromBottomMm: document.eyeLineFromBottomMm ?? undefined,
+              marginTopMm: document.marginTopMm ?? undefined,
+              headWidthMinMm: document.headWidthMinMm ?? undefined,
+              headWidthMaxMm: document.headWidthMaxMm ?? undefined,
               copiesPerSheet: document.copiesPerSheet,
               priceCents: document.priceCents,
             });
@@ -360,9 +363,10 @@ export function PhotoKioskApp() {
         />
       )}
 
-      {screen === 'shot-review' && pendingShot && (
+      {screen === 'shot-review' && pendingShot && spec && (
         <ShotReviewScreen
           shotDataUrl={pendingShot}
+          spec={spec}
           onRetake={() => {
             setPendingShot(null);
             setScreen('capture');

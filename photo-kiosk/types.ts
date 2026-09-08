@@ -15,12 +15,18 @@ export interface CaptureSpec {
   // (that branch never collects this).
   headHeightMinMm?: number;
   headHeightMaxMm?: number;
+  // Vertical crop anchor — a spec sets at least one of these two (mirrors
+  // server/db/schema.ts's photoDocuments: most issuers publish an eye-line,
+  // China-style ones publish a top margin instead and never give an
+  // eye-line). cropUtil.ts falls back to a default eye-line ratio only when
+  // BOTH are absent (the "Произвольный размер" branch left blank).
   eyeLineFromBottomMm?: number;
-  // Only ever set by "Произвольный размер" — an admin-managed Document has no
-  // equivalent field. Not yet consumed by the manual-guide crop (the guide
-  // box is already sized to the exact target aspect ratio) — will matter once
-  // the deferred automatic face-centered crop replaces this simplified pass.
-  marginMm?: number;
+  marginTopMm?: number;
+  // Distinct from widthMm — how wide the HEAD itself must be, not the frame.
+  // Only ever set when built from a DB PhotoDocument; "Произвольный размер"
+  // doesn't collect this.
+  headWidthMinMm?: number;
+  headWidthMaxMm?: number;
   // Admin-configurable per Document (server/db/schema.ts's photoDocuments.copiesPerSheet)
   // — how many photos are tiled onto ONE A4 sheet, not how many sheets get
   // printed (that's PhotoCartItem.quantity, a separate customer-editable

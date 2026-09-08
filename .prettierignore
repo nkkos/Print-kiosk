@@ -1,0 +1,3 @@
+# Vendored MediaPipe WASM runtime glue — third-party build output, not
+# project source (see photo-kiosk/faceDetection.ts).
+public/models/wasm/

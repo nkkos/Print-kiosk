@@ -270,11 +270,76 @@ input {
 
 /* ---------- Shot review / gallery ---------- */
 
+.pk-shot-review-body {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: var(--space-l);
+  margin-bottom: var(--space-l);
+}
+.pk-shot-preview-wrap {
+  position: relative;
+  display: inline-block;
+  max-width: 24rem;
+  width: 100%;
+}
 .pk-shot-preview {
   max-width: 24rem;
   width: 100%;
   border-radius: var(--radius-medium);
-  margin-bottom: var(--space-l);
+  display: block;
+}
+.pk-shot-guide {
+  position: absolute;
+  pointer-events: none;
+}
+.pk-shot-guide-eyeline {
+  left: 0;
+  right: 0;
+  border-top: 2px dashed #f5c518;
+}
+.pk-shot-guide-headband {
+  left: 0;
+  right: 0;
+  border-top: 2px dashed #2ecc71;
+}
+.pk-shot-guide-widthband {
+  top: 0;
+  bottom: 0;
+  border-left: 2px dashed #3498db;
+}
+.pk-shot-legend {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-s);
+  font: var(--font-body);
+  text-align: left;
+  align-self: center;
+  max-width: 16rem;
+}
+.pk-shot-legend li {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+.pk-shot-legend-swatch {
+  flex: none;
+  display: inline-block;
+  width: 1.5rem;
+  border-top: 2px dashed currentColor;
+}
+.pk-shot-legend-eyeline {
+  color: #f5c518;
+}
+.pk-shot-legend-headband {
+  color: #2ecc71;
+}
+.pk-shot-legend-widthband {
+  color: #3498db;
 }
 
 .pk-gallery-grid {
@@ -319,6 +384,13 @@ input {
   left: 0;
   right: 0;
   border-top: 1px dashed rgba(255, 255, 255, 0.85);
+  pointer-events: none;
+}
+.pk-guide-widthband {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-left: 1px dashed rgba(255, 255, 255, 0.85);
   pointer-events: none;
 }
 

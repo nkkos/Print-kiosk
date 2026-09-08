@@ -26,6 +26,9 @@ function emptyForm(countryId: string): PhotoDocumentFormFields {
     headHeightMinMm: 32,
     headHeightMaxMm: 36,
     eyeLineFromBottomMm: 30,
+    marginTopMm: undefined,
+    headWidthMinMm: undefined,
+    headWidthMaxMm: undefined,
     backgroundRequirement: '',
     printNotes: '',
     copiesPerSheet: 6,
@@ -106,7 +109,10 @@ export function PhotoDocumentsScreen({ session }: PhotoDocumentsScreenProps) {
       dpi: doc.dpi,
       headHeightMinMm: doc.headHeightMinMm,
       headHeightMaxMm: doc.headHeightMaxMm,
-      eyeLineFromBottomMm: doc.eyeLineFromBottomMm,
+      eyeLineFromBottomMm: doc.eyeLineFromBottomMm ?? undefined,
+      marginTopMm: doc.marginTopMm ?? undefined,
+      headWidthMinMm: doc.headWidthMinMm ?? undefined,
+      headWidthMaxMm: doc.headWidthMaxMm ?? undefined,
       backgroundRequirement: doc.backgroundRequirement ?? '',
       printNotes: doc.printNotes ?? '',
       copiesPerSheet: doc.copiesPerSheet,
@@ -124,6 +130,10 @@ export function PhotoDocumentsScreen({ session }: PhotoDocumentsScreenProps) {
   async function handleSaveDocument(e: React.FormEvent) {
     e.preventDefault();
     if (!form) return;
+    if (form.eyeLineFromBottomMm == null && form.marginTopMm == null) {
+      setError('Укажите линию глаз или отступ от верха — нужен хотя бы один ориентир.');
+      return;
+    }
     setSaving(true);
     setError(null);
     try {
@@ -311,9 +321,70 @@ export function PhotoDocumentsScreen({ session }: PhotoDocumentsScreenProps) {
                       type="number"
                       className="admin-input"
                       id="photo-document-form-eye-line"
-                      value={form.eyeLineFromBottomMm}
+                      placeholder="если не задано — используем отступ сверху"
+                      value={form.eyeLineFromBottomMm ?? ''}
                       onChange={(e) =>
-                        setForm({ ...form, eyeLineFromBottomMm: Number(e.target.value) })
+                        setForm({
+                          ...form,
+                          eyeLineFromBottomMm:
+                            e.target.value === '' ? undefined : Number(e.target.value),
+                        })
+                      }
+                    />
+                  </div>
+                </div>
+                <p className="empty-note" style={{ margin: '-0.5rem 0 0.75rem' }}>
+                  Нужен хотя бы один вертикальный ориентир — линия глаз или отступ сверху (некоторые
+                  страны, например Китай, задают только отступ и не публикуют линию глаз).
+                </p>
+                <div className="stepper-row">
+                  <div>
+                    <span className="stepper-label">Отступ от верха до макушки, мм</span>
+                    <input
+                      type="number"
+                      className="admin-input"
+                      id="photo-document-form-margin-top"
+                      placeholder="напр. 3–5 (Китай)"
+                      value={form.marginTopMm ?? ''}
+                      onChange={(e) =>
+                        setForm({
+                          ...form,
+                          marginTopMm: e.target.value === '' ? undefined : Number(e.target.value),
+                        })
+                      }
+                    />
+                  </div>
+                  <div>
+                    <span className="stepper-label">Ширина головы мин, мм</span>
+                    <input
+                      type="number"
+                      className="admin-input"
+                      id="photo-document-form-head-width-min"
+                      placeholder="необязательно"
+                      value={form.headWidthMinMm ?? ''}
+                      onChange={(e) =>
+                        setForm({
+                          ...form,
+                          headWidthMinMm:
+                            e.target.value === '' ? undefined : Number(e.target.value),
+                        })
+                      }
+                    />
+                  </div>
+                  <div>
+                    <span className="stepper-label">Ширина головы макс, мм</span>
+                    <input
+                      type="number"
+                      className="admin-input"
+                      id="photo-document-form-head-width-max"
+                      placeholder="необязательно"
+                      value={form.headWidthMaxMm ?? ''}
+                      onChange={(e) =>
+                        setForm({
+                          ...form,
+                          headWidthMaxMm:
+                            e.target.value === '' ? undefined : Number(e.target.value),
+                        })
                       }
                     />
                   </div>
