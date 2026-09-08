@@ -29,8 +29,18 @@ function emptyForm(countryId: string): PhotoDocumentFormFields {
     backgroundRequirement: '',
     printNotes: '',
     copiesPerSheet: 6,
+    priceCents: 500,
     instructions: '',
   };
+}
+
+// Same euro<->cents input pattern as admin/screens/ShopCatalogScreen.tsx's
+// own priceInput handling.
+function centsToEuroInput(cents: number): string {
+  return (cents / 100).toFixed(2);
+}
+function euroInputToCents(value: string): number {
+  return Math.round(parseFloat(value || '0') * 100);
 }
 
 // Photo kiosk's Country -> Document requirement data (docs/photo-kiosk-requirements.md's
@@ -45,6 +55,7 @@ export function PhotoDocumentsScreen({ session }: PhotoDocumentsScreenProps) {
   const [newCountryName, setNewCountryName] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<PhotoDocumentFormFields | null>(null);
+  const [priceInput, setPriceInput] = useState('5.00');
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -82,6 +93,7 @@ export function PhotoDocumentsScreen({ session }: PhotoDocumentsScreenProps) {
     if (!selectedCountryId) return;
     setEditingId('new');
     setForm(emptyForm(selectedCountryId));
+    setPriceInput('5.00');
   }
 
   function startEditDocument(doc: PhotoDocument) {
@@ -98,8 +110,10 @@ export function PhotoDocumentsScreen({ session }: PhotoDocumentsScreenProps) {
       backgroundRequirement: doc.backgroundRequirement ?? '',
       printNotes: doc.printNotes ?? '',
       copiesPerSheet: doc.copiesPerSheet,
+      priceCents: doc.priceCents,
       instructions: doc.instructions ?? '',
     });
+    setPriceInput(centsToEuroInput(doc.priceCents));
   }
 
   function cancelEdit() {
@@ -113,10 +127,11 @@ export function PhotoDocumentsScreen({ session }: PhotoDocumentsScreenProps) {
     setSaving(true);
     setError(null);
     try {
+      const fields = { ...form, priceCents: euroInputToCents(priceInput) };
       if (editingId === 'new') {
-        await createPhotoDocument(session.sessionToken, form);
+        await createPhotoDocument(session.sessionToken, fields);
       } else if (editingId) {
-        await updatePhotoDocument(session.sessionToken, editingId, form);
+        await updatePhotoDocument(session.sessionToken, editingId, fields);
       }
       cancelEdit();
       reloadDocuments();
@@ -319,16 +334,29 @@ export function PhotoDocumentsScreen({ session }: PhotoDocumentsScreenProps) {
                   value={form.printNotes}
                   onChange={(e) => setForm({ ...form, printNotes: e.target.value })}
                 />
-                <div>
-                  <span className="stepper-label">Копий на листе А4</span>
-                  <input
-                    type="number"
-                    className="admin-input"
-                    id="photo-document-form-copies"
-                    min={1}
-                    value={form.copiesPerSheet}
-                    onChange={(e) => setForm({ ...form, copiesPerSheet: Number(e.target.value) })}
-                  />
+                <div className="stepper-row">
+                  <div>
+                    <span className="stepper-label">Копий на листе А4</span>
+                    <input
+                      type="number"
+                      className="admin-input"
+                      id="photo-document-form-copies"
+                      min={1}
+                      value={form.copiesPerSheet}
+                      onChange={(e) => setForm({ ...form, copiesPerSheet: Number(e.target.value) })}
+                    />
+                  </div>
+                  <div>
+                    <span className="stepper-label">Цена за копию, €</span>
+                    <input
+                      type="text"
+                      inputMode="decimal"
+                      className="admin-input"
+                      id="photo-document-form-price"
+                      value={priceInput}
+                      onChange={(e) => setPriceInput(e.target.value)}
+                    />
+                  </div>
                 </div>
                 <textarea
                   className="admin-input"
@@ -368,6 +396,7 @@ export function PhotoDocumentsScreen({ session }: PhotoDocumentsScreenProps) {
                     {doc.photoWidthMm}×{doc.photoHeightMm} мм
                   </span>
                   <span className="incident-target">{doc.copiesPerSheet} копий/лист</span>
+                  <span className="incident-target">{(doc.priceCents / 100).toFixed(2)} €</span>
                   <span className="incident-target">{doc.active ? 'активен' : 'скрыт'}</span>
                   <button
                     type="button"

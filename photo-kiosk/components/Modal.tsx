@@ -15,8 +15,14 @@ export function Modal({ onClose, children }: ModalProps) {
   return (
     <div className="pk-modal-overlay">
       <div className="pk-modal-content">
-        <button type="button" className="pk-btn pk-btn-ghost" id="modal-close" onClick={onClose}>
-          Закрыть
+        <button
+          type="button"
+          className="pk-modal-close"
+          id="modal-close"
+          onClick={onClose}
+          aria-label="Закрыть"
+        >
+          ×
         </button>
         {children}
       </div>

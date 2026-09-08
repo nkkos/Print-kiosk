@@ -320,6 +320,7 @@ interface PhotoDocumentBody {
   backgroundRequirement?: unknown;
   printNotes?: unknown;
   copiesPerSheet?: unknown;
+  priceCents?: unknown;
   instructions?: unknown;
   active?: unknown;
 }
@@ -357,6 +358,7 @@ adminRouter.post('/api/admin/photo-documents', requireStaffSession, async (req, 
       typeof body.backgroundRequirement === 'string' ? body.backgroundRequirement : undefined,
     printNotes: typeof body.printNotes === 'string' ? body.printNotes : undefined,
     copiesPerSheet: isFiniteNumber(body.copiesPerSheet) ? body.copiesPerSheet : undefined,
+    priceCents: isFiniteNumber(body.priceCents) ? body.priceCents : undefined,
     instructions: typeof body.instructions === 'string' ? body.instructions : undefined,
   });
   res.status(201).json(document);
@@ -382,6 +384,7 @@ adminRouter.patch('/api/admin/photo-documents/:id', requireStaffSession, async (
       printNotes: typeof body.printNotes === 'string' ? body.printNotes : null,
     }),
     ...(isFiniteNumber(body.copiesPerSheet) && { copiesPerSheet: body.copiesPerSheet }),
+    ...(isFiniteNumber(body.priceCents) && { priceCents: body.priceCents }),
     ...(body.instructions !== undefined && {
       instructions: typeof body.instructions === 'string' ? body.instructions : null,
     }),

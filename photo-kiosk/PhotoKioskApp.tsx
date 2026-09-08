@@ -14,8 +14,10 @@ import { GalleryScreen } from './screens/GalleryScreen';
 import { PaymentScreen } from './screens/PaymentScreen';
 import { PrintScreen } from './screens/PrintScreen';
 import { EndingSessionScreen } from './screens/EndingSessionScreen';
-import { composeA4Sheet, DEFAULT_COPIES_PER_SHEET } from './sheetComposer';
+import { FinalisingSessionScreen } from './screens/FinalisingSessionScreen';
+import { composeA4Sheet, DEFAULT_PHOTOS_PER_SHEET } from './sheetComposer';
 import { recordPhotoOrder, markPhotoOrdersPrinted } from './services/photoKioskApi';
+import { DEFAULT_PRICE_CENTS } from './pricing';
 import type { CaptureSpec, PhotoCartItem } from './types';
 
 type Screen =
@@ -30,10 +32,22 @@ type Screen =
   | 'gallery'
   | 'payment'
   | 'print'
+  | 'finalising-session'
   | 'ending-session';
 
 const SESSION_ID_STORAGE_KEY = 'photo-kiosk.sessionId';
 const ENDING_SESSION_DELAY_MS = 1200;
+// Privacy safeguard, independent of the session-level idle timer below: the
+// idle timer resets on ANY touch, from anyone — on a kiosk with continuous
+// foot traffic it can never fire, so it alone cannot bound how long an
+// abandoned cart item (with a real photo thumbnail, unlike the document
+// kiosk's cart, which only ever shows a filename) stays reachable by the
+// next customer. This sweep drops unpaid cart items by wall-clock age
+// instead, unaffected by anyone else's activity. 3 minutes is a placeholder
+// balancing "long enough for a customer legitimately adding a second/third
+// document type" against "short enough to bound exposure" — adjust freely.
+const CART_ITEM_TTL_MS = 3 * 60 * 1000;
+const CART_SWEEP_INTERVAL_MS = 5 * 1000;
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -58,6 +72,13 @@ export function PhotoKioskApp() {
     'select-country',
   );
   const [cart, setCart] = useState<PhotoCartItem[]>([]);
+  // Snapshot of the checked subset at "Оплатить" time (docs/cart-requirements.md,
+  // "Selection for payment") — mirrors src/App.tsx's own paymentItems/cart
+  // split: unchecked items stay behind in `cart`, untouched, until this batch
+  // either pays (removed from cart, moved into printingItems) or is cancelled
+  // (cart was never touched, so there's nothing to restore).
+  const [paymentItems, setPaymentItems] = useState<PhotoCartItem[]>([]);
+  const [printingItems, setPrintingItems] = useState<PhotoCartItem[]>([]);
   const [isComposingSheet, setIsComposingSheet] = useState(false);
   const [isRecordingPayment, setIsRecordingPayment] = useState(false);
   const [printedOrderIds, setPrintedOrderIds] = useState<string[]>([]);
@@ -66,7 +87,12 @@ export function PhotoKioskApp() {
   // customer always sees what will really print (N copies of the one
   // confirmed shot), not a raw individual frame.
   const [sheetPreview, setSheetPreview] = useState<string | null>(null);
-  const copies = spec?.copiesPerSheet ?? DEFAULT_COPIES_PER_SHEET;
+  const photosPerSheet = spec?.copiesPerSheet ?? DEFAULT_PHOTOS_PER_SHEET;
+  const unitPriceCents = spec?.priceCents ?? DEFAULT_PRICE_CENTS;
+  // Cart popup open/closed is owned here (not inside PhotoKioskLayout) so
+  // "Добавить в корзину" can open it explicitly to show the customer what
+  // just happened — see PhotoKioskLayout.tsx's isCartOpen prop comment.
+  const [isCartOpen, setIsCartOpen] = useState(false);
 
   useEffect(() => {
     if (!spec || !acceptedShot) {
@@ -74,13 +100,26 @@ export function PhotoKioskApp() {
       return;
     }
     let cancelled = false;
-    composeA4Sheet(acceptedShot, spec, copies).then((dataUrl) => {
+    composeA4Sheet(acceptedShot, spec, photosPerSheet).then((dataUrl) => {
       if (!cancelled) setSheetPreview(dataUrl);
     });
     return () => {
       cancelled = true;
     };
-  }, [acceptedShot, spec, copies]);
+  }, [acceptedShot, spec, photosPerSheet]);
+
+  // Cart-item expiry sweep — see CART_ITEM_TTL_MS's comment above. Runs
+  // regardless of `screen`, so an abandoned cart is cleared out even if the
+  // next customer immediately starts using the kiosk and keeps the
+  // session-level idle timer perpetually reset.
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      setCart((current) =>
+        current.filter((item) => Date.now() - item.createdAt < CART_ITEM_TTL_MS),
+      );
+    }, CART_SWEEP_INTERVAL_MS);
+    return () => clearInterval(intervalId);
+  }, []);
 
   function ensureSession(): string {
     if (sessionId) return sessionId;
@@ -116,6 +155,9 @@ export function PhotoKioskApp() {
         setPendingShot(null);
         setAcceptedShot(null);
         setCart([]);
+        setPaymentItems([]);
+        setPrintingItems([]);
+        setIsCartOpen(false);
         setPrintedOrderIds([]);
         setScreen('welcome');
       });
@@ -126,14 +168,16 @@ export function PhotoKioskApp() {
   async function handleAddToCart() {
     if (!spec || !acceptedShot) return;
     setIsComposingSheet(true);
-    const sheetPreviewDataUrl = await composeA4Sheet(acceptedShot, spec, copies);
+    const sheetPreviewDataUrl = await composeA4Sheet(acceptedShot, spec, photosPerSheet);
     setCart((prev) => [
       ...prev,
       {
         id: crypto.randomUUID(),
         spec,
         shot: acceptedShot,
-        copies,
+        photosPerSheet,
+        unitPriceCents,
+        quantity: 1,
         sheetPreviewDataUrl,
         createdAt: Date.now(),
       },
@@ -142,16 +186,38 @@ export function PhotoKioskApp() {
     setAcceptedShot(null);
     setIsComposingSheet(false);
     setScreen('menu');
+    // Opens the Cart so the customer actually sees what was just added,
+    // instead of a silent footer star marker (see PhotoKioskLayout.tsx's
+    // isCartOpen prop comment).
+    setIsCartOpen(true);
   }
 
   function handleRemoveCartItem(id: string) {
     setCart((prev) => prev.filter((item) => item.id !== id));
   }
 
+  function handleUpdateCartItemQuantity(id: string, quantity: number) {
+    setCart((prev) =>
+      prev.map((item) => (item.id === id ? { ...item, quantity: Math.max(1, quantity) } : item)),
+    );
+  }
+
+  function handleProceedToPayment(selectedItems: PhotoCartItem[]) {
+    ensureSession();
+    setPaymentItems(selectedItems);
+    setScreen('payment');
+  }
+
+  function handleCancelPayment() {
+    // Cart was never touched for this batch — nothing to restore.
+    setPaymentItems([]);
+    setScreen('menu');
+  }
+
   async function handlePaymentSuccess() {
     setIsRecordingPayment(true);
     const orderIds = await Promise.all(
-      cart.map((item) =>
+      paymentItems.map((item) =>
         recordPhotoOrder({
           sessionId,
           spec: {
@@ -160,11 +226,20 @@ export function PhotoKioskApp() {
             heightMm: item.spec.heightMm,
             dpi: item.spec.dpi ?? null,
           },
-          shotCount: item.copies,
+          shotCount: item.photosPerSheet,
+          quantity: item.quantity,
+          amountCents: item.unitPriceCents * item.quantity,
         }).then((order) => order.id),
       ),
     );
     setPrintedOrderIds(orderIds);
+    // Only the paid batch leaves the cart — anything left unchecked stays
+    // behind (docs/cart-requirements.md, "Selection for payment").
+    setCart((current) =>
+      current.filter((item) => !paymentItems.some((paid) => paid.id === item.id)),
+    );
+    setPrintingItems(paymentItems);
+    setPaymentItems([]);
     setIsRecordingPayment(false);
     setScreen('print');
   }
@@ -173,9 +248,9 @@ export function PhotoKioskApp() {
     await markPhotoOrdersPrinted(printedOrderIds).catch((err: unknown) => {
       console.error('[PhotoKioskApp] markPhotoOrdersPrinted failed:', err);
     });
-    setCart([]);
+    setPrintingItems([]);
     setPrintedOrderIds([]);
-    setScreen('welcome');
+    setScreen('finalising-session');
   }
 
   const onBack: (() => void) | undefined = (
@@ -191,6 +266,11 @@ export function PhotoKioskApp() {
       gallery: undefined,
       payment: undefined,
       print: undefined,
+      // Same destination as Home (docs/domain/kiosk-session.md,
+      // "Finalising session's Back action leads to the Welcome Screen") —
+      // the order has been delivered, so this just navigates, without
+      // ending the session (the user may want to print something else).
+      'finalising-session': () => setScreen('welcome'),
       'ending-session': undefined,
     } satisfies Record<Screen, (() => void) | undefined>
   )[screen];
@@ -198,7 +278,8 @@ export function PhotoKioskApp() {
   // End Session is blocked from the moment payment begins until printing
   // completes or fails (docs/domain/kiosk-session.md: "Blocked during a
   // committed transaction") — mirrors the main kiosk's Payment/Print screens
-  // both passing sessionActive={false}.
+  // both passing sessionActive={false}. Available again on Finalising
+  // Session, since the order has now been delivered.
   const sessionActive =
     sessionId !== null && screen !== 'ending-session' && screen !== 'payment' && screen !== 'print';
 
@@ -209,10 +290,10 @@ export function PhotoKioskApp() {
       onBack={onBack}
       cartItems={cart}
       onRemoveCartItem={handleRemoveCartItem}
-      onProceedToPayment={() => {
-        ensureSession();
-        setScreen('payment');
-      }}
+      onUpdateCartItemQuantity={handleUpdateCartItemQuantity}
+      isCartOpen={isCartOpen}
+      onCartOpenChange={setIsCartOpen}
+      onProceedToPayment={handleProceedToPayment}
     >
       {screen === 'welcome' && (
         <WelcomeScreen
@@ -246,6 +327,8 @@ export function PhotoKioskApp() {
               headHeightMinMm: document.headHeightMinMm,
               headHeightMaxMm: document.headHeightMaxMm,
               eyeLineFromBottomMm: document.eyeLineFromBottomMm,
+              copiesPerSheet: document.copiesPerSheet,
+              priceCents: document.priceCents,
             });
             setConfigOrigin('select-country');
             setScreen('confirm-config');
@@ -296,7 +379,7 @@ export function PhotoKioskApp() {
         <GalleryScreen
           spec={spec}
           hasAcceptedShot={acceptedShot !== null}
-          copies={copies}
+          copies={photosPerSheet}
           sheetPreview={sheetPreview}
           onRetake={() => {
             setAcceptedShot(null);
@@ -309,14 +392,18 @@ export function PhotoKioskApp() {
 
       {screen === 'payment' && (
         <PaymentScreen
-          cartItems={cart}
+          items={paymentItems}
           onPaymentSuccess={handlePaymentSuccess}
-          onCancelPayment={() => setScreen('menu')}
+          onCancelPayment={handleCancelPayment}
           isRecording={isRecordingPayment}
         />
       )}
 
-      {screen === 'print' && <PrintScreen cartItems={cart} onPrintComplete={handlePrintComplete} />}
+      {screen === 'print' && (
+        <PrintScreen items={printingItems} onPrintComplete={handlePrintComplete} />
+      )}
+
+      {screen === 'finalising-session' && <FinalisingSessionScreen />}
 
       {screen === 'ending-session' && <EndingSessionScreen />}
     </PhotoKioskLayout>

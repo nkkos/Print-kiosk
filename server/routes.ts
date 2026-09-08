@@ -899,13 +899,17 @@ router.post('/api/photo-orders', async (req, res) => {
     sessionId?: unknown;
     spec?: { label?: unknown; widthMm?: unknown; heightMm?: unknown; dpi?: unknown };
     shotCount?: unknown;
+    quantity?: unknown;
+    amountCents?: unknown;
   } | null;
   const spec = body?.spec;
   if (
     typeof spec?.label !== 'string' ||
     typeof spec?.widthMm !== 'number' ||
     typeof spec?.heightMm !== 'number' ||
-    typeof body?.shotCount !== 'number'
+    typeof body?.shotCount !== 'number' ||
+    typeof body?.quantity !== 'number' ||
+    typeof body?.amountCents !== 'number'
   ) {
     res.status(400).json({ error: 'Invalid photo order' });
     return;
@@ -917,6 +921,8 @@ router.post('/api/photo-orders', async (req, res) => {
     specHeightMm: spec.heightMm,
     specDpi: typeof spec.dpi === 'number' ? spec.dpi : null,
     shotCount: body.shotCount,
+    quantity: body.quantity,
+    amountCents: body.amountCents,
   });
   res.status(201).json(order);
 });

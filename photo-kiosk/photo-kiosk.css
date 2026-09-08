@@ -401,6 +401,7 @@ input {
   background: rgba(255, 255, 255, 0.6);
 }
 .pk-modal-content {
+  position: relative;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-medium);
@@ -410,6 +411,30 @@ input {
   width: 100%;
   max-height: 80vh;
   overflow-y: auto;
+}
+.pk-modal-close {
+  position: absolute;
+  top: var(--space-s);
+  right: var(--space-s);
+  width: 2rem;
+  height: 2rem;
+  border-radius: 999px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-ink-soft);
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.pk-modal-close:hover {
+  color: var(--color-ink);
+  border-color: var(--color-border-strong);
+}
+.pk-modal-title {
+  margin: 0 var(--space-xl) var(--space-m) 0;
 }
 
 .pk-cart-list {
@@ -421,9 +446,11 @@ input {
   gap: var(--space-m);
 }
 .pk-cart-item {
-  display: flex;
-  align-items: center;
-  gap: var(--space-m);
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--space-s) var(--space-m);
+  padding-bottom: var(--space-m);
+  border-bottom: 1px solid var(--color-border);
 }
 .pk-cart-thumb {
   width: 4rem;
@@ -431,4 +458,131 @@ input {
   object-fit: cover;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-small);
+}
+.pk-cart-item-body {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+.pk-cart-item-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-s);
+}
+.pk-cart-item-title {
+  font: var(--font-body);
+  font-weight: 600;
+  color: var(--color-ink);
+  overflow-wrap: anywhere;
+}
+.pk-cart-item-meta {
+  font: var(--font-caption);
+  color: var(--color-ink-soft);
+}
+.pk-cart-item-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-s);
+  margin-top: var(--space-xs);
+}
+.pk-cart-item-price {
+  font-weight: 600;
+  white-space: nowrap;
+}
+.pk-cart-item-remove {
+  align-self: flex-start;
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  font: var(--font-caption);
+  color: var(--color-ink-soft);
+  text-decoration: underline;
+}
+.pk-cart-item-remove:hover {
+  color: var(--color-danger);
+}
+.pk-qty-stepper {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+.pk-qty-label {
+  font: var(--font-caption);
+  color: var(--color-ink-soft);
+  white-space: nowrap;
+}
+.pk-qty-btn {
+  flex: none;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 999px;
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.pk-qty-btn:disabled {
+  color: var(--color-disabled-text);
+  border-color: var(--color-border);
+  cursor: default;
+}
+.pk-qty-value {
+  min-width: 1.5rem;
+  text-align: center;
+  font-weight: 600;
+}
+
+.pk-cart-summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font: var(--font-caption);
+  color: var(--color-ink-soft);
+  padding-top: var(--space-s);
+  margin-bottom: var(--space-m);
+}
+.pk-cart-total {
+  font: var(--font-body);
+  font-weight: 700;
+  color: var(--color-ink);
+}
+
+/* ---------- Finalising session: end-session prompt ---------- */
+
+.pk-end-session-hint {
+  position: fixed;
+  top: 5.5rem;
+  right: 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--space-xs);
+  z-index: 5;
+}
+.pk-end-session-hint-arrow {
+  font-size: 2.5rem;
+  line-height: 1;
+  color: var(--color-accent);
+  margin-right: 1.5rem;
+}
+.pk-end-session-hint-text {
+  background: var(--color-surface);
+  border: 2px solid var(--color-accent);
+  border-radius: var(--radius-medium);
+  box-shadow: var(--elevation-raised);
+  padding: var(--space-m);
+  max-width: 18rem;
+  text-align: right;
+  font: var(--font-body);
+  color: var(--color-ink);
+  margin: 0;
 }

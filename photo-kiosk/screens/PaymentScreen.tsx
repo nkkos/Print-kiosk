@@ -1,7 +1,10 @@
 import type { PhotoCartItem } from '../types';
+import { formatPrice } from '../pricing';
 
 interface PaymentScreenProps {
-  cartItems: PhotoCartItem[];
+  /** The checked subset from the Cart (docs/cart-requirements.md, "Selection
+   * for payment") — not the whole cart; unchecked items stay behind. */
+  items: PhotoCartItem[];
   onPaymentSuccess: () => void;
   onCancelPayment: () => void;
   isRecording: boolean;
@@ -15,18 +18,20 @@ interface PaymentScreenProps {
 // sessionActive={false} for 'payment'/'print') — the transaction is committed
 // from the moment this screen is reached, same rule as the main kiosk.
 export function PaymentScreen({
-  cartItems,
+  items,
   onPaymentSuccess,
   onCancelPayment,
   isRecording,
 }: PaymentScreenProps) {
-  const total = cartItems.reduce((sum, item) => sum + item.copies, 0);
+  const totalCopies = items.reduce((sum, item) => sum + item.quantity, 0);
+  const totalCents = items.reduce((sum, item) => sum + item.unitPriceCents * item.quantity, 0);
   return (
     <div className="pk-screen pk-screen-center" id="view-payment">
       <h1 className="pk-title">Оплата</h1>
       <p className="pk-form-hint">
-        {cartItems.length} {cartItems.length === 1 ? 'позиция' : 'позиции'}, {total} фото всего
+        {items.length} {items.length === 1 ? 'позиция' : 'позиции'}, копий: {totalCopies}
       </p>
+      <p className="pk-cart-total">{formatPrice(totalCents)}</p>
       <div className="pk-hero-actions">
         <button
           type="button"

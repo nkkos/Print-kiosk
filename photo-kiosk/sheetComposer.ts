@@ -18,7 +18,7 @@ const GUTTER_MM = 4;
 
 // Admin-configurable per Document (photoDocuments.copiesPerSheet) — this is
 // only the fallback for "Произвольный размер," which has no admin record.
-export const DEFAULT_COPIES_PER_SHEET = 6;
+export const DEFAULT_PHOTOS_PER_SHEET = 6;
 
 function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
@@ -29,17 +29,20 @@ function loadImage(src: string): Promise<HTMLImageElement> {
   });
 }
 
-/** Tiles `copies` identical prints of the one accepted (already-cropped) shot
- * on one A4 sheet with a cut-guide border, row-major starting top-left. Uses
- * a near-square grid (columns = ceil(sqrt(copies))) rather than greedily
- * maximizing columns to fit the sheet width — for typical small ID-photo
- * sizes, packing everything into one wide row would either overflow the
- * sheet or leave an ungainly near-empty second row. Copies beyond what
- * physically fits on one sheet are dropped — multi-sheet is out of scope. */
+/** Tiles `photosPerSheet` identical prints of the one accepted (already-
+ * cropped) shot on one A4 sheet with a cut-guide border, row-major starting
+ * top-left. Uses a near-square grid (columns = ceil(sqrt(photosPerSheet)))
+ * rather than greedily maximizing columns to fit the sheet width — for
+ * typical small ID-photo sizes, packing everything into one wide row would
+ * either overflow the sheet or leave an ungainly near-empty second row.
+ * Photos beyond what physically fits on one sheet are dropped — multi-sheet
+ * composition (for `PhotoCartItem.quantity` > 1) isn't needed here: each
+ * sheet in a multi-quantity order is identical, so one preview represents
+ * all of them. */
 export async function composeA4Sheet(
   shotDataUrl: string,
   spec: CaptureSpec,
-  copies: number = DEFAULT_COPIES_PER_SHEET,
+  photosPerSheet: number = DEFAULT_PHOTOS_PER_SHEET,
 ): Promise<string> {
   const dpi = spec.dpi ?? DEFAULT_DPI;
   const sheetW = mmToPx(A4_WIDTH_MM, dpi);
@@ -51,9 +54,9 @@ export async function composeA4Sheet(
   const maxColumns = Math.max(1, Math.floor((sheetW - 2 * margin + gutter) / (cellW + gutter)));
   const maxRows = Math.max(1, Math.floor((sheetH - 2 * margin + gutter) / (cellH + gutter)));
 
-  const columns = Math.min(maxColumns, Math.max(1, Math.ceil(Math.sqrt(copies))));
-  const rows = Math.min(maxRows, Math.ceil(copies / columns));
-  const cellCount = Math.min(copies, columns * rows);
+  const columns = Math.min(maxColumns, Math.max(1, Math.ceil(Math.sqrt(photosPerSheet))));
+  const rows = Math.min(maxRows, Math.ceil(photosPerSheet / columns));
+  const cellCount = Math.min(photosPerSheet, columns * rows);
 
   const canvas = document.createElement('canvas');
   canvas.width = sheetW;

@@ -21,6 +21,7 @@ export interface PhotoDocument {
   backgroundRequirement: string | null;
   printNotes: string | null;
   copiesPerSheet: number;
+  priceCents: number;
   instructions: string | null;
   active: boolean;
 }
@@ -50,6 +51,8 @@ export interface RecordPhotoOrderRequest {
   sessionId: string | null;
   spec: { label: string; widthMm: number; heightMm: number; dpi: number | null };
   shotCount: number;
+  quantity: number;
+  amountCents: number;
 }
 
 // Records the fact of a simulated-paid purchase — metadata only, never photo

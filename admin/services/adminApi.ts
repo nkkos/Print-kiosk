@@ -168,6 +168,7 @@ export interface PhotoDocument {
   backgroundRequirement: string | null;
   printNotes: string | null;
   copiesPerSheet: number;
+  priceCents: number;
   instructions: string | null;
   active: boolean;
 }
@@ -184,6 +185,7 @@ export interface PhotoDocumentFormFields {
   backgroundRequirement?: string;
   printNotes?: string;
   copiesPerSheet: number;
+  priceCents: number;
   instructions?: string;
 }
 

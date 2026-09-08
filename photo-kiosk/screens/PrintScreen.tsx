@@ -4,7 +4,7 @@ import type { PhotoCartItem } from '../types';
 type PrintOutcome = 'success' | 'paper-jam' | 'out-of-paper' | 'out-of-ink';
 
 interface PrintScreenProps {
-  cartItems: PhotoCartItem[];
+  items: PhotoCartItem[];
   onPrintComplete: () => void;
 }
 
@@ -22,7 +22,7 @@ const ERROR_MESSAGES: Record<Exclude<PrintOutcome, 'success'>, string> = {
 // action (docs/domain/kiosk-session.md: "Print Status has no Back action —
 // this screen is fully system-controlled") — an already-paid order can only
 // retry, never cancel.
-export function PrintScreen({ cartItems, onPrintComplete }: PrintScreenProps) {
+export function PrintScreen({ items, onPrintComplete }: PrintScreenProps) {
   const [error, setError] = useState<Exclude<PrintOutcome, 'success'> | null>(null);
 
   function handleOutcome(outcome: PrintOutcome) {
@@ -41,13 +41,17 @@ export function PrintScreen({ cartItems, onPrintComplete }: PrintScreenProps) {
       {error && <p className="pk-error">{ERROR_MESSAGES[error]}</p>}
 
       <div className="pk-gallery-grid" id="print-sheets">
-        {cartItems.map((item) => (
-          <img
-            key={item.id}
-            src={item.sheetPreviewDataUrl}
-            alt={item.spec.label}
-            className="pk-sheet-preview"
-          />
+        {items.map((item) => (
+          <div key={item.id}>
+            <img
+              src={item.sheetPreviewDataUrl}
+              alt={item.spec.label}
+              className="pk-sheet-preview"
+            />
+            <p className="pk-form-hint">
+              {item.spec.label} × {item.quantity} {item.quantity === 1 ? 'лист' : 'листов'}
+            </p>
+          </div>
         ))}
       </div>
 

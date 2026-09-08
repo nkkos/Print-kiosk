@@ -517,6 +517,12 @@ export const photoDocuments = pgTable(
     backgroundRequirement: text('background_requirement'),
     printNotes: text('print_notes'),
     copiesPerSheet: integer('copies_per_sheet').notNull().default(6),
+    // Price for one copy (one A4 sheet of copiesPerSheet photos) — same
+    // priceCents-in-a-shop-currency convention as products.priceCents /
+    // shop/formatPrice.ts (this pavilion prices in EUR). Placeholder default,
+    // same posture as src/utils/pricing.ts's own placeholder rate table —
+    // real tariffication is a future discovery.
+    priceCents: integer('price_cents').notNull().default(500),
     // Shown to the customer before capture, not automatically validated yet
     // (confirmed deliberate phase boundary — expected to become real automatic
     // validation later, not dropped as a rejected idea).
@@ -542,7 +548,20 @@ export const photoOrders = pgTable(
     specWidthMm: real('spec_width_mm').notNull(),
     specHeightMm: real('spec_height_mm').notNull(),
     specDpi: integer('spec_dpi'),
+    // Photos tiled on ONE sheet (photoDocuments.copiesPerSheet or the
+    // custom-size default) — distinct from `quantity` below.
     shotCount: integer('shot_count').notNull(),
+    // How many identical sheets of this configuration — customer-editable in
+    // the Cart popup, defaults to 1. Confirmed with the product owner after
+    // the cart UI initially conflated this with shotCount as one "N копий"
+    // number, which was wrong (shotCount is fixed per document, quantity is
+    // the customer's own order size).
+    quantity: integer('quantity').notNull().default(1),
+    // The financial fact of the transaction (docs/domain/kiosk-session.md's
+    // cleanup contract: "Retained ... Financial/payment records (amount,
+    // timestamp, status)") — unitPriceCents * quantity at the moment payment
+    // was simulated-confirmed.
+    amountCents: integer('amount_cents').notNull().default(0),
     // 'paid' -> 'printed'. No 'cancelled' state: a row is only ever created once
     // payment is simulated-confirmed, so a cancelled payment never reaches this
     // table at all.

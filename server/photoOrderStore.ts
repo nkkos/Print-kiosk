@@ -12,6 +12,8 @@ export interface RecordPhotoOrderParams {
   specHeightMm: number;
   specDpi: number | null;
   shotCount: number;
+  quantity: number;
+  amountCents: number;
 }
 
 export interface PhotoOrder {
@@ -29,6 +31,8 @@ export async function recordPhotoOrder(params: RecordPhotoOrderParams): Promise<
       specHeightMm: params.specHeightMm,
       specDpi: params.specDpi,
       shotCount: params.shotCount,
+      quantity: params.quantity,
+      amountCents: params.amountCents,
     })
     .returning({ id: photoOrders.id, status: photoOrders.status });
   return row;

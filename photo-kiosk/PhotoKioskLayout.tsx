@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import type { EndSessionReason } from '../src/types/kiosk';
 import { Modal } from './components/Modal';
 import { PersistentActionBar } from './components/PersistentActionBar';
+import { CartPanel } from './components/CartPanel';
 import type { PhotoCartItem } from './types';
 
 // Mirrors src/layouts/KioskScreenLayout/KioskScreenLayout.tsx's structure at a
@@ -30,9 +31,21 @@ interface PhotoKioskLayoutProps {
   onHome?: () => void;
   cartItems: PhotoCartItem[];
   onRemoveCartItem: (id: string) => void;
-  /** No per-item selection this phase — pays for the whole cart at once. */
-  onProceedToPayment: () => void;
-  initialCartOpen?: boolean;
+  onUpdateCartItemQuantity: (id: string, quantity: number) => void;
+  /** Only the checked subset proceeds — unchecked items stay in the cart
+   * (docs/cart-requirements.md, "Selection for payment"), same contract as
+   * the main kiosk's own CartPanel. */
+  onProceedToPayment: (selectedItems: PhotoCartItem[]) => void;
+  /** Cart open/closed is controlled by the parent (not owned internally, per
+   * KioskScreenLayout's own `initialCartOpen`) — this layout is a single
+   * long-lived instance wrapping every screen, not remounted per screen, so
+   * a mount-time-only flag can't express "open the cart right after this
+   * add-to-cart action" the way KioskScreenLayout's per-screen mounting
+   * does. PhotoKioskApp.tsx opens it explicitly once an item is added, so
+   * the customer actually sees what just happened instead of a silent
+   * footer star marker. */
+  isCartOpen: boolean;
+  onCartOpenChange: (open: boolean) => void;
   children: ReactNode;
 }
 
@@ -43,11 +56,12 @@ export function PhotoKioskLayout({
   onHome,
   cartItems,
   onRemoveCartItem,
+  onUpdateCartItemQuantity,
   onProceedToPayment,
-  initialCartOpen = false,
+  isCartOpen,
+  onCartOpenChange,
   children,
 }: PhotoKioskLayoutProps) {
-  const [isCartOpen, setIsCartOpen] = useState(initialCartOpen);
   const [isEndConfirmOpen, setIsEndConfirmOpen] = useState(false);
   const [isIdleWarningOpen, setIsIdleWarningOpen] = useState(false);
 
@@ -88,7 +102,7 @@ export function PhotoKioskLayout({
 
   function handleCartActivate() {
     setIsEndConfirmOpen(false);
-    setIsCartOpen(true);
+    onCartOpenChange(true);
   }
 
   // Confirmation rule (docs/domain/kiosk-session.md): a genuinely empty
@@ -98,7 +112,7 @@ export function PhotoKioskLayout({
     if (cartItems.length === 0) {
       onEndSession('manual');
     } else {
-      setIsCartOpen(false);
+      onCartOpenChange(false);
       setIsEndConfirmOpen(true);
     }
   }
@@ -145,47 +159,17 @@ export function PhotoKioskLayout({
         {children}
 
         {isCartOpen && (
-          <Modal onClose={() => setIsCartOpen(false)}>
-            <h2>Корзина</h2>
-            {cartItems.length === 0 ? (
-              <p className="pk-empty-note">Корзина пуста.</p>
-            ) : (
-              <>
-                <ul className="pk-cart-list" id="cart-items">
-                  {cartItems.map((item) => (
-                    <li key={item.id} className="pk-cart-item">
-                      <img
-                        src={item.sheetPreviewDataUrl}
-                        alt={item.spec.label}
-                        className="pk-cart-thumb"
-                      />
-                      <span>
-                        {item.spec.label} — {item.copies} копий
-                      </span>
-                      <button
-                        type="button"
-                        className="pk-btn pk-btn-ghost"
-                        id={`cart-item-${item.id}-remove`}
-                        onClick={() => onRemoveCartItem(item.id)}
-                      >
-                        Удалить
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-                <button
-                  type="button"
-                  className="pk-btn pk-btn-primary"
-                  id="cart-proceed-to-payment"
-                  onClick={() => {
-                    setIsCartOpen(false);
-                    onProceedToPayment();
-                  }}
-                >
-                  Оплатить
-                </button>
-              </>
-            )}
+          <Modal onClose={() => onCartOpenChange(false)}>
+            <h2 className="pk-modal-title">Корзина</h2>
+            <CartPanel
+              items={cartItems}
+              onQuantityChange={onUpdateCartItemQuantity}
+              onRemove={onRemoveCartItem}
+              onProceedToPayment={(selectedItems) => {
+                onCartOpenChange(false);
+                onProceedToPayment(selectedItems);
+              }}
+            />
           </Modal>
         )}
 

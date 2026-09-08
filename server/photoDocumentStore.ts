@@ -24,6 +24,7 @@ export interface PhotoDocument {
   backgroundRequirement: string | null;
   printNotes: string | null;
   copiesPerSheet: number;
+  priceCents: number;
   instructions: string | null;
   active: boolean;
 }
@@ -43,6 +44,7 @@ const DOCUMENT_COLUMNS = {
   backgroundRequirement: photoDocuments.backgroundRequirement,
   printNotes: photoDocuments.printNotes,
   copiesPerSheet: photoDocuments.copiesPerSheet,
+  priceCents: photoDocuments.priceCents,
   instructions: photoDocuments.instructions,
   active: photoDocuments.active,
 };
@@ -73,6 +75,7 @@ export interface CreateDocumentParams {
   backgroundRequirement?: string;
   printNotes?: string;
   copiesPerSheet?: number;
+  priceCents?: number;
   instructions?: string;
 }
 
@@ -91,6 +94,7 @@ export async function createDocument(params: CreateDocumentParams): Promise<Phot
       backgroundRequirement: params.backgroundRequirement ?? null,
       printNotes: params.printNotes ?? null,
       ...(params.copiesPerSheet != null ? { copiesPerSheet: params.copiesPerSheet } : {}),
+      ...(params.priceCents != null ? { priceCents: params.priceCents } : {}),
       instructions: params.instructions ?? null,
     })
     .returning(DOCUMENT_COLUMNS);
@@ -108,6 +112,7 @@ export interface UpdateDocumentParams {
   backgroundRequirement?: string | null;
   printNotes?: string | null;
   copiesPerSheet?: number;
+  priceCents?: number;
   instructions?: string | null;
   active?: boolean;
 }

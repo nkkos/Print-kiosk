@@ -1,0 +1,1 @@
+ALTER TABLE "photo_orders" ADD COLUMN "quantity" integer DEFAULT 1 NOT NULL;
