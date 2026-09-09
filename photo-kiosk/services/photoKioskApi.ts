@@ -22,6 +22,7 @@ export interface PhotoDocument {
   headWidthMinMm: number | null;
   headWidthMaxMm: number | null;
   backgroundRequirement: string | null;
+  backgroundColorHex: string | null;
   printNotes: string | null;
   copiesPerSheet: number;
   priceCents: number;

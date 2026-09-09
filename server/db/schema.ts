@@ -529,6 +529,13 @@ export const photoDocuments = pgTable(
     // confirmed shot on one A4 sheet (confirmed with the product owner:
     // one photo -> 6 copies is the default, not a gallery of distinct shots).
     backgroundRequirement: text('background_requirement'),
+    // Structured `#RRGGBB` the capture pipeline's real background
+    // segmentation (photo-kiosk/backgroundSegmentation.ts) recolors to
+    // directly — distinct from backgroundRequirement above, which stays
+    // free text for rules that don't reduce to one color ("grey or blue,
+    // white forbidden"). Nullable: the booth's own physical backdrop is
+    // used unmodified until an admin picks a concrete target color.
+    backgroundColorHex: text('background_color_hex'),
     printNotes: text('print_notes'),
     copiesPerSheet: integer('copies_per_sheet').notNull().default(6),
     // Price for one copy (one A4 sheet of copiesPerSheet photos) — same

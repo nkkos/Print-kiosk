@@ -2,16 +2,17 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   computeGuideRect,
   computeGuideMarkers,
-  computeSourceCropRect,
-  computeDetectedCropRect,
-  cropAndScaleToDataUrl,
+  computeGenerousCropRect,
+  drawMirroredCrop,
+  estimateFallbackLandmarks,
 } from '../cropUtil';
 import { detectFace, preloadFaceDetection } from '../faceDetection';
-import type { CaptureSpec } from '../types';
+import { recolorBackground, preloadBackgroundRemoval } from '../chromaKey';
+import type { CaptureSpec, PendingShot } from '../types';
 
 interface CaptureScreenProps {
   spec: CaptureSpec;
-  onCaptured: (dataUrl: string) => void;
+  onCaptured: (shot: PendingShot) => void;
 }
 
 // Real camera capture via getUserMedia — not mocked. The pavilion's actual booth
@@ -20,17 +21,22 @@ interface CaptureScreenProps {
 // real-device integration in this project is tested against real hardware rather
 // than faked, even before the final production hardware is picked.
 //
-// The on-screen guide is a loose self-alignment aid only (cropUtil.ts). For any
-// document with a head-height band (headHeightMinMm/MaxMm — every real DB
-// PhotoDocument), the actual crop is refined from real MediaPipe face-landmark
-// detection run on the captured frame (jiggly-beaming-dragonfly.md) — but
-// detection is strictly an opportunistic precision layer, never a gate: the
-// kiosk must take whatever photo the customer gives it (confirmed after real
-// testing kept getting rejected over ordinary seating distance). If detection
-// can't find exactly one face, or the ideal detected-crop geometry doesn't
-// fit the frame, capture silently falls back to (or clamps toward) the same
-// guide-based crop "Произвольный размер" always uses — the customer never
-// sees a retry prompt over any of this.
+// The on-screen guide here is a loose self-alignment aid only (cropUtil.ts) — the
+// real crop is decided after capture, on ShotReviewScreen. This screen's only job
+// is to produce a GENEROUS crop (wider than the final document size) around
+// either real MediaPipe-detected face landmarks or, if detection couldn't find
+// exactly one clear face, a heuristic estimate (estimateFallbackLandmarks) —
+// detection never blocks the shot (confirmed after real testing kept getting
+// rejected over ordinary seating distance). The customer adjusts those landmarks
+// on the review screen before the actual document-sized crop is cut.
+//
+// When the document specifies a backgroundColorHex, the RAW captured frame is
+// recolored (chromaKey.ts — classical colour-distance keying against the
+// booth's own known backdrop, not ML segmentation; see that file for why)
+// before any of the above, so both the generous preview and the final crop
+// already show the replaced background; face detection then runs on the
+// recolored frame (background replacement doesn't touch foreground pixels,
+// so this doesn't affect it).
 export function CaptureScreen({ spec, onCaptured }: CaptureScreenProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const frameRef = useRef<HTMLDivElement>(null);
@@ -41,11 +47,10 @@ export function CaptureScreen({ spec, onCaptured }: CaptureScreenProps) {
   const [frameSize, setFrameSize] = useState({ width: 0, height: 0 });
   const [processing, setProcessing] = useState(false);
 
-  const hasHeadHeightBand = spec.headHeightMinMm != null && spec.headHeightMaxMm != null;
-
   useEffect(() => {
-    if (hasHeadHeightBand) preloadFaceDetection();
-  }, [hasHeadHeightBand]);
+    preloadFaceDetection();
+    if (spec.backgroundColorHex) preloadBackgroundRemoval();
+  }, [spec.backgroundColorHex]);
 
   useEffect(() => {
     let cancelled = false;
@@ -85,40 +90,42 @@ export function CaptureScreen({ spec, onCaptured }: CaptureScreenProps) {
     frameSize.width > 0 ? computeGuideRect(frameSize.width, frameSize.height, spec) : null;
   const guideMarkers = guideRect ? computeGuideMarkers(guideRect, spec) : null;
 
-  const captureWithGuide = useCallback(
-    (video: HTMLVideoElement) => {
-      const guide =
-        frameSize.width > 0 ? computeGuideRect(frameSize.width, frameSize.height, spec) : null;
-      if (!guide) return;
-      const sourceRect = computeSourceCropRect(video, frameSize, guide);
-      onCaptured(cropAndScaleToDataUrl(video, sourceRect, spec));
-    },
-    [frameSize, spec, onCaptured],
-  );
-
   const capture = useCallback(async () => {
     const video = videoRef.current;
     if (!video) return;
 
-    if (!hasHeadHeightBand) {
-      captureWithGuide(video);
-      return;
-    }
-
     setProcessing(true);
-    const detected = await detectFace(video);
+    const source = spec.backgroundColorHex
+      ? await recolorBackground(video, spec.backgroundColorHex)
+      : video;
+    const detected = await detectFace(source);
     setProcessing(false);
 
-    if (!detected.ok) {
-      // Couldn't find exactly one face (no-face / multiple-faces) — fall
-      // back to the plain guide crop rather than ever refusing the shot.
-      captureWithGuide(video);
-      return;
-    }
+    const landmarks = detected.ok
+      ? {
+          eyeLineY: detected.eyeLineY,
+          headTopY: detected.headTopY,
+          headBottomY: detected.chinY,
+          headLeftX: detected.headLeftX,
+          headRightX: detected.headRightX,
+        }
+      : estimateFallbackLandmarks(spec, video.videoWidth, video.videoHeight);
 
-    const rect = computeDetectedCropRect(detected, spec, video.videoWidth, video.videoHeight);
-    onCaptured(cropAndScaleToDataUrl(video, rect, spec));
-  }, [spec, onCaptured, hasHeadHeightBand, captureWithGuide]);
+    const generousRect = computeGenerousCropRect(
+      landmarks,
+      spec,
+      video.videoWidth,
+      video.videoHeight,
+    );
+    const { canvas, landmarks: rawLandmarks } = drawMirroredCrop(source, generousRect, landmarks);
+
+    onCaptured({
+      rawDataUrl: canvas.toDataURL('image/jpeg', 0.92),
+      rawWidth: canvas.width,
+      rawHeight: canvas.height,
+      landmarks: rawLandmarks,
+    });
+  }, [spec, onCaptured]);
 
   // Capture fires from an effect (not inside the setCountdown updater below) —
   // calling onCaptured's parent setState directly from a functional state

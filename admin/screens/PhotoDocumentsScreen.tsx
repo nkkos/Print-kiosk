@@ -30,6 +30,7 @@ function emptyForm(countryId: string): PhotoDocumentFormFields {
     headWidthMinMm: undefined,
     headWidthMaxMm: undefined,
     backgroundRequirement: '',
+    backgroundColorHex: undefined,
     printNotes: '',
     copiesPerSheet: 6,
     priceCents: 500,
@@ -114,6 +115,7 @@ export function PhotoDocumentsScreen({ session }: PhotoDocumentsScreenProps) {
       headWidthMinMm: doc.headWidthMinMm ?? undefined,
       headWidthMaxMm: doc.headWidthMaxMm ?? undefined,
       backgroundRequirement: doc.backgroundRequirement ?? '',
+      backgroundColorHex: doc.backgroundColorHex ?? undefined,
       printNotes: doc.printNotes ?? '',
       copiesPerSheet: doc.copiesPerSheet,
       priceCents: doc.priceCents,
@@ -397,6 +399,26 @@ export function PhotoDocumentsScreen({ session }: PhotoDocumentsScreenProps) {
                   value={form.backgroundRequirement}
                   onChange={(e) => setForm({ ...form, backgroundRequirement: e.target.value })}
                 />
+                <div className="stepper-row">
+                  <span className="stepper-label">
+                    Целевой цвет фона (для авто-замены фона на кадре)
+                  </span>
+                  <input
+                    type="color"
+                    id="photo-document-form-background-color"
+                    value={form.backgroundColorHex ?? '#ffffff'}
+                    onChange={(e) => setForm({ ...form, backgroundColorHex: e.target.value })}
+                  />
+                  {form.backgroundColorHex != null && (
+                    <button
+                      type="button"
+                      id="photo-document-form-background-color-clear"
+                      onClick={() => setForm({ ...form, backgroundColorHex: undefined })}
+                    >
+                      Сбросить (не менять фон)
+                    </button>
+                  )}
+                </div>
                 <input
                   type="text"
                   className="admin-input"

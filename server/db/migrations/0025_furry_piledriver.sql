@@ -1,0 +1,1 @@
+ALTER TABLE "photo_documents" ADD COLUMN "background_color_hex" text;

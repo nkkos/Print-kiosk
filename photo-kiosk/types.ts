@@ -1,3 +1,5 @@
+import type { CropLandmarks } from './cropUtil';
+
 // Shared shape both branches ("Фото на документы" and "Произвольный размер") build,
 // so the capture/review/gallery screens don't care which branch produced it
 // (docs/photo-kiosk-requirements.md — both reuse the same downstream flow).
@@ -37,6 +39,13 @@ export interface CaptureSpec {
   // — price for one copy (one A4 sheet). Undefined on "Произвольный размер"
   // (no admin record) — pricing.ts's DEFAULT_PRICE_CENTS applies then.
   priceCents?: number;
+  // Admin-configurable per Document (server/db/schema.ts's photoDocuments.backgroundColorHex)
+  // — a `#RRGGBB` the capture pipeline's real background segmentation
+  // (backgroundSegmentation.ts) recolors to. Undefined skips segmentation
+  // entirely (the booth's own physical backdrop is used unmodified) —
+  // "Произвольный размер" never collects this, and a real document only
+  // has it once an admin picks a concrete target color.
+  backgroundColorHex?: string;
 }
 
 /** One confirmed shoot, ready for checkout — pushed onto the cart on
@@ -65,4 +74,18 @@ export interface PhotoCartItem {
   // sheet's worth — `quantity` sheets of this exact layout get printed.
   sheetPreviewDataUrl: string;
   createdAt: number;
+}
+
+/** The output of CaptureScreen, before the customer has confirmed anything —
+ * a generous crop (wider than the final document size) around either real
+ * detected face landmarks or, if detection found no single clear face, a
+ * heuristic estimate (cropUtil.ts's estimateFallbackLandmarks). ShotReviewScreen
+ * lets the customer drag/nudge `landmarks` before cutting the actual
+ * document-sized crop (cropUtil.ts's finalizeCrop) — nothing here is the
+ * final printable photo yet. */
+export interface PendingShot {
+  rawDataUrl: string;
+  rawWidth: number;
+  rawHeight: number;
+  landmarks: CropLandmarks;
 }

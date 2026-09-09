@@ -30,6 +30,9 @@ export interface PhotoDocument {
   headWidthMinMm: number | null;
   headWidthMaxMm: number | null;
   backgroundRequirement: string | null;
+  // Structured #RRGGBB the capture pipeline's real background segmentation
+  // recolors to directly — distinct from backgroundRequirement's free text.
+  backgroundColorHex: string | null;
   printNotes: string | null;
   copiesPerSheet: number;
   priceCents: number;
@@ -53,6 +56,7 @@ const DOCUMENT_COLUMNS = {
   headWidthMinMm: photoDocuments.headWidthMinMm,
   headWidthMaxMm: photoDocuments.headWidthMaxMm,
   backgroundRequirement: photoDocuments.backgroundRequirement,
+  backgroundColorHex: photoDocuments.backgroundColorHex,
   printNotes: photoDocuments.printNotes,
   copiesPerSheet: photoDocuments.copiesPerSheet,
   priceCents: photoDocuments.priceCents,
@@ -87,6 +91,7 @@ export interface CreateDocumentParams {
   headWidthMinMm?: number;
   headWidthMaxMm?: number;
   backgroundRequirement?: string;
+  backgroundColorHex?: string;
   printNotes?: string;
   copiesPerSheet?: number;
   priceCents?: number;
@@ -109,6 +114,7 @@ export async function createDocument(params: CreateDocumentParams): Promise<Phot
       headWidthMinMm: params.headWidthMinMm ?? null,
       headWidthMaxMm: params.headWidthMaxMm ?? null,
       backgroundRequirement: params.backgroundRequirement ?? null,
+      backgroundColorHex: params.backgroundColorHex ?? null,
       printNotes: params.printNotes ?? null,
       ...(params.copiesPerSheet != null ? { copiesPerSheet: params.copiesPerSheet } : {}),
       ...(params.priceCents != null ? { priceCents: params.priceCents } : {}),
@@ -130,6 +136,7 @@ export interface UpdateDocumentParams {
   headWidthMinMm?: number | null;
   headWidthMaxMm?: number | null;
   backgroundRequirement?: string | null;
+  backgroundColorHex?: string | null;
   printNotes?: string | null;
   copiesPerSheet?: number;
   priceCents?: number;

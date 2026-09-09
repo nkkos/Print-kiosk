@@ -176,6 +176,13 @@
       "when": 1788868119784,
       "tag": "0024_needy_mantis",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1788963178165,
+      "tag": "0025_furry_piledriver",
+      "breakpoints": true
     }
   ]
 }

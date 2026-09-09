@@ -290,25 +290,55 @@ input {
   border-radius: var(--radius-medium);
   display: block;
 }
-.pk-shot-guide {
-  position: absolute;
-  pointer-events: none;
-}
+/* Colors shared between the draggable line and its legend swatch. */
 .pk-shot-guide-eyeline {
-  left: 0;
-  right: 0;
-  border-top: 2px dashed #f5c518;
+  color: #f5c518;
 }
 .pk-shot-guide-headband {
-  left: 0;
-  right: 0;
-  border-top: 2px dashed #2ecc71;
+  color: #2ecc71;
 }
 .pk-shot-guide-widthband {
+  color: #3498db;
+}
+
+/* Draggable landmark lines — a wide invisible hit-area (touch-friendly)
+ * centered on a thin visible dashed line, positioned by left%/top% from
+ * ShotReviewScreen. */
+.pk-shot-guide {
+  position: absolute;
+  touch-action: none;
+}
+.pk-shot-guide-h {
+  left: 0;
+  right: 0;
+  height: 1.75rem;
+  margin-top: -0.875rem;
+  cursor: ns-resize;
+  display: flex;
+  align-items: center;
+}
+.pk-shot-guide-h::before {
+  content: '';
+  display: block;
+  width: 100%;
+  border-top: 2px dashed currentColor;
+}
+.pk-shot-guide-v {
   top: 0;
   bottom: 0;
-  border-left: 2px dashed #3498db;
+  width: 1.75rem;
+  margin-left: -0.875rem;
+  cursor: ew-resize;
+  display: flex;
+  justify-content: center;
 }
+.pk-shot-guide-v::before {
+  content: '';
+  display: block;
+  height: 100%;
+  border-left: 2px dashed currentColor;
+}
+
 .pk-shot-legend {
   list-style: none;
   margin: 0;
@@ -319,7 +349,8 @@ input {
   font: var(--font-body);
   text-align: left;
   align-self: center;
-  max-width: 16rem;
+  max-width: 18rem;
+  width: 100%;
 }
 .pk-shot-legend li {
   display: flex;
@@ -332,14 +363,13 @@ input {
   width: 1.5rem;
   border-top: 2px dashed currentColor;
 }
-.pk-shot-legend-eyeline {
-  color: #f5c518;
+.pk-shot-legend-label {
+  flex: 1;
 }
-.pk-shot-legend-headband {
-  color: #2ecc71;
-}
-.pk-shot-legend-widthband {
-  color: #3498db;
+.pk-shot-legend-buttons {
+  display: flex;
+  flex: none;
+  gap: 0.25rem;
 }
 
 .pk-gallery-grid {

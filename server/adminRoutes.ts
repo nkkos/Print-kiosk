@@ -321,6 +321,7 @@ interface PhotoDocumentBody {
   headWidthMinMm?: unknown;
   headWidthMaxMm?: unknown;
   backgroundRequirement?: unknown;
+  backgroundColorHex?: unknown;
   printNotes?: unknown;
   copiesPerSheet?: unknown;
   priceCents?: unknown;
@@ -367,6 +368,8 @@ adminRouter.post('/api/admin/photo-documents', requireStaffSession, async (req, 
     headWidthMaxMm: isFiniteNumber(body.headWidthMaxMm) ? body.headWidthMaxMm : undefined,
     backgroundRequirement:
       typeof body.backgroundRequirement === 'string' ? body.backgroundRequirement : undefined,
+    backgroundColorHex:
+      typeof body.backgroundColorHex === 'string' ? body.backgroundColorHex : undefined,
     printNotes: typeof body.printNotes === 'string' ? body.printNotes : undefined,
     copiesPerSheet: isFiniteNumber(body.copiesPerSheet) ? body.copiesPerSheet : undefined,
     priceCents: isFiniteNumber(body.priceCents) ? body.priceCents : undefined,
@@ -401,6 +404,10 @@ adminRouter.patch('/api/admin/photo-documents/:id', requireStaffSession, async (
     ...(body.backgroundRequirement !== undefined && {
       backgroundRequirement:
         typeof body.backgroundRequirement === 'string' ? body.backgroundRequirement : null,
+    }),
+    ...(body.backgroundColorHex !== undefined && {
+      backgroundColorHex:
+        typeof body.backgroundColorHex === 'string' ? body.backgroundColorHex : null,
     }),
     ...(body.printNotes !== undefined && {
       printNotes: typeof body.printNotes === 'string' ? body.printNotes : null,

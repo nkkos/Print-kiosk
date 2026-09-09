@@ -18,7 +18,7 @@ import { FinalisingSessionScreen } from './screens/FinalisingSessionScreen';
 import { composeA4Sheet, DEFAULT_PHOTOS_PER_SHEET } from './sheetComposer';
 import { recordPhotoOrder, markPhotoOrdersPrinted } from './services/photoKioskApi';
 import { DEFAULT_PRICE_CENTS } from './pricing';
-import type { CaptureSpec, PhotoCartItem } from './types';
+import type { CaptureSpec, PendingShot, PhotoCartItem } from './types';
 
 type Screen =
   | 'welcome'
@@ -64,7 +64,7 @@ export function PhotoKioskApp() {
     localStorage.getItem(SESSION_ID_STORAGE_KEY),
   );
   const [spec, setSpec] = useState<CaptureSpec | null>(null);
-  const [pendingShot, setPendingShot] = useState<string | null>(null);
+  const [pendingShot, setPendingShot] = useState<PendingShot | null>(null);
   const [acceptedShot, setAcceptedShot] = useState<string | null>(null);
   // Which screen led into 'confirm-config' — select-country and custom-size
   // both land there, so its own Back needs to know which one to return to.
@@ -332,6 +332,7 @@ export function PhotoKioskApp() {
               headWidthMaxMm: document.headWidthMaxMm ?? undefined,
               copiesPerSheet: document.copiesPerSheet,
               priceCents: document.priceCents,
+              backgroundColorHex: document.backgroundColorHex ?? undefined,
             });
             setConfigOrigin('select-country');
             setScreen('confirm-config');
@@ -356,8 +357,8 @@ export function PhotoKioskApp() {
       {screen === 'capture' && spec && (
         <CaptureScreen
           spec={spec}
-          onCaptured={(dataUrl) => {
-            setPendingShot(dataUrl);
+          onCaptured={(shot) => {
+            setPendingShot(shot);
             setScreen('shot-review');
           }}
         />
@@ -365,14 +366,17 @@ export function PhotoKioskApp() {
 
       {screen === 'shot-review' && pendingShot && spec && (
         <ShotReviewScreen
-          shotDataUrl={pendingShot}
+          rawDataUrl={pendingShot.rawDataUrl}
+          rawWidth={pendingShot.rawWidth}
+          rawHeight={pendingShot.rawHeight}
+          landmarks={pendingShot.landmarks}
           spec={spec}
           onRetake={() => {
             setPendingShot(null);
             setScreen('capture');
           }}
-          onAccept={() => {
-            setAcceptedShot(pendingShot);
+          onAccept={(finalDataUrl) => {
+            setAcceptedShot(finalDataUrl);
             setPendingShot(null);
             setScreen('gallery');
           }}
