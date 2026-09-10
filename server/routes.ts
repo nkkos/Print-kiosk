@@ -58,8 +58,14 @@ import {
   updateInvoiceDetails,
   EmailTakenError,
 } from './accountStore.js';
-import { sendVerificationEmail, sendPasswordResetEmail, sendScanEmail } from './emailSender.js';
+import {
+  sendVerificationEmail,
+  sendPasswordResetEmail,
+  sendScanEmail,
+  sendPhotoEmail,
+} from './emailSender.js';
 import { reportIncident } from './incidentStore.js';
+import { createShare, consumeShare } from './photoShareStore.js';
 import {
   createScanSession,
   addPage,
@@ -935,6 +941,61 @@ router.post('/api/photo-orders/printed', async (req, res) => {
   }
   await markPhotoOrdersPrinted(ids);
   res.json({ ok: true });
+});
+
+// "Send me a copy" (docs/photo-kiosk-requirements.md) — a deliberate, narrow
+// exception to the "no photo pixel data server-side" rule above; see
+// server/photoShareStore.ts's own comment for why and how it's kept narrow.
+// memoryStorage (not the diskStorage every other upload() instance in this
+// file uses) so the photo bytes never touch disk even transiently.
+const photoShareUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 20 * 1024 * 1024 },
+});
+
+router.post('/api/photo-kiosk/share-email', photoShareUpload.single('photo'), async (req, res) => {
+  const { email } = (req.body ?? {}) as { email?: unknown };
+  if (typeof email !== 'string' || !email.includes('@') || !req.file) {
+    res.status(400).json({ error: 'A valid email and photo are required' });
+    return;
+  }
+  try {
+    await sendPhotoEmail(email, req.file.buffer, 'photo.jpg');
+  } catch (err) {
+    console.error('[routes] sendPhotoEmail failed:', err);
+    void reportIncident({
+      source: 'backend',
+      code: 'backend.email-send-failed',
+      severity: 'warning',
+      message: `Failed to send photo to ${email}.`,
+      context: { email, error: String(err) },
+    });
+    res.status(502).json({ error: 'Failed to send the email. Please try again.' });
+    return;
+  }
+  res.json({ ok: true });
+});
+
+router.post('/api/photo-kiosk/share-link', photoShareUpload.single('photo'), (req, res) => {
+  if (!req.file) {
+    res.status(400).json({ error: 'A photo is required' });
+    return;
+  }
+  const token = createShare(req.file.buffer, req.file.mimetype);
+  res.json({ token });
+});
+
+// One-time download — consumeShare deletes the entry whether this succeeds
+// or the token was already used/expired, so a link never serves twice.
+router.get('/api/photo-kiosk/share-link/:token', (req, res) => {
+  const entry = consumeShare(paramString(req.params.token));
+  if (!entry) {
+    res.status(404).send('Ссылка недействительна или уже использована');
+    return;
+  }
+  res.setHeader('Content-Type', entry.mimeType);
+  res.setHeader('Content-Disposition', 'attachment; filename="photo.jpg"');
+  res.send(entry.buffer);
 });
 
 // Portal-facing "My orders" for the staff-fulfilled half of the shop

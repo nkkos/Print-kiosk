@@ -1,3 +1,10 @@
+import { PhotoShareSection } from '../components/PhotoShareSection';
+import type { PhotoCartItem } from '../types';
+
+interface FinalisingSessionScreenProps {
+  items: PhotoCartItem[];
+}
+
 // Mirrors src/features/finalising-session/FinalisingSessionScreen.tsx —
 // shown after a successful (simulated) print, instead of silently resetting
 // to Welcome. Unlike Payment/Print, the order has now been delivered, so
@@ -11,7 +18,12 @@
 // is the first, immediate line of defense, so it's called out as clearly as
 // the "Спасибо" message itself, with a visual arrow toward the actual
 // header button rather than relying on the button's mere presence.
-export function FinalisingSessionScreen() {
+//
+// `items` is PhotoKioskApp.tsx's own printingItems, kept around (not
+// cleared the instant printing finishes, unlike before) specifically so its
+// `shot` data survives long enough to offer here — cleared for real on End
+// Session, same as everything else photo-related.
+export function FinalisingSessionScreen({ items }: FinalisingSessionScreenProps) {
   return (
     <div className="pk-screen pk-screen-center" id="view-finalising-session">
       <p className="pk-title">Ваши фотографии распечатаны. Спасибо!</p>
@@ -24,6 +36,20 @@ export function FinalisingSessionScreen() {
           личные данные от следующего посетителя.
         </p>
       </div>
+
+      {items.length > 0 && (
+        <div className="pk-share-list" id="finalising-share-list">
+          <p className="pk-form-hint">Хотите получить фото себе на телефон или почту?</p>
+          {items.map((item) => (
+            <PhotoShareSection
+              key={item.id}
+              idPrefix={`finalising-${item.id}`}
+              label={item.spec.label}
+              photoDataUrl={item.shot}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }

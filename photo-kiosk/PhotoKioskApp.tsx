@@ -248,7 +248,9 @@ export function PhotoKioskApp() {
     await markPhotoOrdersPrinted(printedOrderIds).catch((err: unknown) => {
       console.error('[PhotoKioskApp] markPhotoOrdersPrinted failed:', err);
     });
-    setPrintingItems([]);
+    // printingItems is deliberately NOT cleared here — FinalisingSessionScreen
+    // offers to email/download the just-printed shot(s), so they need to
+    // survive into that screen. Cleared for real on End Session instead.
     setPrintedOrderIds([]);
     setScreen('finalising-session');
   }
@@ -411,7 +413,7 @@ export function PhotoKioskApp() {
         <PrintScreen items={printingItems} onPrintComplete={handlePrintComplete} />
       )}
 
-      {screen === 'finalising-session' && <FinalisingSessionScreen />}
+      {screen === 'finalising-session' && <FinalisingSessionScreen items={printingItems} />}
 
       {screen === 'ending-session' && <EndingSessionScreen />}
     </PhotoKioskLayout>

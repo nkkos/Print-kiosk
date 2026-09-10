@@ -16,13 +16,22 @@ const FROM_EMAIL = process.env.RESEND_FROM_EMAIL ?? 'noreply@kiosk.example';
 // same reasoning as GET /api/config's portalUrl (server/routes.ts).
 const PORTAL_URL = process.env.PORTAL_URL ?? `http://${getLanIPv4()}:5173`;
 
+// The SDK does NOT throw on an API-level failure (a rejected recipient, a
+// domain-verification issue, etc.) — it resolves normally with `{ data:
+// null, error }`. Every send helper in this file checks `error` explicitly
+// (confirmed via a real Resend rejection during photo-kiosk testing —
+// nothing here threw, so a caller's try/catch never saw it) — without that
+// check, a failed send is silently reported as a success.
 async function sendEmail(to: string, subject: string, html: string, consoleLink: string) {
   if (!resend) {
     console.log(`[emailSender] RESEND_API_KEY not set — would send to ${to}: ${subject}`);
     console.log(`[emailSender] Link: ${consoleLink}`);
     return;
   }
-  await resend.emails.send({ from: FROM_EMAIL, to, subject, html });
+  const { error } = await resend.emails.send({ from: FROM_EMAIL, to, subject, html });
+  if (error) {
+    throw new Error(error.message);
+  }
 }
 
 export async function sendVerificationEmail(email: string, token: string): Promise<void> {
@@ -59,11 +68,39 @@ export async function sendScanEmail(email: string, pdfBuffer: Buffer): Promise<v
   // plain JSON.stringify(). A raw Buffer serializes to `{"type":"Buffer",
   // "data":[...]}`, not a valid attachment, which the API rejects — base64
   // ourselves first.
-  await resend.emails.send({
+  const { error } = await resend.emails.send({
     from: FROM_EMAIL,
     to: email,
     subject: 'Your scanned document',
     html: '<p>Your scanned document is attached as a PDF.</p>',
     attachments: [{ filename: 'scan.pdf', content: pdfBuffer.toString('base64') }],
   });
+  if (error) {
+    throw new Error(error.message);
+  }
+}
+
+// Photo kiosk's "send me a copy" delivery (server/photoShareStore.ts's own
+// comment explains why this is a deliberate, narrow exception to that
+// feature's usual no-server-side-photo-bytes rule) — same attachment
+// pattern as sendScanEmail above.
+export async function sendPhotoEmail(
+  email: string,
+  imageBuffer: Buffer,
+  filename: string,
+): Promise<void> {
+  if (!resend) {
+    console.log(`[emailSender] RESEND_API_KEY not set — would send photo to ${email}`);
+    return;
+  }
+  const { error } = await resend.emails.send({
+    from: FROM_EMAIL,
+    to: email,
+    subject: 'Ваше фото',
+    html: '<p>Ваше фото на документы — во вложении.</p>',
+    attachments: [{ filename, content: imageBuffer.toString('base64') }],
+  });
+  if (error) {
+    throw new Error(error.message);
+  }
 }
