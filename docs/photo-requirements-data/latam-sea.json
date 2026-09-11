@@ -1,0 +1,2085 @@
+{
+  "batch": "Latin America + Southeast Asia",
+  "countries": [
+    {
+      "country": "Бразилия",
+      "documents": [
+        {
+          "documentType": "Паспорт",
+          "requirements": [
+            {
+              "category": "photoWidthMm",
+              "value": 50,
+              "unit": "mm",
+              "mappedToSchemaField": "photoWidthMm",
+              "confidence": "high",
+              "sourceName": "Polícia Federal (gov.br/pf) – 'Fotografia 5x7: o que preciso saber?'",
+              "sourceUrl": "https://www.gov.br/pf/pt-br/assuntos/passaporte/ajuda/duvidas_/documentacao/documentacao-fotografia-5x7-o-que-preciso",
+              "notes": "Fetched directly. IMPORTANT scope note: this printed 5x7cm photo is required ONLY for applicants under 5 years old. Applicants 5+ have their photo captured live by Polícia Federal at the appointment — no printed/uploaded photo is used, so most granular crop specs below are simply not published for the general adult case."
+            },
+            {
+              "category": "photoHeightMm",
+              "value": 70,
+              "unit": "mm",
+              "mappedToSchemaField": "photoHeightMm",
+              "confidence": "high",
+              "sourceName": "Polícia Federal (gov.br/pf)",
+              "sourceUrl": "https://www.gov.br/pf/pt-br/assuntos/passaporte/ajuda/duvidas_/documentacao/documentacao-fotografia-5x7-o-que-preciso",
+              "notes": "Same 5x7cm (50x70mm) rule, under-5 applicants only."
+            },
+            {
+              "category": "dpi",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": "dpi",
+              "confidence": "low",
+              "sourceName": "Various photo-print aggregators (fotira.com.br, aipassportphotos.com)",
+              "sourceUrl": "https://fotira.com.br/foto-passaporte-br",
+              "notes": "No official DPI figure found on gov.br/pf. Aggregators disagree with each other: figures cited range from 300 DPI to 400 DPI to 600 DPI for the equivalent ~591x827px image. Recording as null rather than picking one arbitrarily."
+            },
+            {
+              "category": "headHeightMinMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "headHeightMinMm",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not stated by Polícia Federal. Plausibly moot since PF's own live-capture system (used for 95%+ of applicants) is not a publicly documented consumer crop spec."
+            },
+            {
+              "category": "headHeightMaxMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "headHeightMaxMm",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not stated by Polícia Federal."
+            },
+            {
+              "category": "eyeLineFromBottomMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "eyeLineFromBottomMm",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not stated anywhere found."
+            },
+            {
+              "category": "marginTopMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "marginTopMm",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not stated anywhere found."
+            },
+            {
+              "category": "chinPositionFromBottomMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not stated anywhere found; no schema field exists for this anchor."
+            },
+            {
+              "category": "headWidthMinMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "headWidthMinMm",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not stated anywhere found."
+            },
+            {
+              "category": "headWidthMaxMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "headWidthMaxMm",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not stated anywhere found."
+            },
+            {
+              "category": "bothEarsVisibleRequired",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not stated anywhere found."
+            },
+            {
+              "category": "horizontalCenteringTolerance",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not stated anywhere found."
+            },
+            {
+              "category": "poseToleranceDegrees",
+              "value": null,
+              "unit": "degrees",
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not stated anywhere found."
+            },
+            {
+              "category": "eyeVisibilityZonePercent",
+              "value": null,
+              "unit": "percent",
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not stated anywhere found."
+            },
+            {
+              "category": "backgroundColor",
+              "value": "White (fundo branco)",
+              "unit": null,
+              "mappedToSchemaField": "backgroundRequirement",
+              "confidence": "high",
+              "sourceName": "Polícia Federal (gov.br/pf)",
+              "sourceUrl": "https://www.gov.br/pf/pt-br/assuntos/passaporte/ajuda/duvidas_/documentacao/documentacao-fotografia-5x7-o-que-preciso",
+              "notes": "Confirmed via direct fetch."
+            },
+            {
+              "category": "backgroundColorHex",
+              "value": "#FFFFFF",
+              "unit": null,
+              "mappedToSchemaField": "backgroundColorHex",
+              "confidence": "high",
+              "sourceName": "Polícia Federal (gov.br/pf)",
+              "sourceUrl": "https://www.gov.br/pf/pt-br/assuntos/passaporte/ajuda/duvidas_/documentacao/documentacao-fotografia-5x7-o-que-preciso",
+              "notes": "Direct inference from stated plain white background."
+            },
+            {
+              "category": "lightingRequirement",
+              "value": "Uniform lighting, no shadows on the face, no glare/reflections, no red-eye",
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "medium",
+              "sourceName": "Ministério das Relações Exteriores – Consulado (gov.br/mre)",
+              "sourceUrl": "https://www.gov.br/mre/pt-br/consulado-atlanta/servicos-consulares/passaportes/foto-para-passaporte",
+              "notes": "Content attributed to this real gov.br/mre URL via search-engine indexing; direct WebFetch of this page and the Chicago consulate equivalent were both blocked by a CAPTCHA wall during this research, so the exact original wording could not be independently re-verified."
+            },
+            {
+              "category": "expressionRequirement",
+              "value": "Eyes must be open (closed-eye photos are rejected, except for newborns); the photo must currently resemble the applicant",
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "high",
+              "sourceName": "Polícia Federal (gov.br/pf)",
+              "sourceUrl": "https://www.gov.br/pf/pt-br/assuntos/passaporte/ajuda/duvidas_/documentacao/documentacao-fotografia-5x7-o-que-preciso",
+              "notes": "Directly fetched; applies to the under-5 printed-photo case specifically."
+            },
+            {
+              "category": "glassesPolicy",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not addressed on the official PF page fetched. Since adults are photographed live by PF, a public glasses policy for a submitted photo may simply not exist as a published rule."
+            },
+            {
+              "category": "headCoveringPolicy",
+              "value": "Hats and jewelry not permitted",
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "medium",
+              "sourceName": "Ministério das Relações Exteriores – Consulado (gov.br/mre)",
+              "sourceUrl": "https://www.gov.br/mre/pt-br/consulado-atlanta/servicos-consulares/passaportes/foto-para-passaporte",
+              "notes": "Same CAPTCHA-blocked-direct-fetch caveat as lightingRequirement above."
+            },
+            {
+              "category": "recencyMonths",
+              "value": 6,
+              "unit": "months",
+              "mappedToSchemaField": null,
+              "confidence": "medium",
+              "sourceName": "Ministério das Relações Exteriores – Consulado (gov.br/mre)",
+              "sourceUrl": "https://www.gov.br/mre/pt-br/consulado-atlanta/servicos-consulares/passaportes/foto-para-passaporte",
+              "notes": "'tirada há no máximo 6 meses'. Same CAPTCHA-blocked-direct-fetch caveat as above."
+            },
+            {
+              "category": "colorRequirement",
+              "value": "Full color",
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "medium",
+              "sourceName": "Ministério das Relações Exteriores – Consulado (gov.br/mre)",
+              "sourceUrl": "https://www.gov.br/mre/pt-br/consulado-atlanta/servicos-consulares/passaportes/foto-para-passaporte",
+              "notes": "'Foto facial colorida'. Same CAPTCHA-blocked-direct-fetch caveat as above."
+            },
+            {
+              "category": "printPaperRequirement",
+              "value": "High-quality photographic paper (impressa em papel fotográfico de alta qualidade)",
+              "unit": null,
+              "mappedToSchemaField": "printNotes",
+              "confidence": "medium",
+              "sourceName": "Ministério das Relações Exteriores – Consulado (gov.br/mre)",
+              "sourceUrl": "https://www.gov.br/mre/pt-br/consulado-atlanta/servicos-consulares/passaportes/foto-para-passaporte",
+              "notes": "Same CAPTCHA-blocked-direct-fetch caveat as above."
+            },
+            {
+              "category": "copiesRequired",
+              "value": "1 (only applicable to applicants under 5 years old; N/A for 5+, whose photo is captured live)",
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "high",
+              "sourceName": "Polícia Federal (gov.br/pf)",
+              "sourceUrl": "https://www.gov.br/pf/pt-br/assuntos/passaporte/ajuda/duvidas_/documentacao/documentacao-fotografia-5x7-o-que-preciso",
+              "notes": "No real mapping to our copiesPerSheet schema field — that field describes kiosk print-layout (copies per physical sheet), not the government's required submission copy count. Different concept, left unmapped."
+            },
+            {
+              "category": "digitalFileRequirement",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "No separate digital/online-upload photo spec found; Brazilian passport applications are in-person at PF only."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "country": "Мексика",
+      "documents": [
+        {
+          "documentType": "Паспорт",
+          "requirements": [
+            {
+              "category": "photoWidthMm",
+              "value": 35,
+              "unit": "mm",
+              "mappedToSchemaField": "photoWidthMm",
+              "confidence": "medium",
+              "sourceName": "Secretaría de Relaciones Exteriores (SRE) / Consulmex network",
+              "sourceUrl": "https://consulmex.sre.gob.mx/orlando/images/stories/Documentacion/doc_requisitos_pasaporte.pdf",
+              "notes": "Cited as '4.5 x 3.5 cm tamaño pasaporte' across multiple official sre.gob.mx/consulmex.sre.gob.mx pages. Direct WebFetch of sre.gob.mx and several consulmex.sre.gob.mx pages/PDFs was blocked by Radware bot-protection or returned unreadable binary during this research, so content is via search-engine summarization of the official domain rather than an independently re-verified direct read."
+            },
+            {
+              "category": "photoHeightMm",
+              "value": 45,
+              "unit": "mm",
+              "mappedToSchemaField": "photoHeightMm",
+              "confidence": "medium",
+              "sourceName": "Secretaría de Relaciones Exteriores (SRE) / Consulmex network",
+              "sourceUrl": "https://consulmex.sre.gob.mx/orlando/images/stories/Documentacion/doc_requisitos_pasaporte.pdf",
+              "notes": "Same verification caveat as photoWidthMm."
+            },
+            {
+              "category": "dpi",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": "dpi",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not found."
+            },
+            {
+              "category": "headHeightMinMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "headHeightMinMm",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not found in any SRE source read; Mexico's e-passport is understood to be ICAO-compliant but SRE does not appear to publish its own head-size numbers."
+            },
+            {
+              "category": "headHeightMaxMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "headHeightMaxMm",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not found."
+            },
+            {
+              "category": "eyeLineFromBottomMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "eyeLineFromBottomMm",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not found."
+            },
+            {
+              "category": "marginTopMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "marginTopMm",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not found."
+            },
+            {
+              "category": "chinPositionFromBottomMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not found; no schema field exists for this anchor."
+            },
+            {
+              "category": "headWidthMinMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "headWidthMinMm",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not found."
+            },
+            {
+              "category": "headWidthMaxMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "headWidthMaxMm",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not found."
+            },
+            {
+              "category": "bothEarsVisibleRequired",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not found."
+            },
+            {
+              "category": "horizontalCenteringTolerance",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not found."
+            },
+            {
+              "category": "poseToleranceDegrees",
+              "value": null,
+              "unit": "degrees",
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not found."
+            },
+            {
+              "category": "eyeVisibilityZonePercent",
+              "value": null,
+              "unit": "percent",
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not found."
+            },
+            {
+              "category": "backgroundColor",
+              "value": "White (fondo blanco)",
+              "unit": null,
+              "mappedToSchemaField": "backgroundRequirement",
+              "confidence": "medium",
+              "sourceName": "Secretaría de Relaciones Exteriores (SRE) / Consulmex network",
+              "sourceUrl": "https://sre.gob.mx/tramites-y-servicios/pasaportes/282",
+              "notes": "Consistently repeated as 'fondo blanco' across official SRE/consulate pages; sre.gob.mx itself returned a bot-protection block on direct fetch."
+            },
+            {
+              "category": "backgroundColorHex",
+              "value": "#FFFFFF",
+              "unit": null,
+              "mappedToSchemaField": "backgroundColorHex",
+              "confidence": "medium",
+              "sourceName": "Secretaría de Relaciones Exteriores (SRE)",
+              "sourceUrl": "https://sre.gob.mx/tramites-y-servicios/pasaportes/282",
+              "notes": "Direct inference from stated white background."
+            },
+            {
+              "category": "lightingRequirement",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "No explicit lighting/shadow rule found (only a paper-finish rule against shine, recorded separately under printPaperRequirement)."
+            },
+            {
+              "category": "expressionRequirement",
+              "value": "Neutral, no smiling (sin sonreír)",
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "medium",
+              "sourceName": "Secretaría de Relaciones Exteriores (SRE) / Consulmex network",
+              "sourceUrl": "https://sre.gob.mx/tramites-y-servicios/pasaportes/282",
+              "notes": "Same verification caveat as photoWidthMm."
+            },
+            {
+              "category": "glassesPolicy",
+              "value": "No glasses / no item that prevents full identification (sin anteojos)",
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "medium",
+              "sourceName": "Secretaría de Relaciones Exteriores (SRE) / Consulmex network",
+              "sourceUrl": "https://sre.gob.mx/tramites-y-servicios/pasaportes/282",
+              "notes": "Same verification caveat as photoWidthMm."
+            },
+            {
+              "category": "headCoveringPolicy",
+              "value": "Head uncovered (cabeza descubierta)",
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "medium",
+              "sourceName": "Secretaría de Relaciones Exteriores (SRE) / Consulmex network",
+              "sourceUrl": "https://sre.gob.mx/tramites-y-servicios/pasaportes/282",
+              "notes": "Same verification caveat as photoWidthMm. No stated religious/medical exception was found either way."
+            },
+            {
+              "category": "recencyMonths",
+              "value": 1,
+              "unit": "months (official text states 'no more than 30 days')",
+              "mappedToSchemaField": null,
+              "confidence": "medium",
+              "sourceName": "Secretaría de Relaciones Exteriores (SRE) / Consulmex network",
+              "sourceUrl": "https://sre.gob.mx/tramites-y-servicios/pasaportes/282",
+              "notes": "'tomada con una anterioridad no mayor a 30 días'. Same verification caveat as photoWidthMm."
+            },
+            {
+              "category": "colorRequirement",
+              "value": "Full color (a color)",
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "medium",
+              "sourceName": "Secretaría de Relaciones Exteriores (SRE) / Consulmex network",
+              "sourceUrl": "https://sre.gob.mx/tramites-y-servicios/pasaportes/282",
+              "notes": "Same verification caveat as photoWidthMm."
+            },
+            {
+              "category": "printPaperRequirement",
+              "value": "Matte finish; must not be shiny/glossy, digitally altered, or retouched (no debe ser brillante, digitalizada ni retocada)",
+              "unit": null,
+              "mappedToSchemaField": "printNotes",
+              "confidence": "medium",
+              "sourceName": "Secretaría de Relaciones Exteriores (SRE) / Consulmex network",
+              "sourceUrl": "https://sre.gob.mx/tramites-y-servicios/pasaportes/282",
+              "notes": "Same verification caveat as photoWidthMm."
+            },
+            {
+              "category": "copiesRequired",
+              "value": "CONFLICT: 2 photos per some consulate pages (e.g. consulmex.sre.gob.mx/calexico), 3 photos per others found in search results",
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "medium",
+              "sourceName": "Consulmex network (multiple consulates)",
+              "sourceUrl": "https://consulmex.sre.gob.mx/calexico/index.php/avisos/246-pasaportes-4",
+              "notes": "Different consular posts appear to state different copy counts (2 vs 3) in the sources found; recording both rather than picking one. Note that in most in-country SRE module applications the photo is captured digitally on-site anyway, so a printed-copy count may only really apply to some consular contexts abroad. Also not mappable to copiesPerSheet (kiosk print-layout field, different concept)."
+            },
+            {
+              "category": "digitalFileRequirement",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "SRE captures the photo digitally in person at the appointment; no separate consumer-facing upload spec was found."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "country": "Аргентина",
+      "documents": [
+        {
+          "documentType": "Паспорт",
+          "requirements": [
+            {
+              "category": "photoWidthMm",
+              "value": 40,
+              "unit": "mm",
+              "mappedToSchemaField": "photoWidthMm",
+              "confidence": "high",
+              "sourceName": "Consulado General en Roma – Cancillería Argentina",
+              "sourceUrl": "https://croma.cancilleria.gob.ar/es/requisitos-para-la-tramitacion-de-pasaporte-argentino-y-solicitud-de-turnos",
+              "notes": "Directly fetched: '1 foto carnet (4x4 de frente, fondo blanco, medio busto, sin sombrero y sin anteojos)'. IMPORTANT: within Argentina, ordinary passport photos are captured live via the RENAPER biometric system at time of application — the printed 4x4cm spec applies to consular applications processed abroad (this page). See also the emergency-passport conflict noted under backgroundColor."
+            },
+            {
+              "category": "photoHeightMm",
+              "value": 40,
+              "unit": "mm",
+              "mappedToSchemaField": "photoHeightMm",
+              "confidence": "high",
+              "sourceName": "Consulado General en Roma – Cancillería Argentina",
+              "sourceUrl": "https://croma.cancilleria.gob.ar/es/requisitos-para-la-tramitacion-de-pasaporte-argentino-y-solicitud-de-turnos",
+              "notes": "Same 4x4cm quote; the emergency-passport variant (see enzel.cancilleria.gob.ar) also uses 4x4cm, so size itself is not in conflict, only background/pose."
+            },
+            {
+              "category": "dpi",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": "dpi",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not found."
+            },
+            {
+              "category": "headHeightMinMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "headHeightMinMm",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not found in official sources; a generic '70-80% of frame' figure appears on aggregator sites (e.g. smartphone-id.com) but not on any cancilleria.gob.ar page read."
+            },
+            {
+              "category": "headHeightMaxMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "headHeightMaxMm",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not found officially."
+            },
+            {
+              "category": "eyeLineFromBottomMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "eyeLineFromBottomMm",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not found."
+            },
+            {
+              "category": "marginTopMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "marginTopMm",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not found."
+            },
+            {
+              "category": "chinPositionFromBottomMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not found; no schema field exists for this anchor."
+            },
+            {
+              "category": "headWidthMinMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "headWidthMinMm",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not found."
+            },
+            {
+              "category": "headWidthMaxMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "headWidthMaxMm",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not found."
+            },
+            {
+              "category": "bothEarsVisibleRequired",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not found."
+            },
+            {
+              "category": "horizontalCenteringTolerance",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not found."
+            },
+            {
+              "category": "poseToleranceDegrees",
+              "value": null,
+              "unit": "degrees",
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "No numeric tolerance found, but see expressionRequirement for a qualitative pose difference between document types."
+            },
+            {
+              "category": "eyeVisibilityZonePercent",
+              "value": null,
+              "unit": "percent",
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not found."
+            },
+            {
+              "category": "backgroundColor",
+              "value": "CONFLICT: White (fondo blanco) for regular/provisional consular passport photos; light blue (fondo celeste) for emergency passport photos",
+              "unit": null,
+              "mappedToSchemaField": "backgroundRequirement",
+              "confidence": "medium",
+              "sourceName": "Consulado General en Roma (regular) vs. Consulado en Tel Aviv/Enzel (emergency) – Cancillería Argentina",
+              "sourceUrl": "https://croma.cancilleria.gob.ar/es/requisitos-para-la-tramitacion-de-pasaporte-argentino-y-solicitud-de-turnos",
+              "notes": "Regular/provisional consular passport page (fetched directly, high confidence) states 'fondo blanco'. A separate official PDF for EMERGENCY passports (https://enzel.cancilleria.gob.ar/userfiles/EMERGENCIA_Pasaporte_EXPEDICION_Instrucciones_Formulario.pdf, found via search snippet only, not independently fetched) states '5 fotos 4x4cm color 3/4 perfil derecho fondo celeste' — a genuinely different, document-subtype-specific rule, not a contradiction of the same fact. Overall confidence set to medium because the emergency-variant source was not independently re-verified by direct fetch."
+            },
+            {
+              "category": "backgroundColorHex",
+              "value": "#FFFFFF (regular); light blue/'celeste' has no stated hex",
+              "unit": null,
+              "mappedToSchemaField": "backgroundColorHex",
+              "confidence": "medium",
+              "sourceName": "Consulado General en Roma – Cancillería Argentina",
+              "sourceUrl": "https://croma.cancilleria.gob.ar/es/requisitos-para-la-tramitacion-de-pasaporte-argentino-y-solicitud-de-turnos",
+              "notes": "Only the white/regular case has a clean hex mapping; 'celeste' (light blue) is a color name without a stated hex value anywhere found."
+            },
+            {
+              "category": "lightingRequirement",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not found."
+            },
+            {
+              "category": "expressionRequirement",
+              "value": "Regular/provisional: frontal pose, half-bust framing ('de frente', 'medio busto'). Emergency passport: unusual 3/4 RIGHT PROFILE pose ('3/4 perfil derecho') rather than frontal.",
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "medium",
+              "sourceName": "Cancillería Argentina (croma.cancilleria.gob.ar directly fetched; enzel.cancilleria.gob.ar PDF via search snippet)",
+              "sourceUrl": "https://croma.cancilleria.gob.ar/es/requisitos-para-la-tramitacion-de-pasaporte-argentino-y-solicitud-de-turnos",
+              "notes": "The 3/4-profile pose for emergency passports is an unusual deviation from the standard frontal-pose convention used almost everywhere else in this dataset — worth flagging for product design since a kiosk auto-crop tool tuned for frontal faces would mishandle this document subtype."
+            },
+            {
+              "category": "glassesPolicy",
+              "value": "No glasses (sin anteojos)",
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "high",
+              "sourceName": "Consulado General en Roma – Cancillería Argentina",
+              "sourceUrl": "https://croma.cancilleria.gob.ar/es/requisitos-para-la-tramitacion-de-pasaporte-argentino-y-solicitud-de-turnos",
+              "notes": "Stated for the regular/provisional case; the emergency-passport snippet did not explicitly mention glasses either way."
+            },
+            {
+              "category": "headCoveringPolicy",
+              "value": "No hat (sin sombrero)",
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "high",
+              "sourceName": "Consulado General en Roma – Cancillería Argentina",
+              "sourceUrl": "https://croma.cancilleria.gob.ar/es/requisitos-para-la-tramitacion-de-pasaporte-argentino-y-solicitud-de-turnos",
+              "notes": "No stated religious/medical exception found."
+            },
+            {
+              "category": "recencyMonths",
+              "value": null,
+              "unit": "months",
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not stated in any source read."
+            },
+            {
+              "category": "colorRequirement",
+              "value": "Full color (color)",
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "high",
+              "sourceName": "Cancillería Argentina",
+              "sourceUrl": "https://croma.cancilleria.gob.ar/es/requisitos-para-la-tramitacion-de-pasaporte-argentino-y-solicitud-de-turnos",
+              "notes": "Stated for both the regular and emergency variants."
+            },
+            {
+              "category": "printPaperRequirement",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": "printNotes",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not found."
+            },
+            {
+              "category": "copiesRequired",
+              "value": "1 (regular/provisional consular passport) vs. 5 (emergency passport)",
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "medium",
+              "sourceName": "Cancillería Argentina (both variants)",
+              "sourceUrl": "https://croma.cancilleria.gob.ar/es/requisitos-para-la-tramitacion-de-pasaporte-argentino-y-solicitud-de-turnos",
+              "notes": "Different document subtypes require different copy counts; not mappable to copiesPerSheet (different concept — kiosk print-layout, not application submission count)."
+            },
+            {
+              "category": "digitalFileRequirement",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Within Argentina, ordinary passport photos are captured live via the RENAPER biometric system at the time of application — no printed or uploaded photo is required domestically. No separate digital-upload spec was found for the consular/emergency pathways either."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "country": "Таиланд",
+      "documents": [
+        {
+          "documentType": "Паспорт",
+          "requirements": [
+            {
+              "category": "photoWidthMm",
+              "value": 35,
+              "unit": "mm",
+              "mappedToSchemaField": "photoWidthMm",
+              "confidence": "medium",
+              "sourceName": "Department of Consular Affairs, Royal Thai MFA – 'ICAO Guidelines for Passport Photographs'",
+              "sourceUrl": "https://image.mfa.go.th/mfa/0/P5NCnBapvr/Photo_guideline.pdf",
+              "notes": "This PDF is hosted on the official image.mfa.go.th domain and is titled as MFA's own ICAO photo guideline, confirming Thailand follows the ICAO Doc 9303 baseline (35x45mm) — but the PDF itself is image/binary and could not be parsed as readable text during this research, so the 35x45mm figure is corroborated via aggregator consensus (e.g. visafoto.com, passport-photo.online) rather than a directly-read quote. consular.mfa.go.th's own passport-document checklist page (doc4passport) did not state photo geometry in the page content fetched — it only referenced a downloadable PDF checklist that could not be resolved to a direct, readable URL in this session."
+            },
+            {
+              "category": "photoHeightMm",
+              "value": 45,
+              "unit": "mm",
+              "mappedToSchemaField": "photoHeightMm",
+              "confidence": "medium",
+              "sourceName": "Department of Consular Affairs, Royal Thai MFA",
+              "sourceUrl": "https://image.mfa.go.th/mfa/0/P5NCnBapvr/Photo_guideline.pdf",
+              "notes": "Same caveat as photoWidthMm."
+            },
+            {
+              "category": "dpi",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": "dpi",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not found."
+            },
+            {
+              "category": "headHeightMinMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "headHeightMinMm",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not found in any Thai government source read; presumed to follow ICAO baseline (~70-80% face height) given the ICAO-guideline framing, but this is inference, not a confirmed number."
+            },
+            {
+              "category": "headHeightMaxMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "headHeightMaxMm",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not found; see headHeightMinMm note."
+            },
+            {
+              "category": "eyeLineFromBottomMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "eyeLineFromBottomMm",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not found."
+            },
+            {
+              "category": "marginTopMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "marginTopMm",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not found."
+            },
+            {
+              "category": "chinPositionFromBottomMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not found; no schema field exists for this anchor."
+            },
+            {
+              "category": "headWidthMinMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "headWidthMinMm",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not found."
+            },
+            {
+              "category": "headWidthMaxMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "headWidthMaxMm",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not found."
+            },
+            {
+              "category": "bothEarsVisibleRequired",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not found."
+            },
+            {
+              "category": "horizontalCenteringTolerance",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not found."
+            },
+            {
+              "category": "poseToleranceDegrees",
+              "value": null,
+              "unit": "degrees",
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not found."
+            },
+            {
+              "category": "eyeVisibilityZonePercent",
+              "value": null,
+              "unit": "percent",
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not found."
+            },
+            {
+              "category": "backgroundColor",
+              "value": "White/plain (unconfirmed for passport specifically)",
+              "unit": null,
+              "mappedToSchemaField": "backgroundRequirement",
+              "confidence": "low",
+              "sourceName": "Aggregator consensus (visafoto.com, mybiometricphotos.com) for Thai visa/passport photos",
+              "sourceUrl": "https://visafoto.com/th-visa-photo",
+              "notes": "Commonly cited but not confirmed by directly reading a consular.mfa.go.th or image.mfa.go.th passport-specific page during this research."
+            },
+            {
+              "category": "backgroundColorHex",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": "backgroundColorHex",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not confirmed; see backgroundColor."
+            },
+            {
+              "category": "lightingRequirement",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not found."
+            },
+            {
+              "category": "expressionRequirement",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not found in a Thai-government-specific source (only generic ICAO conventions inferred)."
+            },
+            {
+              "category": "glassesPolicy",
+              "value": "No hat or sunglasses (found stated for Thai VISA photos, taken within 6 months) — not confirmed as identical wording for the passport itself",
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "low",
+              "sourceName": "Thai MFA Non-Immigrant Visa 'O-A' page (via search summary)",
+              "sourceUrl": "https://www.mfa.go.th/en/page/non-immigrant-visa-o-a",
+              "notes": "This rule was found in a VISA application context, not a passport-application page; flagged as uncertain applicability to the passport document type."
+            },
+            {
+              "category": "headCoveringPolicy",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not found for the passport specifically."
+            },
+            {
+              "category": "recencyMonths",
+              "value": 6,
+              "unit": "months",
+              "mappedToSchemaField": null,
+              "confidence": "low",
+              "sourceName": "Thai MFA Non-Immigrant Visa 'O-A' page (via search summary)",
+              "sourceUrl": "https://www.mfa.go.th/en/page/non-immigrant-visa-o-a",
+              "notes": "Same visa-context caveat as glassesPolicy — not confirmed for the ordinary passport application specifically."
+            },
+            {
+              "category": "colorRequirement",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not found for the passport specifically."
+            },
+            {
+              "category": "printPaperRequirement",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": "printNotes",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not found."
+            },
+            {
+              "category": "copiesRequired",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "A '2 photos' figure was found only in a visa-application context (see glassesPolicy note), not confirmed for the ordinary passport."
+            },
+            {
+              "category": "digitalFileRequirement",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not found. This is the weakest-covered country in this batch: consular.mfa.go.th's passport-document page (doc4passport) rendered with almost no extractable geometry/instructional text in this session, and the official ICAO-guideline PDF hosted at image.mfa.go.th could not be parsed as text. A follow-up with a PDF-capable fetch or a Thai-language specialist search would likely do better."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "country": "Филиппины",
+      "documents": [
+        {
+          "documentType": "Паспорт",
+          "requirements": [
+            {
+              "category": "photoWidthMm",
+              "value": 35,
+              "unit": "mm",
+              "mappedToSchemaField": "photoWidthMm",
+              "confidence": "medium",
+              "sourceName": "Department of Foreign Affairs (DFA) specification, as cited by multiple sources",
+              "sourceUrl": "https://www.dfa.gov.ph/passport",
+              "notes": "Consistently and specifically cited as 35x45mm/4.5x3.5cm across many independent sources attributing the figure to DFA, but every direct WebFetch attempt against dfa.gov.ph and its consular-post subdomains (chicagopcg.dfa.gov.ph, vancouverpcg.dfa.gov.ph) returned HTTP 403 during this research, so no official page could be independently read to confirm exact wording."
+            },
+            {
+              "category": "photoHeightMm",
+              "value": 45,
+              "unit": "mm",
+              "mappedToSchemaField": "photoHeightMm",
+              "confidence": "medium",
+              "sourceName": "Department of Foreign Affairs (DFA)",
+              "sourceUrl": "https://www.dfa.gov.ph/passport",
+              "notes": "Same 403-blocked-direct-fetch caveat as photoWidthMm."
+            },
+            {
+              "category": "dpi",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": "dpi",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not found (moot in practice since DFA captures the photo live on-site domestically)."
+            },
+            {
+              "category": "headHeightMinMm",
+              "value": 32,
+              "unit": "mm",
+              "mappedToSchemaField": "headHeightMinMm",
+              "confidence": "medium",
+              "sourceName": "DFA specification, as cited by multiple sources (chin-to-crown)",
+              "sourceUrl": "https://www.dfa.gov.ph/passport",
+              "notes": "Same 403-blocked-direct-fetch caveat as photoWidthMm."
+            },
+            {
+              "category": "headHeightMaxMm",
+              "value": 36,
+              "unit": "mm",
+              "mappedToSchemaField": "headHeightMaxMm",
+              "confidence": "medium",
+              "sourceName": "DFA specification, as cited by multiple sources",
+              "sourceUrl": "https://www.dfa.gov.ph/passport",
+              "notes": "Same caveat as headHeightMinMm."
+            },
+            {
+              "category": "eyeLineFromBottomMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "eyeLineFromBottomMm",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not found."
+            },
+            {
+              "category": "marginTopMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "marginTopMm",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not found."
+            },
+            {
+              "category": "chinPositionFromBottomMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not found; no schema field exists for this anchor."
+            },
+            {
+              "category": "headWidthMinMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "headWidthMinMm",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not found."
+            },
+            {
+              "category": "headWidthMaxMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "headWidthMaxMm",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not found."
+            },
+            {
+              "category": "bothEarsVisibleRequired",
+              "value": true,
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "medium",
+              "sourceName": "DFA specification, as cited by multiple sources",
+              "sourceUrl": "https://www.dfa.gov.ph/passport",
+              "notes": "'Ears should also be visible' — same verification caveat as photoWidthMm."
+            },
+            {
+              "category": "horizontalCenteringTolerance",
+              "value": "Midpoints of the mouth and the bridge of the nose should align along a vertical center line",
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "medium",
+              "sourceName": "DFA photo-capture guidelines, as cited by multiple sources",
+              "sourceUrl": "https://www.dfa.gov.ph/passport",
+              "notes": "This is a symmetry/centering rule rather than a numeric tolerance; same verification caveat as photoWidthMm."
+            },
+            {
+              "category": "poseToleranceDegrees",
+              "value": null,
+              "unit": "degrees",
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Only a qualitative 'no rotation or tilting of the head' rule was found, no numeric degree value."
+            },
+            {
+              "category": "eyeVisibilityZonePercent",
+              "value": null,
+              "unit": "percent",
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not found."
+            },
+            {
+              "category": "backgroundColor",
+              "value": "Plain white (current ePassport spec; older machine-readable passport used royal/light blue)",
+              "unit": null,
+              "mappedToSchemaField": "backgroundRequirement",
+              "confidence": "medium",
+              "sourceName": "DFA specification, as cited by multiple sources",
+              "sourceUrl": "https://www.dfa.gov.ph/passport",
+              "notes": "Multiple sources independently note the historical white-vs-blue change when the ePassport was introduced — flagging this as a genuine historical conflict rather than a current disagreement; white is current. Same 403-blocked-direct-fetch caveat as photoWidthMm."
+            },
+            {
+              "category": "backgroundColorHex",
+              "value": "#FFFFFF",
+              "unit": null,
+              "mappedToSchemaField": "backgroundColorHex",
+              "confidence": "medium",
+              "sourceName": "DFA specification",
+              "sourceUrl": "https://www.dfa.gov.ph/passport",
+              "notes": "Direct inference from stated plain white; same verification caveat as photoWidthMm."
+            },
+            {
+              "category": "lightingRequirement",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not found (moot since DFA captures on-site with its own equipment)."
+            },
+            {
+              "category": "expressionRequirement",
+              "value": "Neutral expression, mouth closed, both eyebrows visible; no contrived expressions (raised eyebrows, squinting); a slight smile without showing teeth is acceptable",
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "medium",
+              "sourceName": "DFA photo-capture guidelines, as cited by multiple sources",
+              "sourceUrl": "https://www.dfa.gov.ph/passport",
+              "notes": "Same verification caveat as photoWidthMm."
+            },
+            {
+              "category": "glassesPolicy",
+              "value": "Eyeglasses, contact lenses, and facial piercings must be removed for photo capture",
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "medium",
+              "sourceName": "DFA photo-capture guidelines, as cited by multiple sources",
+              "sourceUrl": "https://www.dfa.gov.ph/passport",
+              "notes": "Same verification caveat as photoWidthMm."
+            },
+            {
+              "category": "headCoveringPolicy",
+              "value": "Head covering permitted only for documented religious or medical reasons; bangs/hair fringes must not cover the forehead or touch the eyebrows",
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "medium",
+              "sourceName": "DFA photo-capture guidelines, as cited by multiple sources",
+              "sourceUrl": "https://www.dfa.gov.ph/passport",
+              "notes": "Same verification caveat as photoWidthMm."
+            },
+            {
+              "category": "recencyMonths",
+              "value": null,
+              "unit": "months",
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not found (moot domestically since DFA captures the photo live at the appointment)."
+            },
+            {
+              "category": "colorRequirement",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not explicitly stated in any source read (full color is standard/assumed for a modern ePassport but not directly quoted)."
+            },
+            {
+              "category": "printPaperRequirement",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": "printNotes",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not found; domestic applicants do not submit a printed photo at all."
+            },
+            {
+              "category": "copiesRequired",
+              "value": "2 printed photos (35x45mm, white background) — but ONLY for overseas Filipino workers/Filipinos renewing at Philippine embassies/consulates abroad; domestic DFA applicants have their photo captured live on-site and submit nothing printed",
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "medium",
+              "sourceName": "DFA / Philippine embassy guidance, as cited by multiple sources",
+              "sourceUrl": "https://www.dfa.gov.ph/passport",
+              "notes": "Not mappable to copiesPerSheet (different concept). Same verification caveat as photoWidthMm."
+            },
+            {
+              "category": "digitalFileRequirement",
+              "value": "None — the passport.gov.ph eAppointment system does not accept photo uploads; all biometric photos are captured on-site by DFA staff",
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "medium",
+              "sourceName": "passport.gov.ph appointment system description, as cited by multiple sources",
+              "sourceUrl": "https://passport.gov.ph/",
+              "notes": "Direct WebFetch of passport.gov.ph-family pages was not successful (dfa.gov.ph subdomains returned 403); this reflects a consistently repeated description across multiple independent secondary sources rather than a directly-read primary quote."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "country": "Вьетнам",
+      "documents": [
+        {
+          "documentType": "Паспорт",
+          "requirements": [
+            {
+              "category": "photoWidthMm",
+              "value": 40,
+              "unit": "mm",
+              "mappedToSchemaField": "photoWidthMm",
+              "confidence": "high",
+              "sourceName": "Cục Quản lý xuất nhập cảnh (Vietnam Immigration Department) – electronic passport application portal FAQ",
+              "sourceUrl": "https://hochieu.xuatnhapcanh.gov.vn/faces/faq.jspx",
+              "notes": "Directly fetched official quote: '02 ảnh cỡ 4cm x 6cm, phông nền trắng, mặt nhìn thẳng, đầu để trần, không đeo kính màu' (2 photos, 4x6cm, white background, straight-facing, bare head, no colored glasses)."
+            },
+            {
+              "category": "photoHeightMm",
+              "value": 60,
+              "unit": "mm",
+              "mappedToSchemaField": "photoHeightMm",
+              "confidence": "high",
+              "sourceName": "Cục Quản lý xuất nhập cảnh – hochieu.xuatnhapcanh.gov.vn FAQ",
+              "sourceUrl": "https://hochieu.xuatnhapcanh.gov.vn/faces/faq.jspx",
+              "notes": "Same official quote as photoWidthMm."
+            },
+            {
+              "category": "dpi",
+              "value": 300,
+              "unit": "dpi (minimum)",
+              "mappedToSchemaField": "dpi",
+              "confidence": "low",
+              "sourceName": "aztax.com.vn (tax/legal services blog, not government)",
+              "sourceUrl": "https://aztax.com.vn/quy-dinh-chup-anh-ho-chieu-viet-nam/",
+              "notes": "Not confirmed on the official hochieu.xuatnhapcanh.gov.vn FAQ page fetched; that page instead separately implies a file-size cap for online uploads (see digitalFileRequirement)."
+            },
+            {
+              "category": "headHeightMinMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "headHeightMinMm",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "A '70-80% of frame' figure appears on aztax.com.vn (unofficial), not confirmed on the official FAQ page fetched."
+            },
+            {
+              "category": "headHeightMaxMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "headHeightMaxMm",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Same as headHeightMinMm."
+            },
+            {
+              "category": "eyeLineFromBottomMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "eyeLineFromBottomMm",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not found."
+            },
+            {
+              "category": "marginTopMm",
+              "value": 5,
+              "unit": "mm",
+              "mappedToSchemaField": "marginTopMm",
+              "confidence": "low",
+              "sourceName": "aztax.com.vn (tax/legal services blog, not government)",
+              "sourceUrl": "https://aztax.com.vn/quy-dinh-chup-anh-ho-chieu-viet-nam/",
+              "notes": "Cited as a 4-6mm range ('khoảng cách từ đỉnh đầu đến mép trên của ảnh khoảng 4-6 mm'); recorded as the midpoint 5mm. Not confirmed on any official xuatnhapcanh.gov.vn page read."
+            },
+            {
+              "category": "chinPositionFromBottomMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not found; no schema field exists for this anchor."
+            },
+            {
+              "category": "headWidthMinMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "headWidthMinMm",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not found."
+            },
+            {
+              "category": "headWidthMaxMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "headWidthMaxMm",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not found."
+            },
+            {
+              "category": "bothEarsVisibleRequired",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not found."
+            },
+            {
+              "category": "horizontalCenteringTolerance",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not found."
+            },
+            {
+              "category": "poseToleranceDegrees",
+              "value": null,
+              "unit": "degrees",
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not found."
+            },
+            {
+              "category": "eyeVisibilityZonePercent",
+              "value": null,
+              "unit": "percent",
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not found."
+            },
+            {
+              "category": "backgroundColor",
+              "value": "White (phông nền trắng)",
+              "unit": null,
+              "mappedToSchemaField": "backgroundRequirement",
+              "confidence": "high",
+              "sourceName": "Cục Quản lý xuất nhập cảnh – hochieu.xuatnhapcanh.gov.vn FAQ",
+              "sourceUrl": "https://hochieu.xuatnhapcanh.gov.vn/faces/faq.jspx",
+              "notes": "Directly fetched official quote."
+            },
+            {
+              "category": "backgroundColorHex",
+              "value": "#FFFFFF",
+              "unit": null,
+              "mappedToSchemaField": "backgroundColorHex",
+              "confidence": "high",
+              "sourceName": "Cục Quản lý xuất nhập cảnh",
+              "sourceUrl": "https://hochieu.xuatnhapcanh.gov.vn/faces/faq.jspx",
+              "notes": "Direct inference from stated white background."
+            },
+            {
+              "category": "lightingRequirement",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not stated in the official FAQ fetched."
+            },
+            {
+              "category": "expressionRequirement",
+              "value": "Straight-facing (mặt nhìn thẳng)",
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "high",
+              "sourceName": "Cục Quản lý xuất nhập cảnh – hochieu.xuatnhapcanh.gov.vn FAQ",
+              "sourceUrl": "https://hochieu.xuatnhapcanh.gov.vn/faces/faq.jspx",
+              "notes": "Directly fetched official quote; no separate mouth/eyes-open language found."
+            },
+            {
+              "category": "glassesPolicy",
+              "value": "No colored/tinted glasses (không đeo kính màu)",
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "high",
+              "sourceName": "Cục Quản lý xuất nhập cảnh – hochieu.xuatnhapcanh.gov.vn FAQ",
+              "sourceUrl": "https://hochieu.xuatnhapcanh.gov.vn/faces/faq.jspx",
+              "notes": "Directly fetched official quote; clear (non-tinted) glasses are not explicitly addressed either way."
+            },
+            {
+              "category": "headCoveringPolicy",
+              "value": "Bare/uncovered head (đầu để trần)",
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "high",
+              "sourceName": "Cục Quản lý xuất nhập cảnh – hochieu.xuatnhapcanh.gov.vn FAQ",
+              "sourceUrl": "https://hochieu.xuatnhapcanh.gov.vn/faces/faq.jspx",
+              "notes": "Directly fetched official quote; no stated religious/medical exception."
+            },
+            {
+              "category": "recencyMonths",
+              "value": null,
+              "unit": "months",
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not stated in the official FAQ fetched."
+            },
+            {
+              "category": "colorRequirement",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not explicitly stated in the official quote fetched (color is standard/assumed but not directly quoted)."
+            },
+            {
+              "category": "printPaperRequirement",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": "printNotes",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not found."
+            },
+            {
+              "category": "copiesRequired",
+              "value": 2,
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "high",
+              "sourceName": "Cục Quản lý xuất nhập cảnh – hochieu.xuatnhapcanh.gov.vn FAQ",
+              "sourceUrl": "https://hochieu.xuatnhapcanh.gov.vn/faces/faq.jspx",
+              "notes": "'02 ảnh' = 2 photos. Not mappable to copiesPerSheet (different concept)."
+            },
+            {
+              "category": "digitalFileRequirement",
+              "value": "For online applications on the same portal, uploaded photo must be JPEG format under 4MB; the system auto-checks face-ratio and white background",
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "medium",
+              "sourceName": "hochieu.xuatnhapcanh.gov.vn (via search-engine summary of the same official portal)",
+              "sourceUrl": "https://hochieu.xuatnhapcanh.gov.vn/",
+              "notes": "This specific figure came via search summary rather than the directly fetched FAQ page text itself, hence medium rather than high confidence."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "country": "Индонезия",
+      "documents": [
+        {
+          "documentType": "Паспорт",
+          "requirements": [
+            {
+              "category": "photoWidthMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "photoWidthMm",
+              "confidence": "medium",
+              "sourceName": "Multiple Indonesian news outlets (metrotvnews.com, rri.co.id) and photo-service sites (paspoto.com), no single fixed number confirmed on an imigrasi.go.id page",
+              "sourceUrl": "https://www.metrotvnews.com/read/bmRCEeyB-ketentuan-umum-foto-paspor-ukuran-syarat-hingga-kesalahan-yang-harus-dihindari",
+              "notes": "Sources describe a RANGE rather than one fixed size: minimum 3x4cm (without border) up to maximum 4x6cm (with border); one source separately cites 3.5x4.5cm. No single authoritative dimension was found on an imigrasi.go.id page directly fetched during this research (the imigrasi.go.id pages read — a visa-document FAQ and an M-Paspor upload-guidance article — discuss upload quality/format, not geometry). Recording null rather than guessing which figure is the 'real' one."
+            },
+            {
+              "category": "photoHeightMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "photoHeightMm",
+              "confidence": "medium",
+              "sourceName": "Same as photoWidthMm",
+              "sourceUrl": "https://www.metrotvnews.com/read/bmRCEeyB-ketentuan-umum-foto-paspor-ukuran-syarat-hingga-kesalahan-yang-harus-dihindari",
+              "notes": "Same range-not-fixed-value caveat as photoWidthMm."
+            },
+            {
+              "category": "dpi",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": "dpi",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not found."
+            },
+            {
+              "category": "headHeightMinMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "headHeightMinMm",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "A '70-80% of photo area' figure is repeated across several Indonesian sources, but expressed as a percentage of an unspecified base photo size, not as an absolute mm value, and not found on an imigrasi.go.id page directly. Recording null for the mm field; see note on eyeVisibilityZonePercent-adjacent info being unusable without a fixed base size."
+            },
+            {
+              "category": "headHeightMaxMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "headHeightMaxMm",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Same as headHeightMinMm."
+            },
+            {
+              "category": "eyeLineFromBottomMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "eyeLineFromBottomMm",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not found."
+            },
+            {
+              "category": "marginTopMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "marginTopMm",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not found."
+            },
+            {
+              "category": "chinPositionFromBottomMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not found; no schema field exists for this anchor."
+            },
+            {
+              "category": "headWidthMinMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "headWidthMinMm",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not found."
+            },
+            {
+              "category": "headWidthMaxMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "headWidthMaxMm",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not found."
+            },
+            {
+              "category": "bothEarsVisibleRequired",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not found."
+            },
+            {
+              "category": "horizontalCenteringTolerance",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not found."
+            },
+            {
+              "category": "poseToleranceDegrees",
+              "value": null,
+              "unit": "degrees",
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Only a qualitative 'face must not be tilted or looking down' rule was found, no numeric degree value."
+            },
+            {
+              "category": "eyeVisibilityZonePercent",
+              "value": null,
+              "unit": "percent",
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not found (this is a different concept from the general '70-80% face coverage of frame' rule noted under headHeightMinMm, which is about overall face size, not glasses/eye visibility specifically)."
+            },
+            {
+              "category": "backgroundColor",
+              "value": "CONFLICT: White, plain (putih polos) per mainstream consensus vs. a single aggregator claim of red (merah) background for a '51x51mm (2x2 inch)' Indonesian passport photo",
+              "unit": null,
+              "mappedToSchemaField": "backgroundRequirement",
+              "confidence": "medium",
+              "sourceName": "Regional Direktorat Jenderal Imigrasi office sites (e.g. malang.imigrasi.go.id, karawang.imigrasi.go.id) and national news outlets (metrotvnews.com, rri.co.id)",
+              "sourceUrl": "https://malang.imigrasi.go.id/info-publik/pakaian-yang-digunakan-saat-ke-kantor-imigrasi-dan-juga-untuk-foto-paspor",
+              "notes": "White is the consistent, multiply-corroborated answer (including from official imigrasi.go.id regional-office subdomains, found via search but not independently re-verified by direct fetch this session). A single visafoto.com aggregator page title claims a red background for a 51x51mm/2x2in Indonesian photo — this smells like it is describing Indonesia's older domestic ID-photo convention (KTP-style alternating red/blue backgrounds by birth-year parity) rather than the current e-passport rule, but this could not be conclusively confirmed either way; flagging as a real conflict rather than silently discarding it."
+            },
+            {
+              "category": "backgroundColorHex",
+              "value": "#FFFFFF",
+              "unit": null,
+              "mappedToSchemaField": "backgroundColorHex",
+              "confidence": "medium",
+              "sourceName": "Same as backgroundColor",
+              "sourceUrl": "https://malang.imigrasi.go.id/info-publik/pakaian-yang-digunakan-saat-ke-kantor-imigrasi-dan-juga-untuk-foto-paspor",
+              "notes": "The conflicting 'red' claim (see backgroundColor) has no stated hex value anywhere found."
+            },
+            {
+              "category": "lightingRequirement",
+              "value": "Photo should be taken in the morning or midday to avoid shadows (agar tidak berbayang)",
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "high",
+              "sourceName": "Direktorat Jenderal Imigrasi – official M-Paspor upload-guidance news article",
+              "sourceUrl": "https://www.imigrasi.go.id/berita/2022/08/09/penting-pemohon-paspor-wajib-unggah-foto-dokumen-persyaratan-ke-aplikasi-m-paspor-dengan-jelas-dan-tepat",
+              "notes": "Directly fetched from the official imigrasi.go.id domain. Note this article is specifically about photographing/scanning SUPPORTING DOCUMENTS for M-Paspor upload, not the applicant's own face photo, so applicability to the face-photo requirement itself is a reasonable but not certain inference."
+            },
+            {
+              "category": "expressionRequirement",
+              "value": "Face directly facing camera, not tilted or looking down (menghadap langsung, tidak miring atau menunduk); neutral expression, not laughing or frowning (tidak tertawa, tidak cemberut); eyes open and clearly visible",
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "medium",
+              "sourceName": "Multiple Indonesian news/immigration-office sources",
+              "sourceUrl": "https://www.metrotvnews.com/read/bmRCEeyB-ketentuan-umum-foto-paspor-ukuran-syarat-hingga-kesalahan-yang-harus-dihindari",
+              "notes": "Consistent across several independent secondary sources, but not directly quoted from an imigrasi.go.id page in this session."
+            },
+            {
+              "category": "glassesPolicy",
+              "value": "No glasses / no colored or thick-framed eyewear (dilarang menggunakan kacamata berwarna atau berbingkai tebal)",
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "medium",
+              "sourceName": "Multiple Indonesian news/immigration-office sources",
+              "sourceUrl": "https://www.metrotvnews.com/read/bmRCEeyB-ketentuan-umum-foto-paspor-ukuran-syarat-hingga-kesalahan-yang-harus-dihindari",
+              "notes": "Same corroboration caveat as expressionRequirement."
+            },
+            {
+              "category": "headCoveringPolicy",
+              "value": "No hats or head accessories generally; for hijab-wearers, the forehead must remain visible and the hijab color should contrast with (not blend into) the white background",
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "medium",
+              "sourceName": "Multiple Indonesian news/immigration-office sources",
+              "sourceUrl": "https://www.metrotvnews.com/read/bmRCEeyB-ketentuan-umum-foto-paspor-ukuran-syarat-hingga-kesalahan-yang-harus-dihindari",
+              "notes": "Same corroboration caveat as expressionRequirement."
+            },
+            {
+              "category": "recencyMonths",
+              "value": null,
+              "unit": "months",
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not found."
+            },
+            {
+              "category": "colorRequirement",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not explicitly stated in any source read."
+            },
+            {
+              "category": "printPaperRequirement",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": "printNotes",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not found (M-Paspor is a digital-upload-first system)."
+            },
+            {
+              "category": "copiesRequired",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not found; the M-Paspor app workflow is upload/live-capture based rather than printed-copy based, so this may simply not apply the way it does for a purely paper-based process."
+            },
+            {
+              "category": "digitalFileRequirement",
+              "value": "For a related Ditjen Imigrasi visa-online service: photo must be JPG/JPEG/PNG format, maximum file size 200kb",
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "medium",
+              "sourceName": "Direktorat Jenderal Imigrasi – visa-online FAQ",
+              "sourceUrl": "https://www.imigrasi.go.id/faq/visa/apa-saja-dokumen-persyaratan-untuk-mengajukan-visa-online",
+              "notes": "Directly fetched from imigrasi.go.id, but this exact rule was found on a VISA FAQ page, not a passport-specific (M-Paspor) page, so its applicability to passport photo uploads specifically is inferred rather than confirmed — downgraded from high to medium confidence for that reason."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "country": "Малайзия",
+      "documents": [
+        {
+          "documentType": "Паспорт",
+          "requirements": [
+            {
+              "category": "photoWidthMm",
+              "value": 35,
+              "unit": "mm",
+              "mappedToSchemaField": "photoWidthMm",
+              "confidence": "high",
+              "sourceName": "Jabatan Imigresen Malaysia (JIM) – imi.gov.my, 'Malaysian International Passport'",
+              "sourceUrl": "https://www.imi.gov.my/index.php/en/main-services/passport/malaysian-international-passport/",
+              "notes": "Directly fetched official quote: '35mm x 50mm' photo size."
+            },
+            {
+              "category": "photoHeightMm",
+              "value": 50,
+              "unit": "mm",
+              "mappedToSchemaField": "photoHeightMm",
+              "confidence": "high",
+              "sourceName": "Jabatan Imigresen Malaysia (JIM) – imi.gov.my",
+              "sourceUrl": "https://www.imi.gov.my/index.php/en/main-services/passport/malaysian-international-passport/",
+              "notes": "Same official quote as photoWidthMm."
+            },
+            {
+              "category": "dpi",
+              "value": 300,
+              "unit": "dpi",
+              "mappedToSchemaField": "dpi",
+              "confidence": "low",
+              "sourceName": "ipassportphoto.com (aggregator), attributing the figure to eservices.imi.gov.my",
+              "sourceUrl": "https://ipassportphoto.com/requirements/malaysian-passport-photo",
+              "notes": "Cited alongside a pixel dimension of 413x591px for the eservices.imi.gov.my digital-submission context; not independently confirmed by directly fetching eservices.imi.gov.my in this session, and the main imi.gov.my page fetched did not itself mention DPI."
+            },
+            {
+              "category": "headHeightMinMm",
+              "value": 25,
+              "unit": "mm",
+              "mappedToSchemaField": "headHeightMinMm",
+              "confidence": "high",
+              "sourceName": "Jabatan Imigresen Malaysia (JIM) – imi.gov.my",
+              "sourceUrl": "https://www.imi.gov.my/index.php/en/main-services/passport/malaysian-international-passport/",
+              "notes": "Directly fetched official quote: face size 'minimum of 25-30mm (50%-60% of the photo space according to ICAO guidelines)'. Note the source's exact wording says 'face size', which this dataset is recording under headHeight by the usual chin-to-crown convention — flagging that ambiguity since imi.gov.my did not explicitly say 'chin-to-crown'."
+            },
+            {
+              "category": "headHeightMaxMm",
+              "value": 30,
+              "unit": "mm",
+              "mappedToSchemaField": "headHeightMaxMm",
+              "confidence": "high",
+              "sourceName": "Jabatan Imigresen Malaysia (JIM) – imi.gov.my",
+              "sourceUrl": "https://www.imi.gov.my/index.php/en/main-services/passport/malaysian-international-passport/",
+              "notes": "Same official quote and same 'face size' vs 'head height' wording caveat as headHeightMinMm."
+            },
+            {
+              "category": "eyeLineFromBottomMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "eyeLineFromBottomMm",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not found."
+            },
+            {
+              "category": "marginTopMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "marginTopMm",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not found."
+            },
+            {
+              "category": "chinPositionFromBottomMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not found; no schema field exists for this anchor."
+            },
+            {
+              "category": "headWidthMinMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "headWidthMinMm",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not found (imi.gov.my's '25-30mm' figure is recorded under headHeight, not headWidth — see caveat there)."
+            },
+            {
+              "category": "headWidthMaxMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "headWidthMaxMm",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not found."
+            },
+            {
+              "category": "bothEarsVisibleRequired",
+              "value": true,
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "medium",
+              "sourceName": "Secondary source attributing to JIM/Ministry of Foreign Affairs Malaysia (not present on the imi.gov.my page directly fetched)",
+              "sourceUrl": "https://photoaid.com/malaysian-passport-photo",
+              "notes": "'Forehead and ears must be visible' — this specific line was not present on the imi.gov.my page fetched directly (which mentioned forehead/hair coverage but not ears specifically), so recorded at medium rather than high confidence."
+            },
+            {
+              "category": "horizontalCenteringTolerance",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not found."
+            },
+            {
+              "category": "poseToleranceDegrees",
+              "value": null,
+              "unit": "degrees",
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not found."
+            },
+            {
+              "category": "eyeVisibilityZonePercent",
+              "value": null,
+              "unit": "percent",
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not found."
+            },
+            {
+              "category": "backgroundColor",
+              "value": "White, shadowless",
+              "unit": null,
+              "mappedToSchemaField": "backgroundRequirement",
+              "confidence": "high",
+              "sourceName": "Jabatan Imigresen Malaysia (JIM) – imi.gov.my",
+              "sourceUrl": "https://www.imi.gov.my/index.php/en/main-services/passport/malaysian-international-passport/",
+              "notes": "Directly fetched official quote: 'shadowless WHITE background'."
+            },
+            {
+              "category": "backgroundColorHex",
+              "value": "#FFFFFF",
+              "unit": null,
+              "mappedToSchemaField": "backgroundColorHex",
+              "confidence": "high",
+              "sourceName": "Jabatan Imigresen Malaysia (JIM) – imi.gov.my",
+              "sourceUrl": "https://www.imi.gov.my/index.php/en/main-services/passport/malaysian-international-passport/",
+              "notes": "Direct inference from stated shadowless white background."
+            },
+            {
+              "category": "lightingRequirement",
+              "value": "Background must be shadowless, implying even/uniform lighting",
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "high",
+              "sourceName": "Jabatan Imigresen Malaysia (JIM) – imi.gov.my",
+              "sourceUrl": "https://www.imi.gov.my/index.php/en/main-services/passport/malaysian-international-passport/",
+              "notes": "Directly fetched official quote ('shadowless'); no separate face-lighting rule stated beyond this."
+            },
+            {
+              "category": "expressionRequirement",
+              "value": "Look directly at the camera; eyes must be open; mouth must be closed",
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "high",
+              "sourceName": "Jabatan Imigresen Malaysia (JIM) – imi.gov.my",
+              "sourceUrl": "https://www.imi.gov.my/index.php/en/main-services/passport/malaysian-international-passport/",
+              "notes": "Directly fetched official quote."
+            },
+            {
+              "category": "glassesPolicy",
+              "value": "Use of contact lenses and spectacles/eyeglasses is not permitted during photo capture",
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "high",
+              "sourceName": "Jabatan Imigresen Malaysia (JIM) – imi.gov.my",
+              "sourceUrl": "https://www.imi.gov.my/index.php/en/main-services/passport/malaysian-international-passport/",
+              "notes": "Directly fetched official quote — notably stricter than most other countries in this batch (outright disallows glasses rather than just discouraging/regulating glare)."
+            },
+            {
+              "category": "headCoveringPolicy",
+              "value": "No hats/headwear; hair must not cover the face; for hijab-wearers the forehead must not be covered; all earrings and hair accessories must be removed",
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "high",
+              "sourceName": "Jabatan Imigresen Malaysia (JIM) – imi.gov.my",
+              "sourceUrl": "https://www.imi.gov.my/index.php/en/main-services/passport/malaysian-international-passport/",
+              "notes": "Directly fetched official quote, combining the hat/hair/hijab rule with the earrings/accessories rule from the same page."
+            },
+            {
+              "category": "recencyMonths",
+              "value": null,
+              "unit": "months",
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not stated on the imi.gov.my page fetched (moot in practice since photos are captured live via 'Facial Live Capture' equipment at the passport division for most applicants)."
+            },
+            {
+              "category": "colorRequirement",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not explicitly stated on the imi.gov.my page fetched."
+            },
+            {
+              "category": "printPaperRequirement",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": "printNotes",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not found; most applicants are captured live via the Facial Live Capture device rather than submitting a printed photo."
+            },
+            {
+              "category": "copiesRequired",
+              "value": "1 (stated only for children under 4 years old); not specified for other applicants, consistent with on-site live capture for the general applicant population",
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "high",
+              "sourceName": "Jabatan Imigresen Malaysia (JIM) – imi.gov.my",
+              "sourceUrl": "https://www.imi.gov.my/index.php/en/main-services/passport/malaysian-international-passport/",
+              "notes": "Directly fetched official quote for the under-4 case. Not mappable to copiesPerSheet (different concept)."
+            },
+            {
+              "category": "digitalFileRequirement",
+              "value": "eservices.imi.gov.my recommended digital size approximately 413x591 pixels at 300 DPI",
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "low",
+              "sourceName": "ipassportphoto.com (aggregator), attributing the figure to eservices.imi.gov.my",
+              "sourceUrl": "https://ipassportphoto.com/requirements/malaysian-passport-photo",
+              "notes": "Not independently verified by directly fetching eservices.imi.gov.my in this session."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

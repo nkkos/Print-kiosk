@@ -1,0 +1,1585 @@
+{
+  "batch": "Middle East + Africa",
+  "countries": [
+    {
+      "country": "ОАЭ",
+      "documents": [
+        {
+          "documentType": "Паспорт",
+          "requirements": [
+            {
+              "category": "photoWidthMm",
+              "value": 35,
+              "unit": "mm",
+              "mappedToSchemaField": "photoWidthMm",
+              "confidence": "high",
+              "sourceName": "ICP (Federal Authority for Identity, Citizenship, Customs & Port Security) - FAQ",
+              "sourceUrl": "https://icp.gov.ae/en/faq/",
+              "notes": "ICP FAQ states passport/Emirates ID photo size is 3.5 x 4.5 cm (35x45mm). CONFLICT: other sources describe a larger UAE photo size — an aggregator (photogov.net) cites 40x60mm, and an unverified 'official UAE Government portal' description (surfaced only via search synthesis, URL not independently confirmed) cites 4.5x5.5cm. Recorded separately below at lower confidence."
+            },
+            {
+              "category": "photoWidthMm",
+              "value": 40,
+              "unit": "mm",
+              "mappedToSchemaField": "photoWidthMm",
+              "confidence": "low",
+              "sourceName": "photogov.net (aggregator)",
+              "sourceUrl": "https://photogov.net/knowledge/requirements/uae-passport-photo-requirements/",
+              "notes": "Aggregator states 40x60mm as the standard UAE passport photo size, conflicting with the 35x45mm figure found directly on icp.gov.ae. Recorded as a conflicting alternative, not preferred."
+            },
+            {
+              "category": "photoHeightMm",
+              "value": 45,
+              "unit": "mm",
+              "mappedToSchemaField": "photoHeightMm",
+              "confidence": "high",
+              "sourceName": "ICP (Federal Authority for Identity, Citizenship, Customs & Port Security) - FAQ",
+              "sourceUrl": "https://icp.gov.ae/en/faq/",
+              "notes": "Paired with the 35mm width figure above (3.5 x 4.5 cm)."
+            },
+            {
+              "category": "photoHeightMm",
+              "value": 60,
+              "unit": "mm",
+              "mappedToSchemaField": "photoHeightMm",
+              "confidence": "low",
+              "sourceName": "photogov.net (aggregator)",
+              "sourceUrl": "https://photogov.net/knowledge/requirements/uae-passport-photo-requirements/",
+              "notes": "Conflicting alternative to the 45mm figure found on icp.gov.ae; see photoWidthMm notes."
+            },
+            {
+              "category": "dpi",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": "dpi",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "No DPI/resolution figure stated on icp.gov.ae or in any source found."
+            },
+            {
+              "category": "headHeightMinMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "headHeightMinMm",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "ICP states the photo must conform to ICAO specifications generally, but no absolute mm head-height figure is published on icp.gov.ae. Aggregators mention a 70-80% face-coverage ratio (not an mm figure), which was not converted to mm since that would be an estimate, not a stated value."
+            },
+            {
+              "category": "headHeightMaxMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "headHeightMaxMm",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "See headHeightMinMm note; ICAO-baseline compliance is claimed but no distinct national number was found."
+            },
+            {
+              "category": "eyeLineFromBottomMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "eyeLineFromBottomMm",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not specified in any source found for UAE."
+            },
+            {
+              "category": "marginTopMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "marginTopMm",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not specified in any source found for UAE."
+            },
+            {
+              "category": "chinPositionFromBottomMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not specified in any source found for UAE."
+            },
+            {
+              "category": "headWidthMinMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "headWidthMinMm",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not specified in any source found for UAE."
+            },
+            {
+              "category": "headWidthMaxMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "headWidthMaxMm",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not specified in any source found for UAE."
+            },
+            {
+              "category": "bothEarsVisibleRequired",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not mentioned on icp.gov.ae or in any source found."
+            },
+            {
+              "category": "horizontalCenteringTolerance",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not specified in any source found for UAE."
+            },
+            {
+              "category": "poseToleranceDegrees",
+              "value": null,
+              "unit": "degrees",
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "ICP requires the photo to be recent and comply with ICAO specifications generally (frontal pose implied), but no numeric pitch/yaw/roll tolerance is published on icp.gov.ae; ICAO Doc 9303 itself expresses pose requirements qualitatively/proportionally rather than as a fixed degree figure in the material reviewed."
+            },
+            {
+              "category": "eyeVisibilityZonePercent",
+              "value": null,
+              "unit": "%",
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not specified in any source found for UAE."
+            },
+            {
+              "category": "backgroundColor",
+              "value": "White",
+              "unit": null,
+              "mappedToSchemaField": "backgroundRequirement",
+              "confidence": "high",
+              "sourceName": "ICP (Federal Authority for Identity, Citizenship, Customs & Port Security) - FAQ",
+              "sourceUrl": "https://icp.gov.ae/en/faq/",
+              "notes": "White background required for passport and Emirates ID photos."
+            },
+            {
+              "category": "backgroundColorHex",
+              "value": "#FFFFFF",
+              "unit": null,
+              "mappedToSchemaField": "backgroundColorHex",
+              "confidence": "high",
+              "sourceName": "ICP (Federal Authority for Identity, Citizenship, Customs & Port Security) - FAQ",
+              "sourceUrl": "https://icp.gov.ae/en/faq/",
+              "notes": "Direct hex mapping of the stated 'white' requirement; no hex code is itself published by ICP."
+            },
+            {
+              "category": "lightingRequirement",
+              "value": "No shadows or reflections permitted; must show clear facial features and eyes without visual distortion; high-quality photography required",
+              "unit": null,
+              "mappedToSchemaField": "printNotes",
+              "confidence": "high",
+              "sourceName": "ICP (Federal Authority for Identity, Citizenship, Customs & Port Security) - FAQ",
+              "sourceUrl": "https://icp.gov.ae/en/faq/",
+              "notes": ""
+            },
+            {
+              "category": "expressionRequirement",
+              "value": "Neutral expression required",
+              "unit": null,
+              "mappedToSchemaField": "printNotes",
+              "confidence": "high",
+              "sourceName": "ICP (Federal Authority for Identity, Citizenship, Customs & Port Security) - FAQ",
+              "sourceUrl": "https://icp.gov.ae/en/faq/",
+              "notes": ""
+            },
+            {
+              "category": "glassesPolicy",
+              "value": "Sunglasses not permitted; medical/prescription glasses allowed provided they do not cover the eyes, with no glare/reflection and no tinted lenses",
+              "unit": null,
+              "mappedToSchemaField": "printNotes",
+              "confidence": "high",
+              "sourceName": "ICP (Federal Authority for Identity, Citizenship, Customs & Port Security) - FAQ",
+              "sourceUrl": "https://icp.gov.ae/en/faq/",
+              "notes": "The 'no glare, lighter-framed glasses advised' elaboration comes from a lower-confidence aggregator (photoaid.com) and is consistent, not conflicting."
+            },
+            {
+              "category": "headCoveringPolicy",
+              "value": "Hats are not allowed. Head coverings worn for religious reasons are permitted, provided facial features from the bottom of the chin to the top of the forehead, and both edges of the face, are clearly visible.",
+              "unit": null,
+              "mappedToSchemaField": "printNotes",
+              "confidence": "medium",
+              "sourceName": "ICP FAQ (hats not allowed - high) + photogov.net aggregator (religious head-covering exception detail - medium/low)",
+              "sourceUrl": "https://icp.gov.ae/en/faq/",
+              "notes": "icp.gov.ae/en/faq (fetched directly) states plainly 'hats are not allowed' — high confidence. The specific religious head-covering exception wording ('facial features from chin to forehead and both edges of face clearly shown') was only found via an aggregator (photogov.net) summarizing UAE rules and could not be independently verified on an ICP page in this session; it does not contradict the 'no hats' rule since religious coverings (hijab, etc.) are a distinct category. Overall confidence downgraded to medium to reflect the unverified portion."
+            },
+            {
+              "category": "recencyMonths",
+              "value": 6,
+              "unit": "months",
+              "mappedToSchemaField": null,
+              "confidence": "low",
+              "sourceName": "photoaid.com (aggregator)",
+              "sourceUrl": "https://photoaid.com/uae-passport-photo",
+              "notes": "ICP itself (icp.gov.ae/en/faq) only says the photo 'must be recent' and 'cannot be identical to the current photo on your existing document', without a specific number of months — recorded as null/n/a for that official statement. The 6-month figure is aggregator-only."
+            },
+            {
+              "category": "colorRequirement",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not explicitly stated as color vs black-and-white on icp.gov.ae; color is implied by universal modern practice but not confirmed in an official statement found."
+            },
+            {
+              "category": "printPaperRequirement",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": "printNotes",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not specified; UAE passport/ID applications are largely processed via biometric capture at typing centers/service centers rather than a submitted print, per ICP FAQ context."
+            },
+            {
+              "category": "copiesRequired",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": "copiesPerSheet",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not specified; no physical copy count found."
+            },
+            {
+              "category": "digitalFileRequirement",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "No digital file size/format spec found for UAE passport photo uploads."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "country": "Саудовская Аравия",
+      "documents": [
+        {
+          "documentType": "Паспорт",
+          "requirements": [
+            {
+              "category": "photoWidthMm",
+              "value": 40,
+              "unit": "mm",
+              "mappedToSchemaField": "photoWidthMm",
+              "confidence": "high",
+              "sourceName": "Ministry of Foreign Affairs of Saudi Arabia - diplomatic/special passport e-service",
+              "sourceUrl": "https://www.mofa.gov.sa/ar/eservices/Pages/svc80.aspx",
+              "notes": "Official page states '4×6' photo size with white background (مقاس الصورة 4*6 بخلفية بيضاء) without explicitly labeling which figure is width vs height; 40x60mm (width x height) is the standard convention and matches independent aggregators (idphotodiy: '40 x 60 mm'). IMPORTANT CAVEAT: this page covers diplomatic/special passports specifically; the regular citizen passport portal (passports.gov.sa / Absher 'Jawazat') could not be directly accessed in this session (blocked/not indexed with distinct specs), so this figure is applied to the general 'Паспорт' document type on the assumption regular and diplomatic photo specs match, which is common but not independently confirmed for the regular passport."
+            },
+            {
+              "category": "photoHeightMm",
+              "value": 60,
+              "unit": "mm",
+              "mappedToSchemaField": "photoHeightMm",
+              "confidence": "high",
+              "sourceName": "Ministry of Foreign Affairs of Saudi Arabia - diplomatic/special passport e-service",
+              "sourceUrl": "https://www.mofa.gov.sa/ar/eservices/Pages/svc80.aspx",
+              "notes": "See photoWidthMm note re: diplomatic-vs-regular passport caveat."
+            },
+            {
+              "category": "dpi",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": "dpi",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not specified."
+            },
+            {
+              "category": "headHeightMinMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "headHeightMinMm",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not specified in any source found for Saudi Arabia."
+            },
+            {
+              "category": "headHeightMaxMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "headHeightMaxMm",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not specified."
+            },
+            {
+              "category": "eyeLineFromBottomMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "eyeLineFromBottomMm",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not specified."
+            },
+            {
+              "category": "marginTopMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "marginTopMm",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not specified."
+            },
+            {
+              "category": "chinPositionFromBottomMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not specified."
+            },
+            {
+              "category": "headWidthMinMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "headWidthMinMm",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not specified."
+            },
+            {
+              "category": "headWidthMaxMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "headWidthMaxMm",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not specified."
+            },
+            {
+              "category": "bothEarsVisibleRequired",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not specified; official page only requires 'full face visible' for both men and women, not ears specifically."
+            },
+            {
+              "category": "horizontalCenteringTolerance",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not specified."
+            },
+            {
+              "category": "poseToleranceDegrees",
+              "value": null,
+              "unit": "degrees",
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Official page requires the photo be taken 'directly facing the camera' (qualitative frontal-pose requirement) but gives no numeric pitch/yaw/roll tolerance."
+            },
+            {
+              "category": "eyeVisibilityZonePercent",
+              "value": null,
+              "unit": "%",
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not specified."
+            },
+            {
+              "category": "backgroundColor",
+              "value": "White",
+              "unit": null,
+              "mappedToSchemaField": "backgroundRequirement",
+              "confidence": "high",
+              "sourceName": "Ministry of Foreign Affairs of Saudi Arabia - diplomatic/special passport e-service",
+              "sourceUrl": "https://www.mofa.gov.sa/ar/eservices/Pages/svc80.aspx",
+              "notes": "خلفية بيضاء (white background) explicitly stated."
+            },
+            {
+              "category": "backgroundColorHex",
+              "value": "#FFFFFF",
+              "unit": null,
+              "mappedToSchemaField": "backgroundColorHex",
+              "confidence": "high",
+              "sourceName": "Ministry of Foreign Affairs of Saudi Arabia - diplomatic/special passport e-service",
+              "sourceUrl": "https://www.mofa.gov.sa/ar/eservices/Pages/svc80.aspx",
+              "notes": "Direct hex mapping of stated white background."
+            },
+            {
+              "category": "lightingRequirement",
+              "value": "High quality, good lighting, no sharp shadows, no blur, no photographic editing/retouching",
+              "unit": null,
+              "mappedToSchemaField": "printNotes",
+              "confidence": "medium",
+              "sourceName": "Saudi MOI/MOFA passport service pages (search-index synthesis; single consolidated official page not independently re-fetched for this exact sentence)",
+              "sourceUrl": "https://www.moi.gov.sa/wps/portal/Home/sectors/passports/contents",
+              "notes": "This wording surfaced via a search-engine synthesis of official moi.gov.sa/mofa.gov.sa passport content rather than a page I directly fetched and read in full in this session; downgraded to medium pending direct verification."
+            },
+            {
+              "category": "expressionRequirement",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": "printNotes",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "No explicit 'neutral expression / mouth closed' rule found distinct from the general 'full face visible, frontal' requirement."
+            },
+            {
+              "category": "glassesPolicy",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": "printNotes",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "No glasses-specific rule found for Saudi passport photos."
+            },
+            {
+              "category": "headCoveringPolicy",
+              "value": "Men must wear official Saudi formal attire in the photo; women must wear hijab.",
+              "unit": null,
+              "mappedToSchemaField": "printNotes",
+              "confidence": "high",
+              "sourceName": "Ministry of Foreign Affairs of Saudi Arabia - diplomatic/special passport e-service",
+              "sourceUrl": "https://www.mofa.gov.sa/ar/eservices/Pages/svc80.aspx",
+              "notes": "Notable regional distinction: this is a REQUIREMENT to wear hijab for women (and formal male attire for men), not merely a permitted religious exception as seen in other countries' rules. No separate 'religious exception for non-hijab head coverings' clause was found."
+            },
+            {
+              "category": "recencyMonths",
+              "value": 6,
+              "unit": "months",
+              "mappedToSchemaField": null,
+              "confidence": "high",
+              "sourceName": "Ministry of Foreign Affairs of Saudi Arabia - diplomatic/special passport e-service",
+              "sourceUrl": "https://www.mofa.gov.sa/ar/eservices/Pages/svc80.aspx",
+              "notes": "Applies to applicants 18 years and older; for under-18 applicants the page only requires 'a recent photo' with no specific month count."
+            },
+            {
+              "category": "colorRequirement",
+              "value": "Color photograph required",
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "high",
+              "sourceName": "Ministry of Foreign Affairs of Saudi Arabia - diplomatic/special passport e-service",
+              "sourceUrl": "https://www.mofa.gov.sa/ar/eservices/Pages/svc80.aspx",
+              "notes": ""
+            },
+            {
+              "category": "printPaperRequirement",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": "printNotes",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not specified."
+            },
+            {
+              "category": "copiesRequired",
+              "value": 2,
+              "unit": "copies",
+              "mappedToSchemaField": "copiesPerSheet",
+              "confidence": "high",
+              "sourceName": "Ministry of Foreign Affairs of Saudi Arabia - diplomatic/special passport e-service",
+              "sourceUrl": "https://www.mofa.gov.sa/ar/eservices/Pages/svc80.aspx",
+              "notes": "Two colored 4x6cm photos required, with the applicant's name written on the back of each."
+            },
+            {
+              "category": "digitalFileRequirement",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not specified in the sources found (this page describes physical print submission only)."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "country": "Израиль",
+      "documents": [
+        {
+          "documentType": "Паспорт",
+          "requirements": [
+            {
+              "category": "photoWidthMm",
+              "value": 35,
+              "unit": "mm",
+              "mappedToSchemaField": "photoWidthMm",
+              "confidence": "medium",
+              "sourceName": "Population and Immigration Authority (gov.il) - biometric passport photo requirements guide",
+              "sourceUrl": "https://www.gov.il/he/departments/publications/reports/passport_photo_requirments_guide",
+              "notes": "Direct fetch of this gov.il page was blocked (HTTP 403) in this session; figures below are drawn from a search-engine index of that exact official URL, not independently re-verified by direct read, hence 'medium' rather than 'high'. NOTE: for most ADULT applicants, biometric photography is done in person, free of charge, at Population and Immigration Authority service counters — a printed photo is generally only required for children up to age 6. 3.5cm width / 4.5cm height (35x45mm) is the size given for that printed-photo case."
+            },
+            {
+              "category": "photoHeightMm",
+              "value": 45,
+              "unit": "mm",
+              "mappedToSchemaField": "photoHeightMm",
+              "confidence": "medium",
+              "sourceName": "Population and Immigration Authority (gov.il) - biometric passport photo requirements guide",
+              "sourceUrl": "https://www.gov.il/he/departments/publications/reports/passport_photo_requirments_guide",
+              "notes": "See photoWidthMm note."
+            },
+            {
+              "category": "dpi",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": "dpi",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not specified in any source found."
+            },
+            {
+              "category": "headHeightMinMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "headHeightMinMm",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "A figure of '34.5mm' appeared in a search-engine synthesis of the gov.il guide, described ambiguously as 'distance from below the center to the top of the head' — the phrasing is unclear/possibly a translation artifact and it was not possible to confirm whether this refers to head height, eye line, or another anchor via direct page access (blocked). Not recorded as a value for any specific field to avoid mis-mapping an ambiguous figure. Deliberately left null pending ability to directly verify the source page."
+            },
+            {
+              "category": "headHeightMaxMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "headHeightMaxMm",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "See headHeightMinMm note."
+            },
+            {
+              "category": "eyeLineFromBottomMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "eyeLineFromBottomMm",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "See headHeightMinMm note re: the ambiguous 34.5mm figure — could plausibly be this field but not confirmed."
+            },
+            {
+              "category": "marginTopMm",
+              "value": 3,
+              "unit": "mm",
+              "mappedToSchemaField": "marginTopMm",
+              "confidence": "low",
+              "sourceName": "Population and Immigration Authority (gov.il) - biometric passport photo requirements guide (via search-index synthesis)",
+              "sourceUrl": "https://www.gov.il/he/departments/publications/reports/passport_photo_requirments_guide",
+              "notes": "Search synthesis stated 'there should be 3mm of space from the top of your hair to the top of the photo'. Flagged low confidence: an essentially identical '3mm top margin' figure also surfaced independently for South Africa in this research, raising a real possibility of aggregator content bleed-through or generic ICAO-style boilerplate being applied across countries rather than an Israel-specific figure. Direct verification on gov.il was blocked (403)."
+            },
+            {
+              "category": "chinPositionFromBottomMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not specified."
+            },
+            {
+              "category": "headWidthMinMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "headWidthMinMm",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not specified."
+            },
+            {
+              "category": "headWidthMaxMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "headWidthMaxMm",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not specified."
+            },
+            {
+              "category": "bothEarsVisibleRequired",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not specified in any source found."
+            },
+            {
+              "category": "horizontalCenteringTolerance",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not specified."
+            },
+            {
+              "category": "poseToleranceDegrees",
+              "value": null,
+              "unit": "degrees",
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Qualitative rule found ('straight gaze at the camera, correct distance from camera required; side glance not approved') but no numeric degree tolerance."
+            },
+            {
+              "category": "eyeVisibilityZonePercent",
+              "value": null,
+              "unit": "%",
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not specified."
+            },
+            {
+              "category": "backgroundColor",
+              "value": "Bright, uniform white or grey background (not dark or cluttered)",
+              "unit": null,
+              "mappedToSchemaField": "backgroundRequirement",
+              "confidence": "medium",
+              "sourceName": "Maariv news coverage of official PIBA (Population and Immigration Authority) photo rules; consistent with aggregator sources",
+              "sourceUrl": "https://www.maariv.co.il/news/israel/article-1230929",
+              "notes": "Not sourced directly from gov.il itself (blocked); sourced from a mainstream Israeli news outlet reporting the Authority's stated rules."
+            },
+            {
+              "category": "backgroundColorHex",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": "backgroundColorHex",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Both white and grey are permitted per the source above, so no single hex value can be derived without guessing which is used."
+            },
+            {
+              "category": "lightingRequirement",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": "printNotes",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "No explicit lighting/shadow rule found beyond the general background-brightness note above."
+            },
+            {
+              "category": "expressionRequirement",
+              "value": "Neutral, serious expression, no smiling; mouth closed; eyes open; face not obscured by hair",
+              "unit": null,
+              "mappedToSchemaField": "printNotes",
+              "confidence": "medium",
+              "sourceName": "Maariv news coverage of official PIBA photo rules; consistent with multiple aggregators",
+              "sourceUrl": "https://www.maariv.co.il/news/israel/article-1230929",
+              "notes": ""
+            },
+            {
+              "category": "glassesPolicy",
+              "value": "Photos with glasses are generally not approved; clear-framed glasses without reflections/glare that hide the eyes are the only exception that may be possible",
+              "unit": null,
+              "mappedToSchemaField": "printNotes",
+              "confidence": "medium",
+              "sourceName": "Maariv news coverage of official PIBA photo rules; consistent with aggregators",
+              "sourceUrl": "https://www.maariv.co.il/news/israel/article-1230929",
+              "notes": ""
+            },
+            {
+              "category": "headCoveringPolicy",
+              "value": "Hats/headgear are not permitted, except religious head coverings worn daily (e.g. kippah, headscarf/hijab). A signed statement confirming the item's religious significance and daily/continuous wear may be required. Full facial features must remain visible and unobscured.",
+              "unit": null,
+              "mappedToSchemaField": "printNotes",
+              "confidence": "medium",
+              "sourceName": "Aggregator synthesis of Israeli passport photo rules (2x2passportphoto.com, rostrio.com) describing PIBA policy",
+              "sourceUrl": "https://2x2passportphoto.com/blog/passport-photo-hijab-religious-head-covering",
+              "notes": "Could not be independently verified directly on gov.il (blocked); pattern is consistent with regional norms (similar exception found for UAE and Egypt) so treated as medium rather than low."
+            },
+            {
+              "category": "recencyMonths",
+              "value": null,
+              "unit": "months",
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not found; largely moot for most adult applicants since biometric capture is done live in-office rather than via a submitted photo."
+            },
+            {
+              "category": "colorRequirement",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not explicitly stated; biometric capture is inherently color but no explicit 'must be color' statement was found for the printed-photo (children) case."
+            },
+            {
+              "category": "printPaperRequirement",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": "printNotes",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not specified."
+            },
+            {
+              "category": "copiesRequired",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": "copiesPerSheet",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not specified for the children's printed-photo case."
+            },
+            {
+              "category": "digitalFileRequirement",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not found."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "country": "Египет",
+      "documents": [
+        {
+          "documentType": "Паспорт",
+          "requirements": [
+            {
+              "category": "photoWidthMm",
+              "value": 40,
+              "unit": "mm",
+              "mappedToSchemaField": "photoWidthMm",
+              "confidence": "medium",
+              "sourceName": "Egyptian Ministry of Foreign Affairs / General Administration for Passports, Emigration and Nationality (via search-index synthesis; direct fetch of mfa.gov.eg was blocked with HTTP 403 and psm.gov.eg with an expired TLS certificate in this session)",
+              "sourceUrl": "https://www.mfa.gov.eg/ar/ConsularServicesAndTransactions/Details/73",
+              "notes": "4x6cm (40x60mm) photo size, consistently reported across search results referencing mfa.gov.eg/psm.gov.eg content, corroborated by multiple independent aggregators. Could not be independently re-verified by direct page read this session."
+            },
+            {
+              "category": "photoHeightMm",
+              "value": 60,
+              "unit": "mm",
+              "mappedToSchemaField": "photoHeightMm",
+              "confidence": "medium",
+              "sourceName": "Egyptian Ministry of Foreign Affairs / General Administration for Passports (via search-index synthesis)",
+              "sourceUrl": "https://www.mfa.gov.eg/ar/ConsularServicesAndTransactions/Details/73",
+              "notes": "See photoWidthMm note."
+            },
+            {
+              "category": "dpi",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": "dpi",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not specified."
+            },
+            {
+              "category": "headHeightMinMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "headHeightMinMm",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not specified."
+            },
+            {
+              "category": "headHeightMaxMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "headHeightMaxMm",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not specified."
+            },
+            {
+              "category": "eyeLineFromBottomMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "eyeLineFromBottomMm",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not specified."
+            },
+            {
+              "category": "marginTopMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "marginTopMm",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not specified."
+            },
+            {
+              "category": "chinPositionFromBottomMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not specified."
+            },
+            {
+              "category": "headWidthMinMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "headWidthMinMm",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not specified."
+            },
+            {
+              "category": "headWidthMaxMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "headWidthMaxMm",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not specified."
+            },
+            {
+              "category": "bothEarsVisibleRequired",
+              "value": true,
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "low",
+              "sourceName": "Aggregator search synthesis of Egyptian passport photo guidance",
+              "sourceUrl": "https://mybiometricphotos.com/passport-photo/egypt/",
+              "notes": "Stated as 'head must be centered within the photo, with ears visible and not covered' — could not verify on an official Egyptian government page directly."
+            },
+            {
+              "category": "horizontalCenteringTolerance",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not specified."
+            },
+            {
+              "category": "poseToleranceDegrees",
+              "value": null,
+              "unit": "degrees",
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Qualitative rule found ('keep head straight, look directly into camera') but no numeric tolerance."
+            },
+            {
+              "category": "eyeVisibilityZonePercent",
+              "value": null,
+              "unit": "%",
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not specified."
+            },
+            {
+              "category": "backgroundColor",
+              "value": "White",
+              "unit": null,
+              "mappedToSchemaField": "backgroundRequirement",
+              "confidence": "medium",
+              "sourceName": "Egyptian MFA/passport administration content (via search-index synthesis), corroborated by multiple aggregators",
+              "sourceUrl": "https://www.mfa.gov.eg/ar/ConsularServicesAndTransactions/Details/73",
+              "notes": ""
+            },
+            {
+              "category": "backgroundColorHex",
+              "value": "#FFFFFF",
+              "unit": null,
+              "mappedToSchemaField": "backgroundColorHex",
+              "confidence": "medium",
+              "sourceName": "Derived from stated white background",
+              "sourceUrl": "https://www.mfa.gov.eg/ar/ConsularServicesAndTransactions/Details/73",
+              "notes": ""
+            },
+            {
+              "category": "lightingRequirement",
+              "value": "Plain white background with no shadows; good quality, high-resolution image",
+              "unit": null,
+              "mappedToSchemaField": "printNotes",
+              "confidence": "low",
+              "sourceName": "Aggregator synthesis (multiple sites)",
+              "sourceUrl": "https://mybiometricphotos.com/passport-photo/egypt/",
+              "notes": "Not independently confirmed on an official Egyptian government page."
+            },
+            {
+              "category": "expressionRequirement",
+              "value": "Neutral facial expression, head straight, looking directly at the camera",
+              "unit": null,
+              "mappedToSchemaField": "printNotes",
+              "confidence": "medium",
+              "sourceName": "Aggregator synthesis, consistent across multiple independent sources",
+              "sourceUrl": "https://mybiometricphotos.com/passport-photo/egypt/",
+              "notes": ""
+            },
+            {
+              "category": "glassesPolicy",
+              "value": "Glasses may not be worn unless for documented medical reasons",
+              "unit": null,
+              "mappedToSchemaField": "printNotes",
+              "confidence": "low",
+              "sourceName": "Aggregator synthesis",
+              "sourceUrl": "https://mybiometricphotos.com/passport-photo/egypt/",
+              "notes": "Could not verify on an official Egyptian government page directly."
+            },
+            {
+              "category": "headCoveringPolicy",
+              "value": "Hats/head coverings generally not allowed, but permitted for religious reasons (or documented medical reasons) with a signed statement confirming the head covering is part of recognized, traditional religious attire worn continuously in public",
+              "unit": null,
+              "mappedToSchemaField": "printNotes",
+              "confidence": "medium",
+              "sourceName": "Aggregator synthesis, consistent with Egypt's published eVisa photo rules (visa2egypt.gov.eg) as relayed by snap2pass.com",
+              "sourceUrl": "https://www.snap2pass.com/doc/egypt-visa-application-photo",
+              "notes": "The eVisa rule (a distinct but related official Egyptian government system) explicitly documents this signed-statement mechanism; applied here to the passport document type by analogy since no distinct passport-specific statement was found, and not independently verified on mfa.gov.eg directly (blocked)."
+            },
+            {
+              "category": "recencyMonths",
+              "value": 6,
+              "unit": "months",
+              "mappedToSchemaField": null,
+              "confidence": "medium",
+              "sourceName": "Aggregator synthesis, consistent across multiple sources referencing official Egyptian passport rules",
+              "sourceUrl": "https://mybiometricphotos.com/passport-photo/egypt/",
+              "notes": ""
+            },
+            {
+              "category": "colorRequirement",
+              "value": "Color photograph, white background",
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "medium",
+              "sourceName": "Egyptian MFA/passport administration content (via search-index synthesis)",
+              "sourceUrl": "https://www.mfa.gov.eg/ar/ConsularServicesAndTransactions/Details/73",
+              "notes": "Original Arabic source text: 'صور شخصية ملونة وحديثة' (recent colored personal photos)."
+            },
+            {
+              "category": "printPaperRequirement",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": "printNotes",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not specified."
+            },
+            {
+              "category": "copiesRequired",
+              "value": 4,
+              "unit": "copies",
+              "mappedToSchemaField": "copiesPerSheet",
+              "confidence": "medium",
+              "sourceName": "Egyptian passport administration content (via search-index synthesis)",
+              "sourceUrl": "https://psm.gov.eg/providers/65/services",
+              "notes": "Arabic source: 'يجب إرفاق عدد 4 صور شخصية ملونة وحديثة مقاس 4×6 سم' (4 recent color photos, 4x6cm, must be attached). Direct fetch of psm.gov.eg failed (expired TLS certificate) in this session, so this is via search-index synthesis rather than a directly read page."
+            },
+            {
+              "category": "digitalFileRequirement",
+              "value": "Maximum 240KB, JPEG format (for online/digital submission)",
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "low",
+              "sourceName": "Aggregator synthesis",
+              "sourceUrl": "https://mybiometricphotos.com/passport-photo/egypt/",
+              "notes": "Could not verify on an official Egyptian government page directly. Note: Egypt's separate eVisa system (visa2egypt.gov.eg, a different document/process) is documented elsewhere as requiring 40x60mm + max 1MB JPEG — not conflated with this passport-specific figure."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "country": "Южно-Африканская Республика",
+      "documents": [
+        {
+          "documentType": "Паспорт",
+          "requirements": [
+            {
+              "category": "photoWidthMm",
+              "value": 35,
+              "unit": "mm",
+              "mappedToSchemaField": "photoWidthMm",
+              "confidence": "medium",
+              "sourceName": "Reload Internet (UK photo/document service explicitly citing South African Department of Home Affairs, dha.gov.za, specifications)",
+              "sourceUrl": "https://www.reloadinternet.com/south-africa-passport-photo/",
+              "notes": "45mm x 35mm stated and explicitly attributed to DHA by this source; corroborated by multiple independent aggregators (visafoto, passportphotohq, passlens). Direct fetch of the DHA PDF form (bi-73.pdf) was attempted but returned unreadable binary/garbled content in this session, so the primary official PDF could not be independently parsed."
+            },
+            {
+              "category": "photoHeightMm",
+              "value": 45,
+              "unit": "mm",
+              "mappedToSchemaField": "photoHeightMm",
+              "confidence": "medium",
+              "sourceName": "Reload Internet (citing DHA)",
+              "sourceUrl": "https://www.reloadinternet.com/south-africa-passport-photo/",
+              "notes": "See photoWidthMm note."
+            },
+            {
+              "category": "dpi",
+              "value": 600,
+              "unit": "dpi",
+              "mappedToSchemaField": "dpi",
+              "confidence": "low",
+              "sourceName": "Aggregator search synthesis (passlens.com and similar)",
+              "sourceUrl": "https://passlens.com/blog/south-africa-passport-photo-guide",
+              "notes": "Stated for 'digital submission' resolution; not corroborated by the DHA-citing source (reloadinternet.com) and not independently verifiable in the DHA PDF (unreadable in this session)."
+            },
+            {
+              "category": "headHeightMinMm",
+              "value": 29,
+              "unit": "mm",
+              "mappedToSchemaField": "headHeightMinMm",
+              "confidence": "medium",
+              "sourceName": "Reload Internet (explicitly citing DHA: 'measurement from the bottom of the applicant's chin to crown should be between 29mm to 34mm')",
+              "sourceUrl": "https://www.reloadinternet.com/south-africa-passport-photo/",
+              "notes": "Corroborated by passlens.com independently citing the same 29-34mm range."
+            },
+            {
+              "category": "headHeightMaxMm",
+              "value": 34,
+              "unit": "mm",
+              "mappedToSchemaField": "headHeightMaxMm",
+              "confidence": "medium",
+              "sourceName": "Reload Internet (citing DHA)",
+              "sourceUrl": "https://www.reloadinternet.com/south-africa-passport-photo/",
+              "notes": "See headHeightMinMm. NOTE: a different aggregator figure of a single '34.5mm' chin-to-crown value also appeared in search results — this is very close to, but not identical to, the 29-34mm range; treated as a minor rounding/summary variant rather than a hard conflict, and not recorded as a separate entry."
+            },
+            {
+              "category": "eyeLineFromBottomMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "eyeLineFromBottomMm",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not specified."
+            },
+            {
+              "category": "marginTopMm",
+              "value": 3,
+              "unit": "mm",
+              "mappedToSchemaField": "marginTopMm",
+              "confidence": "low",
+              "sourceName": "Aggregator search synthesis (passlens.com and similar)",
+              "sourceUrl": "https://passlens.com/blog/south-africa-passport-photo-guide",
+              "notes": "'Distance between top of hair and top of photo should be 3mm' — not corroborated by the DHA-citing reloadinternet.com source, and an essentially identical figure surfaced for Israel in this research, raising some concern about generic/recycled aggregator boilerplate rather than a South Africa-specific figure. Flagged low confidence accordingly."
+            },
+            {
+              "category": "chinPositionFromBottomMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not specified as a distinct bottom-anchored figure (head height is specified as a chin-to-crown span, not chin-from-bottom-edge)."
+            },
+            {
+              "category": "headWidthMinMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "headWidthMinMm",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not specified."
+            },
+            {
+              "category": "headWidthMaxMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "headWidthMaxMm",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not specified."
+            },
+            {
+              "category": "bothEarsVisibleRequired",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not specified."
+            },
+            {
+              "category": "horizontalCenteringTolerance",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "'Head should be centred' stated qualitatively (low confidence, aggregator) but no numeric tolerance given."
+            },
+            {
+              "category": "poseToleranceDegrees",
+              "value": null,
+              "unit": "degrees",
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "'Full front-facing shots only' stated (medium, DHA-attributed via reloadinternet.com) but no numeric degree tolerance given."
+            },
+            {
+              "category": "eyeVisibilityZonePercent",
+              "value": null,
+              "unit": "%",
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not specified."
+            },
+            {
+              "category": "backgroundColor",
+              "value": "White (per DHA-attributed source); some aggregators separately describe light grey or plain cream-coloured as acceptable alternatives",
+              "unit": null,
+              "mappedToSchemaField": "backgroundRequirement",
+              "confidence": "medium",
+              "sourceName": "Reload Internet (citing DHA: 'white', 'no shadows on the applicant's face nor the background') and passlens.com (grey/cream alternative)",
+              "sourceUrl": "https://www.reloadinternet.com/south-africa-passport-photo/",
+              "notes": "CONFLICT: the DHA-attributed source states plain 'white'; a separate aggregator (passlens.com) states 'light grey or plain cream-coloured' as the requirement. Both recorded here since it was not possible to determine which reflects the current official rule."
+            },
+            {
+              "category": "backgroundColorHex",
+              "value": "#FFFFFF",
+              "unit": null,
+              "mappedToSchemaField": "backgroundColorHex",
+              "confidence": "medium",
+              "sourceName": "Derived from the DHA-attributed 'white' background statement",
+              "sourceUrl": "https://www.reloadinternet.com/south-africa-passport-photo/",
+              "notes": "No single hex is derivable for the alternative 'grey or cream' description (ambiguous exact shade), so that variant is left without a hex mapping."
+            },
+            {
+              "category": "lightingRequirement",
+              "value": "No shadows on the applicant's face or the background",
+              "unit": null,
+              "mappedToSchemaField": "printNotes",
+              "confidence": "medium",
+              "sourceName": "Reload Internet (citing DHA)",
+              "sourceUrl": "https://www.reloadinternet.com/south-africa-passport-photo/",
+              "notes": ""
+            },
+            {
+              "category": "expressionRequirement",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": "printNotes",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "No explicit neutral-expression/mouth-closed rule found beyond a general 'true likeness of the person' requirement."
+            },
+            {
+              "category": "glassesPolicy",
+              "value": "CONFLICTING: one source states glasses are not allowed at all (all eyewear, including prescription glasses, must be removed); another source explicitly attributed to DHA states glasses are permitted if the eyes are clearly visible, though removal is recommended.",
+              "unit": null,
+              "mappedToSchemaField": "printNotes",
+              "confidence": "medium",
+              "sourceName": "passportphotohq.com ('glasses not allowed, all eyewear must be removed') vs. Reload Internet, citing DHA ('glasses permitted if eyes are visible... though removal is recommended')",
+              "sourceUrl": "https://www.reloadinternet.com/south-africa-passport-photo/",
+              "notes": "Genuine conflict between two reputable-tier aggregator sources on this point; recorded both per the source-conflict rule rather than silently picking one. The DHA-attributed version (reloadinternet.com) is likely closer to the actual government rule."
+            },
+            {
+              "category": "headCoveringPolicy",
+              "value": "Head/face coverings forbidden except for religious reasons; if worn, the full face must be visible from the bottom of the chin to the top of the forehead",
+              "unit": null,
+              "mappedToSchemaField": "printNotes",
+              "confidence": "medium",
+              "sourceName": "Reload Internet (citing DHA)",
+              "sourceUrl": "https://www.reloadinternet.com/south-africa-passport-photo/",
+              "notes": ""
+            },
+            {
+              "category": "recencyMonths",
+              "value": 1,
+              "unit": "months",
+              "mappedToSchemaField": null,
+              "confidence": "medium",
+              "sourceName": "Aggregator synthesis ('photos should be no more than one month old')",
+              "sourceUrl": "https://passportphotohq.com/requirements/za/",
+              "notes": "Not corroborated directly by the DHA-citing reloadinternet.com source."
+            },
+            {
+              "category": "colorRequirement",
+              "value": "Two identical colour photographs",
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "medium",
+              "sourceName": "Aggregator synthesis, consistent across multiple sources",
+              "sourceUrl": "https://passportphotohq.com/requirements/za/",
+              "notes": ""
+            },
+            {
+              "category": "printPaperRequirement",
+              "value": "Must be professionally printed; machine-type or instant photographs are not acceptable",
+              "unit": null,
+              "mappedToSchemaField": "printNotes",
+              "confidence": "medium",
+              "sourceName": "Department of Home Affairs (dha.gov.za) content, found via a site:dha.gov.za search index; the underlying page/PDF could not be directly and fully read in this session",
+              "sourceUrl": "https://www.dha.gov.za/images/PDFs/Travel%20Documents/bi-73.pdf",
+              "notes": "Search index returned the exact phrase 'A recent, passport-type, full face photograph bearing the names of the applicants on the reverse side thereof is required...machine-type or instant photographs are not acceptable' attributed to dha.gov.za content; the PDF itself could not be parsed as text in this session (returned as unreadable binary), so this is recorded as medium rather than high confidence pending direct verification."
+            },
+            {
+              "category": "copiesRequired",
+              "value": 2,
+              "unit": "copies",
+              "mappedToSchemaField": "copiesPerSheet",
+              "confidence": "medium",
+              "sourceName": "Aggregator synthesis, consistent across multiple sources ('two identical colour photographs')",
+              "sourceUrl": "https://passportphotohq.com/requirements/za/",
+              "notes": "Also consistent with the DHA form (bi-73) requiring applicant names on the back of 'the photograph' in a context implying multiple copies."
+            },
+            {
+              "category": "digitalFileRequirement",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not clearly distinguished from the print spec in sources found; the 600dpi figure recorded under 'dpi' above may relate to this but was described ambiguously."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "country": "Нигерия",
+      "documents": [
+        {
+          "documentType": "Паспорт",
+          "requirements": [
+            {
+              "category": "photoWidthMm",
+              "value": 35,
+              "unit": "mm",
+              "mappedToSchemaField": "photoWidthMm",
+              "confidence": "low",
+              "sourceName": "Aggregator synthesis (visafoto.com, idphotodiy.com, passportphotohq.com)",
+              "sourceUrl": "https://visafoto.com/ng-passport-photo",
+              "notes": "The official Nigeria Immigration Service page (immigration.gov.ng/passports/) was fetched directly in this session and states only '2 passport sized photographs' and '1 passport sized photograph' for minors, without giving explicit mm dimensions — so this 35x45mm figure is aggregator-only."
+            },
+            {
+              "category": "photoHeightMm",
+              "value": 45,
+              "unit": "mm",
+              "mappedToSchemaField": "photoHeightMm",
+              "confidence": "low",
+              "sourceName": "Aggregator synthesis",
+              "sourceUrl": "https://visafoto.com/ng-passport-photo",
+              "notes": "See photoWidthMm note."
+            },
+            {
+              "category": "dpi",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": "dpi",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "CONFLICT among aggregator sources for the online NIS portal upload: one states '600 DPI' resolution, another separately describes '413 x 531 pixels at 300 DPI'. Neither could be verified on an official page, and the two conflict, so no value is recorded here; both figures are preserved for reference under digitalFileRequirement instead."
+            },
+            {
+              "category": "headHeightMinMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "headHeightMinMm",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not specified; NIS states photos must meet ICAO standards generally, but no distinct national mm figure was found (ICAO Doc 9303 itself does not fix an absolute mm head-height value independent of a chosen print size)."
+            },
+            {
+              "category": "headHeightMaxMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "headHeightMaxMm",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "See headHeightMinMm note."
+            },
+            {
+              "category": "eyeLineFromBottomMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "eyeLineFromBottomMm",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not specified."
+            },
+            {
+              "category": "marginTopMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "marginTopMm",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not specified."
+            },
+            {
+              "category": "chinPositionFromBottomMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not specified."
+            },
+            {
+              "category": "headWidthMinMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "headWidthMinMm",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not specified."
+            },
+            {
+              "category": "headWidthMaxMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "headWidthMaxMm",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not specified."
+            },
+            {
+              "category": "bothEarsVisibleRequired",
+              "value": true,
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "medium",
+              "sourceName": "Aggregator/search synthesis of NIS-derived requirements",
+              "sourceUrl": "https://visafoto.com/nigeria/passport-photo-requirements-nigeria",
+              "notes": "'Applicants' faces must cover 70% of the whole photo and be visible from ear to ear & forehead to chin.' Not independently confirmed on the official immigration.gov.ng page fetched directly (which did not mention this)."
+            },
+            {
+              "category": "horizontalCenteringTolerance",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not specified."
+            },
+            {
+              "category": "poseToleranceDegrees",
+              "value": null,
+              "unit": "degrees",
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not specified numerically; NIS states general ICAO-standard compliance only."
+            },
+            {
+              "category": "eyeVisibilityZonePercent",
+              "value": null,
+              "unit": "%",
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not specified."
+            },
+            {
+              "category": "backgroundColor",
+              "value": "White (plain, spotless, no patterns/objects/other people behind the subject)",
+              "unit": null,
+              "mappedToSchemaField": "backgroundRequirement",
+              "confidence": "medium",
+              "sourceName": "Aggregator/search synthesis of NIS-derived requirements, consistent across multiple independent sources with specific descriptive detail",
+              "sourceUrl": "https://visafoto.com/nigeria/passport-photo-requirements-nigeria",
+              "notes": "Not stated on the official immigration.gov.ng page fetched directly in this session (that page only covered photo count/endorsement)."
+            },
+            {
+              "category": "backgroundColorHex",
+              "value": "#FFFFFF",
+              "unit": null,
+              "mappedToSchemaField": "backgroundColorHex",
+              "confidence": "medium",
+              "sourceName": "Derived from stated white background",
+              "sourceUrl": "https://visafoto.com/nigeria/passport-photo-requirements-nigeria",
+              "notes": ""
+            },
+            {
+              "category": "lightingRequirement",
+              "value": "Adequate brightness and contrast; natural skin tone; no dark patches or visible objects behind the subject",
+              "unit": null,
+              "mappedToSchemaField": "printNotes",
+              "confidence": "medium",
+              "sourceName": "Aggregator/search synthesis of NIS-derived requirements",
+              "sourceUrl": "https://visafoto.com/nigeria/passport-photo-requirements-nigeria",
+              "notes": ""
+            },
+            {
+              "category": "expressionRequirement",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": "printNotes",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "No explicit neutral-expression rule found for Nigeria in any source."
+            },
+            {
+              "category": "glassesPolicy",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": "printNotes",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "No glasses-specific rule found for Nigerian passport photos in any source."
+            },
+            {
+              "category": "headCoveringPolicy",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": "printNotes",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Notably, no source found (official or aggregator) states an explicit head-covering/religious-exception policy for Nigerian passport photos, in contrast to UAE, Saudi Arabia, Israel, and Egypt where such rules were found. This absence is recorded deliberately rather than assumed."
+            },
+            {
+              "category": "recencyMonths",
+              "value": 6,
+              "unit": "months",
+              "mappedToSchemaField": null,
+              "confidence": "medium",
+              "sourceName": "Aggregator/search synthesis, consistent across multiple sources",
+              "sourceUrl": "https://visafoto.com/nigeria/passport-photo-requirements-nigeria",
+              "notes": ""
+            },
+            {
+              "category": "colorRequirement",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "low",
+              "sourceName": "Aggregator/search synthesis",
+              "sourceUrl": "https://visafoto.com/nigeria/passport-photo-requirements-nigeria",
+              "notes": "No explicit 'must be in color' statement found; strongly implied by descriptions of 'natural skin tone' and brightness/contrast criteria, but not an explicit stated rule, so recorded as null with this note rather than inferred as a definite value."
+            },
+            {
+              "category": "printPaperRequirement",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": "printNotes",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not specified."
+            },
+            {
+              "category": "copiesRequired",
+              "value": 2,
+              "unit": "copies",
+              "mappedToSchemaField": "copiesPerSheet",
+              "confidence": "high",
+              "sourceName": "Nigeria Immigration Service - Passports page (fetched directly)",
+              "sourceUrl": "https://immigration.gov.ng/passports/",
+              "notes": "'2 passport sized photographs' required for standard adult applicants, endorsed on the back by the guarantor. For minors: '1 passport sized photograph...endorsed on the reverse side by the consenting parent(s)'."
+            },
+            {
+              "category": "digitalFileRequirement",
+              "value": "Online NIS portal (passport.immigration.gov.ng) upload: JPEG format, file size under 2MB. CONFLICTING pixel-dimension figures across aggregator sources: 350x450px, 413x531px @300dpi, and 600x800px @600dpi have each been separately reported.",
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "low",
+              "sourceName": "Aggregator/search synthesis (multiple mutually-inconsistent sources)",
+              "sourceUrl": "https://visafoto.com/ng-passport-online-photo",
+              "notes": "None of these figures could be verified on an official immigration.gov.ng/passport.immigration.gov.ng page directly in this session; recorded at low confidence with the conflict made explicit rather than picking one arbitrarily."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
