@@ -226,6 +226,9 @@ input {
   font: var(--font-caption);
   color: var(--color-ink-soft);
 }
+.pk-background-color-row {
+  align-items: center;
+}
 
 /* ---------- Confirm config ---------- */
 

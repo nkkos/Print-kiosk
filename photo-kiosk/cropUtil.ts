@@ -15,12 +15,20 @@ import type { CaptureSpec } from './types';
 // by the customer rather than baked in silently or rejected outright.
 
 export const DEFAULT_DPI = 300;
-// Placeholder defaults pending product-owner sign-off
+// Placeholder default pending product-owner sign-off
 // (docs/photo-kiosk-requirements.md's "Default crop values for 'Произвольный
-// размер'" open item) — applied only when CustomSizeScreen leaves
-// margin/eye-line blank.
-export const DEFAULT_MARGIN_RATIO = 0.1;
+// размер'" open item) — applied only when CustomSizeScreen leaves eye-line
+// blank (and no margin-top is given either).
 export const DEFAULT_EYE_LINE_RATIO = 0.55;
+// Head-height-to-photo-height ratio used when "Произвольный размер" leaves
+// the head-height band blank — not a guess: the median across real published
+// specs collected in docs/photo-requirements-data/ (2026-09) is ~74%, and
+// 75.6% (34mm head / 45mm photo) is the single most common exact figure,
+// shared by Australia, New Zealand, Japan, South Korea, the Philippines and
+// Kazakhstan. Filling this in (real or default) is what calibrates the crop
+// to the customer's actual detected head size instead of a generic
+// frame-relative box — see computeCropSize.
+export const DEFAULT_HEAD_HEIGHT_RATIO = 0.75;
 
 const MM_PER_INCH = 25.4;
 
@@ -53,6 +61,17 @@ export function computeGuideRect(frameW: number, frameH: number, spec: CaptureSp
   return { x: (frameW - width) / 2, y: (frameH - height) / 2, width, height };
 }
 
+/** The real head-height band when the document/customer gave one, otherwise
+ * DEFAULT_HEAD_HEIGHT_RATIO of the photo's own height — shared by
+ * computeGuideMarkers (the live self-alignment guide) and computeCropSize
+ * (the actual crop scale) so both always have a real target to calibrate
+ * against, never an undefined one. */
+function resolveAvgHeadHeightMm(spec: CaptureSpec): number {
+  return spec.headHeightMinMm != null && spec.headHeightMaxMm != null
+    ? (spec.headHeightMinMm + spec.headHeightMaxMm) / 2
+    : spec.heightMm * DEFAULT_HEAD_HEIGHT_RATIO;
+}
+
 export interface GuideMarkers {
   eyeLineY?: number;
   headTopY?: number;
@@ -80,10 +99,7 @@ export interface GuideMarkers {
  * the "Произвольный размер" branch's default ratio when neither is given. */
 export function computeGuideMarkers(guide: PixelRect, spec: CaptureSpec): GuideMarkers {
   const pxPerMmY = guide.height / spec.heightMm;
-  const avgHeadHeightMm =
-    spec.headHeightMinMm != null && spec.headHeightMaxMm != null
-      ? (spec.headHeightMinMm + spec.headHeightMaxMm) / 2
-      : undefined;
+  const avgHeadHeightMm = resolveAvgHeadHeightMm(spec);
 
   let headTopY: number | undefined;
   let eyeLineY: number | undefined;
@@ -91,18 +107,13 @@ export function computeGuideMarkers(guide: PixelRect, spec: CaptureSpec): GuideM
   if (spec.marginTopMm == null) {
     const eyeLineFromBottomMm = spec.eyeLineFromBottomMm ?? spec.heightMm * DEFAULT_EYE_LINE_RATIO;
     eyeLineY = guide.y + guide.height * (1 - eyeLineFromBottomMm / spec.heightMm);
-    if (avgHeadHeightMm != null) {
-      headTopY = eyeLineY - avgHeadHeightMm * 0.45 * pxPerMmY;
-    }
+    headTopY = eyeLineY - avgHeadHeightMm * 0.45 * pxPerMmY;
   } else {
     headTopY = guide.y + spec.marginTopMm * pxPerMmY;
-    if (avgHeadHeightMm != null) {
-      eyeLineY = headTopY + avgHeadHeightMm * 0.45 * pxPerMmY;
-    }
+    eyeLineY = headTopY + avgHeadHeightMm * 0.45 * pxPerMmY;
   }
 
-  const headBottomY =
-    headTopY != null && avgHeadHeightMm != null ? headTopY + avgHeadHeightMm * pxPerMmY : undefined;
+  const headBottomY = headTopY + avgHeadHeightMm * pxPerMmY;
 
   const markers: GuideMarkers = { eyeLineY, headTopY, headBottomY };
 
@@ -151,24 +162,24 @@ export function estimateFallbackLandmarks(
   };
 }
 
-/** How big the tight crop should be. Documents with a head-height band
- * calibrate real pixels-per-mm from the landmarks' own head height (shrunk
- * to fit the frame if the ideal size would exceed it — never refuse a
- * shot over camera distance). Without that band ("Произвольный размер",
- * or detection that never located a head at all), size instead comes from
- * the same frame-relative ratio the live on-screen guide already uses. */
+/** How big the tight crop should be — real pixels-per-mm calibrated from the
+ * landmarks' own detected head height against resolveAvgHeadHeightMm's
+ * target (real head-height band if the document/customer gave one,
+ * DEFAULT_HEAD_HEIGHT_RATIO otherwise — "Произвольный размер" left blank is
+ * no longer a special case), shrunk to fit the frame if the ideal size
+ * would exceed it (never refuse a shot over camera distance). Only falls
+ * back to the frame-relative guide box on the (now essentially unreachable)
+ * case of no head landmarks at all — detectFace and estimateFallbackLandmarks
+ * both always produce them. */
 function computeCropSize(
   landmarks: CropLandmarks,
   spec: CaptureSpec,
   imageWidth: number,
   imageHeight: number,
 ): { widthPx: number; heightPx: number } {
-  const avgHeadHeightMm =
-    spec.headHeightMinMm != null && spec.headHeightMaxMm != null
-      ? (spec.headHeightMinMm + spec.headHeightMaxMm) / 2
-      : undefined;
+  const avgHeadHeightMm = resolveAvgHeadHeightMm(spec);
 
-  if (avgHeadHeightMm != null && landmarks.headTopY != null && landmarks.headBottomY != null) {
+  if (landmarks.headTopY != null && landmarks.headBottomY != null) {
     const detectedHeadHeightPx = landmarks.headBottomY - landmarks.headTopY;
     const idealScale = detectedHeadHeightPx / avgHeadHeightMm; // px per output mm
     const fitScale = Math.min(
