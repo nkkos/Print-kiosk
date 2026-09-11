@@ -7,61 +7,511 @@
         {
           "documentType": "Паспорт",
           "requirements": [
-            { "category": "photoWidthMm", "value": 51, "unit": "mm", "mappedToSchemaField": "photoWidthMm", "confidence": "high", "sourceName": "U.S. Department of State - Travel.State.Gov, Passport Photos", "sourceUrl": "https://travel.state.gov/content/travel/en/passports/how-apply/photos.html", "notes": "Stated as 2 x 2 inches (51 x 51 mm); direct browser fetch of this page was blocked (403) during this research, so the figure is corroborated via multiple independent summaries of the same official page rather than a raw quote captured this session." },
-            { "category": "photoHeightMm", "value": 51, "unit": "mm", "mappedToSchemaField": "photoHeightMm", "confidence": "high", "sourceName": "U.S. Department of State - Travel.State.Gov, Passport Photos", "sourceUrl": "https://travel.state.gov/content/travel/en/passports/how-apply/photos.html", "notes": "Square photo, 2 x 2 inches (51 x 51 mm)." },
-            { "category": "dpi", "value": null, "unit": null, "mappedToSchemaField": "dpi", "confidence": "n/a", "sourceName": null, "sourceUrl": null, "notes": "No DPI figure is published for the printed photo; the digital online-renewal path instead specifies pixel-independent file-size bounds (54 KB - 10 MB) with no explicit resolution/DPI requirement." },
-            { "category": "headHeightMinMm", "value": 25, "unit": "mm", "mappedToSchemaField": "headHeightMinMm", "confidence": "high", "sourceName": "U.S. Department of State - Travel.State.Gov, Passport Photos", "sourceUrl": "https://travel.state.gov/content/travel/en/passports/how-apply/photos.html", "notes": "1 inch, chin to top of head." },
-            { "category": "headHeightMaxMm", "value": 35, "unit": "mm", "mappedToSchemaField": "headHeightMaxMm", "confidence": "high", "sourceName": "U.S. Department of State - Travel.State.Gov, Passport Photos", "sourceUrl": "https://travel.state.gov/content/travel/en/passports/how-apply/photos.html", "notes": "1 3/8 inch, chin to top of head." },
-            { "category": "eyeLineFromBottomMm", "value": null, "unit": "mm", "mappedToSchemaField": "eyeLineFromBottomMm", "confidence": "low", "sourceName": "Aggregator sites paraphrasing historical State Dept. photo template (e.g. PixID, PassportPhotoFactory)", "sourceUrl": "https://www.pixid.studio/guide/passport-photo-requirements", "notes": "Widely repeated figure of 1 1/8 to 1 3/8 inch (~28.6-34.9 mm) from bottom of photo to eye level, matching the classic printed passport-photo template. Could not confirm this is still stated verbatim on the current travel.state.gov page (direct fetch was blocked, 403); recorded at low confidence since only aggregator corroboration was obtained this session, not a direct official quote." },
-            { "category": "marginTopMm", "value": null, "unit": "mm", "mappedToSchemaField": "marginTopMm", "confidence": "n/a", "sourceName": null, "sourceUrl": null, "notes": "US spec uses eye-line-from-bottom style anchoring (see above), not margin-from-top; not applicable." },
-            { "category": "chinPositionFromBottomMm", "value": null, "unit": "mm", "mappedToSchemaField": null, "confidence": "n/a", "sourceName": null, "sourceUrl": null, "notes": "Not published as an independent figure. Could theoretically be derived from eye-line-from-bottom minus head-height, but the source does not state it directly, so not recorded as a hard value." },
-            { "category": "headWidthMinMm", "value": null, "unit": "mm", "mappedToSchemaField": "headWidthMinMm", "confidence": "n/a", "sourceName": null, "sourceUrl": null, "notes": "No head-width requirement found." },
-            { "category": "headWidthMaxMm", "value": null, "unit": "mm", "mappedToSchemaField": "headWidthMaxMm", "confidence": "n/a", "sourceName": null, "sourceUrl": null, "notes": "No head-width requirement found." },
-            { "category": "bothEarsVisibleRequired", "value": "not-specified", "unit": null, "mappedToSchemaField": null, "confidence": "medium", "sourceName": "Travel.State.Gov Photos page, paraphrased via aggregator cross-check", "sourceUrl": "https://travel.state.gov/content/travel/en/passports/how-apply/photos.html", "notes": "No requirement that ears be visible; hair or religious/medical headwear may cover ears as long as the full face is visible." },
-            { "category": "horizontalCenteringTolerance", "value": null, "unit": null, "mappedToSchemaField": null, "confidence": "n/a", "sourceName": null, "sourceUrl": null, "notes": "Only qualitative guidance ('head centered') found; no numeric tolerance stated." },
-            { "category": "poseToleranceDegrees", "value": null, "unit": "degrees", "mappedToSchemaField": null, "confidence": "n/a", "sourceName": null, "sourceUrl": null, "notes": "Not stated on citizen-facing pages (this is normally an internal ICAO/facial-recognition backend tolerance, not published for applicants)." },
-            { "category": "eyeVisibilityZonePercent", "value": null, "unit": "%", "mappedToSchemaField": null, "confidence": "n/a", "sourceName": null, "sourceUrl": null, "notes": "No ICAO-style 'glasses frame must not cover more than X% of eye' rule found; glasses are simply banned outright in most cases (see glassesPolicy)." },
-            { "category": "backgroundColor", "value": "White or off-white, plain, no shadows/texture/objects", "unit": null, "mappedToSchemaField": "backgroundRequirement", "confidence": "high", "sourceName": "U.S. Department of State - Travel.State.Gov, Passport Photos / Online Renewal Photo instructions", "sourceUrl": "https://travel.state.gov/content/travel/en/passports/how-apply/online-renewal-photo.html", "notes": "\"Position yourself several feet away from a white background or wall\"; online renewal page: \"plain white or off-white background free of shadows, textures, or objects.\"" },
-            { "category": "backgroundColorHex", "value": "#FFFFFF", "unit": null, "mappedToSchemaField": "backgroundColorHex", "confidence": "medium", "sourceName": "Derived from stated 'white' option", "sourceUrl": "https://travel.state.gov/content/travel/en/passports/how-apply/photos.html", "notes": "White is named explicitly; 'off-white' is also accepted but has no single official hex, so this is an interpretation, not a literal government-stated hex." },
-            { "category": "lightingRequirement", "value": "Even lighting with no shadows on the face or background; avoid glare/red-eye", "unit": null, "mappedToSchemaField": null, "confidence": "medium", "sourceName": "Travel.State.Gov Passport Photos / Online Renewal instructions", "sourceUrl": "https://travel.state.gov/content/travel/en/passports/how-apply/online-renewal-photo.html", "notes": null },
-            { "category": "expressionRequirement", "value": "Face camera directly, both eyes open and visible, neutral expression (avoid showing teeth per online-renewal instructions), mouth closed", "unit": null, "mappedToSchemaField": null, "confidence": "medium", "sourceName": "Travel.State.Gov Online Renewal Photo instructions", "sourceUrl": "https://travel.state.gov/content/travel/en/passports/how-apply/online-renewal-photo.html", "notes": null },
-            { "category": "glassesPolicy", "value": "Glasses banned in passport/visa photos since November 1, 2016; narrow medical exception (e.g. recent ocular surgery) requires a signed medical statement; frames must not cover eyes, no glare/shadow/refraction obscuring eyes; sunglasses/tinted lenses never allowed", "unit": null, "mappedToSchemaField": null, "confidence": "high", "sourceName": "U.S. Department of State press statement + Photo FAQ", "sourceUrl": "https://2009-2017.state.gov/r/pa/prs/ps/2016/10/263118.htm", "notes": "Confirmed still current via travel.state.gov Photo FAQ cross-check (https://travel.state.gov/content/travel/en/us-visas/visa-information-resources/photos/frequently-asked-questions.html)." },
-            { "category": "headCoveringPolicy", "value": "Not permitted except for religious or medical reasons; full face must remain visible with the covering", "unit": null, "mappedToSchemaField": null, "confidence": "medium", "sourceName": "Travel.State.Gov Passport Photos", "sourceUrl": "https://travel.state.gov/content/travel/en/passports/how-apply/photos.html", "notes": null },
-            { "category": "recencyMonths", "value": 6, "unit": "months", "mappedToSchemaField": null, "confidence": "high", "sourceName": "Travel.State.Gov Passport Photos", "sourceUrl": "https://travel.state.gov/content/travel/en/passports/how-apply/photos.html", "notes": "Photo must have been taken within the last 6 months. Not applicable to a kiosk capturing live, recorded for completeness only." },
-            { "category": "colorRequirement", "value": "Full color required", "unit": null, "mappedToSchemaField": null, "confidence": "high", "sourceName": "Travel.State.Gov Passport Photos", "sourceUrl": "https://travel.state.gov/content/travel/en/passports/how-apply/photos.html", "notes": null },
-            { "category": "printPaperRequirement", "value": null, "unit": null, "mappedToSchemaField": "printNotes", "confidence": "n/a", "sourceName": null, "sourceUrl": null, "notes": "No specific paper type/finish (matte vs glossy) mandated in sources found for standard DS-11 paper submission beyond general 'photo quality'." },
-            { "category": "copiesRequired", "value": 1, "unit": "count", "mappedToSchemaField": "copiesPerSheet", "confidence": "high", "sourceName": "Travel.State.Gov Passport Photos", "sourceUrl": "https://travel.state.gov/content/travel/en/passports/how-apply/photos.html", "notes": "Standard DS-11 application requires 1 recent color photo (submitted attached/uploaded)." },
-            { "category": "digitalFileRequirement", "value": "Online Passport Renewal only: JPG, JPEG, PNG, HEIC, or HEIF file, 54 KB - 10 MB, color, taken within last 6 months, no filters/retouching", "unit": null, "mappedToSchemaField": null, "confidence": "high", "sourceName": "Travel.State.Gov, Uploading a Digital Photo / Online Renewal", "sourceUrl": "https://travel.state.gov/en/passports/renew-replace/online/upload-digital-photo.html", "notes": "This digital spec applies specifically to the Online Passport Renewal tool, not the general DS-11 paper/photo submission." }
+            {
+              "category": "photoWidthMm",
+              "value": 51,
+              "unit": "mm",
+              "mappedToSchemaField": "photoWidthMm",
+              "confidence": "high",
+              "sourceName": "U.S. Department of State - Travel.State.Gov, Passport Photos",
+              "sourceUrl": "https://travel.state.gov/content/travel/en/passports/how-apply/photos.html",
+              "notes": "Stated as 2 x 2 inches (51 x 51 mm); direct browser fetch of this page was blocked (403) during this research, so the figure is corroborated via multiple independent summaries of the same official page rather than a raw quote captured this session."
+            },
+            {
+              "category": "photoHeightMm",
+              "value": 51,
+              "unit": "mm",
+              "mappedToSchemaField": "photoHeightMm",
+              "confidence": "high",
+              "sourceName": "U.S. Department of State - Travel.State.Gov, Passport Photos",
+              "sourceUrl": "https://travel.state.gov/content/travel/en/passports/how-apply/photos.html",
+              "notes": "Square photo, 2 x 2 inches (51 x 51 mm)."
+            },
+            {
+              "category": "dpi",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": "dpi",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "No DPI figure is published for the printed photo; the digital online-renewal path instead specifies pixel-independent file-size bounds (54 KB - 10 MB) with no explicit resolution/DPI requirement."
+            },
+            {
+              "category": "headHeightMinMm",
+              "value": 25,
+              "unit": "mm",
+              "mappedToSchemaField": "headHeightMinMm",
+              "confidence": "high",
+              "sourceName": "U.S. Department of State - Travel.State.Gov, Passport Photos",
+              "sourceUrl": "https://travel.state.gov/content/travel/en/passports/how-apply/photos.html",
+              "notes": "1 inch, chin to top of head."
+            },
+            {
+              "category": "headHeightMaxMm",
+              "value": 35,
+              "unit": "mm",
+              "mappedToSchemaField": "headHeightMaxMm",
+              "confidence": "high",
+              "sourceName": "U.S. Department of State - Travel.State.Gov, Passport Photos",
+              "sourceUrl": "https://travel.state.gov/content/travel/en/passports/how-apply/photos.html",
+              "notes": "1 3/8 inch, chin to top of head."
+            },
+            {
+              "category": "eyeLineFromBottomMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "eyeLineFromBottomMm",
+              "confidence": "low",
+              "sourceName": "Aggregator sites paraphrasing historical State Dept. photo template (e.g. PixID, PassportPhotoFactory)",
+              "sourceUrl": "https://www.pixid.studio/guide/passport-photo-requirements",
+              "notes": "Widely repeated figure of 1 1/8 to 1 3/8 inch (~28.6-34.9 mm) from bottom of photo to eye level, matching the classic printed passport-photo template. Could not confirm this is still stated verbatim on the current travel.state.gov page (direct fetch was blocked, 403); recorded at low confidence since only aggregator corroboration was obtained this session, not a direct official quote."
+            },
+            {
+              "category": "marginTopMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "marginTopMm",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "US spec uses eye-line-from-bottom style anchoring (see above), not margin-from-top; not applicable."
+            },
+            {
+              "category": "chinPositionFromBottomMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not published as an independent figure. Could theoretically be derived from eye-line-from-bottom minus head-height, but the source does not state it directly, so not recorded as a hard value."
+            },
+            {
+              "category": "headWidthMinMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "headWidthMinMm",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "No head-width requirement found."
+            },
+            {
+              "category": "headWidthMaxMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "headWidthMaxMm",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "No head-width requirement found."
+            },
+            {
+              "category": "bothEarsVisibleRequired",
+              "value": "not-specified",
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "medium",
+              "sourceName": "Travel.State.Gov Photos page, paraphrased via aggregator cross-check",
+              "sourceUrl": "https://travel.state.gov/content/travel/en/passports/how-apply/photos.html",
+              "notes": "No requirement that ears be visible; hair or religious/medical headwear may cover ears as long as the full face is visible."
+            },
+            {
+              "category": "horizontalCenteringTolerance",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Only qualitative guidance ('head centered') found; no numeric tolerance stated."
+            },
+            {
+              "category": "poseToleranceDegrees",
+              "value": null,
+              "unit": "degrees",
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not stated on citizen-facing pages (this is normally an internal ICAO/facial-recognition backend tolerance, not published for applicants)."
+            },
+            {
+              "category": "eyeVisibilityZonePercent",
+              "value": null,
+              "unit": "%",
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "No ICAO-style 'glasses frame must not cover more than X% of eye' rule found; glasses are simply banned outright in most cases (see glassesPolicy)."
+            },
+            {
+              "category": "backgroundColor",
+              "value": "White or off-white, plain, no shadows/texture/objects",
+              "unit": null,
+              "mappedToSchemaField": "backgroundRequirement",
+              "confidence": "high",
+              "sourceName": "U.S. Department of State - Travel.State.Gov, Passport Photos / Online Renewal Photo instructions",
+              "sourceUrl": "https://travel.state.gov/content/travel/en/passports/how-apply/online-renewal-photo.html",
+              "notes": "\"Position yourself several feet away from a white background or wall\"; online renewal page: \"plain white or off-white background free of shadows, textures, or objects.\""
+            },
+            {
+              "category": "backgroundColorHex",
+              "value": "#FFFFFF",
+              "unit": null,
+              "mappedToSchemaField": "backgroundColorHex",
+              "confidence": "medium",
+              "sourceName": "Derived from stated 'white' option",
+              "sourceUrl": "https://travel.state.gov/content/travel/en/passports/how-apply/photos.html",
+              "notes": "White is named explicitly; 'off-white' is also accepted but has no single official hex, so this is an interpretation, not a literal government-stated hex."
+            },
+            {
+              "category": "lightingRequirement",
+              "value": "Even lighting with no shadows on the face or background; avoid glare/red-eye",
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "medium",
+              "sourceName": "Travel.State.Gov Passport Photos / Online Renewal instructions",
+              "sourceUrl": "https://travel.state.gov/content/travel/en/passports/how-apply/online-renewal-photo.html",
+              "notes": null
+            },
+            {
+              "category": "expressionRequirement",
+              "value": "Face camera directly, both eyes open and visible, neutral expression (avoid showing teeth per online-renewal instructions), mouth closed",
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "medium",
+              "sourceName": "Travel.State.Gov Online Renewal Photo instructions",
+              "sourceUrl": "https://travel.state.gov/content/travel/en/passports/how-apply/online-renewal-photo.html",
+              "notes": null
+            },
+            {
+              "category": "glassesPolicy",
+              "value": "Glasses banned in passport/visa photos since November 1, 2016; narrow medical exception (e.g. recent ocular surgery) requires a signed medical statement; frames must not cover eyes, no glare/shadow/refraction obscuring eyes; sunglasses/tinted lenses never allowed",
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "high",
+              "sourceName": "U.S. Department of State press statement + Photo FAQ",
+              "sourceUrl": "https://2009-2017.state.gov/r/pa/prs/ps/2016/10/263118.htm",
+              "notes": "Confirmed still current via travel.state.gov Photo FAQ cross-check (https://travel.state.gov/content/travel/en/us-visas/visa-information-resources/photos/frequently-asked-questions.html)."
+            },
+            {
+              "category": "headCoveringPolicy",
+              "value": "Not permitted except for religious or medical reasons; full face must remain visible with the covering",
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "medium",
+              "sourceName": "Travel.State.Gov Passport Photos",
+              "sourceUrl": "https://travel.state.gov/content/travel/en/passports/how-apply/photos.html",
+              "notes": null
+            },
+            {
+              "category": "recencyMonths",
+              "value": 6,
+              "unit": "months",
+              "mappedToSchemaField": null,
+              "confidence": "high",
+              "sourceName": "Travel.State.Gov Passport Photos",
+              "sourceUrl": "https://travel.state.gov/content/travel/en/passports/how-apply/photos.html",
+              "notes": "Photo must have been taken within the last 6 months. Not applicable to a kiosk capturing live, recorded for completeness only."
+            },
+            {
+              "category": "colorRequirement",
+              "value": "Full color required",
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "high",
+              "sourceName": "Travel.State.Gov Passport Photos",
+              "sourceUrl": "https://travel.state.gov/content/travel/en/passports/how-apply/photos.html",
+              "notes": null
+            },
+            {
+              "category": "printPaperRequirement",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": "printNotes",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "No specific paper type/finish (matte vs glossy) mandated in sources found for standard DS-11 paper submission beyond general 'photo quality'."
+            },
+            {
+              "category": "copiesRequired",
+              "value": 1,
+              "unit": "count",
+              "mappedToSchemaField": "copiesPerSheet",
+              "confidence": "high",
+              "sourceName": "Travel.State.Gov Passport Photos",
+              "sourceUrl": "https://travel.state.gov/content/travel/en/passports/how-apply/photos.html",
+              "notes": "Standard DS-11 application requires 1 recent color photo (submitted attached/uploaded)."
+            },
+            {
+              "category": "digitalFileRequirement",
+              "value": "Online Passport Renewal only: JPG, JPEG, PNG, HEIC, or HEIF file, 54 KB - 10 MB, color, taken within last 6 months, no filters/retouching",
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "high",
+              "sourceName": "Travel.State.Gov, Uploading a Digital Photo / Online Renewal",
+              "sourceUrl": "https://travel.state.gov/en/passports/renew-replace/online/upload-digital-photo.html",
+              "notes": "This digital spec applies specifically to the Online Passport Renewal tool, not the general DS-11 paper/photo submission."
+            }
           ]
         },
         {
           "documentType": "Виза США",
           "requirements": [
-            { "category": "photoWidthMm", "value": null, "unit": "mm", "mappedToSchemaField": "photoWidthMm", "confidence": "medium", "sourceName": "CEAC / DS-160 photo requirements (via corroborating guides)", "sourceUrl": "https://travel.state.gov/content/travel/en/us-visas/visa-information-resources/photos.html", "notes": "DS-160 visa photos are submitted purely as a digital square (no fixed print mm size); dimension is governed by pixel count instead (see digitalFileRequirement). If printed at the historically-referenced 2x2in equivalent this would be ~51mm, but that is not an official 'required' print size for the standard online visa application." },
-            { "category": "photoHeightMm", "value": null, "unit": "mm", "mappedToSchemaField": "photoHeightMm", "confidence": "medium", "sourceName": "CEAC / DS-160 photo requirements", "sourceUrl": "https://travel.state.gov/content/travel/en/us-visas/visa-information-resources/photos.html", "notes": "Same as photoWidthMm note - square aspect, digital-only." },
-            { "category": "dpi", "value": null, "unit": null, "mappedToSchemaField": "dpi", "confidence": "n/a", "sourceName": null, "sourceUrl": null, "notes": "CEAC specifies pixel dimensions and file size, not DPI." },
-            { "category": "headHeightMinMm", "value": null, "unit": "mm", "mappedToSchemaField": "headHeightMinMm", "confidence": "medium", "sourceName": "CEAC / DS-160 photo requirements (aggregator-corroborated)", "sourceUrl": "https://travel.state.gov/content/travel/en/us-visas/visa-information-resources/photos.html", "notes": "Stated as a percentage, not mm: head height (chin to crown) must be 50%-69% of total image height (equivalently described elsewhere as 1 inch to 1 3/8 inch, i.e. ~22-35mm, echoing the passport figure). Recorded as null in mm because the authoritative CEAC spec is percentage-of-a-variable-resolution-image based, not a fixed physical size." },
-            { "category": "headHeightMaxMm", "value": null, "unit": "mm", "mappedToSchemaField": "headHeightMaxMm", "confidence": "medium", "sourceName": "CEAC / DS-160 photo requirements", "sourceUrl": "https://travel.state.gov/content/travel/en/us-visas/visa-information-resources/photos.html", "notes": "See headHeightMinMm note." },
-            { "category": "eyeLineFromBottomMm", "value": null, "unit": "mm", "mappedToSchemaField": "eyeLineFromBottomMm", "confidence": "medium", "sourceName": "CEAC / DS-160 photo requirements", "sourceUrl": "https://travel.state.gov/content/travel/en/us-visas/visa-information-resources/photos.html", "notes": "Stated as eye level 56%-69% from the bottom of the image (percentage, not mm, since the image is a variable-resolution digital square)." },
-            { "category": "marginTopMm", "value": null, "unit": "mm", "mappedToSchemaField": "marginTopMm", "confidence": "n/a", "sourceName": null, "sourceUrl": null, "notes": "Not applicable; CEAC uses percentage-of-height anchors instead." },
-            { "category": "chinPositionFromBottomMm", "value": null, "unit": "mm", "mappedToSchemaField": null, "confidence": "n/a", "sourceName": null, "sourceUrl": null, "notes": "Not published." },
-            { "category": "headWidthMinMm", "value": null, "unit": "mm", "mappedToSchemaField": "headWidthMinMm", "confidence": "n/a", "sourceName": null, "sourceUrl": null, "notes": "No head-width requirement found." },
-            { "category": "headWidthMaxMm", "value": null, "unit": "mm", "mappedToSchemaField": "headWidthMaxMm", "confidence": "n/a", "sourceName": null, "sourceUrl": null, "notes": "No head-width requirement found." },
-            { "category": "bothEarsVisibleRequired", "value": "not-specified", "unit": null, "mappedToSchemaField": null, "confidence": "medium", "sourceName": "Assumed consistent with passport policy (same 2016 unified photo standard)", "sourceUrl": "https://travel.state.gov/content/travel/en/us-visas/visa-information-resources/photos.html", "notes": "Not independently re-confirmed on the visa page this session; assumed same as passport." },
-            { "category": "horizontalCenteringTolerance", "value": null, "unit": null, "mappedToSchemaField": null, "confidence": "n/a", "sourceName": null, "sourceUrl": null, "notes": "Not stated." },
-            { "category": "poseToleranceDegrees", "value": null, "unit": "degrees", "mappedToSchemaField": null, "confidence": "n/a", "sourceName": null, "sourceUrl": null, "notes": "Not published for applicants." },
-            { "category": "eyeVisibilityZonePercent", "value": null, "unit": "%", "mappedToSchemaField": null, "confidence": "n/a", "sourceName": null, "sourceUrl": null, "notes": "Not found; glasses are banned outright instead (see glassesPolicy)." },
-            { "category": "backgroundColor", "value": "Plain white or off-white, no shadows, textures, or lines", "unit": null, "mappedToSchemaField": "backgroundRequirement", "confidence": "high", "sourceName": "CEAC / DS-160 photo requirements", "sourceUrl": "https://travel.state.gov/content/travel/en/us-visas/visa-information-resources/photos.html", "notes": "Same policy as passport." },
-            { "category": "backgroundColorHex", "value": "#FFFFFF", "unit": null, "mappedToSchemaField": "backgroundColorHex", "confidence": "medium", "sourceName": "Derived from stated 'white' option", "sourceUrl": "https://travel.state.gov/content/travel/en/us-visas/visa-information-resources/photos.html", "notes": "Same caveat as passport entry - off-white has no defined hex." },
-            { "category": "lightingRequirement", "value": "No shadows, textures, or lines in background; even lighting on face", "unit": null, "mappedToSchemaField": null, "confidence": "medium", "sourceName": "CEAC / DS-160 photo requirements", "sourceUrl": "https://travel.state.gov/content/travel/en/us-visas/visa-information-resources/photos.html", "notes": null },
-            { "category": "expressionRequirement", "value": "Both eyes open and clearly visible, natural expression, direct gaze at camera", "unit": null, "mappedToSchemaField": null, "confidence": "medium", "sourceName": "CEAC / DS-160 photo requirements", "sourceUrl": "https://travel.state.gov/content/travel/en/us-visas/visa-information-resources/photos.html", "notes": null },
-            { "category": "glassesPolicy", "value": "Banned since November 1, 2016 (same policy as passport); narrow medical exception with signed statement; sunglasses/tinted lenses never allowed", "unit": null, "mappedToSchemaField": null, "confidence": "high", "sourceName": "U.S. Department of State press statement", "sourceUrl": "https://2009-2017.state.gov/r/pa/prs/ps/2016/10/263118.htm", "notes": "The 2016 policy explicitly covers both passport AND visa photos." },
-            { "category": "headCoveringPolicy", "value": "Not permitted except for religious or medical reasons; full face must remain visible", "unit": null, "mappedToSchemaField": null, "confidence": "medium", "sourceName": "Assumed consistent with passport policy", "sourceUrl": "https://travel.state.gov/content/travel/en/us-visas/visa-information-resources/photos.html", "notes": "Not independently re-confirmed on the visa page this session." },
-            { "category": "recencyMonths", "value": 6, "unit": "months", "mappedToSchemaField": null, "confidence": "medium", "sourceName": "Assumed consistent with passport policy", "sourceUrl": "https://travel.state.gov/content/travel/en/us-visas/visa-information-resources/photos.html", "notes": null },
-            { "category": "colorRequirement", "value": "Full color, sRGB color space, 24-bit color depth", "unit": null, "mappedToSchemaField": null, "confidence": "medium", "sourceName": "CEAC / DS-160 photo requirements (aggregator-corroborated technical spec)", "sourceUrl": "https://travel.state.gov/content/travel/en/us-visas/visa-information-resources/photos.html", "notes": "The sRGB/24-bit figures are consistently repeated across multiple independent guides referencing the CEAC upload tool, but were not captured via a direct official-page fetch this session." },
-            { "category": "printPaperRequirement", "value": null, "unit": null, "mappedToSchemaField": "printNotes", "confidence": "n/a", "sourceName": null, "sourceUrl": null, "notes": "DS-160 nonimmigrant visa photos are uploaded digitally; no print/paper spec applies to the standard online application." },
-            { "category": "copiesRequired", "value": null, "unit": "count", "mappedToSchemaField": "copiesPerSheet", "confidence": "n/a", "sourceName": null, "sourceUrl": null, "notes": "No physical copies required for standard DS-160 digital submission. Note: some visa categories (e.g. Diversity Visa / immigrant visa interviews) may still require a printed 2x2in photo at the interview - not verified in detail this session, flagged for follow-up if the kiosk needs to support those categories." },
-            { "category": "digitalFileRequirement", "value": "JPEG, square, 600x600 to 1200x1200 pixels, file size 240 KB or less, sRGB color space", "unit": null, "mappedToSchemaField": null, "confidence": "high", "sourceName": "CEAC photo upload requirements (consistently corroborated across multiple technical guides)", "sourceUrl": "https://travel.state.gov/content/travel/en/us-visas/visa-information-resources/photos.html", "notes": "This is the authoritative digital spec for DS-160/CEAC upload; direct fetch of the official page was blocked (403) this session, so figures rely on strong cross-source corroboration rather than a captured verbatim quote." }
+            {
+              "category": "photoWidthMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "photoWidthMm",
+              "confidence": "medium",
+              "sourceName": "CEAC / DS-160 photo requirements (via corroborating guides)",
+              "sourceUrl": "https://travel.state.gov/content/travel/en/us-visas/visa-information-resources/photos.html",
+              "notes": "DS-160 visa photos are submitted purely as a digital square (no fixed print mm size); dimension is governed by pixel count instead (see digitalFileRequirement). If printed at the historically-referenced 2x2in equivalent this would be ~51mm, but that is not an official 'required' print size for the standard online visa application."
+            },
+            {
+              "category": "photoHeightMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "photoHeightMm",
+              "confidence": "medium",
+              "sourceName": "CEAC / DS-160 photo requirements",
+              "sourceUrl": "https://travel.state.gov/content/travel/en/us-visas/visa-information-resources/photos.html",
+              "notes": "Same as photoWidthMm note - square aspect, digital-only."
+            },
+            {
+              "category": "dpi",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": "dpi",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "CEAC specifies pixel dimensions and file size, not DPI."
+            },
+            {
+              "category": "headHeightMinMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "headHeightMinMm",
+              "confidence": "medium",
+              "sourceName": "CEAC / DS-160 photo requirements (aggregator-corroborated)",
+              "sourceUrl": "https://travel.state.gov/content/travel/en/us-visas/visa-information-resources/photos.html",
+              "notes": "Stated as a percentage, not mm: head height (chin to crown) must be 50%-69% of total image height (equivalently described elsewhere as 1 inch to 1 3/8 inch, i.e. ~22-35mm, echoing the passport figure). Recorded as null in mm because the authoritative CEAC spec is percentage-of-a-variable-resolution-image based, not a fixed physical size."
+            },
+            {
+              "category": "headHeightMaxMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "headHeightMaxMm",
+              "confidence": "medium",
+              "sourceName": "CEAC / DS-160 photo requirements",
+              "sourceUrl": "https://travel.state.gov/content/travel/en/us-visas/visa-information-resources/photos.html",
+              "notes": "See headHeightMinMm note."
+            },
+            {
+              "category": "eyeLineFromBottomMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "eyeLineFromBottomMm",
+              "confidence": "medium",
+              "sourceName": "CEAC / DS-160 photo requirements",
+              "sourceUrl": "https://travel.state.gov/content/travel/en/us-visas/visa-information-resources/photos.html",
+              "notes": "Stated as eye level 56%-69% from the bottom of the image (percentage, not mm, since the image is a variable-resolution digital square)."
+            },
+            {
+              "category": "marginTopMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "marginTopMm",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not applicable; CEAC uses percentage-of-height anchors instead."
+            },
+            {
+              "category": "chinPositionFromBottomMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not published."
+            },
+            {
+              "category": "headWidthMinMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "headWidthMinMm",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "No head-width requirement found."
+            },
+            {
+              "category": "headWidthMaxMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "headWidthMaxMm",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "No head-width requirement found."
+            },
+            {
+              "category": "bothEarsVisibleRequired",
+              "value": "not-specified",
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "medium",
+              "sourceName": "Assumed consistent with passport policy (same 2016 unified photo standard)",
+              "sourceUrl": "https://travel.state.gov/content/travel/en/us-visas/visa-information-resources/photos.html",
+              "notes": "Not independently re-confirmed on the visa page this session; assumed same as passport."
+            },
+            {
+              "category": "horizontalCenteringTolerance",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not stated."
+            },
+            {
+              "category": "poseToleranceDegrees",
+              "value": null,
+              "unit": "degrees",
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not published for applicants."
+            },
+            {
+              "category": "eyeVisibilityZonePercent",
+              "value": null,
+              "unit": "%",
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not found; glasses are banned outright instead (see glassesPolicy)."
+            },
+            {
+              "category": "backgroundColor",
+              "value": "Plain white or off-white, no shadows, textures, or lines",
+              "unit": null,
+              "mappedToSchemaField": "backgroundRequirement",
+              "confidence": "high",
+              "sourceName": "CEAC / DS-160 photo requirements",
+              "sourceUrl": "https://travel.state.gov/content/travel/en/us-visas/visa-information-resources/photos.html",
+              "notes": "Same policy as passport."
+            },
+            {
+              "category": "backgroundColorHex",
+              "value": "#FFFFFF",
+              "unit": null,
+              "mappedToSchemaField": "backgroundColorHex",
+              "confidence": "medium",
+              "sourceName": "Derived from stated 'white' option",
+              "sourceUrl": "https://travel.state.gov/content/travel/en/us-visas/visa-information-resources/photos.html",
+              "notes": "Same caveat as passport entry - off-white has no defined hex."
+            },
+            {
+              "category": "lightingRequirement",
+              "value": "No shadows, textures, or lines in background; even lighting on face",
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "medium",
+              "sourceName": "CEAC / DS-160 photo requirements",
+              "sourceUrl": "https://travel.state.gov/content/travel/en/us-visas/visa-information-resources/photos.html",
+              "notes": null
+            },
+            {
+              "category": "expressionRequirement",
+              "value": "Both eyes open and clearly visible, natural expression, direct gaze at camera",
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "medium",
+              "sourceName": "CEAC / DS-160 photo requirements",
+              "sourceUrl": "https://travel.state.gov/content/travel/en/us-visas/visa-information-resources/photos.html",
+              "notes": null
+            },
+            {
+              "category": "glassesPolicy",
+              "value": "Banned since November 1, 2016 (same policy as passport); narrow medical exception with signed statement; sunglasses/tinted lenses never allowed",
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "high",
+              "sourceName": "U.S. Department of State press statement",
+              "sourceUrl": "https://2009-2017.state.gov/r/pa/prs/ps/2016/10/263118.htm",
+              "notes": "The 2016 policy explicitly covers both passport AND visa photos."
+            },
+            {
+              "category": "headCoveringPolicy",
+              "value": "Not permitted except for religious or medical reasons; full face must remain visible",
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "medium",
+              "sourceName": "Assumed consistent with passport policy",
+              "sourceUrl": "https://travel.state.gov/content/travel/en/us-visas/visa-information-resources/photos.html",
+              "notes": "Not independently re-confirmed on the visa page this session."
+            },
+            {
+              "category": "recencyMonths",
+              "value": 6,
+              "unit": "months",
+              "mappedToSchemaField": null,
+              "confidence": "medium",
+              "sourceName": "Assumed consistent with passport policy",
+              "sourceUrl": "https://travel.state.gov/content/travel/en/us-visas/visa-information-resources/photos.html",
+              "notes": null
+            },
+            {
+              "category": "colorRequirement",
+              "value": "Full color, sRGB color space, 24-bit color depth",
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "medium",
+              "sourceName": "CEAC / DS-160 photo requirements (aggregator-corroborated technical spec)",
+              "sourceUrl": "https://travel.state.gov/content/travel/en/us-visas/visa-information-resources/photos.html",
+              "notes": "The sRGB/24-bit figures are consistently repeated across multiple independent guides referencing the CEAC upload tool, but were not captured via a direct official-page fetch this session."
+            },
+            {
+              "category": "printPaperRequirement",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": "printNotes",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "DS-160 nonimmigrant visa photos are uploaded digitally; no print/paper spec applies to the standard online application."
+            },
+            {
+              "category": "copiesRequired",
+              "value": null,
+              "unit": "count",
+              "mappedToSchemaField": "copiesPerSheet",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "No physical copies required for standard DS-160 digital submission. Note: some visa categories (e.g. Diversity Visa / immigrant visa interviews) may still require a printed 2x2in photo at the interview - not verified in detail this session, flagged for follow-up if the kiosk needs to support those categories."
+            },
+            {
+              "category": "digitalFileRequirement",
+              "value": "JPEG, square, 600x600 to 1200x1200 pixels, file size 240 KB or less, sRGB color space",
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "high",
+              "sourceName": "CEAC photo upload requirements (consistently corroborated across multiple technical guides)",
+              "sourceUrl": "https://travel.state.gov/content/travel/en/us-visas/visa-information-resources/photos.html",
+              "notes": "This is the authoritative digital spec for DS-160/CEAC upload; direct fetch of the official page was blocked (403) this session, so figures rely on strong cross-source corroboration rather than a captured verbatim quote."
+            }
           ]
         }
       ]
@@ -72,31 +522,256 @@
         {
           "documentType": "Паспорт",
           "requirements": [
-            { "category": "photoWidthMm", "value": 35, "unit": "mm", "mappedToSchemaField": "photoWidthMm", "confidence": "high", "sourceName": "HM Passport Office via GOV.UK, Photos for passports", "sourceUrl": "https://www.gov.uk/photos-for-passports", "notes": "35mm wide x 45mm high - applies to the printed photo used for paper applications / photo booths. The current gov.uk digital-upload flow (fetched directly this session) focuses on pixel dimensions instead; the mm figure is confirmed via search results directly quoting gov.uk sub-pages and associated HMPO PDFs." },
-            { "category": "photoHeightMm", "value": 45, "unit": "mm", "mappedToSchemaField": "photoHeightMm", "confidence": "high", "sourceName": "HM Passport Office via GOV.UK, Photos for passports", "sourceUrl": "https://www.gov.uk/photos-for-passports", "notes": null },
-            { "category": "dpi", "value": null, "unit": null, "mappedToSchemaField": "dpi", "confidence": "n/a", "sourceName": null, "sourceUrl": null, "notes": "Not stated; digital photo spec instead uses pixel dimensions (600x750px minimum)." },
-            { "category": "headHeightMinMm", "value": 29, "unit": "mm", "mappedToSchemaField": "headHeightMinMm", "confidence": "high", "sourceName": "HM Passport Office via GOV.UK, Photos for passports", "sourceUrl": "https://www.gov.uk/photos-for-passports", "notes": "Crown to chin, excluding hair." },
-            { "category": "headHeightMaxMm", "value": 34, "unit": "mm", "mappedToSchemaField": "headHeightMaxMm", "confidence": "high", "sourceName": "HM Passport Office via GOV.UK, Photos for passports", "sourceUrl": "https://www.gov.uk/photos-for-passports", "notes": null },
-            { "category": "eyeLineFromBottomMm", "value": null, "unit": "mm", "mappedToSchemaField": "eyeLineFromBottomMm", "confidence": "n/a", "sourceName": null, "sourceUrl": null, "notes": "UK spec anchors on head-height range only; no separate eye-line-from-bottom figure found." },
-            { "category": "marginTopMm", "value": null, "unit": "mm", "mappedToSchemaField": "marginTopMm", "confidence": "n/a", "sourceName": null, "sourceUrl": null, "notes": "Not stated numerically." },
-            { "category": "chinPositionFromBottomMm", "value": null, "unit": "mm", "mappedToSchemaField": null, "confidence": "n/a", "sourceName": null, "sourceUrl": null, "notes": "Not stated." },
-            { "category": "headWidthMinMm", "value": null, "unit": "mm", "mappedToSchemaField": "headWidthMinMm", "confidence": "n/a", "sourceName": null, "sourceUrl": null, "notes": "No head-width requirement found." },
-            { "category": "headWidthMaxMm", "value": null, "unit": "mm", "mappedToSchemaField": "headWidthMaxMm", "confidence": "n/a", "sourceName": null, "sourceUrl": null, "notes": "No head-width requirement found." },
-            { "category": "bothEarsVisibleRequired", "value": "not-specified", "unit": null, "mappedToSchemaField": null, "confidence": "n/a", "sourceName": null, "sourceUrl": null, "notes": "Guidance says keep hair away from the face/eyes, but does not require ears to be visible." },
-            { "category": "horizontalCenteringTolerance", "value": null, "unit": null, "mappedToSchemaField": null, "confidence": "n/a", "sourceName": null, "sourceUrl": null, "notes": "Not stated numerically." },
-            { "category": "poseToleranceDegrees", "value": null, "unit": "degrees", "mappedToSchemaField": null, "confidence": "n/a", "sourceName": null, "sourceUrl": null, "notes": "Not published for applicants." },
-            { "category": "eyeVisibilityZonePercent", "value": null, "unit": "%", "mappedToSchemaField": null, "confidence": "n/a", "sourceName": null, "sourceUrl": null, "notes": "Not found; glasses discouraged rather than a percent-coverage rule (see glassesPolicy)." },
-            { "category": "backgroundColor", "value": "Plain light-coloured background; cream or light grey preferred, plain white also accepted for printed/photo-booth photos", "unit": null, "mappedToSchemaField": "backgroundRequirement", "confidence": "high", "sourceName": "GOV.UK, Photos for passports (direct fetch)", "sourceUrl": "https://www.gov.uk/photos-for-passports", "notes": "Directly fetched quote: \"be taken against a plain light-coloured background\"; \"a light grey or cream wall works best\"." },
-            { "category": "backgroundColorHex", "value": null, "unit": null, "mappedToSchemaField": "backgroundColorHex", "confidence": "n/a", "sourceName": null, "sourceUrl": null, "notes": "No single official hex given; UK explicitly allows a range of light colours (cream, light grey, white) rather than one fixed shade, unlike a pure-white requirement." },
-            { "category": "lightingRequirement", "value": "No shadows on face or background; natural light preferred; stand 50cm from background wall to avoid shadows", "unit": null, "mappedToSchemaField": null, "confidence": "high", "sourceName": "GOV.UK, Photos for passports (direct fetch)", "sourceUrl": "https://www.gov.uk/photos-for-passports", "notes": "Direct quote: \"not have any shadows on your face or behind you\"." },
-            { "category": "expressionRequirement", "value": "Facing forward, looking straight at camera, plain/neutral expression, mouth closed, eyes open and visible, hair kept away from eyes", "unit": null, "mappedToSchemaField": null, "confidence": "high", "sourceName": "GOV.UK, Photos for passports (direct fetch)", "sourceUrl": "https://www.gov.uk/photos-for-passports", "notes": null },
-            { "category": "glassesPolicy", "value": "Do not wear glasses unless necessary; if worn, must not be sunglasses or tinted, and eyes must not be covered by frames, glare, reflection, or shadow", "unit": null, "mappedToSchemaField": null, "confidence": "high", "sourceName": "GOV.UK, Photos for passports (direct fetch)", "sourceUrl": "https://www.gov.uk/photos-for-passports", "notes": null },
-            { "category": "headCoveringPolicy", "value": "Not permitted except for religious or medical reasons; full face must still be visible", "unit": null, "mappedToSchemaField": null, "confidence": "high", "sourceName": "GOV.UK, Photos for passports (direct fetch)", "sourceUrl": "https://www.gov.uk/photos-for-passports", "notes": null },
-            { "category": "recencyMonths", "value": 1, "unit": "months", "mappedToSchemaField": null, "confidence": "high", "sourceName": "GOV.UK, Photos for passports (direct fetch)", "sourceUrl": "https://www.gov.uk/photos-for-passports", "notes": "NOTABLE: UK requires the photo to have been taken within the last MONTH (\"your photo must have been taken in the last month\"), markedly stricter than the 6-month recency window used by USA/Canada/Australia/NZ in this batch." },
-            { "category": "colorRequirement", "value": "Colour photo required for paper-form printed photos", "unit": null, "mappedToSchemaField": null, "confidence": "medium", "sourceName": "GOV.UK printed-photo guidance (search-corroborated)", "sourceUrl": "https://www.gov.uk/photos-for-passports/photo-requirements", "notes": "Found via search summary of gov.uk sub-page: \"in colour on plain white photographic paper\" for the paper-form path; not independently re-confirmed via direct fetch of that specific sub-page this session." },
-            { "category": "printPaperRequirement", "value": "Printed to professional standard, in colour, on plain photo paper, no border, no creases/tears/marks, not cropped from a larger photo, unaltered by software", "unit": null, "mappedToSchemaField": "printNotes", "confidence": "high", "sourceName": "GOV.UK, Photos for passports / paper application guidance", "sourceUrl": "https://www.gov.uk/photos-for-passports/photo-requirements", "notes": "Applies to the paper-application path (2 physical photos)." },
-            { "category": "copiesRequired", "value": 2, "unit": "count", "mappedToSchemaField": "copiesPerSheet", "confidence": "high", "sourceName": "GOV.UK, paper application guidance", "sourceUrl": "https://www.gov.uk/photos-for-passports/photo-requirements", "notes": "2 identical photos required only for the paper-form route; the online application route uses a single digital photo instead (no physical copies)." },
-            { "category": "digitalFileRequirement", "value": "At least 600 x 750 pixels, file size between 50KB and 10MB, JPG format", "unit": null, "mappedToSchemaField": null, "confidence": "high", "sourceName": "GOV.UK, Photos for passports (direct fetch)", "sourceUrl": "https://www.gov.uk/photos-for-passports", "notes": "Direct quotes: \"at least 600 pixels wide and 750 pixels tall\"; \"at least 50KB and no more than 10MB\"." }
+            {
+              "category": "photoWidthMm",
+              "value": 35,
+              "unit": "mm",
+              "mappedToSchemaField": "photoWidthMm",
+              "confidence": "high",
+              "sourceName": "HM Passport Office via GOV.UK, Photos for passports",
+              "sourceUrl": "https://www.gov.uk/photos-for-passports",
+              "notes": "35mm wide x 45mm high - applies to the printed photo used for paper applications / photo booths. The current gov.uk digital-upload flow (fetched directly this session) focuses on pixel dimensions instead; the mm figure is confirmed via search results directly quoting gov.uk sub-pages and associated HMPO PDFs."
+            },
+            {
+              "category": "photoHeightMm",
+              "value": 45,
+              "unit": "mm",
+              "mappedToSchemaField": "photoHeightMm",
+              "confidence": "high",
+              "sourceName": "HM Passport Office via GOV.UK, Photos for passports",
+              "sourceUrl": "https://www.gov.uk/photos-for-passports",
+              "notes": null
+            },
+            {
+              "category": "dpi",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": "dpi",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not stated; digital photo spec instead uses pixel dimensions (600x750px minimum)."
+            },
+            {
+              "category": "headHeightMinMm",
+              "value": 29,
+              "unit": "mm",
+              "mappedToSchemaField": "headHeightMinMm",
+              "confidence": "high",
+              "sourceName": "HM Passport Office via GOV.UK, Photos for passports",
+              "sourceUrl": "https://www.gov.uk/photos-for-passports",
+              "notes": "Crown to chin, excluding hair."
+            },
+            {
+              "category": "headHeightMaxMm",
+              "value": 34,
+              "unit": "mm",
+              "mappedToSchemaField": "headHeightMaxMm",
+              "confidence": "high",
+              "sourceName": "HM Passport Office via GOV.UK, Photos for passports",
+              "sourceUrl": "https://www.gov.uk/photos-for-passports",
+              "notes": null
+            },
+            {
+              "category": "eyeLineFromBottomMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "eyeLineFromBottomMm",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "UK spec anchors on head-height range only; no separate eye-line-from-bottom figure found."
+            },
+            {
+              "category": "marginTopMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "marginTopMm",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not stated numerically."
+            },
+            {
+              "category": "chinPositionFromBottomMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not stated."
+            },
+            {
+              "category": "headWidthMinMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "headWidthMinMm",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "No head-width requirement found."
+            },
+            {
+              "category": "headWidthMaxMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "headWidthMaxMm",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "No head-width requirement found."
+            },
+            {
+              "category": "bothEarsVisibleRequired",
+              "value": "not-specified",
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Guidance says keep hair away from the face/eyes, but does not require ears to be visible."
+            },
+            {
+              "category": "horizontalCenteringTolerance",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not stated numerically."
+            },
+            {
+              "category": "poseToleranceDegrees",
+              "value": null,
+              "unit": "degrees",
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not published for applicants."
+            },
+            {
+              "category": "eyeVisibilityZonePercent",
+              "value": null,
+              "unit": "%",
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not found; glasses discouraged rather than a percent-coverage rule (see glassesPolicy)."
+            },
+            {
+              "category": "backgroundColor",
+              "value": "Plain light-coloured background; cream or light grey preferred, plain white also accepted for printed/photo-booth photos",
+              "unit": null,
+              "mappedToSchemaField": "backgroundRequirement",
+              "confidence": "high",
+              "sourceName": "GOV.UK, Photos for passports (direct fetch)",
+              "sourceUrl": "https://www.gov.uk/photos-for-passports",
+              "notes": "Directly fetched quote: \"be taken against a plain light-coloured background\"; \"a light grey or cream wall works best\"."
+            },
+            {
+              "category": "backgroundColorHex",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": "backgroundColorHex",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "No single official hex given; UK explicitly allows a range of light colours (cream, light grey, white) rather than one fixed shade, unlike a pure-white requirement."
+            },
+            {
+              "category": "lightingRequirement",
+              "value": "No shadows on face or background; natural light preferred; stand 50cm from background wall to avoid shadows",
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "high",
+              "sourceName": "GOV.UK, Photos for passports (direct fetch)",
+              "sourceUrl": "https://www.gov.uk/photos-for-passports",
+              "notes": "Direct quote: \"not have any shadows on your face or behind you\"."
+            },
+            {
+              "category": "expressionRequirement",
+              "value": "Facing forward, looking straight at camera, plain/neutral expression, mouth closed, eyes open and visible, hair kept away from eyes",
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "high",
+              "sourceName": "GOV.UK, Photos for passports (direct fetch)",
+              "sourceUrl": "https://www.gov.uk/photos-for-passports",
+              "notes": null
+            },
+            {
+              "category": "glassesPolicy",
+              "value": "Do not wear glasses unless necessary; if worn, must not be sunglasses or tinted, and eyes must not be covered by frames, glare, reflection, or shadow",
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "high",
+              "sourceName": "GOV.UK, Photos for passports (direct fetch)",
+              "sourceUrl": "https://www.gov.uk/photos-for-passports",
+              "notes": null
+            },
+            {
+              "category": "headCoveringPolicy",
+              "value": "Not permitted except for religious or medical reasons; full face must still be visible",
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "high",
+              "sourceName": "GOV.UK, Photos for passports (direct fetch)",
+              "sourceUrl": "https://www.gov.uk/photos-for-passports",
+              "notes": null
+            },
+            {
+              "category": "recencyMonths",
+              "value": 1,
+              "unit": "months",
+              "mappedToSchemaField": null,
+              "confidence": "high",
+              "sourceName": "GOV.UK, Photos for passports (direct fetch)",
+              "sourceUrl": "https://www.gov.uk/photos-for-passports",
+              "notes": "NOTABLE: UK requires the photo to have been taken within the last MONTH (\"your photo must have been taken in the last month\"), markedly stricter than the 6-month recency window used by USA/Canada/Australia/NZ in this batch."
+            },
+            {
+              "category": "colorRequirement",
+              "value": "Colour photo required for paper-form printed photos",
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "medium",
+              "sourceName": "GOV.UK printed-photo guidance (search-corroborated)",
+              "sourceUrl": "https://www.gov.uk/photos-for-passports/photo-requirements",
+              "notes": "Found via search summary of gov.uk sub-page: \"in colour on plain white photographic paper\" for the paper-form path; not independently re-confirmed via direct fetch of that specific sub-page this session."
+            },
+            {
+              "category": "printPaperRequirement",
+              "value": "Printed to professional standard, in colour, on plain photo paper, no border, no creases/tears/marks, not cropped from a larger photo, unaltered by software",
+              "unit": null,
+              "mappedToSchemaField": "printNotes",
+              "confidence": "high",
+              "sourceName": "GOV.UK, Photos for passports / paper application guidance",
+              "sourceUrl": "https://www.gov.uk/photos-for-passports/photo-requirements",
+              "notes": "Applies to the paper-application path (2 physical photos)."
+            },
+            {
+              "category": "copiesRequired",
+              "value": 2,
+              "unit": "count",
+              "mappedToSchemaField": "copiesPerSheet",
+              "confidence": "high",
+              "sourceName": "GOV.UK, paper application guidance",
+              "sourceUrl": "https://www.gov.uk/photos-for-passports/photo-requirements",
+              "notes": "2 identical photos required only for the paper-form route; the online application route uses a single digital photo instead (no physical copies)."
+            },
+            {
+              "category": "digitalFileRequirement",
+              "value": "At least 600 x 750 pixels, file size between 50KB and 10MB, JPG format",
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "high",
+              "sourceName": "GOV.UK, Photos for passports (direct fetch)",
+              "sourceUrl": "https://www.gov.uk/photos-for-passports",
+              "notes": "Direct quotes: \"at least 600 pixels wide and 750 pixels tall\"; \"at least 50KB and no more than 10MB\"."
+            }
           ]
         }
       ]
@@ -107,31 +782,256 @@
         {
           "documentType": "Паспорт",
           "requirements": [
-            { "category": "photoWidthMm", "value": 50, "unit": "mm", "mappedToSchemaField": "photoWidthMm", "confidence": "high", "sourceName": "Immigration, Refugees and Citizenship Canada (IRCC) - Passport photo specifications", "sourceUrl": "https://www.canada.ca/en/immigration-refugees-citizenship/services/canadian-passports/photos.html", "notes": "50mm wide by 70mm high (2in x 2.75in). Directly fetched and quoted this session." },
-            { "category": "photoHeightMm", "value": 70, "unit": "mm", "mappedToSchemaField": "photoHeightMm", "confidence": "high", "sourceName": "IRCC - Passport photo specifications", "sourceUrl": "https://www.canada.ca/en/immigration-refugees-citizenship/services/canadian-passports/photos.html", "notes": null },
-            { "category": "dpi", "value": null, "unit": null, "mappedToSchemaField": "dpi", "confidence": "n/a", "sourceName": null, "sourceUrl": null, "notes": "Not stated; Canada's passport photo is a physical-print-only requirement (no digital upload spec found)." },
-            { "category": "headHeightMinMm", "value": 31, "unit": "mm", "mappedToSchemaField": "headHeightMinMm", "confidence": "high", "sourceName": "IRCC - Passport photo specifications", "sourceUrl": "https://www.canada.ca/en/immigration-refugees-citizenship/services/canadian-passports/photos.html", "notes": "1 1/4 inches, chin to crown." },
-            { "category": "headHeightMaxMm", "value": 36, "unit": "mm", "mappedToSchemaField": "headHeightMaxMm", "confidence": "high", "sourceName": "IRCC - Passport photo specifications", "sourceUrl": "https://www.canada.ca/en/immigration-refugees-citizenship/services/canadian-passports/photos.html", "notes": "1 7/16 inches, chin to crown." },
-            { "category": "eyeLineFromBottomMm", "value": null, "unit": "mm", "mappedToSchemaField": "eyeLineFromBottomMm", "confidence": "n/a", "sourceName": null, "sourceUrl": null, "notes": "Not stated; Canada's current published spec uses only head-height, no separate eye-line figure." },
-            { "category": "marginTopMm", "value": null, "unit": "mm", "mappedToSchemaField": "marginTopMm", "confidence": "n/a", "sourceName": null, "sourceUrl": null, "notes": "Not stated." },
-            { "category": "chinPositionFromBottomMm", "value": null, "unit": "mm", "mappedToSchemaField": null, "confidence": "n/a", "sourceName": null, "sourceUrl": null, "notes": "Not stated." },
-            { "category": "headWidthMinMm", "value": null, "unit": "mm", "mappedToSchemaField": "headWidthMinMm", "confidence": "n/a", "sourceName": null, "sourceUrl": null, "notes": "No head-width requirement found." },
-            { "category": "headWidthMaxMm", "value": null, "unit": "mm", "mappedToSchemaField": "headWidthMaxMm", "confidence": "n/a", "sourceName": null, "sourceUrl": null, "notes": "No head-width requirement found." },
-            { "category": "bothEarsVisibleRequired", "value": "not-specified", "unit": null, "mappedToSchemaField": null, "confidence": "n/a", "sourceName": null, "sourceUrl": null, "notes": "Not mentioned in the fetched spec." },
-            { "category": "horizontalCenteringTolerance", "value": null, "unit": null, "mappedToSchemaField": null, "confidence": "n/a", "sourceName": null, "sourceUrl": null, "notes": "Only qualitative guidance found (\"face and shoulders centred and square to the camera\"); no numeric tolerance." },
-            { "category": "poseToleranceDegrees", "value": null, "unit": "degrees", "mappedToSchemaField": null, "confidence": "n/a", "sourceName": null, "sourceUrl": null, "notes": "Not published for applicants." },
-            { "category": "eyeVisibilityZonePercent", "value": null, "unit": "%", "mappedToSchemaField": null, "confidence": "n/a", "sourceName": null, "sourceUrl": null, "notes": "Not found; Canada instead requires no lens glare and clear eye visibility when glasses are worn (see glassesPolicy)." },
-            { "category": "backgroundColor", "value": "Plain white or light-coloured background", "unit": null, "mappedToSchemaField": "backgroundRequirement", "confidence": "high", "sourceName": "IRCC - Passport photo specifications (direct fetch)", "sourceUrl": "https://www.canada.ca/en/immigration-refugees-citizenship/services/canadian-passports/photos.html", "notes": null },
-            { "category": "backgroundColorHex", "value": "#FFFFFF", "unit": null, "mappedToSchemaField": "backgroundColorHex", "confidence": "medium", "sourceName": "Derived from stated 'white' option", "sourceUrl": "https://www.canada.ca/en/immigration-refugees-citizenship/services/canadian-passports/photos.html", "notes": "White is named explicitly; 'light-coloured' alternative has no single defined hex." },
-            { "category": "lightingRequirement", "value": "Uniform lighting, no shadows, glare, or flash reflections", "unit": null, "mappedToSchemaField": null, "confidence": "high", "sourceName": "IRCC - Passport photo specifications (direct fetch)", "sourceUrl": "https://www.canada.ca/en/immigration-refugees-citizenship/services/canadian-passports/photos.html", "notes": null },
-            { "category": "expressionRequirement", "value": "Neutral expression, eyes open and clearly visible, looking straight at the camera, mouth closed, not smiling or frowning", "unit": null, "mappedToSchemaField": null, "confidence": "high", "sourceName": "IRCC - Passport photo specifications (direct fetch)", "sourceUrl": "https://www.canada.ca/en/immigration-refugees-citizenship/services/canadian-passports/photos.html", "notes": null },
-            { "category": "glassesPolicy", "value": "Glasses accepted if eyes are clearly visible and there is no lens glare; sunglasses or tinted eyeglasses NOT accepted", "unit": null, "mappedToSchemaField": null, "confidence": "high", "sourceName": "IRCC - Passport photo specifications (direct fetch)", "sourceUrl": "https://www.canada.ca/en/immigration-refugees-citizenship/services/canadian-passports/photos.html", "notes": "NOTABLE CONTRAST: unlike the USA (glasses banned outright since 2016) and Australia (banned since 2018), Canada still permits clear, non-tinted glasses." },
-            { "category": "headCoveringPolicy", "value": "Accepted only if worn daily for religious beliefs or medical reasons; full face must be clearly visible and the covering must not create shadows", "unit": null, "mappedToSchemaField": null, "confidence": "high", "sourceName": "IRCC - Passport photo specifications (direct fetch)", "sourceUrl": "https://www.canada.ca/en/immigration-refugees-citizenship/services/canadian-passports/photos.html", "notes": null },
-            { "category": "recencyMonths", "value": 6, "unit": "months", "mappedToSchemaField": null, "confidence": "high", "sourceName": "IRCC - Passport photo specifications (direct fetch)", "sourceUrl": "https://www.canada.ca/en/immigration-refugees-citizenship/services/canadian-passports/photos.html", "notes": null },
-            { "category": "colorRequirement", "value": "Colour or black-and-white accepted", "unit": null, "mappedToSchemaField": null, "confidence": "high", "sourceName": "IRCC - Passport photo specifications (direct fetch)", "sourceUrl": "https://www.canada.ca/en/immigration-refugees-citizenship/services/canadian-passports/photos.html", "notes": "NOTABLE: Canada is the only country in this batch that explicitly still allows black-and-white passport photos." },
-            { "category": "printPaperRequirement", "value": "Professionally printed on plain, high-quality photographic paper; home-printed photos or heavyweight paper are NOT accepted", "unit": null, "mappedToSchemaField": "printNotes", "confidence": "high", "sourceName": "IRCC - Passport photo specifications (direct fetch)", "sourceUrl": "https://www.canada.ca/en/immigration-refugees-citizenship/services/canadian-passports/photos.html", "notes": "Also requires the photo be taken in person by a commercial photographer, who signs/dates the back (\"Photographer Note\")." },
-            { "category": "copiesRequired", "value": 2, "unit": "count", "mappedToSchemaField": "copiesPerSheet", "confidence": "high", "sourceName": "IRCC - Passport photo specifications (direct fetch)", "sourceUrl": "https://www.canada.ca/en/immigration-refugees-citizenship/services/canadian-passports/photos.html", "notes": "2 identical and unaltered photos required." },
-            { "category": "digitalFileRequirement", "value": null, "unit": null, "mappedToSchemaField": null, "confidence": "n/a", "sourceName": null, "sourceUrl": null, "notes": "No digital-upload photo spec found for the standard Canadian passport application; it appears to remain a physical-print-only, commercial-photographer requirement, unlike USA/UK/Australia/NZ which each have some digital path." }
+            {
+              "category": "photoWidthMm",
+              "value": 50,
+              "unit": "mm",
+              "mappedToSchemaField": "photoWidthMm",
+              "confidence": "high",
+              "sourceName": "Immigration, Refugees and Citizenship Canada (IRCC) - Passport photo specifications",
+              "sourceUrl": "https://www.canada.ca/en/immigration-refugees-citizenship/services/canadian-passports/photos.html",
+              "notes": "50mm wide by 70mm high (2in x 2.75in). Directly fetched and quoted this session."
+            },
+            {
+              "category": "photoHeightMm",
+              "value": 70,
+              "unit": "mm",
+              "mappedToSchemaField": "photoHeightMm",
+              "confidence": "high",
+              "sourceName": "IRCC - Passport photo specifications",
+              "sourceUrl": "https://www.canada.ca/en/immigration-refugees-citizenship/services/canadian-passports/photos.html",
+              "notes": null
+            },
+            {
+              "category": "dpi",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": "dpi",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not stated; Canada's passport photo is a physical-print-only requirement (no digital upload spec found)."
+            },
+            {
+              "category": "headHeightMinMm",
+              "value": 31,
+              "unit": "mm",
+              "mappedToSchemaField": "headHeightMinMm",
+              "confidence": "high",
+              "sourceName": "IRCC - Passport photo specifications",
+              "sourceUrl": "https://www.canada.ca/en/immigration-refugees-citizenship/services/canadian-passports/photos.html",
+              "notes": "1 1/4 inches, chin to crown."
+            },
+            {
+              "category": "headHeightMaxMm",
+              "value": 36,
+              "unit": "mm",
+              "mappedToSchemaField": "headHeightMaxMm",
+              "confidence": "high",
+              "sourceName": "IRCC - Passport photo specifications",
+              "sourceUrl": "https://www.canada.ca/en/immigration-refugees-citizenship/services/canadian-passports/photos.html",
+              "notes": "1 7/16 inches, chin to crown."
+            },
+            {
+              "category": "eyeLineFromBottomMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "eyeLineFromBottomMm",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not stated; Canada's current published spec uses only head-height, no separate eye-line figure."
+            },
+            {
+              "category": "marginTopMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "marginTopMm",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not stated."
+            },
+            {
+              "category": "chinPositionFromBottomMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not stated."
+            },
+            {
+              "category": "headWidthMinMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "headWidthMinMm",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "No head-width requirement found."
+            },
+            {
+              "category": "headWidthMaxMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "headWidthMaxMm",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "No head-width requirement found."
+            },
+            {
+              "category": "bothEarsVisibleRequired",
+              "value": "not-specified",
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not mentioned in the fetched spec."
+            },
+            {
+              "category": "horizontalCenteringTolerance",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Only qualitative guidance found (\"face and shoulders centred and square to the camera\"); no numeric tolerance."
+            },
+            {
+              "category": "poseToleranceDegrees",
+              "value": null,
+              "unit": "degrees",
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not published for applicants."
+            },
+            {
+              "category": "eyeVisibilityZonePercent",
+              "value": null,
+              "unit": "%",
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not found; Canada instead requires no lens glare and clear eye visibility when glasses are worn (see glassesPolicy)."
+            },
+            {
+              "category": "backgroundColor",
+              "value": "Plain white or light-coloured background",
+              "unit": null,
+              "mappedToSchemaField": "backgroundRequirement",
+              "confidence": "high",
+              "sourceName": "IRCC - Passport photo specifications (direct fetch)",
+              "sourceUrl": "https://www.canada.ca/en/immigration-refugees-citizenship/services/canadian-passports/photos.html",
+              "notes": null
+            },
+            {
+              "category": "backgroundColorHex",
+              "value": "#FFFFFF",
+              "unit": null,
+              "mappedToSchemaField": "backgroundColorHex",
+              "confidence": "medium",
+              "sourceName": "Derived from stated 'white' option",
+              "sourceUrl": "https://www.canada.ca/en/immigration-refugees-citizenship/services/canadian-passports/photos.html",
+              "notes": "White is named explicitly; 'light-coloured' alternative has no single defined hex."
+            },
+            {
+              "category": "lightingRequirement",
+              "value": "Uniform lighting, no shadows, glare, or flash reflections",
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "high",
+              "sourceName": "IRCC - Passport photo specifications (direct fetch)",
+              "sourceUrl": "https://www.canada.ca/en/immigration-refugees-citizenship/services/canadian-passports/photos.html",
+              "notes": null
+            },
+            {
+              "category": "expressionRequirement",
+              "value": "Neutral expression, eyes open and clearly visible, looking straight at the camera, mouth closed, not smiling or frowning",
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "high",
+              "sourceName": "IRCC - Passport photo specifications (direct fetch)",
+              "sourceUrl": "https://www.canada.ca/en/immigration-refugees-citizenship/services/canadian-passports/photos.html",
+              "notes": null
+            },
+            {
+              "category": "glassesPolicy",
+              "value": "Glasses accepted if eyes are clearly visible and there is no lens glare; sunglasses or tinted eyeglasses NOT accepted",
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "high",
+              "sourceName": "IRCC - Passport photo specifications (direct fetch)",
+              "sourceUrl": "https://www.canada.ca/en/immigration-refugees-citizenship/services/canadian-passports/photos.html",
+              "notes": "NOTABLE CONTRAST: unlike the USA (glasses banned outright since 2016) and Australia (banned since 2018), Canada still permits clear, non-tinted glasses."
+            },
+            {
+              "category": "headCoveringPolicy",
+              "value": "Accepted only if worn daily for religious beliefs or medical reasons; full face must be clearly visible and the covering must not create shadows",
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "high",
+              "sourceName": "IRCC - Passport photo specifications (direct fetch)",
+              "sourceUrl": "https://www.canada.ca/en/immigration-refugees-citizenship/services/canadian-passports/photos.html",
+              "notes": null
+            },
+            {
+              "category": "recencyMonths",
+              "value": 6,
+              "unit": "months",
+              "mappedToSchemaField": null,
+              "confidence": "high",
+              "sourceName": "IRCC - Passport photo specifications (direct fetch)",
+              "sourceUrl": "https://www.canada.ca/en/immigration-refugees-citizenship/services/canadian-passports/photos.html",
+              "notes": null
+            },
+            {
+              "category": "colorRequirement",
+              "value": "Colour or black-and-white accepted",
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "high",
+              "sourceName": "IRCC - Passport photo specifications (direct fetch)",
+              "sourceUrl": "https://www.canada.ca/en/immigration-refugees-citizenship/services/canadian-passports/photos.html",
+              "notes": "NOTABLE: Canada is the only country in this batch that explicitly still allows black-and-white passport photos."
+            },
+            {
+              "category": "printPaperRequirement",
+              "value": "Professionally printed on plain, high-quality photographic paper; home-printed photos or heavyweight paper are NOT accepted",
+              "unit": null,
+              "mappedToSchemaField": "printNotes",
+              "confidence": "high",
+              "sourceName": "IRCC - Passport photo specifications (direct fetch)",
+              "sourceUrl": "https://www.canada.ca/en/immigration-refugees-citizenship/services/canadian-passports/photos.html",
+              "notes": "Also requires the photo be taken in person by a commercial photographer, who signs/dates the back (\"Photographer Note\")."
+            },
+            {
+              "category": "copiesRequired",
+              "value": 2,
+              "unit": "count",
+              "mappedToSchemaField": "copiesPerSheet",
+              "confidence": "high",
+              "sourceName": "IRCC - Passport photo specifications (direct fetch)",
+              "sourceUrl": "https://www.canada.ca/en/immigration-refugees-citizenship/services/canadian-passports/photos.html",
+              "notes": "2 identical and unaltered photos required."
+            },
+            {
+              "category": "digitalFileRequirement",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "No digital-upload photo spec found for the standard Canadian passport application; it appears to remain a physical-print-only, commercial-photographer requirement, unlike USA/UK/Australia/NZ which each have some digital path."
+            }
           ]
         }
       ]
@@ -142,31 +1042,256 @@
         {
           "documentType": "Паспорт",
           "requirements": [
-            { "category": "photoWidthMm", "value": 35, "unit": "mm", "mappedToSchemaField": "photoWidthMm", "confidence": "medium", "sourceName": "Australian Passport Office (DFAT) - Passport photos guidelines", "sourceUrl": "https://www.passports.gov.au/help/passport-photos", "notes": "Sources state a RANGE of 35-40mm wide x 45-50mm high (not one fixed size like the other countries in this batch), which is unusual and could not be directly verified via page fetch (repeated timeouts/blocks this session against passports.gov.au). Recorded as the minimum of the stated range; treat with some caution and re-verify directly against passports.gov.au before relying on it for exact kiosk cropping." },
-            { "category": "photoHeightMm", "value": 45, "unit": "mm", "mappedToSchemaField": "photoHeightMm", "confidence": "medium", "sourceName": "Australian Passport Office (DFAT) - Passport photos guidelines", "sourceUrl": "https://www.passports.gov.au/help/passport-photos", "notes": "Same range caveat as photoWidthMm - stated range is 45-50mm high." },
-            { "category": "dpi", "value": null, "unit": null, "mappedToSchemaField": "dpi", "confidence": "n/a", "sourceName": null, "sourceUrl": null, "notes": "Not stated; online/digital submissions instead specify pixel dimensions (see digitalFileRequirement)." },
-            { "category": "headHeightMinMm", "value": 32, "unit": "mm", "mappedToSchemaField": "headHeightMinMm", "confidence": "medium", "sourceName": "Australian Passport Office (DFAT) - Passport photos guidelines", "sourceUrl": "https://www.passports.gov.au/help/passport-photos", "notes": "Chin to top of head. Not independently verified via direct page fetch this session (blocked/timed out repeatedly); consistently repeated figure across multiple sources referencing passports.gov.au." },
-            { "category": "headHeightMaxMm", "value": 36, "unit": "mm", "mappedToSchemaField": "headHeightMaxMm", "confidence": "medium", "sourceName": "Australian Passport Office (DFAT) - Passport photos guidelines", "sourceUrl": "https://www.passports.gov.au/help/passport-photos", "notes": null },
-            { "category": "eyeLineFromBottomMm", "value": null, "unit": "mm", "mappedToSchemaField": "eyeLineFromBottomMm", "confidence": "n/a", "sourceName": null, "sourceUrl": null, "notes": "Not found." },
-            { "category": "marginTopMm", "value": null, "unit": "mm", "mappedToSchemaField": "marginTopMm", "confidence": "n/a", "sourceName": null, "sourceUrl": null, "notes": "Not found." },
-            { "category": "chinPositionFromBottomMm", "value": null, "unit": "mm", "mappedToSchemaField": null, "confidence": "n/a", "sourceName": null, "sourceUrl": null, "notes": "Not found." },
-            { "category": "headWidthMinMm", "value": null, "unit": "mm", "mappedToSchemaField": "headWidthMinMm", "confidence": "n/a", "sourceName": null, "sourceUrl": null, "notes": "The 35-40mm figure found in sources appears to describe overall PHOTO width, not a separate head-width metric; no distinct head-width requirement was confirmed, so this is recorded as not found rather than reusing the photo-width figure." },
-            { "category": "headWidthMaxMm", "value": null, "unit": "mm", "mappedToSchemaField": "headWidthMaxMm", "confidence": "n/a", "sourceName": null, "sourceUrl": null, "notes": "Same caveat as headWidthMinMm." },
-            { "category": "bothEarsVisibleRequired", "value": "not-specified", "unit": null, "mappedToSchemaField": null, "confidence": "n/a", "sourceName": null, "sourceUrl": null, "notes": "Not found in sources retrieved this session." },
-            { "category": "horizontalCenteringTolerance", "value": null, "unit": null, "mappedToSchemaField": null, "confidence": "n/a", "sourceName": null, "sourceUrl": null, "notes": "Not found." },
-            { "category": "poseToleranceDegrees", "value": null, "unit": "degrees", "mappedToSchemaField": null, "confidence": "n/a", "sourceName": null, "sourceUrl": null, "notes": "Not published for applicants." },
-            { "category": "eyeVisibilityZonePercent", "value": null, "unit": "%", "mappedToSchemaField": null, "confidence": "n/a", "sourceName": null, "sourceUrl": null, "notes": "Not found; Australia instead bans glasses outright (see glassesPolicy) rather than defining a percent-coverage tolerance." },
-            { "category": "backgroundColor", "value": "Plain light grey background", "unit": null, "mappedToSchemaField": "backgroundRequirement", "confidence": "medium", "sourceName": "Australian Passport Office (DFAT) - Camera Operator / Photo Guidelines brochures", "sourceUrl": "https://www.passports.gov.au/sites/default/files/2024-12/CameraOperatorGuide_A4-2025_1.pdf", "notes": "Sourced via search summary of official passports.gov.au PDF titles/snippets; direct PDF fetch timed out this session." },
-            { "category": "backgroundColorHex", "value": "#D3D3D3", "unit": null, "mappedToSchemaField": "backgroundColorHex", "confidence": "low", "sourceName": "Approximate mapping of 'light grey' description", "sourceUrl": "https://www.passports.gov.au/help/passport-photos", "notes": "No official hex is given; this is only an approximate/representative light-grey value for kiosk background-matching purposes, not a government-specified color code." },
-            { "category": "lightingRequirement", "value": "Even, shadowless lighting on the face", "unit": null, "mappedToSchemaField": null, "confidence": "medium", "sourceName": "Australian Passport Office (DFAT) Camera Operator Guidelines", "sourceUrl": "https://www.passports.gov.au/sites/default/files/2021-10/Brochure%20-%20Camera%20operator%20guidelines_1.pdf", "notes": "Found via search-result snippet title of the official PDF; not independently re-verified with a full fetch this session." },
-            { "category": "expressionRequirement", "value": "Neutral expression, mouth closed, looking directly at the camera", "unit": null, "mappedToSchemaField": null, "confidence": "medium", "sourceName": "Australian Passport Office (DFAT) - Passport photos guidelines", "sourceUrl": "https://www.passports.gov.au/help/passport-photos", "notes": null },
-            { "category": "glassesPolicy", "value": "Glasses NOT permitted in new passport photos, effective 1 July 2018, because they interfere with biometric facial-matching (glare/eye obstruction); narrow medical exception requires supporting medical documentation (vision impairment alone is not sufficient - contact lenses are the suggested alternative); sunglasses, tinted lenses, and transition/photochromic lenses are never acceptable", "unit": null, "mappedToSchemaField": null, "confidence": "high", "sourceName": "Australian Government Department of Foreign Affairs and Trade (DFAT) official news release", "sourceUrl": "https://www.dfat.gov.au/news/news/Pages/from-1-july-2018-no-glasses-in-new-passport-photos", "notes": "Directly attributable to an official DFAT government press release, quoted via search." },
-            { "category": "headCoveringPolicy", "value": null, "unit": null, "mappedToSchemaField": null, "confidence": "n/a", "sourceName": null, "sourceUrl": null, "notes": "Not confirmed in sources retrieved this session. Australia likely has a religious/medical head-covering exception similar to comparable countries, but this was not directly verified against an official passports.gov.au page this session (repeated fetch failures) - flagged for follow-up rather than assumed." },
-            { "category": "recencyMonths", "value": 6, "unit": "months", "mappedToSchemaField": null, "confidence": "medium", "sourceName": "Australian Passport Office (DFAT) - Passport photos guidelines", "sourceUrl": "https://www.passports.gov.au/help/passport-photos", "notes": null },
-            { "category": "colorRequirement", "value": null, "unit": null, "mappedToSchemaField": null, "confidence": "low", "sourceName": "Inferred from JPEG digital-upload requirement", "sourceUrl": "https://www.passports.gov.au/help/passport-photos", "notes": "No explicit 'must be in colour' statement was found in sources retrieved this session; color is presumed likely given the JPEG digital spec and glossy-print requirement, but this is an inference, not a confirmed government statement, so recorded as low confidence rather than asserted as fact." },
-            { "category": "printPaperRequirement", "value": "Must be clear, unedited, and printed on high-gloss, heavy-weight photographic paper", "unit": null, "mappedToSchemaField": "printNotes", "confidence": "high", "sourceName": "Australian Passport Office (DFAT) - Passport photos guidelines", "sourceUrl": "https://www.passports.gov.au/help/passport-photos", "notes": "Directly quoted phrase found via search of the official page." },
-            { "category": "copiesRequired", "value": 2, "unit": "count", "mappedToSchemaField": "copiesPerSheet", "confidence": "medium", "sourceName": "Australian Passport Office (DFAT) - Passport photos guidelines", "sourceUrl": "https://www.passports.gov.au/help/passport-photos", "notes": "Two identical printed photos required for paper applications; one must be endorsed (signed) on the back by an approved guarantor." },
-            { "category": "digitalFileRequirement", "value": "For online applications: JPEG format; sources vary between a preferred resolution of 1200x1600 pixels and a file-size range of 70KB-3.5MB; a scan of a printed photo or a photo of a photo is explicitly NOT acceptable", "unit": null, "mappedToSchemaField": null, "confidence": "medium", "sourceName": "Australian Passport Office (DFAT) - Online application photo guidance", "sourceUrl": "https://www.passports.gov.au/help/passport-photos", "notes": "CONFLICT NOTED: one set of sources cites '1200x1600 pixels' as the preferred resolution while another cites '70KB-3.5MB' as the file-size bound without pixel dimensions; both are recorded here since they may be complementary (resolution + separate size cap) rather than contradictory, but this was not resolved with a single authoritative direct quote this session." }
+            {
+              "category": "photoWidthMm",
+              "value": 35,
+              "unit": "mm",
+              "mappedToSchemaField": "photoWidthMm",
+              "confidence": "medium",
+              "sourceName": "Australian Passport Office (DFAT) - Passport photos guidelines",
+              "sourceUrl": "https://www.passports.gov.au/help/passport-photos",
+              "notes": "Sources state a RANGE of 35-40mm wide x 45-50mm high (not one fixed size like the other countries in this batch), which is unusual and could not be directly verified via page fetch (repeated timeouts/blocks this session against passports.gov.au). Recorded as the minimum of the stated range; treat with some caution and re-verify directly against passports.gov.au before relying on it for exact kiosk cropping."
+            },
+            {
+              "category": "photoHeightMm",
+              "value": 45,
+              "unit": "mm",
+              "mappedToSchemaField": "photoHeightMm",
+              "confidence": "medium",
+              "sourceName": "Australian Passport Office (DFAT) - Passport photos guidelines",
+              "sourceUrl": "https://www.passports.gov.au/help/passport-photos",
+              "notes": "Same range caveat as photoWidthMm - stated range is 45-50mm high."
+            },
+            {
+              "category": "dpi",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": "dpi",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not stated; online/digital submissions instead specify pixel dimensions (see digitalFileRequirement)."
+            },
+            {
+              "category": "headHeightMinMm",
+              "value": 32,
+              "unit": "mm",
+              "mappedToSchemaField": "headHeightMinMm",
+              "confidence": "medium",
+              "sourceName": "Australian Passport Office (DFAT) - Passport photos guidelines",
+              "sourceUrl": "https://www.passports.gov.au/help/passport-photos",
+              "notes": "Chin to top of head. Not independently verified via direct page fetch this session (blocked/timed out repeatedly); consistently repeated figure across multiple sources referencing passports.gov.au."
+            },
+            {
+              "category": "headHeightMaxMm",
+              "value": 36,
+              "unit": "mm",
+              "mappedToSchemaField": "headHeightMaxMm",
+              "confidence": "medium",
+              "sourceName": "Australian Passport Office (DFAT) - Passport photos guidelines",
+              "sourceUrl": "https://www.passports.gov.au/help/passport-photos",
+              "notes": null
+            },
+            {
+              "category": "eyeLineFromBottomMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "eyeLineFromBottomMm",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not found."
+            },
+            {
+              "category": "marginTopMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "marginTopMm",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not found."
+            },
+            {
+              "category": "chinPositionFromBottomMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not found."
+            },
+            {
+              "category": "headWidthMinMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "headWidthMinMm",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "The 35-40mm figure found in sources appears to describe overall PHOTO width, not a separate head-width metric; no distinct head-width requirement was confirmed, so this is recorded as not found rather than reusing the photo-width figure."
+            },
+            {
+              "category": "headWidthMaxMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "headWidthMaxMm",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Same caveat as headWidthMinMm."
+            },
+            {
+              "category": "bothEarsVisibleRequired",
+              "value": "not-specified",
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not found in sources retrieved this session."
+            },
+            {
+              "category": "horizontalCenteringTolerance",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not found."
+            },
+            {
+              "category": "poseToleranceDegrees",
+              "value": null,
+              "unit": "degrees",
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not published for applicants."
+            },
+            {
+              "category": "eyeVisibilityZonePercent",
+              "value": null,
+              "unit": "%",
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not found; Australia instead bans glasses outright (see glassesPolicy) rather than defining a percent-coverage tolerance."
+            },
+            {
+              "category": "backgroundColor",
+              "value": "Plain light grey background",
+              "unit": null,
+              "mappedToSchemaField": "backgroundRequirement",
+              "confidence": "medium",
+              "sourceName": "Australian Passport Office (DFAT) - Camera Operator / Photo Guidelines brochures",
+              "sourceUrl": "https://www.passports.gov.au/sites/default/files/2024-12/CameraOperatorGuide_A4-2025_1.pdf",
+              "notes": "Sourced via search summary of official passports.gov.au PDF titles/snippets; direct PDF fetch timed out this session."
+            },
+            {
+              "category": "backgroundColorHex",
+              "value": "#D3D3D3",
+              "unit": null,
+              "mappedToSchemaField": "backgroundColorHex",
+              "confidence": "low",
+              "sourceName": "Approximate mapping of 'light grey' description",
+              "sourceUrl": "https://www.passports.gov.au/help/passport-photos",
+              "notes": "No official hex is given; this is only an approximate/representative light-grey value for kiosk background-matching purposes, not a government-specified color code."
+            },
+            {
+              "category": "lightingRequirement",
+              "value": "Even, shadowless lighting on the face",
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "medium",
+              "sourceName": "Australian Passport Office (DFAT) Camera Operator Guidelines",
+              "sourceUrl": "https://www.passports.gov.au/sites/default/files/2021-10/Brochure%20-%20Camera%20operator%20guidelines_1.pdf",
+              "notes": "Found via search-result snippet title of the official PDF; not independently re-verified with a full fetch this session."
+            },
+            {
+              "category": "expressionRequirement",
+              "value": "Neutral expression, mouth closed, looking directly at the camera",
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "medium",
+              "sourceName": "Australian Passport Office (DFAT) - Passport photos guidelines",
+              "sourceUrl": "https://www.passports.gov.au/help/passport-photos",
+              "notes": null
+            },
+            {
+              "category": "glassesPolicy",
+              "value": "Glasses NOT permitted in new passport photos, effective 1 July 2018, because they interfere with biometric facial-matching (glare/eye obstruction); narrow medical exception requires supporting medical documentation (vision impairment alone is not sufficient - contact lenses are the suggested alternative); sunglasses, tinted lenses, and transition/photochromic lenses are never acceptable",
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "high",
+              "sourceName": "Australian Government Department of Foreign Affairs and Trade (DFAT) official news release",
+              "sourceUrl": "https://www.dfat.gov.au/news/news/Pages/from-1-july-2018-no-glasses-in-new-passport-photos",
+              "notes": "Directly attributable to an official DFAT government press release, quoted via search."
+            },
+            {
+              "category": "headCoveringPolicy",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not confirmed in sources retrieved this session. Australia likely has a religious/medical head-covering exception similar to comparable countries, but this was not directly verified against an official passports.gov.au page this session (repeated fetch failures) - flagged for follow-up rather than assumed."
+            },
+            {
+              "category": "recencyMonths",
+              "value": 6,
+              "unit": "months",
+              "mappedToSchemaField": null,
+              "confidence": "medium",
+              "sourceName": "Australian Passport Office (DFAT) - Passport photos guidelines",
+              "sourceUrl": "https://www.passports.gov.au/help/passport-photos",
+              "notes": null
+            },
+            {
+              "category": "colorRequirement",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "low",
+              "sourceName": "Inferred from JPEG digital-upload requirement",
+              "sourceUrl": "https://www.passports.gov.au/help/passport-photos",
+              "notes": "No explicit 'must be in colour' statement was found in sources retrieved this session; color is presumed likely given the JPEG digital spec and glossy-print requirement, but this is an inference, not a confirmed government statement, so recorded as low confidence rather than asserted as fact."
+            },
+            {
+              "category": "printPaperRequirement",
+              "value": "Must be clear, unedited, and printed on high-gloss, heavy-weight photographic paper",
+              "unit": null,
+              "mappedToSchemaField": "printNotes",
+              "confidence": "high",
+              "sourceName": "Australian Passport Office (DFAT) - Passport photos guidelines",
+              "sourceUrl": "https://www.passports.gov.au/help/passport-photos",
+              "notes": "Directly quoted phrase found via search of the official page."
+            },
+            {
+              "category": "copiesRequired",
+              "value": 2,
+              "unit": "count",
+              "mappedToSchemaField": "copiesPerSheet",
+              "confidence": "medium",
+              "sourceName": "Australian Passport Office (DFAT) - Passport photos guidelines",
+              "sourceUrl": "https://www.passports.gov.au/help/passport-photos",
+              "notes": "Two identical printed photos required for paper applications; one must be endorsed (signed) on the back by an approved guarantor."
+            },
+            {
+              "category": "digitalFileRequirement",
+              "value": "For online applications: JPEG format; sources vary between a preferred resolution of 1200x1600 pixels and a file-size range of 70KB-3.5MB; a scan of a printed photo or a photo of a photo is explicitly NOT acceptable",
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "medium",
+              "sourceName": "Australian Passport Office (DFAT) - Online application photo guidance",
+              "sourceUrl": "https://www.passports.gov.au/help/passport-photos",
+              "notes": "CONFLICT NOTED: one set of sources cites '1200x1600 pixels' as the preferred resolution while another cites '70KB-3.5MB' as the file-size bound without pixel dimensions; both are recorded here since they may be complementary (resolution + separate size cap) rather than contradictory, but this was not resolved with a single authoritative direct quote this session."
+            }
           ]
         }
       ]
@@ -177,31 +1302,256 @@
         {
           "documentType": "Паспорт",
           "requirements": [
-            { "category": "photoWidthMm", "value": 35, "unit": "mm", "mappedToSchemaField": "photoWidthMm", "confidence": "medium", "sourceName": "New Zealand Department of Internal Affairs (DIA) - Passport photos", "sourceUrl": "https://www.passports.govt.nz/passport-photos", "notes": "35mm x 45mm applies to PAPER (physical print) applications. For ONLINE applications, NZ instead specifies a digital-only equivalent: 33mm x 44mm at a 3:4 aspect ratio (900-4500px wide x 1200-6000px high) - see digitalFileRequirement. Direct fetch of passports.govt.nz was blocked (403) repeatedly this session; figures rely on search-result corroboration of the official domain." },
-            { "category": "photoHeightMm", "value": 45, "unit": "mm", "mappedToSchemaField": "photoHeightMm", "confidence": "medium", "sourceName": "New Zealand DIA - Passport photos", "sourceUrl": "https://www.passports.govt.nz/passport-photos", "notes": "Paper-application print size; see photoWidthMm note re: the separate online/digital 33x44mm spec." },
-            { "category": "dpi", "value": null, "unit": null, "mappedToSchemaField": "dpi", "confidence": "n/a", "sourceName": null, "sourceUrl": null, "notes": "Not stated; online path uses pixel dimensions instead." },
-            { "category": "headHeightMinMm", "value": 32, "unit": "mm", "mappedToSchemaField": "headHeightMinMm", "confidence": "medium", "sourceName": "New Zealand DIA - Passport photos", "sourceUrl": "https://www.passports.govt.nz/passport-photos", "notes": "CONFLICT NOTED: most corroborating sources state 32-36mm (crown to chin, ~70-80% of frame height), but at least one source cites a different figure of 29-34mm (~60-70% of frame height) for the same requirement. Both are recorded (see headHeightMaxMm) since the discrepancy could not be resolved with a direct official-page fetch this session (403 blocked)." },
-            { "category": "headHeightMaxMm", "value": 36, "unit": "mm", "mappedToSchemaField": "headHeightMaxMm", "confidence": "medium", "sourceName": "New Zealand DIA - Passport photos", "sourceUrl": "https://www.passports.govt.nz/passport-photos", "notes": "Primary/majority figure found: 36mm (with head occupying 70-80% of the vertical frame). CONFLICTING alternate figure found in one source: 34mm (~60-70% of frame). Recommend re-verifying directly against passports.govt.nz or the official Photo Checker tool (onlinephotochecker.passports.govt.nz) before relying on either figure for exact kiosk cropping." },
-            { "category": "eyeLineFromBottomMm", "value": null, "unit": "mm", "mappedToSchemaField": "eyeLineFromBottomMm", "confidence": "n/a", "sourceName": null, "sourceUrl": null, "notes": "Not stated; NZ anchors on head-height / percent-of-frame instead." },
-            { "category": "marginTopMm", "value": null, "unit": "mm", "mappedToSchemaField": "marginTopMm", "confidence": "n/a", "sourceName": null, "sourceUrl": null, "notes": "Only qualitative guidance found (\"clear gap around the sides and top of your head\"); no numeric millimetre value stated." },
-            { "category": "chinPositionFromBottomMm", "value": null, "unit": "mm", "mappedToSchemaField": null, "confidence": "n/a", "sourceName": null, "sourceUrl": null, "notes": "Not found." },
-            { "category": "headWidthMinMm", "value": null, "unit": "mm", "mappedToSchemaField": "headWidthMinMm", "confidence": "n/a", "sourceName": null, "sourceUrl": null, "notes": "No head-width requirement found." },
-            { "category": "headWidthMaxMm", "value": null, "unit": "mm", "mappedToSchemaField": "headWidthMaxMm", "confidence": "n/a", "sourceName": null, "sourceUrl": null, "notes": "No head-width requirement found." },
-            { "category": "bothEarsVisibleRequired", "value": "not-specified", "unit": null, "mappedToSchemaField": null, "confidence": "n/a", "sourceName": null, "sourceUrl": null, "notes": "Not found in sources retrieved this session." },
-            { "category": "horizontalCenteringTolerance", "value": null, "unit": null, "mappedToSchemaField": null, "confidence": "n/a", "sourceName": null, "sourceUrl": null, "notes": "Not found." },
-            { "category": "poseToleranceDegrees", "value": null, "unit": "degrees", "mappedToSchemaField": null, "confidence": "n/a", "sourceName": null, "sourceUrl": null, "notes": "Not published for applicants." },
-            { "category": "eyeVisibilityZonePercent", "value": null, "unit": "%", "mappedToSchemaField": null, "confidence": "n/a", "sourceName": null, "sourceUrl": null, "notes": "Not found." },
-            { "category": "backgroundColor", "value": "Plain, light-coloured background that must NOT be white; light blue, light grey, or cream recommended; strong contrast between face and background required, no shadows or objects behind the head", "unit": null, "mappedToSchemaField": "backgroundRequirement", "confidence": "medium", "sourceName": "New Zealand DIA - Passport photos", "sourceUrl": "https://www.passports.govt.nz/passport-photos", "notes": "NOTABLE: NZ is the only country in this batch that explicitly EXCLUDES plain white as a background option, unlike USA/UK/Canada which name white as an accepted (or the preferred) choice. Not independently verified via direct fetch this session (403 blocked)." },
-            { "category": "backgroundColorHex", "value": null, "unit": null, "mappedToSchemaField": "backgroundColorHex", "confidence": "n/a", "sourceName": null, "sourceUrl": null, "notes": "Multiple recommended colours (light blue / light grey / cream) with no single official hex given, and white is explicitly excluded, so no safe single hex can be inferred." },
-            { "category": "lightingRequirement", "value": "No shadows or objects behind the head, no shadows on the face, strong contrast between face and background", "unit": null, "mappedToSchemaField": null, "confidence": "medium", "sourceName": "New Zealand DIA - Passport photos", "sourceUrl": "https://www.passports.govt.nz/passport-photos", "notes": null },
-            { "category": "expressionRequirement", "value": null, "unit": null, "mappedToSchemaField": null, "confidence": "n/a", "sourceName": null, "sourceUrl": null, "notes": "No explicit neutral-expression/mouth-closed wording was surfaced in sources retrieved this session for NZ specifically (unlike USA/UK/Canada/Australia, where this was directly confirmed). The site does state the photo must show your 'natural appearance' with no filters, editing, or AI retouching, which is adjacent but not the same as an expression rule - flagged for follow-up via direct page access." },
-            { "category": "glassesPolicy", "value": null, "unit": null, "mappedToSchemaField": null, "confidence": "n/a", "sourceName": null, "sourceUrl": null, "notes": "Not found in sources retrieved this session (direct fetch of passports.govt.nz was blocked, 403, on every attempt). Needs direct follow-up rather than guessing, especially given how much this policy varies across the other four countries in this batch (banned in USA/Australia, permitted with conditions in UK/Canada)." },
-            { "category": "headCoveringPolicy", "value": null, "unit": null, "mappedToSchemaField": null, "confidence": "n/a", "sourceName": null, "sourceUrl": null, "notes": "Not found in sources retrieved this session; needs direct follow-up." },
-            { "category": "recencyMonths", "value": 6, "unit": "months", "mappedToSchemaField": null, "confidence": "high", "sourceName": "New Zealand DIA - Passport photos", "sourceUrl": "https://www.passports.govt.nz/passport-photos", "notes": "\"less than 6 months old\", consistently and clearly corroborated." },
-            { "category": "colorRequirement", "value": "Colour portrait required, 3:4 aspect ratio", "unit": null, "mappedToSchemaField": null, "confidence": "high", "sourceName": "New Zealand DIA - Passport photos", "sourceUrl": "https://www.passports.govt.nz/passport-photos", "notes": "Also must be a true, unedited, unfiltered, non-AI-modified representation of current appearance." },
-            { "category": "printPaperRequirement", "value": "High quality, high-resolution photo paper, colour film, or low-gloss coated thermal paper printed on a high-resolution printer; matte paper, heavy-backed thermal paper, and ink-jet printers are NOT accepted", "unit": null, "mappedToSchemaField": "printNotes", "confidence": "medium", "sourceName": "New Zealand DIA - Passport photos / application guide notes", "sourceUrl": "https://www.passports.govt.nz/passport-photos", "notes": "Applies to the paper-application path." },
-            { "category": "copiesRequired", "value": 2, "unit": "count", "mappedToSchemaField": "copiesPerSheet", "confidence": "medium", "sourceName": "New Zealand DIA - Passport photos", "sourceUrl": "https://www.passports.govt.nz/passport-photos", "notes": "2 identical colour photos required for paper applications only; online applications are fully digital with 0 physical copies needed." },
-            { "category": "digitalFileRequirement", "value": "For online applications: JPG/JPEG format, 250KB-5MB file size, 900-4500 pixels wide x 1200-6000 pixels high, 3:4 aspect ratio (digital equivalent of 33mm x 44mm)", "unit": null, "mappedToSchemaField": null, "confidence": "high", "sourceName": "New Zealand DIA - Passport photos", "sourceUrl": "https://www.passports.govt.nz/passport-photos", "notes": "Well-corroborated, specific figures repeated consistently across multiple sources referencing the official page and the official Photo Checker tool at onlinephotochecker.passports.govt.nz." }
+            {
+              "category": "photoWidthMm",
+              "value": 35,
+              "unit": "mm",
+              "mappedToSchemaField": "photoWidthMm",
+              "confidence": "medium",
+              "sourceName": "New Zealand Department of Internal Affairs (DIA) - Passport photos",
+              "sourceUrl": "https://www.passports.govt.nz/passport-photos",
+              "notes": "35mm x 45mm applies to PAPER (physical print) applications. For ONLINE applications, NZ instead specifies a digital-only equivalent: 33mm x 44mm at a 3:4 aspect ratio (900-4500px wide x 1200-6000px high) - see digitalFileRequirement. Direct fetch of passports.govt.nz was blocked (403) repeatedly this session; figures rely on search-result corroboration of the official domain."
+            },
+            {
+              "category": "photoHeightMm",
+              "value": 45,
+              "unit": "mm",
+              "mappedToSchemaField": "photoHeightMm",
+              "confidence": "medium",
+              "sourceName": "New Zealand DIA - Passport photos",
+              "sourceUrl": "https://www.passports.govt.nz/passport-photos",
+              "notes": "Paper-application print size; see photoWidthMm note re: the separate online/digital 33x44mm spec."
+            },
+            {
+              "category": "dpi",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": "dpi",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not stated; online path uses pixel dimensions instead."
+            },
+            {
+              "category": "headHeightMinMm",
+              "value": 32,
+              "unit": "mm",
+              "mappedToSchemaField": "headHeightMinMm",
+              "confidence": "medium",
+              "sourceName": "New Zealand DIA - Passport photos",
+              "sourceUrl": "https://www.passports.govt.nz/passport-photos",
+              "notes": "CONFLICT NOTED: most corroborating sources state 32-36mm (crown to chin, ~70-80% of frame height), but at least one source cites a different figure of 29-34mm (~60-70% of frame height) for the same requirement. Both are recorded (see headHeightMaxMm) since the discrepancy could not be resolved with a direct official-page fetch this session (403 blocked)."
+            },
+            {
+              "category": "headHeightMaxMm",
+              "value": 36,
+              "unit": "mm",
+              "mappedToSchemaField": "headHeightMaxMm",
+              "confidence": "medium",
+              "sourceName": "New Zealand DIA - Passport photos",
+              "sourceUrl": "https://www.passports.govt.nz/passport-photos",
+              "notes": "Primary/majority figure found: 36mm (with head occupying 70-80% of the vertical frame). CONFLICTING alternate figure found in one source: 34mm (~60-70% of frame). Recommend re-verifying directly against passports.govt.nz or the official Photo Checker tool (onlinephotochecker.passports.govt.nz) before relying on either figure for exact kiosk cropping."
+            },
+            {
+              "category": "eyeLineFromBottomMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "eyeLineFromBottomMm",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not stated; NZ anchors on head-height / percent-of-frame instead."
+            },
+            {
+              "category": "marginTopMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "marginTopMm",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Only qualitative guidance found (\"clear gap around the sides and top of your head\"); no numeric millimetre value stated."
+            },
+            {
+              "category": "chinPositionFromBottomMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not found."
+            },
+            {
+              "category": "headWidthMinMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "headWidthMinMm",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "No head-width requirement found."
+            },
+            {
+              "category": "headWidthMaxMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "headWidthMaxMm",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "No head-width requirement found."
+            },
+            {
+              "category": "bothEarsVisibleRequired",
+              "value": "not-specified",
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not found in sources retrieved this session."
+            },
+            {
+              "category": "horizontalCenteringTolerance",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not found."
+            },
+            {
+              "category": "poseToleranceDegrees",
+              "value": null,
+              "unit": "degrees",
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not published for applicants."
+            },
+            {
+              "category": "eyeVisibilityZonePercent",
+              "value": null,
+              "unit": "%",
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not found."
+            },
+            {
+              "category": "backgroundColor",
+              "value": "Plain, light-coloured background that must NOT be white; light blue, light grey, or cream recommended; strong contrast between face and background required, no shadows or objects behind the head",
+              "unit": null,
+              "mappedToSchemaField": "backgroundRequirement",
+              "confidence": "medium",
+              "sourceName": "New Zealand DIA - Passport photos",
+              "sourceUrl": "https://www.passports.govt.nz/passport-photos",
+              "notes": "NOTABLE: NZ is the only country in this batch that explicitly EXCLUDES plain white as a background option, unlike USA/UK/Canada which name white as an accepted (or the preferred) choice. Not independently verified via direct fetch this session (403 blocked)."
+            },
+            {
+              "category": "backgroundColorHex",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": "backgroundColorHex",
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Multiple recommended colours (light blue / light grey / cream) with no single official hex given, and white is explicitly excluded, so no safe single hex can be inferred."
+            },
+            {
+              "category": "lightingRequirement",
+              "value": "No shadows or objects behind the head, no shadows on the face, strong contrast between face and background",
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "medium",
+              "sourceName": "New Zealand DIA - Passport photos",
+              "sourceUrl": "https://www.passports.govt.nz/passport-photos",
+              "notes": null
+            },
+            {
+              "category": "expressionRequirement",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "No explicit neutral-expression/mouth-closed wording was surfaced in sources retrieved this session for NZ specifically (unlike USA/UK/Canada/Australia, where this was directly confirmed). The site does state the photo must show your 'natural appearance' with no filters, editing, or AI retouching, which is adjacent but not the same as an expression rule - flagged for follow-up via direct page access."
+            },
+            {
+              "category": "glassesPolicy",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not found in sources retrieved this session (direct fetch of passports.govt.nz was blocked, 403, on every attempt). Needs direct follow-up rather than guessing, especially given how much this policy varies across the other four countries in this batch (banned in USA/Australia, permitted with conditions in UK/Canada)."
+            },
+            {
+              "category": "headCoveringPolicy",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": null,
+              "sourceUrl": null,
+              "notes": "Not found in sources retrieved this session; needs direct follow-up."
+            },
+            {
+              "category": "recencyMonths",
+              "value": 6,
+              "unit": "months",
+              "mappedToSchemaField": null,
+              "confidence": "high",
+              "sourceName": "New Zealand DIA - Passport photos",
+              "sourceUrl": "https://www.passports.govt.nz/passport-photos",
+              "notes": "\"less than 6 months old\", consistently and clearly corroborated."
+            },
+            {
+              "category": "colorRequirement",
+              "value": "Colour portrait required, 3:4 aspect ratio",
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "high",
+              "sourceName": "New Zealand DIA - Passport photos",
+              "sourceUrl": "https://www.passports.govt.nz/passport-photos",
+              "notes": "Also must be a true, unedited, unfiltered, non-AI-modified representation of current appearance."
+            },
+            {
+              "category": "printPaperRequirement",
+              "value": "High quality, high-resolution photo paper, colour film, or low-gloss coated thermal paper printed on a high-resolution printer; matte paper, heavy-backed thermal paper, and ink-jet printers are NOT accepted",
+              "unit": null,
+              "mappedToSchemaField": "printNotes",
+              "confidence": "medium",
+              "sourceName": "New Zealand DIA - Passport photos / application guide notes",
+              "sourceUrl": "https://www.passports.govt.nz/passport-photos",
+              "notes": "Applies to the paper-application path."
+            },
+            {
+              "category": "copiesRequired",
+              "value": 2,
+              "unit": "count",
+              "mappedToSchemaField": "copiesPerSheet",
+              "confidence": "medium",
+              "sourceName": "New Zealand DIA - Passport photos",
+              "sourceUrl": "https://www.passports.govt.nz/passport-photos",
+              "notes": "2 identical colour photos required for paper applications only; online applications are fully digital with 0 physical copies needed."
+            },
+            {
+              "category": "digitalFileRequirement",
+              "value": "For online applications: JPG/JPEG format, 250KB-5MB file size, 900-4500 pixels wide x 1200-6000 pixels high, 3:4 aspect ratio (digital equivalent of 33mm x 44mm)",
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "high",
+              "sourceName": "New Zealand DIA - Passport photos",
+              "sourceUrl": "https://www.passports.govt.nz/passport-photos",
+              "notes": "Well-corroborated, specific figures repeated consistently across multiple sources referencing the official page and the official Photo Checker tool at onlinephotochecker.passports.govt.nz."
+            }
           ]
         }
       ]

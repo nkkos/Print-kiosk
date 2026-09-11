@@ -7,31 +7,256 @@
         {
           "documentType": "Паспорт",
           "requirements": [
-            { "category": "photoWidthMm", "value": 35, "unit": "mm", "mappedToSchemaField": "photoWidthMm", "confidence": "high", "sourceName": "Tokyo Metropolitan Government (official, mirrors MOFA national standard)", "sourceUrl": "https://www.seikatubunka.metro.tokyo.lg.jp/passport/documents/0000000418", "notes": "Photo is 45mm (H) x 35mm (W), borderless (縁なし). National spec set by MOFA (外務省), page https://www.mofa.go.jp/mofaj/toko/passport/ic_photo.html could not be fetched directly (403), so citing the Tokyo metropolitan government's official passport-office page which restates the identical MOFA figures." },
-            { "category": "photoHeightMm", "value": 45, "unit": "mm", "mappedToSchemaField": "photoHeightMm", "confidence": "high", "sourceName": "Tokyo Metropolitan Government", "sourceUrl": "https://www.seikatubunka.metro.tokyo.lg.jp/passport/documents/0000000418", "notes": "" },
-            { "category": "dpi", "value": null, "unit": null, "mappedToSchemaField": "dpi", "confidence": "n/a", "sourceName": "", "sourceUrl": "", "notes": "No print DPI stated. Only digital upload file-size limits are stated (see digitalFileRequirement)." },
-            { "category": "headHeightMinMm", "value": 32, "unit": "mm", "mappedToSchemaField": "headHeightMinMm", "confidence": "high", "sourceName": "Tokyo Metropolitan Government", "sourceUrl": "https://www.seikatubunka.metro.tokyo.lg.jp/passport/documents/0000000418", "notes": "Chin-to-crown (あごから頭頂まで) 32mm-36mm." },
-            { "category": "headHeightMaxMm", "value": 36, "unit": "mm", "mappedToSchemaField": "headHeightMaxMm", "confidence": "high", "sourceName": "Tokyo Metropolitan Government", "sourceUrl": "https://www.seikatubunka.metro.tokyo.lg.jp/passport/documents/0000000418", "notes": "" },
-            { "category": "eyeLineFromBottomMm", "value": null, "unit": "mm", "mappedToSchemaField": "eyeLineFromBottomMm", "confidence": "n/a", "sourceName": "", "sourceUrl": "", "notes": "Japan anchors on chin-to-crown head height, not an eye-line figure. No eye-line-from-bottom value found in any source." },
-            { "category": "marginTopMm", "value": 4, "unit": "mm", "mappedToSchemaField": "marginTopMm", "confidence": "low", "sourceName": "Aggregated Japanese ID-photo guide search synthesis (secondary, not independently confirmed on an official page)", "sourceUrl": "https://www.mofa.go.jp/mofaj/toko/passport/ic_photo.html", "notes": "Secondary sources describe a ~2-6mm top margin (nominal 4mm) derived algebraically from the 32-36mm head-height range within the 45mm photo height; could not confirm this figure is stated verbatim as an official rule (MOFA's own page returned 403 on direct fetch and its detail PDF also 403'd). Treat as a derived approximation, not an official published figure." },
-            { "category": "chinPositionFromBottomMm", "value": 7, "unit": "mm", "mappedToSchemaField": null, "confidence": "low", "sourceName": "Aggregated Japanese ID-photo guide search synthesis", "sourceUrl": "https://www.mofa.go.jp/mofaj/toko/passport/ic_photo.html", "notes": "Secondary sources state 顎から下に7mm (7mm from chin to bottom edge), consistent with the 45mm total height minus the 32-36mm head height and the ~2-6mm top margin. Could not independently confirm on a directly-fetched official page." },
-            { "category": "headWidthMinMm", "value": null, "unit": "mm", "mappedToSchemaField": "headWidthMinMm", "confidence": "n/a", "sourceName": "", "sourceUrl": "", "notes": "No head-width min/max range found for Japan. A secondary source mentions the face center should sit ~17mm from each edge of the 35mm-wide photo, but that describes horizontal centering, not head width." },
-            { "category": "headWidthMaxMm", "value": null, "unit": "mm", "mappedToSchemaField": "headWidthMaxMm", "confidence": "n/a", "sourceName": "", "sourceUrl": "", "notes": "Not specified." },
-            { "category": "bothEarsVisibleRequired", "value": null, "unit": null, "mappedToSchemaField": null, "confidence": "n/a", "sourceName": "", "sourceUrl": "", "notes": "Not mentioned in any Japanese official or consulate source found." },
-            { "category": "horizontalCenteringTolerance", "value": "face center within ~17mm of each side of the 35mm-wide photo (i.e. approximately centered)", "unit": null, "mappedToSchemaField": null, "confidence": "low", "sourceName": "Aggregated Japanese ID-photo guide search synthesis", "sourceUrl": "https://www.mofa.go.jp/mofaj/toko/passport/ic_photo.html", "notes": "Not independently confirmed on an official page." },
-            { "category": "poseToleranceDegrees", "value": null, "unit": "degrees", "mappedToSchemaField": null, "confidence": "n/a", "sourceName": "", "sourceUrl": "", "notes": "Not specified in any source found." },
-            { "category": "eyeVisibilityZonePercent", "value": null, "unit": "percent", "mappedToSchemaField": null, "confidence": "n/a", "sourceName": "", "sourceUrl": "", "notes": "Not specified." },
-            { "category": "backgroundColor", "value": "Plain, light-colored, unpatterned background with no shadows; not restricted to a specific color (must contrast with hair/face outline)", "unit": null, "mappedToSchemaField": "backgroundRequirement", "confidence": "medium", "sourceName": "Niigata Prefecture (official, citing MOFA 旅券課) + Tokyo Metropolitan Government", "sourceUrl": "https://www.pref.niigata.lg.jp/uploaded/attachment/276135.pdf", "notes": "Confirmed Japan does NOT mandate white specifically, unlike China/Korea/India/Singapore - rule is 'no background or shadows' with sufficient contrast to the subject's hair/outline." },
-            { "category": "backgroundColorHex", "value": null, "unit": null, "mappedToSchemaField": "backgroundColorHex", "confidence": "n/a", "sourceName": "", "sourceUrl": "", "notes": "No single mandated color/hex - see backgroundColor note." },
-            { "category": "lightingRequirement", "value": "No shadows on face or background; even lighting; avoid glare/reflection", "unit": null, "mappedToSchemaField": null, "confidence": "medium", "sourceName": "Tokyo Metropolitan Government", "sourceUrl": "https://www.seikatubunka.metro.tokyo.lg.jp/passport/documents/0000000418", "notes": "" },
-            { "category": "expressionRequirement", "value": "Neutral expression facing forward; avoid an exaggerated smile", "unit": null, "mappedToSchemaField": null, "confidence": "high", "sourceName": "Tokyo Metropolitan Government", "sourceUrl": "https://www.seikatubunka.metro.tokyo.lg.jp/passport/documents/0000000418", "notes": "" },
-            { "category": "glassesPolicy", "value": "Sunglasses/masks obscuring facial features not allowed; colored contacts/eye-enlarging contacts not allowed. Regular prescription glasses are not explicitly detailed in the fetched official text.", "unit": null, "mappedToSchemaField": null, "confidence": "medium", "sourceName": "Tokyo Metropolitan Government", "sourceUrl": "https://www.seikatubunka.metro.tokyo.lg.jp/passport/documents/0000000418", "notes": "" },
-            { "category": "headCoveringPolicy", "value": "Bareheaded required (無帽); religious head coverings allowed only with a written explanation/documentation of religious affiliation, and the face must remain fully visible", "unit": null, "mappedToSchemaField": null, "confidence": "high", "sourceName": "Tokyo Metropolitan Government", "sourceUrl": "https://www.seikatubunka.metro.tokyo.lg.jp/passport/documents/0000000418", "notes": "" },
-            { "category": "recencyMonths", "value": 6, "unit": "months", "mappedToSchemaField": null, "confidence": "high", "sourceName": "Tokyo Metropolitan Government", "sourceUrl": "https://www.seikatubunka.metro.tokyo.lg.jp/passport/documents/0000000418", "notes": "提出の6か月以内に撮影されたもの (taken within 6 months of submission)." },
-            { "category": "colorRequirement", "value": "Both color and black-and-white photos are accepted", "unit": null, "mappedToSchemaField": null, "confidence": "high", "sourceName": "Tokyo Metropolitan Government", "sourceUrl": "https://www.seikatubunka.metro.tokyo.lg.jp/passport/documents/0000000418", "notes": "Notable: Japan is unusual among this batch in explicitly allowing black-and-white passport photos, not just color." },
-            { "category": "printPaperRequirement", "value": null, "unit": null, "mappedToSchemaField": "printNotes", "confidence": "n/a", "sourceName": "", "sourceUrl": "", "notes": "No specific paper type/finish requirement found stated for Japan." },
-            { "category": "copiesRequired", "value": 1, "unit": "count", "mappedToSchemaField": "copiesPerSheet", "confidence": "low", "sourceName": "Search-engine synthesis of MOFA-linked pages (not independently confirmed on a directly fetched official page)", "sourceUrl": "https://www.mofa.go.jp/mofaj/toko/passport/page22_004039.html", "notes": "" },
-            { "category": "digitalFileRequirement", "value": "Domestic online application (pre-taken studio photo): JPG, <=600KB. Overseas online application: jpg/jpeg/bmp/png, 20KB-2MB", "unit": null, "mappedToSchemaField": null, "confidence": "medium", "sourceName": "MOFA (外務省) via search-engine content synthesis; direct fetch of the source page returned HTTP 403", "sourceUrl": "https://www.mofa.go.jp/mofaj/toko/passport/ic_photo.html", "notes": "Could not independently re-verify via direct WebFetch (blocked); figures are unusually specific/consistent, suggesting genuine extraction from the official page by the search tool." }
+            {
+              "category": "photoWidthMm",
+              "value": 35,
+              "unit": "mm",
+              "mappedToSchemaField": "photoWidthMm",
+              "confidence": "high",
+              "sourceName": "Tokyo Metropolitan Government (official, mirrors MOFA national standard)",
+              "sourceUrl": "https://www.seikatubunka.metro.tokyo.lg.jp/passport/documents/0000000418",
+              "notes": "Photo is 45mm (H) x 35mm (W), borderless (縁なし). National spec set by MOFA (外務省), page https://www.mofa.go.jp/mofaj/toko/passport/ic_photo.html could not be fetched directly (403), so citing the Tokyo metropolitan government's official passport-office page which restates the identical MOFA figures."
+            },
+            {
+              "category": "photoHeightMm",
+              "value": 45,
+              "unit": "mm",
+              "mappedToSchemaField": "photoHeightMm",
+              "confidence": "high",
+              "sourceName": "Tokyo Metropolitan Government",
+              "sourceUrl": "https://www.seikatubunka.metro.tokyo.lg.jp/passport/documents/0000000418",
+              "notes": ""
+            },
+            {
+              "category": "dpi",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": "dpi",
+              "confidence": "n/a",
+              "sourceName": "",
+              "sourceUrl": "",
+              "notes": "No print DPI stated. Only digital upload file-size limits are stated (see digitalFileRequirement)."
+            },
+            {
+              "category": "headHeightMinMm",
+              "value": 32,
+              "unit": "mm",
+              "mappedToSchemaField": "headHeightMinMm",
+              "confidence": "high",
+              "sourceName": "Tokyo Metropolitan Government",
+              "sourceUrl": "https://www.seikatubunka.metro.tokyo.lg.jp/passport/documents/0000000418",
+              "notes": "Chin-to-crown (あごから頭頂まで) 32mm-36mm."
+            },
+            {
+              "category": "headHeightMaxMm",
+              "value": 36,
+              "unit": "mm",
+              "mappedToSchemaField": "headHeightMaxMm",
+              "confidence": "high",
+              "sourceName": "Tokyo Metropolitan Government",
+              "sourceUrl": "https://www.seikatubunka.metro.tokyo.lg.jp/passport/documents/0000000418",
+              "notes": ""
+            },
+            {
+              "category": "eyeLineFromBottomMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "eyeLineFromBottomMm",
+              "confidence": "n/a",
+              "sourceName": "",
+              "sourceUrl": "",
+              "notes": "Japan anchors on chin-to-crown head height, not an eye-line figure. No eye-line-from-bottom value found in any source."
+            },
+            {
+              "category": "marginTopMm",
+              "value": 4,
+              "unit": "mm",
+              "mappedToSchemaField": "marginTopMm",
+              "confidence": "low",
+              "sourceName": "Aggregated Japanese ID-photo guide search synthesis (secondary, not independently confirmed on an official page)",
+              "sourceUrl": "https://www.mofa.go.jp/mofaj/toko/passport/ic_photo.html",
+              "notes": "Secondary sources describe a ~2-6mm top margin (nominal 4mm) derived algebraically from the 32-36mm head-height range within the 45mm photo height; could not confirm this figure is stated verbatim as an official rule (MOFA's own page returned 403 on direct fetch and its detail PDF also 403'd). Treat as a derived approximation, not an official published figure."
+            },
+            {
+              "category": "chinPositionFromBottomMm",
+              "value": 7,
+              "unit": "mm",
+              "mappedToSchemaField": null,
+              "confidence": "low",
+              "sourceName": "Aggregated Japanese ID-photo guide search synthesis",
+              "sourceUrl": "https://www.mofa.go.jp/mofaj/toko/passport/ic_photo.html",
+              "notes": "Secondary sources state 顎から下に7mm (7mm from chin to bottom edge), consistent with the 45mm total height minus the 32-36mm head height and the ~2-6mm top margin. Could not independently confirm on a directly-fetched official page."
+            },
+            {
+              "category": "headWidthMinMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "headWidthMinMm",
+              "confidence": "n/a",
+              "sourceName": "",
+              "sourceUrl": "",
+              "notes": "No head-width min/max range found for Japan. A secondary source mentions the face center should sit ~17mm from each edge of the 35mm-wide photo, but that describes horizontal centering, not head width."
+            },
+            {
+              "category": "headWidthMaxMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "headWidthMaxMm",
+              "confidence": "n/a",
+              "sourceName": "",
+              "sourceUrl": "",
+              "notes": "Not specified."
+            },
+            {
+              "category": "bothEarsVisibleRequired",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": "",
+              "sourceUrl": "",
+              "notes": "Not mentioned in any Japanese official or consulate source found."
+            },
+            {
+              "category": "horizontalCenteringTolerance",
+              "value": "face center within ~17mm of each side of the 35mm-wide photo (i.e. approximately centered)",
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "low",
+              "sourceName": "Aggregated Japanese ID-photo guide search synthesis",
+              "sourceUrl": "https://www.mofa.go.jp/mofaj/toko/passport/ic_photo.html",
+              "notes": "Not independently confirmed on an official page."
+            },
+            {
+              "category": "poseToleranceDegrees",
+              "value": null,
+              "unit": "degrees",
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": "",
+              "sourceUrl": "",
+              "notes": "Not specified in any source found."
+            },
+            {
+              "category": "eyeVisibilityZonePercent",
+              "value": null,
+              "unit": "percent",
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": "",
+              "sourceUrl": "",
+              "notes": "Not specified."
+            },
+            {
+              "category": "backgroundColor",
+              "value": "Plain, light-colored, unpatterned background with no shadows; not restricted to a specific color (must contrast with hair/face outline)",
+              "unit": null,
+              "mappedToSchemaField": "backgroundRequirement",
+              "confidence": "medium",
+              "sourceName": "Niigata Prefecture (official, citing MOFA 旅券課) + Tokyo Metropolitan Government",
+              "sourceUrl": "https://www.pref.niigata.lg.jp/uploaded/attachment/276135.pdf",
+              "notes": "Confirmed Japan does NOT mandate white specifically, unlike China/Korea/India/Singapore - rule is 'no background or shadows' with sufficient contrast to the subject's hair/outline."
+            },
+            {
+              "category": "backgroundColorHex",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": "backgroundColorHex",
+              "confidence": "n/a",
+              "sourceName": "",
+              "sourceUrl": "",
+              "notes": "No single mandated color/hex - see backgroundColor note."
+            },
+            {
+              "category": "lightingRequirement",
+              "value": "No shadows on face or background; even lighting; avoid glare/reflection",
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "medium",
+              "sourceName": "Tokyo Metropolitan Government",
+              "sourceUrl": "https://www.seikatubunka.metro.tokyo.lg.jp/passport/documents/0000000418",
+              "notes": ""
+            },
+            {
+              "category": "expressionRequirement",
+              "value": "Neutral expression facing forward; avoid an exaggerated smile",
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "high",
+              "sourceName": "Tokyo Metropolitan Government",
+              "sourceUrl": "https://www.seikatubunka.metro.tokyo.lg.jp/passport/documents/0000000418",
+              "notes": ""
+            },
+            {
+              "category": "glassesPolicy",
+              "value": "Sunglasses/masks obscuring facial features not allowed; colored contacts/eye-enlarging contacts not allowed. Regular prescription glasses are not explicitly detailed in the fetched official text.",
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "medium",
+              "sourceName": "Tokyo Metropolitan Government",
+              "sourceUrl": "https://www.seikatubunka.metro.tokyo.lg.jp/passport/documents/0000000418",
+              "notes": ""
+            },
+            {
+              "category": "headCoveringPolicy",
+              "value": "Bareheaded required (無帽); religious head coverings allowed only with a written explanation/documentation of religious affiliation, and the face must remain fully visible",
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "high",
+              "sourceName": "Tokyo Metropolitan Government",
+              "sourceUrl": "https://www.seikatubunka.metro.tokyo.lg.jp/passport/documents/0000000418",
+              "notes": ""
+            },
+            {
+              "category": "recencyMonths",
+              "value": 6,
+              "unit": "months",
+              "mappedToSchemaField": null,
+              "confidence": "high",
+              "sourceName": "Tokyo Metropolitan Government",
+              "sourceUrl": "https://www.seikatubunka.metro.tokyo.lg.jp/passport/documents/0000000418",
+              "notes": "提出の6か月以内に撮影されたもの (taken within 6 months of submission)."
+            },
+            {
+              "category": "colorRequirement",
+              "value": "Both color and black-and-white photos are accepted",
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "high",
+              "sourceName": "Tokyo Metropolitan Government",
+              "sourceUrl": "https://www.seikatubunka.metro.tokyo.lg.jp/passport/documents/0000000418",
+              "notes": "Notable: Japan is unusual among this batch in explicitly allowing black-and-white passport photos, not just color."
+            },
+            {
+              "category": "printPaperRequirement",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": "printNotes",
+              "confidence": "n/a",
+              "sourceName": "",
+              "sourceUrl": "",
+              "notes": "No specific paper type/finish requirement found stated for Japan."
+            },
+            {
+              "category": "copiesRequired",
+              "value": 1,
+              "unit": "count",
+              "mappedToSchemaField": "copiesPerSheet",
+              "confidence": "low",
+              "sourceName": "Search-engine synthesis of MOFA-linked pages (not independently confirmed on a directly fetched official page)",
+              "sourceUrl": "https://www.mofa.go.jp/mofaj/toko/passport/page22_004039.html",
+              "notes": ""
+            },
+            {
+              "category": "digitalFileRequirement",
+              "value": "Domestic online application (pre-taken studio photo): JPG, <=600KB. Overseas online application: jpg/jpeg/bmp/png, 20KB-2MB",
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "medium",
+              "sourceName": "MOFA (外務省) via search-engine content synthesis; direct fetch of the source page returned HTTP 403",
+              "sourceUrl": "https://www.mofa.go.jp/mofaj/toko/passport/ic_photo.html",
+              "notes": "Could not independently re-verify via direct WebFetch (blocked); figures are unusually specific/consistent, suggesting genuine extraction from the official page by the search tool."
+            }
           ]
         }
       ]
@@ -42,31 +267,256 @@
         {
           "documentType": "Паспорт",
           "requirements": [
-            { "category": "photoWidthMm", "value": 33, "unit": "mm", "mappedToSchemaField": "photoWidthMm", "confidence": "high", "sourceName": "Embassy of the People's Republic of China in the USA (official)", "sourceUrl": "https://us.china-embassy.gov.cn/lsfw/zj/hzlxz/201903/t20190309_5098803.htm", "notes": "Confirms existing test data of 33mm width is correct." },
-            { "category": "photoHeightMm", "value": 48, "unit": "mm", "mappedToSchemaField": "photoHeightMm", "confidence": "high", "sourceName": "Embassy of the People's Republic of China in the USA (official)", "sourceUrl": "https://us.china-embassy.gov.cn/lsfw/zj/hzlxz/201903/t20190309_5098803.htm", "notes": "Confirms existing test data of 48mm height is correct." },
-            { "category": "dpi", "value": null, "unit": null, "mappedToSchemaField": "dpi", "confidence": "n/a", "sourceName": "", "sourceUrl": "", "notes": "Not stated in any source found." },
-            { "category": "headHeightMinMm", "value": 28, "unit": "mm", "mappedToSchemaField": "headHeightMinMm", "confidence": "high", "sourceName": "Embassy of the People's Republic of China in the USA (official)", "sourceUrl": "https://us.china-embassy.gov.cn/lsfw/zj/hzlxz/201903/t20190309_5098803.htm", "notes": "头部高度（从下巴至头顶）28mm-33mm. Confirms existing test data of 28mm minimum is correct." },
-            { "category": "headHeightMaxMm", "value": 33, "unit": "mm", "mappedToSchemaField": "headHeightMaxMm", "confidence": "high", "sourceName": "Embassy of the People's Republic of China in the USA (official)", "sourceUrl": "https://us.china-embassy.gov.cn/lsfw/zj/hzlxz/201903/t20190309_5098803.htm", "notes": "Confirms existing test data of 33mm maximum is correct." },
-            { "category": "eyeLineFromBottomMm", "value": null, "unit": "mm", "mappedToSchemaField": "eyeLineFromBottomMm", "confidence": "n/a", "sourceName": "", "sourceUrl": "", "notes": "CONFIRMED: China does not use an eye-line-from-bottom anchor at all - it uses a margin-from-top-of-photo-to-crown anchor instead (see marginTopMm) plus a chin-to-bottom minimum (see chinPositionFromBottomMm)." },
-            { "category": "marginTopMm", "value": "3-5", "unit": "mm", "mappedToSchemaField": "marginTopMm", "confidence": "high", "sourceName": "Embassy of the People's Republic of China in the USA (official)", "sourceUrl": "https://us.china-embassy.gov.cn/lsfw/zj/hzlxz/201903/t20190309_5098803.htm", "notes": "DISCREPANCY vs. our existing test data: our test data records a single fixed value of marginTopMm=4mm. The real official source states a RANGE of 3mm-5mm (头顶至相片上边距离在3mm至5mm之间), not a fixed 4mm value. 4mm is the midpoint of the real range but the rule itself is a tolerance band, not a single number. Recommend correcting the schema/data to store min/max (3/5) rather than a single 4mm value, or explicitly document 4 as 'nominal/target' within an allowed 3-5mm band." },
-            { "category": "chinPositionFromBottomMm", "value": 7, "unit": "mm", "mappedToSchemaField": null, "confidence": "high", "sourceName": "Embassy of the People's Republic of China in the USA (official)", "sourceUrl": "https://us.china-embassy.gov.cn/lsfw/zj/hzlxz/201903/t20190309_5098803.htm", "notes": "人脸下颚以下至图像下边沿高度不小于7mm - minimum 7mm from chin to bottom edge of photo. This is the third vertical anchor the task asked us to look for; China states it as a MINIMUM, not an exact value, and it has no home in the current schema." },
-            { "category": "headWidthMinMm", "value": 15, "unit": "mm", "mappedToSchemaField": "headWidthMinMm", "confidence": "high", "sourceName": "Embassy of the People's Republic of China in the USA (official)", "sourceUrl": "https://us.china-embassy.gov.cn/lsfw/zj/hzlxz/201903/t20190309_5098803.htm", "notes": "头部宽度15mm-22mm. This value is NEW information not present in our existing test data at all (test data only had head height, not width)." },
-            { "category": "headWidthMaxMm", "value": 22, "unit": "mm", "mappedToSchemaField": "headWidthMaxMm", "confidence": "high", "sourceName": "Embassy of the People's Republic of China in the USA (official)", "sourceUrl": "https://us.china-embassy.gov.cn/lsfw/zj/hzlxz/201903/t20190309_5098803.htm", "notes": "" },
-            { "category": "bothEarsVisibleRequired", "value": true, "unit": null, "mappedToSchemaField": null, "confidence": "medium", "sourceName": "Embassy of the People's Republic of China in Canada (official), via search-engine content synthesis - direct fetch attempt failed with a connection error", "sourceUrl": "https://ca.china-embassy.gov.cn/chn/lsyw/lszj/hzlxz00/202311/t20231130_11189612.htm", "notes": "露出双耳 (both ears exposed/visible) explicitly required. Could not independently re-verify via direct fetch due to a network connection error to the embassy server." },
-            { "category": "horizontalCenteringTolerance", "value": "位置居中 (must be centered) - no numeric tolerance value found", "unit": null, "mappedToSchemaField": null, "confidence": "low", "sourceName": "Same embassy source as bothEarsVisibleRequired", "sourceUrl": "https://ca.china-embassy.gov.cn/chn/lsyw/lszj/hzlxz00/202311/t20231130_11189612.htm", "notes": "Qualitative requirement only, no mm/percent figure stated." },
-            { "category": "poseToleranceDegrees", "value": "yaw (left-right) <=20 degrees, pitch (up-down) <=25 degrees", "unit": "degrees", "mappedToSchemaField": null, "confidence": "medium", "sourceName": "Embassy of the People's Republic of China in Canada (official), via search-engine content synthesis", "sourceUrl": "https://ca.china-embassy.gov.cn/chn/lsyw/lszj/hzlxz00/202311/t20231130_11189612.htm", "notes": "人脸左右偏转不超过20度，上下仰俯不超过25度. Could not independently re-verify via direct fetch (connection error)." },
-            { "category": "eyeVisibilityZonePercent", "value": null, "unit": "percent", "mappedToSchemaField": null, "confidence": "n/a", "sourceName": "", "sourceUrl": "", "notes": "Not specified as a percentage; only a qualitative 'lenses must be colorless/no glare' rule (see glassesPolicy)." },
-            { "category": "backgroundColor", "value": "White (背景为白色), some secondary sources say 'white or near-white' for general exit-entry documents", "unit": null, "mappedToSchemaField": "backgroundRequirement", "confidence": "high", "sourceName": "Embassy of the People's Republic of China in the USA (official)", "sourceUrl": "https://us.china-embassy.gov.cn/lsfw/zj/hzlxz/201903/t20190309_5098803.htm", "notes": "This is specifically for the ordinary passport (普通护照). Note per task's own hint, other Chinese documents (e.g. some visa/diplomatic photos) may specify a light blue background instead - that does not apply to documentType 'Паспорт' here." },
-            { "category": "backgroundColorHex", "value": "#FFFFFF", "unit": null, "mappedToSchemaField": "backgroundColorHex", "confidence": "high", "sourceName": "Embassy of the People's Republic of China in the USA (official)", "sourceUrl": "https://us.china-embassy.gov.cn/lsfw/zj/hzlxz/201903/t20190309_5098803.htm", "notes": "" },
-            { "category": "lightingRequirement", "value": "No light leaks or shadows on face/background (无渗光或阴影), moderate brightness, natural skin tone, no red-eye, no visible distortion", "unit": null, "mappedToSchemaField": null, "confidence": "medium", "sourceName": "Embassy sources via search synthesis, corroborated by the directly-fetched us.china-embassy.gov.cn page's 'no shadows on face or background' statement", "sourceUrl": "https://us.china-embassy.gov.cn/lsfw/zj/hzlxz/201903/t20190309_5098803.htm", "notes": "" },
-            { "category": "expressionRequirement", "value": "Natural expression, both eyes open, all facial features clearly visible", "unit": null, "mappedToSchemaField": null, "confidence": "high", "sourceName": "Embassy of the People's Republic of China in the USA (official)", "sourceUrl": "https://us.china-embassy.gov.cn/lsfw/zj/hzlxz/201903/t20190309_5098803.htm", "notes": "表情自然，双眼睁开，全部面部特征清晰可见" },
-            { "category": "glassesPolicy", "value": "Glasses allowed but lenses must be colorless/transparent with no glare obscuring the eyes; no heavy/thick frames; hearing aids or similar devices are permitted", "unit": null, "mappedToSchemaField": null, "confidence": "high", "sourceName": "Embassy of the People's Republic of China in the USA (official)", "sourceUrl": "https://us.china-embassy.gov.cn/lsfw/zj/hzlxz/201903/t20190309_5098803.htm", "notes": "" },
-            { "category": "headCoveringPolicy", "value": "No hats or headscarves, except for religious reasons if the entire face remains visible", "unit": null, "mappedToSchemaField": null, "confidence": "high", "sourceName": "Embassy of the People's Republic of China in the USA (official)", "sourceUrl": "https://us.china-embassy.gov.cn/lsfw/zj/hzlxz/201903/t20190309_5098803.htm", "notes": "" },
-            { "category": "recencyMonths", "value": 6, "unit": "months", "mappedToSchemaField": null, "confidence": "high", "sourceName": "Embassy of the People's Republic of China in the USA (official)", "sourceUrl": "https://us.china-embassy.gov.cn/lsfw/zj/hzlxz/201903/t20190309_5098803.htm", "notes": "" },
-            { "category": "colorRequirement", "value": "Full color required (彩色照片)", "unit": null, "mappedToSchemaField": null, "confidence": "high", "sourceName": "Embassy of the People's Republic of China in the USA (official)", "sourceUrl": "https://us.china-embassy.gov.cn/lsfw/zj/hzlxz/201903/t20190309_5098803.htm", "notes": "" },
-            { "category": "printPaperRequirement", "value": "Must be professionally developed by a photo studio or printed on professional photographic paper (glossy paper commonly referenced); no alterations, no composite/synthesized photos", "unit": null, "mappedToSchemaField": "printNotes", "confidence": "high", "sourceName": "Embassy of the People's Republic of China in the USA (official) + corroborating secondary sources mentioning 光面相纸 (glossy photo paper)", "sourceUrl": "https://us.china-embassy.gov.cn/lsfw/zj/hzlxz/201903/t20190309_5098803.htm", "notes": "" },
-            { "category": "copiesRequired", "value": "CONFLICT: 3 (一式三张 - one set of three) per one secondary source, vs. 2 paper copies + 1 matching digital copy per another secondary source", "unit": "count", "mappedToSchemaField": "copiesPerSheet", "confidence": "low", "sourceName": "Secondary Chinese-language guidance aggregators (dealmoon.com and others); not confirmed on the official embassy/NIA pages directly fetched, which did not state a copy count", "sourceUrl": "https://www.dealmoon.com/guide/927085", "notes": "Two conflicting counts found across secondary sources; neither corroborated by the official pages we could directly fetch. Recording both per the source-conflict rule." },
-            { "category": "digitalFileRequirement", "value": "A matching digital photo copy (同版数字照片) is required alongside the paper photo for e-passport applications, but no specific pixel dimensions or file size was found stated", "unit": null, "mappedToSchemaField": null, "confidence": "low", "sourceName": "Secondary source mention only", "sourceUrl": "https://www.dealmoon.com/guide/927085", "notes": "Partial information only." }
+            {
+              "category": "photoWidthMm",
+              "value": 33,
+              "unit": "mm",
+              "mappedToSchemaField": "photoWidthMm",
+              "confidence": "high",
+              "sourceName": "Embassy of the People's Republic of China in the USA (official)",
+              "sourceUrl": "https://us.china-embassy.gov.cn/lsfw/zj/hzlxz/201903/t20190309_5098803.htm",
+              "notes": "Confirms existing test data of 33mm width is correct."
+            },
+            {
+              "category": "photoHeightMm",
+              "value": 48,
+              "unit": "mm",
+              "mappedToSchemaField": "photoHeightMm",
+              "confidence": "high",
+              "sourceName": "Embassy of the People's Republic of China in the USA (official)",
+              "sourceUrl": "https://us.china-embassy.gov.cn/lsfw/zj/hzlxz/201903/t20190309_5098803.htm",
+              "notes": "Confirms existing test data of 48mm height is correct."
+            },
+            {
+              "category": "dpi",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": "dpi",
+              "confidence": "n/a",
+              "sourceName": "",
+              "sourceUrl": "",
+              "notes": "Not stated in any source found."
+            },
+            {
+              "category": "headHeightMinMm",
+              "value": 28,
+              "unit": "mm",
+              "mappedToSchemaField": "headHeightMinMm",
+              "confidence": "high",
+              "sourceName": "Embassy of the People's Republic of China in the USA (official)",
+              "sourceUrl": "https://us.china-embassy.gov.cn/lsfw/zj/hzlxz/201903/t20190309_5098803.htm",
+              "notes": "头部高度（从下巴至头顶）28mm-33mm. Confirms existing test data of 28mm minimum is correct."
+            },
+            {
+              "category": "headHeightMaxMm",
+              "value": 33,
+              "unit": "mm",
+              "mappedToSchemaField": "headHeightMaxMm",
+              "confidence": "high",
+              "sourceName": "Embassy of the People's Republic of China in the USA (official)",
+              "sourceUrl": "https://us.china-embassy.gov.cn/lsfw/zj/hzlxz/201903/t20190309_5098803.htm",
+              "notes": "Confirms existing test data of 33mm maximum is correct."
+            },
+            {
+              "category": "eyeLineFromBottomMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "eyeLineFromBottomMm",
+              "confidence": "n/a",
+              "sourceName": "",
+              "sourceUrl": "",
+              "notes": "CONFIRMED: China does not use an eye-line-from-bottom anchor at all - it uses a margin-from-top-of-photo-to-crown anchor instead (see marginTopMm) plus a chin-to-bottom minimum (see chinPositionFromBottomMm)."
+            },
+            {
+              "category": "marginTopMm",
+              "value": "3-5",
+              "unit": "mm",
+              "mappedToSchemaField": "marginTopMm",
+              "confidence": "high",
+              "sourceName": "Embassy of the People's Republic of China in the USA (official)",
+              "sourceUrl": "https://us.china-embassy.gov.cn/lsfw/zj/hzlxz/201903/t20190309_5098803.htm",
+              "notes": "DISCREPANCY vs. our existing test data: our test data records a single fixed value of marginTopMm=4mm. The real official source states a RANGE of 3mm-5mm (头顶至相片上边距离在3mm至5mm之间), not a fixed 4mm value. 4mm is the midpoint of the real range but the rule itself is a tolerance band, not a single number. Recommend correcting the schema/data to store min/max (3/5) rather than a single 4mm value, or explicitly document 4 as 'nominal/target' within an allowed 3-5mm band."
+            },
+            {
+              "category": "chinPositionFromBottomMm",
+              "value": 7,
+              "unit": "mm",
+              "mappedToSchemaField": null,
+              "confidence": "high",
+              "sourceName": "Embassy of the People's Republic of China in the USA (official)",
+              "sourceUrl": "https://us.china-embassy.gov.cn/lsfw/zj/hzlxz/201903/t20190309_5098803.htm",
+              "notes": "人脸下颚以下至图像下边沿高度不小于7mm - minimum 7mm from chin to bottom edge of photo. This is the third vertical anchor the task asked us to look for; China states it as a MINIMUM, not an exact value, and it has no home in the current schema."
+            },
+            {
+              "category": "headWidthMinMm",
+              "value": 15,
+              "unit": "mm",
+              "mappedToSchemaField": "headWidthMinMm",
+              "confidence": "high",
+              "sourceName": "Embassy of the People's Republic of China in the USA (official)",
+              "sourceUrl": "https://us.china-embassy.gov.cn/lsfw/zj/hzlxz/201903/t20190309_5098803.htm",
+              "notes": "头部宽度15mm-22mm. This value is NEW information not present in our existing test data at all (test data only had head height, not width)."
+            },
+            {
+              "category": "headWidthMaxMm",
+              "value": 22,
+              "unit": "mm",
+              "mappedToSchemaField": "headWidthMaxMm",
+              "confidence": "high",
+              "sourceName": "Embassy of the People's Republic of China in the USA (official)",
+              "sourceUrl": "https://us.china-embassy.gov.cn/lsfw/zj/hzlxz/201903/t20190309_5098803.htm",
+              "notes": ""
+            },
+            {
+              "category": "bothEarsVisibleRequired",
+              "value": true,
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "medium",
+              "sourceName": "Embassy of the People's Republic of China in Canada (official), via search-engine content synthesis - direct fetch attempt failed with a connection error",
+              "sourceUrl": "https://ca.china-embassy.gov.cn/chn/lsyw/lszj/hzlxz00/202311/t20231130_11189612.htm",
+              "notes": "露出双耳 (both ears exposed/visible) explicitly required. Could not independently re-verify via direct fetch due to a network connection error to the embassy server."
+            },
+            {
+              "category": "horizontalCenteringTolerance",
+              "value": "位置居中 (must be centered) - no numeric tolerance value found",
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "low",
+              "sourceName": "Same embassy source as bothEarsVisibleRequired",
+              "sourceUrl": "https://ca.china-embassy.gov.cn/chn/lsyw/lszj/hzlxz00/202311/t20231130_11189612.htm",
+              "notes": "Qualitative requirement only, no mm/percent figure stated."
+            },
+            {
+              "category": "poseToleranceDegrees",
+              "value": "yaw (left-right) <=20 degrees, pitch (up-down) <=25 degrees",
+              "unit": "degrees",
+              "mappedToSchemaField": null,
+              "confidence": "medium",
+              "sourceName": "Embassy of the People's Republic of China in Canada (official), via search-engine content synthesis",
+              "sourceUrl": "https://ca.china-embassy.gov.cn/chn/lsyw/lszj/hzlxz00/202311/t20231130_11189612.htm",
+              "notes": "人脸左右偏转不超过20度，上下仰俯不超过25度. Could not independently re-verify via direct fetch (connection error)."
+            },
+            {
+              "category": "eyeVisibilityZonePercent",
+              "value": null,
+              "unit": "percent",
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": "",
+              "sourceUrl": "",
+              "notes": "Not specified as a percentage; only a qualitative 'lenses must be colorless/no glare' rule (see glassesPolicy)."
+            },
+            {
+              "category": "backgroundColor",
+              "value": "White (背景为白色), some secondary sources say 'white or near-white' for general exit-entry documents",
+              "unit": null,
+              "mappedToSchemaField": "backgroundRequirement",
+              "confidence": "high",
+              "sourceName": "Embassy of the People's Republic of China in the USA (official)",
+              "sourceUrl": "https://us.china-embassy.gov.cn/lsfw/zj/hzlxz/201903/t20190309_5098803.htm",
+              "notes": "This is specifically for the ordinary passport (普通护照). Note per task's own hint, other Chinese documents (e.g. some visa/diplomatic photos) may specify a light blue background instead - that does not apply to documentType 'Паспорт' here."
+            },
+            {
+              "category": "backgroundColorHex",
+              "value": "#FFFFFF",
+              "unit": null,
+              "mappedToSchemaField": "backgroundColorHex",
+              "confidence": "high",
+              "sourceName": "Embassy of the People's Republic of China in the USA (official)",
+              "sourceUrl": "https://us.china-embassy.gov.cn/lsfw/zj/hzlxz/201903/t20190309_5098803.htm",
+              "notes": ""
+            },
+            {
+              "category": "lightingRequirement",
+              "value": "No light leaks or shadows on face/background (无渗光或阴影), moderate brightness, natural skin tone, no red-eye, no visible distortion",
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "medium",
+              "sourceName": "Embassy sources via search synthesis, corroborated by the directly-fetched us.china-embassy.gov.cn page's 'no shadows on face or background' statement",
+              "sourceUrl": "https://us.china-embassy.gov.cn/lsfw/zj/hzlxz/201903/t20190309_5098803.htm",
+              "notes": ""
+            },
+            {
+              "category": "expressionRequirement",
+              "value": "Natural expression, both eyes open, all facial features clearly visible",
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "high",
+              "sourceName": "Embassy of the People's Republic of China in the USA (official)",
+              "sourceUrl": "https://us.china-embassy.gov.cn/lsfw/zj/hzlxz/201903/t20190309_5098803.htm",
+              "notes": "表情自然，双眼睁开，全部面部特征清晰可见"
+            },
+            {
+              "category": "glassesPolicy",
+              "value": "Glasses allowed but lenses must be colorless/transparent with no glare obscuring the eyes; no heavy/thick frames; hearing aids or similar devices are permitted",
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "high",
+              "sourceName": "Embassy of the People's Republic of China in the USA (official)",
+              "sourceUrl": "https://us.china-embassy.gov.cn/lsfw/zj/hzlxz/201903/t20190309_5098803.htm",
+              "notes": ""
+            },
+            {
+              "category": "headCoveringPolicy",
+              "value": "No hats or headscarves, except for religious reasons if the entire face remains visible",
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "high",
+              "sourceName": "Embassy of the People's Republic of China in the USA (official)",
+              "sourceUrl": "https://us.china-embassy.gov.cn/lsfw/zj/hzlxz/201903/t20190309_5098803.htm",
+              "notes": ""
+            },
+            {
+              "category": "recencyMonths",
+              "value": 6,
+              "unit": "months",
+              "mappedToSchemaField": null,
+              "confidence": "high",
+              "sourceName": "Embassy of the People's Republic of China in the USA (official)",
+              "sourceUrl": "https://us.china-embassy.gov.cn/lsfw/zj/hzlxz/201903/t20190309_5098803.htm",
+              "notes": ""
+            },
+            {
+              "category": "colorRequirement",
+              "value": "Full color required (彩色照片)",
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "high",
+              "sourceName": "Embassy of the People's Republic of China in the USA (official)",
+              "sourceUrl": "https://us.china-embassy.gov.cn/lsfw/zj/hzlxz/201903/t20190309_5098803.htm",
+              "notes": ""
+            },
+            {
+              "category": "printPaperRequirement",
+              "value": "Must be professionally developed by a photo studio or printed on professional photographic paper (glossy paper commonly referenced); no alterations, no composite/synthesized photos",
+              "unit": null,
+              "mappedToSchemaField": "printNotes",
+              "confidence": "high",
+              "sourceName": "Embassy of the People's Republic of China in the USA (official) + corroborating secondary sources mentioning 光面相纸 (glossy photo paper)",
+              "sourceUrl": "https://us.china-embassy.gov.cn/lsfw/zj/hzlxz/201903/t20190309_5098803.htm",
+              "notes": ""
+            },
+            {
+              "category": "copiesRequired",
+              "value": "CONFLICT: 3 (一式三张 - one set of three) per one secondary source, vs. 2 paper copies + 1 matching digital copy per another secondary source",
+              "unit": "count",
+              "mappedToSchemaField": "copiesPerSheet",
+              "confidence": "low",
+              "sourceName": "Secondary Chinese-language guidance aggregators (dealmoon.com and others); not confirmed on the official embassy/NIA pages directly fetched, which did not state a copy count",
+              "sourceUrl": "https://www.dealmoon.com/guide/927085",
+              "notes": "Two conflicting counts found across secondary sources; neither corroborated by the official pages we could directly fetch. Recording both per the source-conflict rule."
+            },
+            {
+              "category": "digitalFileRequirement",
+              "value": "A matching digital photo copy (同版数字照片) is required alongside the paper photo for e-passport applications, but no specific pixel dimensions or file size was found stated",
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "low",
+              "sourceName": "Secondary source mention only",
+              "sourceUrl": "https://www.dealmoon.com/guide/927085",
+              "notes": "Partial information only."
+            }
           ]
         }
       ]
@@ -77,31 +527,256 @@
         {
           "documentType": "Паспорт",
           "requirements": [
-            { "category": "photoWidthMm", "value": 35, "unit": "mm", "mappedToSchemaField": "photoWidthMm", "confidence": "medium", "sourceName": "Ministry of Foreign Affairs passport portal (passport.go.kr), via search-engine content synthesis and corroborating city-government mirror pages (e.g. Paju City, Yongin City)", "sourceUrl": "https://www.passport.go.kr/home/kor/contents.do?menuPos=32", "notes": "3.5cm x 4.5cm. Could not independently fetch passport.go.kr directly (DNS/network timeout from this environment); relying on consistent search-engine extraction plus multiple municipal government mirror pages that cite the same figures verbatim." },
-            { "category": "photoHeightMm", "value": 45, "unit": "mm", "mappedToSchemaField": "photoHeightMm", "confidence": "medium", "sourceName": "Ministry of Foreign Affairs passport portal (passport.go.kr)", "sourceUrl": "https://www.passport.go.kr/home/kor/contents.do?menuPos=32", "notes": "" },
-            { "category": "dpi", "value": null, "unit": null, "mappedToSchemaField": "dpi", "confidence": "n/a", "sourceName": "", "sourceUrl": "", "notes": "Only a recommended pixel size for online submission is stated (413x531px), no DPI figure." },
-            { "category": "headHeightMinMm", "value": 32, "unit": "mm", "mappedToSchemaField": "headHeightMinMm", "confidence": "medium", "sourceName": "Ministry of Foreign Affairs passport portal (passport.go.kr)", "sourceUrl": "https://www.passport.go.kr/home/kor/contents.do?menuPos=32", "notes": "머리 길이 (정수리부터 턱까지) 3.2cm-3.6cm (head length from crown, excluding hair, to chin)." },
-            { "category": "headHeightMaxMm", "value": 36, "unit": "mm", "mappedToSchemaField": "headHeightMaxMm", "confidence": "medium", "sourceName": "Ministry of Foreign Affairs passport portal (passport.go.kr)", "sourceUrl": "https://www.passport.go.kr/home/kor/contents.do?menuPos=32", "notes": "" },
-            { "category": "eyeLineFromBottomMm", "value": null, "unit": "mm", "mappedToSchemaField": "eyeLineFromBottomMm", "confidence": "n/a", "sourceName": "", "sourceUrl": "", "notes": "Not found; Korea appears to use head-length (crown-to-chin) as its anchor, similar to Japan." },
-            { "category": "marginTopMm", "value": null, "unit": "mm", "mappedToSchemaField": "marginTopMm", "confidence": "n/a", "sourceName": "", "sourceUrl": "", "notes": "Not found stated." },
-            { "category": "chinPositionFromBottomMm", "value": null, "unit": "mm", "mappedToSchemaField": null, "confidence": "n/a", "sourceName": "", "sourceUrl": "", "notes": "Not found stated." },
-            { "category": "headWidthMinMm", "value": null, "unit": "mm", "mappedToSchemaField": "headWidthMinMm", "confidence": "n/a", "sourceName": "", "sourceUrl": "", "notes": "Not found stated." },
-            { "category": "headWidthMaxMm", "value": null, "unit": "mm", "mappedToSchemaField": "headWidthMaxMm", "confidence": "n/a", "sourceName": "", "sourceUrl": "", "notes": "Not found stated." },
-            { "category": "bothEarsVisibleRequired", "value": null, "unit": null, "mappedToSchemaField": null, "confidence": "n/a", "sourceName": "", "sourceUrl": "", "notes": "Not found stated in any Korean official source located." },
-            { "category": "horizontalCenteringTolerance", "value": null, "unit": null, "mappedToSchemaField": null, "confidence": "n/a", "sourceName": "", "sourceUrl": "", "notes": "Not found stated." },
-            { "category": "poseToleranceDegrees", "value": null, "unit": "degrees", "mappedToSchemaField": null, "confidence": "n/a", "sourceName": "", "sourceUrl": "", "notes": "Not found stated." },
-            { "category": "eyeVisibilityZonePercent", "value": null, "unit": "percent", "mappedToSchemaField": null, "confidence": "n/a", "sourceName": "", "sourceUrl": "", "notes": "Not found stated." },
-            { "category": "backgroundColor", "value": "Uniform white background, no ink marks, no border", "unit": null, "mappedToSchemaField": "backgroundRequirement", "confidence": "medium", "sourceName": "Ministry of Foreign Affairs passport portal (passport.go.kr)", "sourceUrl": "https://www.passport.go.kr/home/kor/contents.do?menuPos=32", "notes": "" },
-            { "category": "backgroundColorHex", "value": "#FFFFFF", "unit": null, "mappedToSchemaField": "backgroundColorHex", "confidence": "medium", "sourceName": "Ministry of Foreign Affairs passport portal (passport.go.kr)", "sourceUrl": "https://www.passport.go.kr/home/kor/contents.do?menuPos=32", "notes": "" },
-            { "category": "lightingRequirement", "value": null, "unit": null, "mappedToSchemaField": null, "confidence": "n/a", "sourceName": "", "sourceUrl": "", "notes": "No dedicated lighting rule found beyond the requirement that the background itself be shadow/ink-mark-free." },
-            { "category": "expressionRequirement", "value": null, "unit": null, "mappedToSchemaField": null, "confidence": "n/a", "sourceName": "", "sourceUrl": "", "notes": "No explicit expression rule (e.g. 'neutral expression, mouth closed') found in the sources located, only the general upper-body/frontal/hatless description." },
-            { "category": "glassesPolicy", "value": null, "unit": null, "mappedToSchemaField": null, "confidence": "n/a", "sourceName": "", "sourceUrl": "", "notes": "Not found stated in the sources located." },
-            { "category": "headCoveringPolicy", "value": "Hatless (탈모) photo required; no hair accessories", "unit": null, "mappedToSchemaField": null, "confidence": "medium", "sourceName": "Ministry of Foreign Affairs passport portal (passport.go.kr)", "sourceUrl": "https://www.passport.go.kr/home/kor/contents.do?menuPos=32", "notes": "Inferred from the standard descriptor '천연색 상반신 정면 탈모사진' (natural-color, upper-body, frontal, hatless photo); no explicit religious-exception clause was found in the sources located." },
-            { "category": "recencyMonths", "value": 6, "unit": "months", "mappedToSchemaField": null, "confidence": "medium", "sourceName": "Ministry of Foreign Affairs passport portal (passport.go.kr)", "sourceUrl": "https://www.passport.go.kr/home/kor/contents.do?menuPos=32", "notes": "6개월 이내 촬영 (taken within 6 months)." },
-            { "category": "colorRequirement", "value": "Full color required (천연색)", "unit": null, "mappedToSchemaField": null, "confidence": "medium", "sourceName": "Ministry of Foreign Affairs passport portal (passport.go.kr)", "sourceUrl": "https://www.passport.go.kr/home/kor/contents.do?menuPos=32", "notes": "" },
-            { "category": "printPaperRequirement", "value": null, "unit": null, "mappedToSchemaField": "printNotes", "confidence": "n/a", "sourceName": "", "sourceUrl": "", "notes": "Not found stated." },
-            { "category": "copiesRequired", "value": null, "unit": "count", "mappedToSchemaField": "copiesPerSheet", "confidence": "n/a", "sourceName": "", "sourceUrl": "", "notes": "Could not find a stated adult copy count; one source mentioned 1 photo for a specific minor online-reissue case only, which is not generalizable." },
-            { "category": "digitalFileRequirement", "value": "413 x 531 pixels recommended for online (re-issue) applications", "unit": "pixels", "mappedToSchemaField": null, "confidence": "medium", "sourceName": "Ministry of Foreign Affairs passport portal (passport.go.kr)", "sourceUrl": "https://www.passport.go.kr/home/kor/contents.do?menuPos=12", "notes": "" }
+            {
+              "category": "photoWidthMm",
+              "value": 35,
+              "unit": "mm",
+              "mappedToSchemaField": "photoWidthMm",
+              "confidence": "medium",
+              "sourceName": "Ministry of Foreign Affairs passport portal (passport.go.kr), via search-engine content synthesis and corroborating city-government mirror pages (e.g. Paju City, Yongin City)",
+              "sourceUrl": "https://www.passport.go.kr/home/kor/contents.do?menuPos=32",
+              "notes": "3.5cm x 4.5cm. Could not independently fetch passport.go.kr directly (DNS/network timeout from this environment); relying on consistent search-engine extraction plus multiple municipal government mirror pages that cite the same figures verbatim."
+            },
+            {
+              "category": "photoHeightMm",
+              "value": 45,
+              "unit": "mm",
+              "mappedToSchemaField": "photoHeightMm",
+              "confidence": "medium",
+              "sourceName": "Ministry of Foreign Affairs passport portal (passport.go.kr)",
+              "sourceUrl": "https://www.passport.go.kr/home/kor/contents.do?menuPos=32",
+              "notes": ""
+            },
+            {
+              "category": "dpi",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": "dpi",
+              "confidence": "n/a",
+              "sourceName": "",
+              "sourceUrl": "",
+              "notes": "Only a recommended pixel size for online submission is stated (413x531px), no DPI figure."
+            },
+            {
+              "category": "headHeightMinMm",
+              "value": 32,
+              "unit": "mm",
+              "mappedToSchemaField": "headHeightMinMm",
+              "confidence": "medium",
+              "sourceName": "Ministry of Foreign Affairs passport portal (passport.go.kr)",
+              "sourceUrl": "https://www.passport.go.kr/home/kor/contents.do?menuPos=32",
+              "notes": "머리 길이 (정수리부터 턱까지) 3.2cm-3.6cm (head length from crown, excluding hair, to chin)."
+            },
+            {
+              "category": "headHeightMaxMm",
+              "value": 36,
+              "unit": "mm",
+              "mappedToSchemaField": "headHeightMaxMm",
+              "confidence": "medium",
+              "sourceName": "Ministry of Foreign Affairs passport portal (passport.go.kr)",
+              "sourceUrl": "https://www.passport.go.kr/home/kor/contents.do?menuPos=32",
+              "notes": ""
+            },
+            {
+              "category": "eyeLineFromBottomMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "eyeLineFromBottomMm",
+              "confidence": "n/a",
+              "sourceName": "",
+              "sourceUrl": "",
+              "notes": "Not found; Korea appears to use head-length (crown-to-chin) as its anchor, similar to Japan."
+            },
+            {
+              "category": "marginTopMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "marginTopMm",
+              "confidence": "n/a",
+              "sourceName": "",
+              "sourceUrl": "",
+              "notes": "Not found stated."
+            },
+            {
+              "category": "chinPositionFromBottomMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": "",
+              "sourceUrl": "",
+              "notes": "Not found stated."
+            },
+            {
+              "category": "headWidthMinMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "headWidthMinMm",
+              "confidence": "n/a",
+              "sourceName": "",
+              "sourceUrl": "",
+              "notes": "Not found stated."
+            },
+            {
+              "category": "headWidthMaxMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "headWidthMaxMm",
+              "confidence": "n/a",
+              "sourceName": "",
+              "sourceUrl": "",
+              "notes": "Not found stated."
+            },
+            {
+              "category": "bothEarsVisibleRequired",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": "",
+              "sourceUrl": "",
+              "notes": "Not found stated in any Korean official source located."
+            },
+            {
+              "category": "horizontalCenteringTolerance",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": "",
+              "sourceUrl": "",
+              "notes": "Not found stated."
+            },
+            {
+              "category": "poseToleranceDegrees",
+              "value": null,
+              "unit": "degrees",
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": "",
+              "sourceUrl": "",
+              "notes": "Not found stated."
+            },
+            {
+              "category": "eyeVisibilityZonePercent",
+              "value": null,
+              "unit": "percent",
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": "",
+              "sourceUrl": "",
+              "notes": "Not found stated."
+            },
+            {
+              "category": "backgroundColor",
+              "value": "Uniform white background, no ink marks, no border",
+              "unit": null,
+              "mappedToSchemaField": "backgroundRequirement",
+              "confidence": "medium",
+              "sourceName": "Ministry of Foreign Affairs passport portal (passport.go.kr)",
+              "sourceUrl": "https://www.passport.go.kr/home/kor/contents.do?menuPos=32",
+              "notes": ""
+            },
+            {
+              "category": "backgroundColorHex",
+              "value": "#FFFFFF",
+              "unit": null,
+              "mappedToSchemaField": "backgroundColorHex",
+              "confidence": "medium",
+              "sourceName": "Ministry of Foreign Affairs passport portal (passport.go.kr)",
+              "sourceUrl": "https://www.passport.go.kr/home/kor/contents.do?menuPos=32",
+              "notes": ""
+            },
+            {
+              "category": "lightingRequirement",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": "",
+              "sourceUrl": "",
+              "notes": "No dedicated lighting rule found beyond the requirement that the background itself be shadow/ink-mark-free."
+            },
+            {
+              "category": "expressionRequirement",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": "",
+              "sourceUrl": "",
+              "notes": "No explicit expression rule (e.g. 'neutral expression, mouth closed') found in the sources located, only the general upper-body/frontal/hatless description."
+            },
+            {
+              "category": "glassesPolicy",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": "",
+              "sourceUrl": "",
+              "notes": "Not found stated in the sources located."
+            },
+            {
+              "category": "headCoveringPolicy",
+              "value": "Hatless (탈모) photo required; no hair accessories",
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "medium",
+              "sourceName": "Ministry of Foreign Affairs passport portal (passport.go.kr)",
+              "sourceUrl": "https://www.passport.go.kr/home/kor/contents.do?menuPos=32",
+              "notes": "Inferred from the standard descriptor '천연색 상반신 정면 탈모사진' (natural-color, upper-body, frontal, hatless photo); no explicit religious-exception clause was found in the sources located."
+            },
+            {
+              "category": "recencyMonths",
+              "value": 6,
+              "unit": "months",
+              "mappedToSchemaField": null,
+              "confidence": "medium",
+              "sourceName": "Ministry of Foreign Affairs passport portal (passport.go.kr)",
+              "sourceUrl": "https://www.passport.go.kr/home/kor/contents.do?menuPos=32",
+              "notes": "6개월 이내 촬영 (taken within 6 months)."
+            },
+            {
+              "category": "colorRequirement",
+              "value": "Full color required (천연색)",
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "medium",
+              "sourceName": "Ministry of Foreign Affairs passport portal (passport.go.kr)",
+              "sourceUrl": "https://www.passport.go.kr/home/kor/contents.do?menuPos=32",
+              "notes": ""
+            },
+            {
+              "category": "printPaperRequirement",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": "printNotes",
+              "confidence": "n/a",
+              "sourceName": "",
+              "sourceUrl": "",
+              "notes": "Not found stated."
+            },
+            {
+              "category": "copiesRequired",
+              "value": null,
+              "unit": "count",
+              "mappedToSchemaField": "copiesPerSheet",
+              "confidence": "n/a",
+              "sourceName": "",
+              "sourceUrl": "",
+              "notes": "Could not find a stated adult copy count; one source mentioned 1 photo for a specific minor online-reissue case only, which is not generalizable."
+            },
+            {
+              "category": "digitalFileRequirement",
+              "value": "413 x 531 pixels recommended for online (re-issue) applications",
+              "unit": "pixels",
+              "mappedToSchemaField": null,
+              "confidence": "medium",
+              "sourceName": "Ministry of Foreign Affairs passport portal (passport.go.kr)",
+              "sourceUrl": "https://www.passport.go.kr/home/kor/contents.do?menuPos=12",
+              "notes": ""
+            }
           ]
         }
       ]
@@ -112,31 +787,256 @@
         {
           "documentType": "Паспорт",
           "requirements": [
-            { "category": "photoWidthMm", "value": 35, "unit": "mm", "mappedToSchemaField": "photoWidthMm", "confidence": "medium", "sourceName": "Passport Seva / Ministry of External Affairs application-form instruction booklet, cross-checked with the Consulate General of India, Toronto photograph guidance document", "sourceUrl": "https://www.passportindia.gov.in/AppOnlineProject/pdf/ApplicationformInstructionBooklet-V3.0.pdf", "notes": "3.5cm x 4.5cm. The instruction-booklet PDF could not be parsed as text (image-based scan) and the consulate PDF was blocked by a bot-check page, so this is corroborated via consistent citation of the same official documents across multiple independent secondary sources rather than a direct successful text extraction." },
-            { "category": "photoHeightMm", "value": 45, "unit": "mm", "mappedToSchemaField": "photoHeightMm", "confidence": "medium", "sourceName": "Passport Seva / MEA instruction booklet", "sourceUrl": "https://www.passportindia.gov.in/AppOnlineProject/pdf/ApplicationformInstructionBooklet-V3.0.pdf", "notes": "" },
-            { "category": "dpi", "value": null, "unit": null, "mappedToSchemaField": "dpi", "confidence": "n/a", "sourceName": "", "sourceUrl": "", "notes": "Only pixel dimensions given for digital upload (see digitalFileRequirement), no DPI figure found." },
-            { "category": "headHeightMinMm", "value": 36, "unit": "mm", "mappedToSchemaField": "headHeightMinMm", "confidence": "low", "sourceName": "Secondary aggregator sources describing a claimed MEA/ICAO Doc 9303 alignment effective 1 September 2025", "sourceUrl": "https://passlens.com/blog/india-passport-photo-guide", "notes": "Not confirmed on an official passportindia.gov.in or MEA page directly (both were inaccessible - image-scanned PDF and bot-check page respectively). The claimed 1-Sept-2025 rule change itself could not be verified against a primary government announcement, so this number should be treated with caution pending official confirmation." },
-            { "category": "headHeightMaxMm", "value": 38, "unit": "mm", "mappedToSchemaField": "headHeightMaxMm", "confidence": "low", "sourceName": "Same secondary aggregator sources", "sourceUrl": "https://passlens.com/blog/india-passport-photo-guide", "notes": "Consistent with the commonly repeated 'face occupies 80-85% of photo' figure (36-38mm of a 45mm-tall photo is 80-84%), but still unconfirmed against a primary source." },
-            { "category": "eyeLineFromBottomMm", "value": null, "unit": "mm", "mappedToSchemaField": "eyeLineFromBottomMm", "confidence": "n/a", "sourceName": "", "sourceUrl": "", "notes": "Not found stated." },
-            { "category": "marginTopMm", "value": null, "unit": "mm", "mappedToSchemaField": "marginTopMm", "confidence": "n/a", "sourceName": "", "sourceUrl": "", "notes": "Not found stated." },
-            { "category": "chinPositionFromBottomMm", "value": null, "unit": "mm", "mappedToSchemaField": null, "confidence": "n/a", "sourceName": "", "sourceUrl": "", "notes": "Not found stated." },
-            { "category": "headWidthMinMm", "value": null, "unit": "mm", "mappedToSchemaField": "headWidthMinMm", "confidence": "n/a", "sourceName": "", "sourceUrl": "", "notes": "Not found stated." },
-            { "category": "headWidthMaxMm", "value": null, "unit": "mm", "mappedToSchemaField": "headWidthMaxMm", "confidence": "n/a", "sourceName": "", "sourceUrl": "", "notes": "Not found stated." },
-            { "category": "bothEarsVisibleRequired", "value": null, "unit": null, "mappedToSchemaField": null, "confidence": "n/a", "sourceName": "", "sourceUrl": "", "notes": "Not found stated." },
-            { "category": "horizontalCenteringTolerance", "value": null, "unit": null, "mappedToSchemaField": null, "confidence": "n/a", "sourceName": "", "sourceUrl": "", "notes": "Not found stated." },
-            { "category": "poseToleranceDegrees", "value": null, "unit": "degrees", "mappedToSchemaField": null, "confidence": "n/a", "sourceName": "", "sourceUrl": "", "notes": "Not found stated." },
-            { "category": "eyeVisibilityZonePercent", "value": null, "unit": "percent", "mappedToSchemaField": null, "confidence": "n/a", "sourceName": "", "sourceUrl": "", "notes": "Not found stated." },
-            { "category": "backgroundColor", "value": "Plain white background; cream/off-white/light grey are explicitly rejected", "unit": null, "mappedToSchemaField": "backgroundRequirement", "confidence": "medium", "sourceName": "Consulate General of India, Toronto - 'Photograph Guidance for Applicants' (official document, title/content corroborated via multiple secondary citations; direct fetch was blocked by a bot-check page)", "sourceUrl": "https://www.cgitoronto.gov.in/docs/1626187593Photograph%20Guidance%20for%20Applicants.pdf", "notes": "" },
-            { "category": "backgroundColorHex", "value": "#FFFFFF", "unit": null, "mappedToSchemaField": "backgroundColorHex", "confidence": "medium", "sourceName": "Consulate General of India, Toronto", "sourceUrl": "https://www.cgitoronto.gov.in/docs/1626187593Photograph%20Guidance%20for%20Applicants.pdf", "notes": "" },
-            { "category": "lightingRequirement", "value": "No shadows, even lighting, no glare", "unit": null, "mappedToSchemaField": null, "confidence": "low", "sourceName": "Secondary sources citing MEA guidance", "sourceUrl": "https://photogov.net/knowledge/requirements/indian-passport-photo-requirements/", "notes": "General statement, not deeply sourced to a specific official passage." },
-            { "category": "expressionRequirement", "value": "Neutral expression, eyes open and not covered by hair; if glasses are worn, a slight upward/downward head tilt is suggested to avoid glare", "unit": null, "mappedToSchemaField": null, "confidence": "medium", "sourceName": "Passport Seva instruction materials, via search synthesis", "sourceUrl": "https://www.passportindia.gov.in/psp/FaqApplicationForm", "notes": "" },
-            { "category": "glassesPolicy", "value": "Glasses are discouraged / not permitted; MEA recommends removing glasses. If medically necessary, prescription glasses may be worn with no glare and no tinted lenses.", "unit": null, "mappedToSchemaField": null, "confidence": "medium", "sourceName": "Consulate/MEA-derived secondary sources, consistent across multiple citations", "sourceUrl": "https://passlens.com/blog/india-passport-photo-guide", "notes": "" },
-            { "category": "headCoveringPolicy", "value": "Not permitted except for genuine religious reasons; when worn, the chin-to-forehead facial features and both edges of the face must remain clearly visible", "unit": null, "mappedToSchemaField": null, "confidence": "medium", "sourceName": "MEA-derived secondary sources", "sourceUrl": "https://passlens.com/blog/india-passport-photo-guide", "notes": "" },
-            { "category": "recencyMonths", "value": 6, "unit": "months", "mappedToSchemaField": null, "confidence": "medium", "sourceName": "MEA/Passport Seva-derived secondary sources, widely and consistently repeated", "sourceUrl": "https://passlens.com/blog/india-passport-photo-guide", "notes": "" },
-            { "category": "colorRequirement", "value": "Full color required", "unit": null, "mappedToSchemaField": null, "confidence": "medium", "sourceName": "Passport Seva/MEA-derived secondary sources", "sourceUrl": "https://passlens.com/blog/india-passport-photo-guide", "notes": "" },
-            { "category": "printPaperRequirement", "value": null, "unit": null, "mappedToSchemaField": "printNotes", "confidence": "n/a", "sourceName": "", "sourceUrl": "", "notes": "No specific paper/finish requirement found stated." },
-            { "category": "copiesRequired", "value": 2, "unit": "count", "mappedToSchemaField": "copiesPerSheet", "confidence": "medium", "sourceName": "Passport Seva / MEA application-form instructions, via search synthesis", "sourceUrl": "https://www.passportindia.gov.in/psp/FaqApplicationForm", "notes": "Two coloured photographs required: one affixed unsigned to page 1 of the printed application, one affixed and stamped/signed by the Head of Office on page 3." },
-            { "category": "digitalFileRequirement", "value": "JPEG, exactly 630x810 pixels, 10-250 KB (Passport Seva online application upload)", "unit": null, "mappedToSchemaField": null, "confidence": "medium", "sourceName": "Passport Seva portal, via consistent search-engine synthesis across many independent secondary sources", "sourceUrl": "https://www.passportindia.gov.in/psp/FaqApplicationForm", "notes": "" }
+            {
+              "category": "photoWidthMm",
+              "value": 35,
+              "unit": "mm",
+              "mappedToSchemaField": "photoWidthMm",
+              "confidence": "medium",
+              "sourceName": "Passport Seva / Ministry of External Affairs application-form instruction booklet, cross-checked with the Consulate General of India, Toronto photograph guidance document",
+              "sourceUrl": "https://www.passportindia.gov.in/AppOnlineProject/pdf/ApplicationformInstructionBooklet-V3.0.pdf",
+              "notes": "3.5cm x 4.5cm. The instruction-booklet PDF could not be parsed as text (image-based scan) and the consulate PDF was blocked by a bot-check page, so this is corroborated via consistent citation of the same official documents across multiple independent secondary sources rather than a direct successful text extraction."
+            },
+            {
+              "category": "photoHeightMm",
+              "value": 45,
+              "unit": "mm",
+              "mappedToSchemaField": "photoHeightMm",
+              "confidence": "medium",
+              "sourceName": "Passport Seva / MEA instruction booklet",
+              "sourceUrl": "https://www.passportindia.gov.in/AppOnlineProject/pdf/ApplicationformInstructionBooklet-V3.0.pdf",
+              "notes": ""
+            },
+            {
+              "category": "dpi",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": "dpi",
+              "confidence": "n/a",
+              "sourceName": "",
+              "sourceUrl": "",
+              "notes": "Only pixel dimensions given for digital upload (see digitalFileRequirement), no DPI figure found."
+            },
+            {
+              "category": "headHeightMinMm",
+              "value": 36,
+              "unit": "mm",
+              "mappedToSchemaField": "headHeightMinMm",
+              "confidence": "low",
+              "sourceName": "Secondary aggregator sources describing a claimed MEA/ICAO Doc 9303 alignment effective 1 September 2025",
+              "sourceUrl": "https://passlens.com/blog/india-passport-photo-guide",
+              "notes": "Not confirmed on an official passportindia.gov.in or MEA page directly (both were inaccessible - image-scanned PDF and bot-check page respectively). The claimed 1-Sept-2025 rule change itself could not be verified against a primary government announcement, so this number should be treated with caution pending official confirmation."
+            },
+            {
+              "category": "headHeightMaxMm",
+              "value": 38,
+              "unit": "mm",
+              "mappedToSchemaField": "headHeightMaxMm",
+              "confidence": "low",
+              "sourceName": "Same secondary aggregator sources",
+              "sourceUrl": "https://passlens.com/blog/india-passport-photo-guide",
+              "notes": "Consistent with the commonly repeated 'face occupies 80-85% of photo' figure (36-38mm of a 45mm-tall photo is 80-84%), but still unconfirmed against a primary source."
+            },
+            {
+              "category": "eyeLineFromBottomMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "eyeLineFromBottomMm",
+              "confidence": "n/a",
+              "sourceName": "",
+              "sourceUrl": "",
+              "notes": "Not found stated."
+            },
+            {
+              "category": "marginTopMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "marginTopMm",
+              "confidence": "n/a",
+              "sourceName": "",
+              "sourceUrl": "",
+              "notes": "Not found stated."
+            },
+            {
+              "category": "chinPositionFromBottomMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": "",
+              "sourceUrl": "",
+              "notes": "Not found stated."
+            },
+            {
+              "category": "headWidthMinMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "headWidthMinMm",
+              "confidence": "n/a",
+              "sourceName": "",
+              "sourceUrl": "",
+              "notes": "Not found stated."
+            },
+            {
+              "category": "headWidthMaxMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "headWidthMaxMm",
+              "confidence": "n/a",
+              "sourceName": "",
+              "sourceUrl": "",
+              "notes": "Not found stated."
+            },
+            {
+              "category": "bothEarsVisibleRequired",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": "",
+              "sourceUrl": "",
+              "notes": "Not found stated."
+            },
+            {
+              "category": "horizontalCenteringTolerance",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": "",
+              "sourceUrl": "",
+              "notes": "Not found stated."
+            },
+            {
+              "category": "poseToleranceDegrees",
+              "value": null,
+              "unit": "degrees",
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": "",
+              "sourceUrl": "",
+              "notes": "Not found stated."
+            },
+            {
+              "category": "eyeVisibilityZonePercent",
+              "value": null,
+              "unit": "percent",
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": "",
+              "sourceUrl": "",
+              "notes": "Not found stated."
+            },
+            {
+              "category": "backgroundColor",
+              "value": "Plain white background; cream/off-white/light grey are explicitly rejected",
+              "unit": null,
+              "mappedToSchemaField": "backgroundRequirement",
+              "confidence": "medium",
+              "sourceName": "Consulate General of India, Toronto - 'Photograph Guidance for Applicants' (official document, title/content corroborated via multiple secondary citations; direct fetch was blocked by a bot-check page)",
+              "sourceUrl": "https://www.cgitoronto.gov.in/docs/1626187593Photograph%20Guidance%20for%20Applicants.pdf",
+              "notes": ""
+            },
+            {
+              "category": "backgroundColorHex",
+              "value": "#FFFFFF",
+              "unit": null,
+              "mappedToSchemaField": "backgroundColorHex",
+              "confidence": "medium",
+              "sourceName": "Consulate General of India, Toronto",
+              "sourceUrl": "https://www.cgitoronto.gov.in/docs/1626187593Photograph%20Guidance%20for%20Applicants.pdf",
+              "notes": ""
+            },
+            {
+              "category": "lightingRequirement",
+              "value": "No shadows, even lighting, no glare",
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "low",
+              "sourceName": "Secondary sources citing MEA guidance",
+              "sourceUrl": "https://photogov.net/knowledge/requirements/indian-passport-photo-requirements/",
+              "notes": "General statement, not deeply sourced to a specific official passage."
+            },
+            {
+              "category": "expressionRequirement",
+              "value": "Neutral expression, eyes open and not covered by hair; if glasses are worn, a slight upward/downward head tilt is suggested to avoid glare",
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "medium",
+              "sourceName": "Passport Seva instruction materials, via search synthesis",
+              "sourceUrl": "https://www.passportindia.gov.in/psp/FaqApplicationForm",
+              "notes": ""
+            },
+            {
+              "category": "glassesPolicy",
+              "value": "Glasses are discouraged / not permitted; MEA recommends removing glasses. If medically necessary, prescription glasses may be worn with no glare and no tinted lenses.",
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "medium",
+              "sourceName": "Consulate/MEA-derived secondary sources, consistent across multiple citations",
+              "sourceUrl": "https://passlens.com/blog/india-passport-photo-guide",
+              "notes": ""
+            },
+            {
+              "category": "headCoveringPolicy",
+              "value": "Not permitted except for genuine religious reasons; when worn, the chin-to-forehead facial features and both edges of the face must remain clearly visible",
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "medium",
+              "sourceName": "MEA-derived secondary sources",
+              "sourceUrl": "https://passlens.com/blog/india-passport-photo-guide",
+              "notes": ""
+            },
+            {
+              "category": "recencyMonths",
+              "value": 6,
+              "unit": "months",
+              "mappedToSchemaField": null,
+              "confidence": "medium",
+              "sourceName": "MEA/Passport Seva-derived secondary sources, widely and consistently repeated",
+              "sourceUrl": "https://passlens.com/blog/india-passport-photo-guide",
+              "notes": ""
+            },
+            {
+              "category": "colorRequirement",
+              "value": "Full color required",
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "medium",
+              "sourceName": "Passport Seva/MEA-derived secondary sources",
+              "sourceUrl": "https://passlens.com/blog/india-passport-photo-guide",
+              "notes": ""
+            },
+            {
+              "category": "printPaperRequirement",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": "printNotes",
+              "confidence": "n/a",
+              "sourceName": "",
+              "sourceUrl": "",
+              "notes": "No specific paper/finish requirement found stated."
+            },
+            {
+              "category": "copiesRequired",
+              "value": 2,
+              "unit": "count",
+              "mappedToSchemaField": "copiesPerSheet",
+              "confidence": "medium",
+              "sourceName": "Passport Seva / MEA application-form instructions, via search synthesis",
+              "sourceUrl": "https://www.passportindia.gov.in/psp/FaqApplicationForm",
+              "notes": "Two coloured photographs required: one affixed unsigned to page 1 of the printed application, one affixed and stamped/signed by the Head of Office on page 3."
+            },
+            {
+              "category": "digitalFileRequirement",
+              "value": "JPEG, exactly 630x810 pixels, 10-250 KB (Passport Seva online application upload)",
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "medium",
+              "sourceName": "Passport Seva portal, via consistent search-engine synthesis across many independent secondary sources",
+              "sourceUrl": "https://www.passportindia.gov.in/psp/FaqApplicationForm",
+              "notes": ""
+            }
           ]
         }
       ]
@@ -147,31 +1047,256 @@
         {
           "documentType": "Паспорт",
           "requirements": [
-            { "category": "photoWidthMm", "value": 35, "unit": "mm", "mappedToSchemaField": "photoWidthMm", "confidence": "medium", "sourceName": "Immigration & Checkpoints Authority (ICA) - directly-fetched official pages state pixel dimensions but not mm; the 35x45mm figure comes from consistent secondary citation of the same ICA standard", "sourceUrl": "https://www.ica.gov.sg/photo-guidelines", "notes": "Directly fetched ica.gov.sg/photo-guidelines and ica.gov.sg/documents/passport/apply; neither returned an explicit mm figure in the retrieved content (they state pixel size and finish only), so the mm figure itself is medium- rather than high-confidence despite the URL being verified official." },
-            { "category": "photoHeightMm", "value": 45, "unit": "mm", "mappedToSchemaField": "photoHeightMm", "confidence": "medium", "sourceName": "ICA (see note on photoWidthMm)", "sourceUrl": "https://www.ica.gov.sg/photo-guidelines", "notes": "" },
-            { "category": "dpi", "value": null, "unit": null, "mappedToSchemaField": "dpi", "confidence": "n/a", "sourceName": "", "sourceUrl": "", "notes": "CONFLICT: the official ica.gov.sg page (directly fetched) states only pixel dimensions (400x514) and an 8MB max file size, with no DPI mentioned. A low-confidence third-party aggregator separately claims 'at least 600 dpi'. Recording as n/a per the official primary source, with the conflicting low-confidence claim noted here for completeness." },
-            { "category": "headHeightMinMm", "value": null, "unit": "mm", "mappedToSchemaField": "headHeightMinMm", "confidence": "low", "sourceName": "CONFLICTING secondary aggregator claims - see notes", "sourceUrl": "https://www.ica.gov.sg/photo-guidelines", "notes": "CONFLICT: one set of aggregator sources states chin-to-crown head size of 32-36mm; a different set states 25-35mm occupying 70-80% of photo height. Neither figure could be confirmed in the content actually retrieved from the two official ICA pages fetched directly (they did not contain numeric head-size specs in the text returned) - the real numbers likely live in a graphical 'Dos and Don'ts' PDF/infographic we could not access as text. Recording both conflicting values with low confidence; do not treat either as authoritative without further verification." },
-            { "category": "headHeightMaxMm", "value": null, "unit": "mm", "mappedToSchemaField": "headHeightMaxMm", "confidence": "low", "sourceName": "See headHeightMinMm note - conflicting values 36mm vs 35mm found", "sourceUrl": "https://www.ica.gov.sg/photo-guidelines", "notes": "Same conflict as headHeightMinMm." },
-            { "category": "eyeLineFromBottomMm", "value": null, "unit": "mm", "mappedToSchemaField": "eyeLineFromBottomMm", "confidence": "n/a", "sourceName": "", "sourceUrl": "", "notes": "Not found stated." },
-            { "category": "marginTopMm", "value": null, "unit": "mm", "mappedToSchemaField": "marginTopMm", "confidence": "n/a", "sourceName": "", "sourceUrl": "", "notes": "Not found stated." },
-            { "category": "chinPositionFromBottomMm", "value": null, "unit": "mm", "mappedToSchemaField": null, "confidence": "n/a", "sourceName": "", "sourceUrl": "", "notes": "Not found stated." },
-            { "category": "headWidthMinMm", "value": null, "unit": "mm", "mappedToSchemaField": "headWidthMinMm", "confidence": "n/a", "sourceName": "", "sourceUrl": "", "notes": "Not found stated." },
-            { "category": "headWidthMaxMm", "value": null, "unit": "mm", "mappedToSchemaField": "headWidthMaxMm", "confidence": "n/a", "sourceName": "", "sourceUrl": "", "notes": "Not found stated." },
-            { "category": "bothEarsVisibleRequired", "value": null, "unit": null, "mappedToSchemaField": null, "confidence": "n/a", "sourceName": "", "sourceUrl": "", "notes": "Not found stated." },
-            { "category": "horizontalCenteringTolerance", "value": null, "unit": null, "mappedToSchemaField": null, "confidence": "n/a", "sourceName": "", "sourceUrl": "", "notes": "Only a qualitative 'both eyes at the same level, head not tilted' rule was found (see poseToleranceDegrees note), which is not a numeric centering tolerance." },
-            { "category": "poseToleranceDegrees", "value": null, "unit": "degrees", "mappedToSchemaField": null, "confidence": "n/a", "sourceName": "", "sourceUrl": "", "notes": "Qualitative guidance only ('head straight, eyes level, looking directly at camera') found via secondary sources; no numeric degree tolerance stated anywhere." },
-            { "category": "eyeVisibilityZonePercent", "value": null, "unit": "percent", "mappedToSchemaField": null, "confidence": "n/a", "sourceName": "", "sourceUrl": "", "notes": "Not found stated." },
-            { "category": "backgroundColor", "value": "Plain white background, free of patterns/shadows/reflections", "unit": null, "mappedToSchemaField": "backgroundRequirement", "confidence": "high", "sourceName": "ICA (official, directly fetched)", "sourceUrl": "https://www.ica.gov.sg/documents/passport/apply", "notes": "" },
-            { "category": "backgroundColorHex", "value": "#FFFFFF", "unit": null, "mappedToSchemaField": "backgroundColorHex", "confidence": "high", "sourceName": "ICA (official)", "sourceUrl": "https://www.ica.gov.sg/documents/passport/apply", "notes": "" },
-            { "category": "lightingRequirement", "value": "No shadows, no reflections; printed photo must have a matte or semi-matte (non-reflective) finish", "unit": null, "mappedToSchemaField": null, "confidence": "high", "sourceName": "ICA (official, directly fetched)", "sourceUrl": "https://www.ica.gov.sg/photo-guidelines", "notes": "" },
-            { "category": "expressionRequirement", "value": "Neutral expression, mouth closed, eyes open and clearly visible", "unit": null, "mappedToSchemaField": null, "confidence": "medium", "sourceName": "Secondary sources describing ICA guidance", "sourceUrl": "https://passlens.com/blog/singapore-passport-photo-guide", "notes": "" },
-            { "category": "glassesPolicy", "value": "No sunglasses or tinted lenses; frames must not obscure the eyes; no glare on lenses", "unit": null, "mappedToSchemaField": null, "confidence": "medium", "sourceName": "Secondary sources describing ICA guidance", "sourceUrl": "https://passlens.com/blog/singapore-passport-photo-guide", "notes": "" },
-            { "category": "headCoveringPolicy", "value": "Headgear generally not permitted; headgear worn in accordance with religious or racial customs is acceptable but must not hide the facial features", "unit": null, "mappedToSchemaField": null, "confidence": "high", "sourceName": "ICA (official, via search-engine content synthesis of the ICA guidelines page)", "sourceUrl": "https://ask.gov.sg/ica/questions/clos83fvx01lz5k0wkrclrdwg", "notes": "" },
-            { "category": "recencyMonths", "value": 3, "unit": "months", "mappedToSchemaField": null, "confidence": "high", "sourceName": "ICA (official, directly fetched)", "sourceUrl": "https://www.ica.gov.sg/documents/passport/apply", "notes": "'A passport-sized, digital, colour photograph taken within the last three months.'" },
-            { "category": "colorRequirement", "value": "Full color required", "unit": null, "mappedToSchemaField": null, "confidence": "high", "sourceName": "ICA (official, directly fetched)", "sourceUrl": "https://www.ica.gov.sg/documents/passport/apply", "notes": "'A new coloured photograph must be submitted.'" },
-            { "category": "printPaperRequirement", "value": "Matte or semi-matte (non-reflective) finish for printed hardcopy submissions", "unit": null, "mappedToSchemaField": "printNotes", "confidence": "high", "sourceName": "ICA (official, directly fetched)", "sourceUrl": "https://www.ica.gov.sg/photo-guidelines", "notes": "" },
-            { "category": "copiesRequired", "value": 2, "unit": "count", "mappedToSchemaField": "copiesPerSheet", "confidence": "high", "sourceName": "High Commission of the Republic of Singapore in London (official diplomatic mission, directly fetched)", "sourceUrl": "https://london.mfa.gov.sg/consular-services/apply-for-or-renew-singapore-passport/", "notes": "'2 recent photographs that meet the specifications stated in ICA's website.'" },
-            { "category": "digitalFileRequirement", "value": "400x514 pixels, JPEG/JPG/HEIC/HEIF/PNG format, maximum 8MB", "unit": null, "mappedToSchemaField": null, "confidence": "high", "sourceName": "ICA (official, directly fetched)", "sourceUrl": "https://www.ica.gov.sg/photo-guidelines", "notes": "CONFLICT: several low-confidence third-party aggregator sites instead claim a much smaller max file size (60KB, or a 10-60KB range). The officially fetched ICA page clearly states 8MB, which is treated as authoritative here; the 60KB claims are likely outdated or confused with a different, older ICA spec." }
+            {
+              "category": "photoWidthMm",
+              "value": 35,
+              "unit": "mm",
+              "mappedToSchemaField": "photoWidthMm",
+              "confidence": "medium",
+              "sourceName": "Immigration & Checkpoints Authority (ICA) - directly-fetched official pages state pixel dimensions but not mm; the 35x45mm figure comes from consistent secondary citation of the same ICA standard",
+              "sourceUrl": "https://www.ica.gov.sg/photo-guidelines",
+              "notes": "Directly fetched ica.gov.sg/photo-guidelines and ica.gov.sg/documents/passport/apply; neither returned an explicit mm figure in the retrieved content (they state pixel size and finish only), so the mm figure itself is medium- rather than high-confidence despite the URL being verified official."
+            },
+            {
+              "category": "photoHeightMm",
+              "value": 45,
+              "unit": "mm",
+              "mappedToSchemaField": "photoHeightMm",
+              "confidence": "medium",
+              "sourceName": "ICA (see note on photoWidthMm)",
+              "sourceUrl": "https://www.ica.gov.sg/photo-guidelines",
+              "notes": ""
+            },
+            {
+              "category": "dpi",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": "dpi",
+              "confidence": "n/a",
+              "sourceName": "",
+              "sourceUrl": "",
+              "notes": "CONFLICT: the official ica.gov.sg page (directly fetched) states only pixel dimensions (400x514) and an 8MB max file size, with no DPI mentioned. A low-confidence third-party aggregator separately claims 'at least 600 dpi'. Recording as n/a per the official primary source, with the conflicting low-confidence claim noted here for completeness."
+            },
+            {
+              "category": "headHeightMinMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "headHeightMinMm",
+              "confidence": "low",
+              "sourceName": "CONFLICTING secondary aggregator claims - see notes",
+              "sourceUrl": "https://www.ica.gov.sg/photo-guidelines",
+              "notes": "CONFLICT: one set of aggregator sources states chin-to-crown head size of 32-36mm; a different set states 25-35mm occupying 70-80% of photo height. Neither figure could be confirmed in the content actually retrieved from the two official ICA pages fetched directly (they did not contain numeric head-size specs in the text returned) - the real numbers likely live in a graphical 'Dos and Don'ts' PDF/infographic we could not access as text. Recording both conflicting values with low confidence; do not treat either as authoritative without further verification."
+            },
+            {
+              "category": "headHeightMaxMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "headHeightMaxMm",
+              "confidence": "low",
+              "sourceName": "See headHeightMinMm note - conflicting values 36mm vs 35mm found",
+              "sourceUrl": "https://www.ica.gov.sg/photo-guidelines",
+              "notes": "Same conflict as headHeightMinMm."
+            },
+            {
+              "category": "eyeLineFromBottomMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "eyeLineFromBottomMm",
+              "confidence": "n/a",
+              "sourceName": "",
+              "sourceUrl": "",
+              "notes": "Not found stated."
+            },
+            {
+              "category": "marginTopMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "marginTopMm",
+              "confidence": "n/a",
+              "sourceName": "",
+              "sourceUrl": "",
+              "notes": "Not found stated."
+            },
+            {
+              "category": "chinPositionFromBottomMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": "",
+              "sourceUrl": "",
+              "notes": "Not found stated."
+            },
+            {
+              "category": "headWidthMinMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "headWidthMinMm",
+              "confidence": "n/a",
+              "sourceName": "",
+              "sourceUrl": "",
+              "notes": "Not found stated."
+            },
+            {
+              "category": "headWidthMaxMm",
+              "value": null,
+              "unit": "mm",
+              "mappedToSchemaField": "headWidthMaxMm",
+              "confidence": "n/a",
+              "sourceName": "",
+              "sourceUrl": "",
+              "notes": "Not found stated."
+            },
+            {
+              "category": "bothEarsVisibleRequired",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": "",
+              "sourceUrl": "",
+              "notes": "Not found stated."
+            },
+            {
+              "category": "horizontalCenteringTolerance",
+              "value": null,
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": "",
+              "sourceUrl": "",
+              "notes": "Only a qualitative 'both eyes at the same level, head not tilted' rule was found (see poseToleranceDegrees note), which is not a numeric centering tolerance."
+            },
+            {
+              "category": "poseToleranceDegrees",
+              "value": null,
+              "unit": "degrees",
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": "",
+              "sourceUrl": "",
+              "notes": "Qualitative guidance only ('head straight, eyes level, looking directly at camera') found via secondary sources; no numeric degree tolerance stated anywhere."
+            },
+            {
+              "category": "eyeVisibilityZonePercent",
+              "value": null,
+              "unit": "percent",
+              "mappedToSchemaField": null,
+              "confidence": "n/a",
+              "sourceName": "",
+              "sourceUrl": "",
+              "notes": "Not found stated."
+            },
+            {
+              "category": "backgroundColor",
+              "value": "Plain white background, free of patterns/shadows/reflections",
+              "unit": null,
+              "mappedToSchemaField": "backgroundRequirement",
+              "confidence": "high",
+              "sourceName": "ICA (official, directly fetched)",
+              "sourceUrl": "https://www.ica.gov.sg/documents/passport/apply",
+              "notes": ""
+            },
+            {
+              "category": "backgroundColorHex",
+              "value": "#FFFFFF",
+              "unit": null,
+              "mappedToSchemaField": "backgroundColorHex",
+              "confidence": "high",
+              "sourceName": "ICA (official)",
+              "sourceUrl": "https://www.ica.gov.sg/documents/passport/apply",
+              "notes": ""
+            },
+            {
+              "category": "lightingRequirement",
+              "value": "No shadows, no reflections; printed photo must have a matte or semi-matte (non-reflective) finish",
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "high",
+              "sourceName": "ICA (official, directly fetched)",
+              "sourceUrl": "https://www.ica.gov.sg/photo-guidelines",
+              "notes": ""
+            },
+            {
+              "category": "expressionRequirement",
+              "value": "Neutral expression, mouth closed, eyes open and clearly visible",
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "medium",
+              "sourceName": "Secondary sources describing ICA guidance",
+              "sourceUrl": "https://passlens.com/blog/singapore-passport-photo-guide",
+              "notes": ""
+            },
+            {
+              "category": "glassesPolicy",
+              "value": "No sunglasses or tinted lenses; frames must not obscure the eyes; no glare on lenses",
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "medium",
+              "sourceName": "Secondary sources describing ICA guidance",
+              "sourceUrl": "https://passlens.com/blog/singapore-passport-photo-guide",
+              "notes": ""
+            },
+            {
+              "category": "headCoveringPolicy",
+              "value": "Headgear generally not permitted; headgear worn in accordance with religious or racial customs is acceptable but must not hide the facial features",
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "high",
+              "sourceName": "ICA (official, via search-engine content synthesis of the ICA guidelines page)",
+              "sourceUrl": "https://ask.gov.sg/ica/questions/clos83fvx01lz5k0wkrclrdwg",
+              "notes": ""
+            },
+            {
+              "category": "recencyMonths",
+              "value": 3,
+              "unit": "months",
+              "mappedToSchemaField": null,
+              "confidence": "high",
+              "sourceName": "ICA (official, directly fetched)",
+              "sourceUrl": "https://www.ica.gov.sg/documents/passport/apply",
+              "notes": "'A passport-sized, digital, colour photograph taken within the last three months.'"
+            },
+            {
+              "category": "colorRequirement",
+              "value": "Full color required",
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "high",
+              "sourceName": "ICA (official, directly fetched)",
+              "sourceUrl": "https://www.ica.gov.sg/documents/passport/apply",
+              "notes": "'A new coloured photograph must be submitted.'"
+            },
+            {
+              "category": "printPaperRequirement",
+              "value": "Matte or semi-matte (non-reflective) finish for printed hardcopy submissions",
+              "unit": null,
+              "mappedToSchemaField": "printNotes",
+              "confidence": "high",
+              "sourceName": "ICA (official, directly fetched)",
+              "sourceUrl": "https://www.ica.gov.sg/photo-guidelines",
+              "notes": ""
+            },
+            {
+              "category": "copiesRequired",
+              "value": 2,
+              "unit": "count",
+              "mappedToSchemaField": "copiesPerSheet",
+              "confidence": "high",
+              "sourceName": "High Commission of the Republic of Singapore in London (official diplomatic mission, directly fetched)",
+              "sourceUrl": "https://london.mfa.gov.sg/consular-services/apply-for-or-renew-singapore-passport/",
+              "notes": "'2 recent photographs that meet the specifications stated in ICA's website.'"
+            },
+            {
+              "category": "digitalFileRequirement",
+              "value": "400x514 pixels, JPEG/JPG/HEIC/HEIF/PNG format, maximum 8MB",
+              "unit": null,
+              "mappedToSchemaField": null,
+              "confidence": "high",
+              "sourceName": "ICA (official, directly fetched)",
+              "sourceUrl": "https://www.ica.gov.sg/photo-guidelines",
+              "notes": "CONFLICT: several low-confidence third-party aggregator sites instead claim a much smaller max file size (60KB, or a 10-60KB range). The officially fetched ICA page clearly states 8MB, which is treated as authoritative here; the 60KB claims are likely outdated or confused with a different, older ICA spec."
+            }
           ]
         }
       ]
