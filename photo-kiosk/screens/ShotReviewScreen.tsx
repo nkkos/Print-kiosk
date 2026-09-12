@@ -148,7 +148,7 @@ export function ShotReviewScreen({
                 <span className="pk-shot-legend-buttons">
                   <button
                     type="button"
-                    className="pk-qty-btn"
+                    className="pk-nudge-btn"
                     id={`shot-review-nudge-${line.key}-neg`}
                     onClick={() => nudge(line.key, -1)}
                     aria-label={`${line.label}: сдвинуть ${horizontal ? 'влево' : 'вверх'}`}
@@ -157,7 +157,7 @@ export function ShotReviewScreen({
                   </button>
                   <button
                     type="button"
-                    className="pk-qty-btn"
+                    className="pk-nudge-btn"
                     id={`shot-review-nudge-${line.key}-pos`}
                     onClick={() => nudge(line.key, 1)}
                     aria-label={`${line.label}: сдвинуть ${horizontal ? 'вправо' : 'вниз'}`}

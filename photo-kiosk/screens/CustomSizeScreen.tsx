@@ -9,8 +9,8 @@ interface CustomSizeScreenProps {
 // required; everything else is optional and deliberately not forced as if the
 // customer knows precise official numbers (confirmed 2026-08-25: most don't, even
 // when their document has real requirements). Left blank, sensible defaults apply
-// at capture time (cropUtil.ts's DEFAULT_MARGIN_RATIO/DEFAULT_EYE_LINE_RATIO/
-// DEFAULT_HEAD_HEIGHT_RATIO) rather than this screen guessing at anything itself.
+// at capture time (cropUtil.ts's DEFAULT_EYE_LINE_RATIO/DEFAULT_HEAD_HEIGHT_RATIO)
+// rather than this screen guessing at anything itself.
 //
 // headHeightMinMm/MaxMm and backgroundColorHex added 2026-09 after country
 // research showed these are the two most commonly published requirements this
@@ -18,6 +18,11 @@ interface CustomSizeScreenProps {
 // detected-face crop scale (cropUtil.ts's computeCropSize) instead of the
 // cruder frame-relative fallback, so filling it in (even approximately)
 // noticeably improves crop accuracy for a document we don't have preset.
+// headWidthMinMm/MaxMm added alongside for the same reason, even though the
+// same research found it published far less often (~2% of documents) — the
+// crop pipeline already fully supports it (guide brackets, crop-bounds
+// clamp), so exposing it here cost nothing once head-height was already
+// being added.
 export function CustomSizeScreen({ onConfirm }: CustomSizeScreenProps) {
   const [widthMm, setWidthMm] = useState('35');
   const [heightMm, setHeightMm] = useState('45');
@@ -25,7 +30,10 @@ export function CustomSizeScreen({ onConfirm }: CustomSizeScreenProps) {
   const [eyeLevelMm, setEyeLevelMm] = useState('');
   const [headHeightMinMm, setHeadHeightMinMm] = useState('');
   const [headHeightMaxMm, setHeadHeightMaxMm] = useState('');
+  const [headWidthMinMm, setHeadWidthMinMm] = useState('');
+  const [headWidthMaxMm, setHeadWidthMaxMm] = useState('');
   const [backgroundColorHex, setBackgroundColorHex] = useState<string | undefined>(undefined);
+  const [instructions, setInstructions] = useState('');
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -40,7 +48,10 @@ export function CustomSizeScreen({ onConfirm }: CustomSizeScreenProps) {
       eyeLineFromBottomMm: eyeLevelMm ? Number(eyeLevelMm) : undefined,
       headHeightMinMm: headHeightMinMm ? Number(headHeightMinMm) : undefined,
       headHeightMaxMm: headHeightMaxMm ? Number(headHeightMaxMm) : undefined,
+      headWidthMinMm: headWidthMinMm ? Number(headWidthMinMm) : undefined,
+      headWidthMaxMm: headWidthMaxMm ? Number(headWidthMaxMm) : undefined,
       backgroundColorHex,
+      instructions: instructions.trim() || undefined,
     });
   }
 
@@ -118,6 +129,28 @@ export function CustomSizeScreen({ onConfirm }: CustomSizeScreenProps) {
             />
           </label>
         </div>
+        <div className="pk-form-row">
+          <label>
+            Ширина головы от, мм
+            <input
+              type="number"
+              id="custom-size-head-width-min"
+              className="pk-input"
+              value={headWidthMinMm}
+              onChange={(e) => setHeadWidthMinMm(e.target.value)}
+            />
+          </label>
+          <label>
+            Ширина головы до, мм
+            <input
+              type="number"
+              id="custom-size-head-width-max"
+              className="pk-input"
+              value={headWidthMaxMm}
+              onChange={(e) => setHeadWidthMaxMm(e.target.value)}
+            />
+          </label>
+        </div>
         <div className="pk-form-row pk-background-color-row">
           <span className="pk-form-hint" style={{ margin: 0 }}>
             Цвет фона
@@ -138,6 +171,19 @@ export function CustomSizeScreen({ onConfirm }: CustomSizeScreenProps) {
               Сбросить (не менять фон)
             </button>
           )}
+        </div>
+        <div className="pk-form-row">
+          <label>
+            Особые требования (необязательно)
+            <textarea
+              id="custom-size-instructions"
+              className="pk-input"
+              rows={2}
+              placeholder="Например: без очков, нейтральное выражение лица"
+              value={instructions}
+              onChange={(e) => setInstructions(e.target.value)}
+            />
+          </label>
         </div>
         <button type="submit" className="pk-btn pk-btn-primary" id="custom-size-submit">
           Далее

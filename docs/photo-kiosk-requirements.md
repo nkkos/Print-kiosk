@@ -44,9 +44,51 @@ enough that head-top is always an approximation, even in commercial passport-pho
 tools. Budget for this being "close, not pixel-perfect" regardless of which detection
 technology is used.
 
-**Not yet done**: real-world testing of MediaPipe's accuracy against the kiosk's
-actual camera and booth lighting — this needs to happen before the approach above is
-treated as fully validated, not just theoretically sound.
+**Implemented 2026-09** (superseding the "candidates" framing above): all three
+layers are now real, not theoretical.
+
+- **Detection**: MediaPipe `FaceLandmarker`, self-hosted (WASM + model files under
+  `public/models/`, no CDN/network dependency at capture time — the kiosk's own
+  offline/no-server-side-photo-data posture applies here too). Eye-line from the two
+  iris landmarks, chin from the face-oval's lowest point, crown estimated by dividing
+  the measured eye-to-chin distance by ~0.52 (a standard facial-proportion constant)
+  and extrapolating upward — the same "close, not pixel-perfect" caveat above,
+  grounded in a real measurement instead of an assumed average.
+- **Crop/scale**: a two-phase flow, not a single automatic crop. Capture produces a
+  _generous_ crop (wider than the final document size) around the detected (or, if
+  detection found no single clear face, a heuristic-estimated) landmarks; the
+  customer can drag each landmark line — or nudge it with +/− buttons — on the
+  "Подтвердите кадр" review screen before the actual tight crop is cut. This exists
+  because an early version silently trusted detection, and real-camera testing found
+  it could crop off the customer's own head when a real detected crown didn't match
+  a document's implicit proportions — the fix was manual correctability, not a
+  smarter model. Vertical anchoring prefers a direct top-margin figure (when a
+  document publishes one, e.g. China- or Schengen-style specs) over deriving position
+  from the eye-line, specifically because the latter requires assuming eyeLineY sits
+  at a "standard" fraction of head-height that a real detected/adjusted head doesn't
+  always match — plus a hard clamp so the crop can never exclude a landmark the
+  customer placed, regardless of anchor. The kiosk **never refuses a shot** over
+  camera distance, ambiguous detection (no face / more than one face), or anything
+  else discovered so far — it falls back to a heuristic estimate and lets the
+  customer fix it, rather than blocking a paying customer.
+- **Background replacement** (see the revised "AI бэкграунд" section below for why
+  this moved out of that branch): classical colour-distance chroma-keying against the
+  booth's own known physical backdrop colour (`photo-kiosk/chromaKey.ts`), not ML
+  segmentation. A real ML approach (MediaPipe `ImageSegmenter`) was built first and is
+  still in the codebase (`backgroundSegmentation.ts`) but unused — real-camera testing
+  found it performed _worse_ on a saturated/contrasting backdrop than on a plain wall,
+  since the general-purpose selfie-segmenter model is trained on natural photos and
+  treats an artificial solid-colour backdrop as out-of-distribution input, not the
+  easy case a colour-distance keyer treats it as.
+
+**Not yet done / needs real-hardware verification**: everything above has been
+tested against the kiosk's actual camera and a real face at least once, but several
+specific paths have only been exercised through Chromium's synthetic fake-camera
+pattern in automated testing (which has no detectable face, so it only exercises the
+no-face fallback) — real per-face testing of the draggable-landmark adjustment, the
+multiple-faces-detected fallback (no way to simulate two faces with the synthetic
+camera), and chroma-key against the _real_ installed backdrop (still placeholder
+green in code) are the concrete open gaps, not just a generic "needs more testing."
 
 ## Branch: "Фото на документы" (document photo)
 
@@ -84,12 +126,24 @@ know and enter themselves — not a full manual re-entry of every field an admin
 managed Document carries.
 
 - **Required**: target photo width × height.
-- **Optional, the most common of the crop-driving fields**: margin/distance from the
-  image edges, and eye level. Left blank rather than forced, since most customers
-  won't know their exact document's official numbers even when one exists.
-- **If the optional fields are left blank**: apply a standard default crop (sensible
-  default margins/eye position) rather than blocking or guessing wildly. The actual
-  default values aren't chosen yet — open item below.
+- **Optional fields, as of 2026-09**: margin-from-top OR eye-line-from-bottom (either
+  anchor, same duality as a stored Document — see "Requirement data model" below),
+  head-height range (min/max mm), head-width range (min/max mm), background colour,
+  and free-text "особые требования" instructions shown back to the customer on the
+  confirm screen. Head-height/width and background were added after the country
+  photo-requirements research (see "Sourcing requirement data" below) showed these
+  were the two most commonly published requirements this branch didn't yet expose —
+  head-height in particular is what calibrates the real detected-face crop scale
+  instead of a cruder frame-relative fallback, so filling it in (even approximately)
+  measurably improves crop accuracy for a document with no preset.
+- **Default crop values — resolved 2026-09** (was an open item): left blank, the
+  head-height ratio defaults to 75% of the target photo height — not an arbitrary
+  guess, but the single most common exact figure found across the country research
+  (34mm head on a 45mm photo, shared by Australia, New Zealand, Japan, South Korea,
+  the Philippines and Kazakhstan). The eye-line ratio defaults to 55% of photo height
+  when neither margin nor eye-line is given. Both defaults feed the _same_ real
+  detected-landmark-based crop math a filled-in value would — a blank field never
+  falls back to a disconnected "just guess a generic box" heuristic.
 - Otherwise reuses the same downstream flow as "Фото на документы" (photographing,
   multi-shot gallery, cart/payment/print) and the same crop-calculation engine (layer
   2 from "Confirmed technical approach" above) — this branch only changes _where the
@@ -105,7 +159,20 @@ output on more than just plain photo paper. **Also covers the plain, unmodified
 10×15 print** (see the revised menu note above) — picking no background/mask/beautify
 effect is a valid path through this same branch, not a gap.
 
-**Confirmed 2026-08-25, background replacement**: a curated library of backgrounds we
+**Revised 2026-09**: plain solid-colour background replacement (matching a
+document's required background colour, e.g. white/blue/grey) moved out of this
+branch entirely and became a core, mandatory part of "Фото на документы" instead —
+the product owner confirmed real-world document compliance needed it unconditionally,
+not as an optional creative extra gated behind an experimental branch. See the
+"Confirmed technical approach" section above for how it's actually implemented
+(chroma-key, not ML segmentation). **This branch's own scope is narrower than the
+2026-08-25 note below now implies**: curated _scenic/decorative_ backgrounds (designed
+images, not a solid compliance colour) for souvenir-style portraits — still
+unimplemented, still an open item.
+
+**Confirmed 2026-08-25, background replacement** _(original scope note, now narrowed
+per the revision above — the curated-library approach itself is still the plan for
+decorative backgrounds specifically)_: a curated library of backgrounds we
 design/select ourselves and composite the segmented portrait onto — **not** live
 generative-AI image creation per customer. Deliberately the simpler, cheaper, more
 predictable option; live generation was considered and explicitly rejected for now
@@ -181,20 +248,34 @@ Two entities:
 - **Document** — belongs to one Country, carries:
   - Label (e.g. "Туристическая виза") — what actually shows in the document-type list
     once a country is picked.
-  - **Crop-driving fields**: photo width/height (with unit + DPI), head-height
-    min/max, eye-line position from the photo's bottom edge.
-  - **Format/print fields**: background color/requirement, print/paper notes
-    (glossy/matte, copies per sheet).
+  - **Crop-driving fields, as actually implemented (2026-09)**: photo width/height,
+    DPI, head-height min/max, head-width min/max (rare — e.g. China-style specs —
+    but fully supported: crop-bounds clamp, live on-screen brackets), and **one of
+    two** vertical anchors — eye-line-from-bottom (most issuers) or margin-top-to-
+    crown (China-/Schengen-style specs that publish a top clearance instead of, or
+    alongside, an eye-line). A document may set both; the margin-top anchor is
+    preferred when both a document figure and a real detected crown landmark are
+    available, since it needs no assumption about where the eye-line sits relative
+    to head-height (see "Confirmed technical approach" above).
+  - **Format/print fields**: `backgroundRequirement` (free text, for rules that don't
+    reduce to one colour, e.g. "grey or blue, white forbidden") **and**
+    `backgroundColorHex` (a structured `#RRGGBB` the chroma-key replacement actually
+    targets — added 2026-09, since the free-text field alone can't drive an
+    algorithm), print/paper notes (glossy/matte, copies per sheet).
   - **Instruction text (not automatically validated yet)** — free-form guidance shown
     to the customer before capture (neutral expression, no glasses glare, headwear
     rules, photo-recency reminder, etc.). **Confirmed as a deliberate phase
     boundary**: not checked automatically in this pass, but explicitly expected to
     become real automatic validation later — flagged here so it doesn't get
-    forgotten as scope, not dropped as a rejected idea.
+    forgotten as scope, not dropped as a rejected idea. `recencyMonths` specifically
+    was considered and rejected as a structured field: the kiosk always captures a
+    live photo, so recency is automatically satisfied and a stored value would have
+    no purpose beyond decoration.
 
-Where this data actually gets entered/edited (likely the admin panel, mirroring the
-shop catalog's own add/edit form pattern — country picker/create, then a document
-form nested under it) is the next thing to design, not done yet.
+**Implemented 2026-09** (was "next thing to design"): entered/edited through the
+admin panel (`admin/screens/PhotoDocumentsScreen.tsx`) — country picker/create, then
+a document form nested under it, mirroring the shop catalog's own pattern as
+expected.
 
 ## Open items
 
@@ -207,9 +288,6 @@ form nested under it) is the next thing to design, not done yet.
   dropped if quality isn't acceptable.
 - **Magnetic/postcard printing hardware** — a real vendor category exists (dedicated
   photo-magnet kiosks) but no specific vendor/spec has been vetted yet.
-- **Default crop values for "Произвольный размер"** — when the optional
-  margin/eye-level fields are left blank, what the standard default actually is (a
-  concrete margin and eye-line ratio) isn't chosen yet.
 - **Camera hardware** — the pavilion floor plan places the camera roughly 2m from
   the customer for portrait shots; no specific camera model/spec chosen yet.
 - **Printer hardware** — up to three distinct printing needs now surfaced: document
@@ -217,11 +295,55 @@ form nested under it) is the next thing to design, not done yet.
   postcard/magnet stock (a dedicated photo-magnet-style printer, vendor unvetted),
   and photo-strip output (**confirmed as its own dedicated printer**, separate from
   the other two). None of the actual hardware is chosen yet.
-- **Sourcing requirement data faster than fully manual research** — some existing
-  commercial datasets/compilations were surfaced during discovery (e.g. vendors
-  claiming 130+ country coverage) — worth using as a cross-check/starting point even
-  though the final data stays self-maintained, not licensed from them.
-- **Local-institution-specific requirements** — confirmed in scope, but no sourcing
-  process defined yet (unlike countries, these aren't centrally published anywhere
-  obvious).
-- **Custom size branch** ("Произвольный размер") — not discovered at all yet.
+- **Sourcing requirement data — attempted at scale 2026-09, scope narrowed after**:
+  parallel research agents collected official passport/visa/ID-photo requirements for
+  ~30 countries plus a Slovakia-specific pass (published as a filterable reference —
+  see `docs/photo-requirements-data/`), following a 25-item checklist far broader
+  than our current schema (chin-position-from-bottom, both-ears-visible, pose
+  tolerance, lighting/expression/glasses/headwear policy, etc. — cross-referenced
+  against `photo_documents` to flag what has no schema home yet). **Mid-research
+  realization**: most of that data has low real-world relevance to a kiosk physically
+  in Bratislava — nobody there realistically applies for an Egyptian or Nigerian
+  passport, and Slovak/EU residents don't need a Schengen visa at all (freedom of
+  movement) or a visa for several other researched countries either (confirmed
+  visa-free for Slovaks: Turkey, Kazakhstan, Uzbekistan, Ukraine for short stays).
+  EU/Schengen research was paused pending a rethink of which EU-country documents a
+  Bratislava resident could actually need (national passports turned out to need
+  on-site consulate biometric capture too, same as Slovakia's own — see "Local-
+  institution-specific requirements" below; an EU emergency/replacement travel
+  document for a lost passport looks like the more promising angle, partially
+  confirmed via the German embassy's own Bratislava page, not yet researched
+  systematically). **Current direction, not yet decided**: de-prioritize further
+  per-country research in favour of strengthening "Произвольный размер" as the
+  primary path for anything not already validated as real local demand, since it
+  requires no pre-research to cover an arbitrary document.
+- **Local-institution-specific requirements — first real pass done 2026-09,
+  Slovakia only**: discovery research confirmed the Slovak passport, national ID
+  card, and domestic driver's licence all now use on-site biometric photo capture at
+  the police document office — a kiosk photo is not accepted for any of the three,
+  narrowing this branch's real Slovak opportunity considerably. Confirmed genuine
+  self-supplied-photo candidates instead: firearms licence, hunting licence,
+  international driving permit (unusually requires a three-quarter profile pose, not
+  frontal — not something the current geometric crop pipeline handles), foreign-
+  national residence permits, the ZŤP disability card, Comenius University's
+  ISIC/student card (digital-upload, not print — a different output path than
+  anything else this kiosk produces), a private-security-guard badge (also
+  three-quarter profile), and the Bratislava transit card. Same on-site-capture
+  pattern should be assumed for other countries' passports/ID cards until proven
+  otherwise, not re-discovered per country.
+- **"Send me a copy" (email / QR download) — implemented 2026-09, not originally
+  discovered in this document**: after a successful print, the customer can email
+  themselves the photo or scan a one-time QR code to download it, from
+  `FinalisingSessionScreen`. A deliberate, narrow exception to this kiosk's own
+  no-photo-data-server-side posture — see `server/photoShareStore.ts`'s own comment
+  for why it's needed and how it's kept narrow (in-memory only, one-time-use, short
+  TTL, never disk or database).
+- **Real-hardware verification gaps, as of 2026-09**: the draggable-landmark-
+  adjustment review screen's touch targets were measured at 28px and enlarged to the
+  44px WCAG/iOS-HIG minimum, but real-finger dragging on the actual kiosk touchscreen
+  is still unverified (only mouse-driven automated testing so far). The multiple-
+  faces-detected fallback path has never actually fired in any test (no way to
+  simulate two faces with Chromium's synthetic fake-camera pattern used for automated
+  testing). Chroma-key background replacement is only verified against Chromium's
+  synthetic camera and a placeholder backdrop colour — real backdrop material/colour
+  and real booth lighting remain unverified.
