@@ -152,6 +152,19 @@ input {
   cursor: default;
   border-color: var(--color-border);
 }
+.pk-look-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-s);
+  padding: var(--space-s);
+}
+.pk-look-thumb {
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+  border-radius: var(--radius-medium);
+}
 
 /* ---------- Select country ---------- */
 

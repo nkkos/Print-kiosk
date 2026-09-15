@@ -8,17 +8,18 @@
 // class of model — trained and benchmarked specifically for hair-level
 // alpha detail, not just a person/not-person mask — and, unlike chroma-
 // key, needs no known backdrop colour at all, so it's a candidate for
-// BOTH "Фото на документы" and "AI бэкграунд", not just the former.
+// BOTH "Фото на документы" (recolorBackground, a solid compliance colour)
+// and "AI бэкграунд" (compositeOntoImageBackground, a decorative picture
+// — 2026-09-15, added once that branch's own discovery reached its first
+// technical build).
 //
-// 2026-09-15: NOT yet validated against our real camera/lighting — this
-// is a first implementation to test, following the same real-capture
-// verification discipline this session already applied to chroma-key,
-// not a claim that it's already proven better. See the "Способы замены
-// фона" research artifact for the full comparison and why MODNet was
-// picked over RobustVideoMatting (better hair benchmarks, but GPL-3.0 —
-// a real licensing risk for a closed commercial product) and
-// BackgroundMattingV2 (comparable, but needs an extra captured
-// empty-backdrop reference frame that MODNet doesn't).
+// 2026-09-15: NOT yet validated against our real camera/lighting beyond
+// this session's own ad-hoc tests — see the "Способы замены фона"
+// research artifact for the full comparison and why MODNet was picked
+// over RobustVideoMatting (better hair benchmarks, but GPL-3.0 — a real
+// licensing risk for a closed commercial product) and BackgroundMattingV2
+// (comparable, but needs an extra captured empty-backdrop reference frame
+// that MODNet doesn't).
 //
 // Model: DavG25/modnet-pretrained-models on Hugging Face (Apache-2.0),
 // self-hosted at public/models/modnet.onnx (~25MB) rather than fetched
@@ -86,22 +87,35 @@ export function preloadBackgroundRemoval(): void {
   void getSession();
 }
 
-/** Replaces everything MODNet doesn't classify as the person with a solid
- * `targetHex` background — returns a new canvas. Async signature matches
- * chromaKey.ts/backgroundSegmentation.ts's same-named export so
- * CaptureScreen.tsx can swap between them by changing one import line. */
-export async function recolorBackground(
-  source: HTMLVideoElement | HTMLCanvasElement,
-  targetHex: string,
-): Promise<HTMLCanvasElement> {
-  const width = 'videoWidth' in source ? source.videoWidth : source.width;
-  const height = 'videoHeight' in source ? source.videoHeight : source.height;
+interface Matte {
+  width: number;
+  height: number;
+  /** Full-resolution, already-blurred alpha (0-1) at index `y*width+x`. */
+  alphaAt: (i: number) => number;
+  /** Un-mixes this capture's own estimated backdrop colour out of a
+   * partially-transparent pixel before it's recomposited onto something
+   * else — see the spill-suppression comment inside computeMatte. */
+  correctChannel: (original: number, bg: 'r' | 'g' | 'b', alpha: number) => number;
+  bgR: number;
+  bgG: number;
+  bgB: number;
+}
 
-  const fullCanvas = document.createElement('canvas');
-  fullCanvas.width = width;
-  fullCanvas.height = height;
+/** Runs MODNet on `source`, drawn at its native resolution onto `fullCanvas`
+ * (caller-owned, so both the flat-colour and image-background compositors
+ * can reuse the exact same original pixels without redrawing). Returns the
+ * full-resolution alpha matte plus everything needed for spill suppression
+ * — shared by recolorBackground and compositeOntoImageBackground so the
+ * actual ONNX inference and matte post-processing exist in exactly one
+ * place. */
+async function computeMatte(
+  source: HTMLVideoElement | HTMLCanvasElement | HTMLImageElement,
+  width: number,
+  height: number,
+  fullCanvas: HTMLCanvasElement,
+): Promise<Matte | null> {
   const fullCtx = fullCanvas.getContext('2d');
-  if (!fullCtx) return fullCanvas;
+  if (!fullCtx) return null;
   fullCtx.drawImage(source, 0, 0, width, height);
 
   // Inference runs at MODNet's expected (smaller) resolution — the model
@@ -112,7 +126,7 @@ export async function recolorBackground(
   smallCanvas.width = rw;
   smallCanvas.height = rh;
   const smallCtx = smallCanvas.getContext('2d');
-  if (!smallCtx) return fullCanvas;
+  if (!smallCtx) return null;
   smallCtx.drawImage(fullCanvas, 0, 0, rw, rh);
   const smallData = smallCtx.getImageData(0, 0, rw, rh).data;
 
@@ -140,7 +154,7 @@ export async function recolorBackground(
   matteCanvas.width = rw;
   matteCanvas.height = rh;
   const matteCtx = matteCanvas.getContext('2d');
-  if (!matteCtx) return fullCanvas;
+  if (!matteCtx) return null;
   const matteImageData = matteCtx.createImageData(rw, rh);
   for (let i = 0; i < plane; i++) {
     const alpha = Math.min(Math.max(matteData[i], 0), 1) * 255;
@@ -155,7 +169,7 @@ export async function recolorBackground(
   upscaledMatteCanvas.width = width;
   upscaledMatteCanvas.height = height;
   const upscaledCtx = upscaledMatteCanvas.getContext('2d');
-  if (!upscaledCtx) return fullCanvas;
+  if (!upscaledCtx) return null;
   // A small blur while upscaling (2026-09-15, added after a real test showed
   // a blocky/"staircase" edge) softens exactly that: the matte was computed
   // at MODNet's own much lower inference resolution, so scaling it back up
@@ -172,16 +186,16 @@ export async function recolorBackground(
   // Spill suppression (2026-09-15, added after a real test): a partially-
   // transparent edge pixel (a hair strand, say) was itself already a mix of
   // real foreground colour and whatever the ORIGINAL backdrop was — naively
-  // blending that mixed pixel straight onto the new target still carries a
+  // blending that mixed pixel straight onto anything new still carries a
   // trace of the old backdrop's colour. Invisible against a strongly
   // contrasting target (confirmed fine against red), but visible as a
   // muddy/off tint against a neutral one (confirmed on light grey). Fix:
   // estimate the real backdrop colour from THIS capture's own confidently-
   // background pixels (matte alpha ~0), then un-mix it out of each edge
-  // pixel before recompositing onto the target — the same "spill removal"
-  // idea real matting/chroma-key pipelines use, just derived from data
-  // instead of a hardcoded key colour (nothing here assumes a specific
-  // backdrop, matching MODNet's whole point).
+  // pixel before recompositing — the same "spill removal" idea real
+  // matting/chroma-key pipelines use, just derived from data instead of a
+  // hardcoded key colour (nothing here assumes a specific backdrop,
+  // matching MODNet's whole point).
   let bgSumR = 0;
   let bgSumG = 0;
   let bgSumB = 0;
@@ -199,40 +213,68 @@ export async function recolorBackground(
   const bgG = bgCount > 0 ? bgSumG / bgCount : 0;
   const bgB = bgCount > 0 ? bgSumB / bgCount : 0;
 
+  // The un-mix division amplifies whatever it's given by 1/alpha, so at the
+  // low-to-mid alpha values a real hair strand's edge actually sits at, a
+  // none-too-accurate backdrop estimate or an imperfect matte value could
+  // overshoot into a wrong colour rather than a merely imperfect one — a
+  // real risk noted when this correction was first added, and confirmed by
+  // a real test showing exactly that overshoot as a visible tint. Clamping
+  // how far the correction may move a pixel from what the camera actually
+  // captured keeps the fix directional without letting it run away.
+  const SPILL_CORRECTION_LIMIT = 60;
+
+  return {
+    width,
+    height,
+    alphaAt: (i: number) => upscaledMatte[i * 4] / 255,
+    bgR,
+    bgG,
+    bgB,
+    correctChannel: (original: number, channel: 'r' | 'g' | 'b', alpha: number) => {
+      const bg = channel === 'r' ? bgR : channel === 'g' ? bgG : bgB;
+      // Below ~2%, the un-mix division would amplify noise for no visible
+      // benefit — at that little foreground weight the composited result
+      // is already almost entirely whatever's behind it regardless.
+      const safeAlpha = Math.max(alpha, 0.02);
+      const raw = (original - (1 - alpha) * bg) / safeAlpha;
+      const delta = Math.min(
+        Math.max(raw - original, -SPILL_CORRECTION_LIMIT),
+        SPILL_CORRECTION_LIMIT,
+      );
+      return Math.min(Math.max(original + delta, 0), 255);
+    },
+  };
+}
+
+/** Replaces everything MODNet doesn't classify as the person with a solid
+ * `targetHex` background — returns a new canvas. Async signature matches
+ * chromaKey.ts/backgroundSegmentation.ts's same-named export so
+ * CaptureScreen.tsx can swap between them by changing one import line. */
+export async function recolorBackground(
+  source: HTMLVideoElement | HTMLCanvasElement,
+  targetHex: string,
+): Promise<HTMLCanvasElement> {
+  const width = 'videoWidth' in source ? source.videoWidth : source.width;
+  const height = 'videoHeight' in source ? source.videoHeight : source.height;
+
+  const fullCanvas = document.createElement('canvas');
+  fullCanvas.width = width;
+  fullCanvas.height = height;
+  const matte = await computeMatte(source, width, height, fullCanvas);
+  const fullCtx = fullCanvas.getContext('2d');
+  if (!matte || !fullCtx) return fullCanvas;
+
   const fullImageData = fullCtx.getImageData(0, 0, width, height);
   const fullPixels = fullImageData.data;
   const targetR = parseInt(targetHex.slice(1, 3), 16);
   const targetG = parseInt(targetHex.slice(3, 5), 16);
   const targetB = parseInt(targetHex.slice(5, 7), 16);
 
-  // The un-mix division below amplifies whatever it's given by 1/alpha, so
-  // at the low-to-mid alpha values a real hair strand's edge actually sits
-  // at, a none-too-accurate backdrop estimate or an imperfect matte value
-  // could overshoot into a wrong colour rather than a merely imperfect one
-  // — a real risk noted when this correction was first added, and worth
-  // capping now that a real test showed exactly that overshoot as a visible
-  // tint. Clamping how far the correction may move a pixel from what the
-  // camera actually captured keeps the fix directional without letting it
-  // run away.
-  const SPILL_CORRECTION_LIMIT = 60;
-  function correctChannel(original: number, bg: number, alpha: number, safeAlpha: number): number {
-    const raw = (original - (1 - alpha) * bg) / safeAlpha;
-    const delta = Math.min(
-      Math.max(raw - original, -SPILL_CORRECTION_LIMIT),
-      SPILL_CORRECTION_LIMIT,
-    );
-    return Math.min(Math.max(original + delta, 0), 255);
-  }
-
   for (let i = 0; i < fullPixels.length; i += 4) {
-    const alpha = upscaledMatte[i] / 255;
-    // Below ~2%, the un-mix division would amplify noise for no visible
-    // benefit — at that little foreground weight the composited result is
-    // already almost entirely the target colour regardless.
-    const safeAlpha = Math.max(alpha, 0.02);
-    const fgR = correctChannel(fullPixels[i], bgR, alpha, safeAlpha);
-    const fgG = correctChannel(fullPixels[i + 1], bgG, alpha, safeAlpha);
-    const fgB = correctChannel(fullPixels[i + 2], bgB, alpha, safeAlpha);
+    const alpha = matte.alphaAt(i / 4);
+    const fgR = matte.correctChannel(fullPixels[i], 'r', alpha);
+    const fgG = matte.correctChannel(fullPixels[i + 1], 'g', alpha);
+    const fgB = matte.correctChannel(fullPixels[i + 2], 'b', alpha);
 
     fullPixels[i] = fgR * alpha + targetR * (1 - alpha);
     fullPixels[i + 1] = fgG * alpha + targetG * (1 - alpha);
@@ -240,4 +282,64 @@ export async function recolorBackground(
   }
   fullCtx.putImageData(fullImageData, 0, 0);
   return fullCanvas;
+}
+
+/** "AI бэкграунд" branch's compositor — same MODNet matte as
+ * recolorBackground, but onto a decorative picture (`backgroundImage`,
+ * already-loaded and same aspect as the shot) instead of a flat compliance
+ * colour. Takes an already-captured/cropped still image (a data URL, from
+ * cropUtil.ts's finalizeCrop) rather than a live camera source — this
+ * branch composites AFTER the customer has already confirmed their crop
+ * on ShotReviewScreen, per the "снял → выбрал фон" flow this branch
+ * settled on. Returns a JPEG data URL, matching finalizeCrop's own return
+ * type so PhotoKioskApp.tsx can treat it as just another `acceptedShot`. */
+export async function compositeOntoImageBackground(
+  shotDataUrl: string,
+  backgroundImage: HTMLImageElement,
+): Promise<string> {
+  const shotImage = new Image();
+  shotImage.src = shotDataUrl;
+  await shotImage.decode();
+  const width = shotImage.naturalWidth;
+  const height = shotImage.naturalHeight;
+
+  const fullCanvas = document.createElement('canvas');
+  fullCanvas.width = width;
+  fullCanvas.height = height;
+  const matte = await computeMatte(shotImage, width, height, fullCanvas);
+  const fullCtx = fullCanvas.getContext('2d');
+  if (!matte || !fullCtx) return shotDataUrl;
+
+  const fullImageData = fullCtx.getImageData(0, 0, width, height);
+  const fullPixels = fullImageData.data;
+
+  const result = document.createElement('canvas');
+  result.width = width;
+  result.height = height;
+  const resultCtx = result.getContext('2d');
+  if (!resultCtx) return shotDataUrl;
+  // "Cover" fit — fills the whole frame without distorting the background
+  // image's own aspect ratio, cropping whichever dimension overflows.
+  const scale = Math.max(
+    width / backgroundImage.naturalWidth,
+    height / backgroundImage.naturalHeight,
+  );
+  const drawW = backgroundImage.naturalWidth * scale;
+  const drawH = backgroundImage.naturalHeight * scale;
+  resultCtx.drawImage(backgroundImage, (width - drawW) / 2, (height - drawH) / 2, drawW, drawH);
+  const resultImageData = resultCtx.getImageData(0, 0, width, height);
+  const resultPixels = resultImageData.data;
+
+  for (let i = 0; i < fullPixels.length; i += 4) {
+    const alpha = matte.alphaAt(i / 4);
+    const fgR = matte.correctChannel(fullPixels[i], 'r', alpha);
+    const fgG = matte.correctChannel(fullPixels[i + 1], 'g', alpha);
+    const fgB = matte.correctChannel(fullPixels[i + 2], 'b', alpha);
+
+    resultPixels[i] = fgR * alpha + resultPixels[i] * (1 - alpha);
+    resultPixels[i + 1] = fgG * alpha + resultPixels[i + 1] * (1 - alpha);
+    resultPixels[i + 2] = fgB * alpha + resultPixels[i + 2] * (1 - alpha);
+  }
+  resultCtx.putImageData(resultImageData, 0, 0);
+  return result.toDataURL('image/jpeg', 0.92);
 }

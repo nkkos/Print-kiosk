@@ -8,6 +8,8 @@ import { DocumentPhotoScreen } from './screens/DocumentPhotoScreen';
 import { SelectCountryScreen } from './screens/SelectCountryScreen';
 import { CustomSizeScreen } from './screens/CustomSizeScreen';
 import { ConfirmConfigScreen } from './screens/ConfirmConfigScreen';
+import { AiBackgroundGalleryScreen } from './screens/AiBackgroundGalleryScreen';
+import { AiBackgroundProcessingScreen } from './screens/AiBackgroundProcessingScreen';
 import { CaptureScreen } from './screens/CaptureScreen';
 import { ShotReviewScreen } from './screens/ShotReviewScreen';
 import { GalleryScreen } from './screens/GalleryScreen';
@@ -18,6 +20,8 @@ import { FinalisingSessionScreen } from './screens/FinalisingSessionScreen';
 import { composeA4Sheet, DEFAULT_PHOTOS_PER_SHEET } from './sheetComposer';
 import { recordPhotoOrder, markPhotoOrdersPrinted } from './services/photoKioskApi';
 import { DEFAULT_PRICE_CENTS } from './pricing';
+import { compositeOntoImageBackground } from './portraitMatting';
+import type { AiBackgroundLook } from './aiBackgroundLooks';
 import type { CaptureSpec, PendingShot, PhotoCartItem } from './types';
 
 type Screen =
@@ -27,13 +31,27 @@ type Screen =
   | 'select-country'
   | 'custom-size'
   | 'confirm-config'
+  | 'ai-background-gallery'
   | 'capture'
   | 'shot-review'
+  | 'ai-background-processing'
   | 'gallery'
   | 'payment'
   | 'print'
   | 'finalising-session'
   | 'ending-session';
+
+// "AI бэкграунд"'s fixed photo spec — a plain souvenir portrait, not a
+// compliance document, so none of CaptureSpec's crop-anchor/head-size
+// fields apply (cropUtil.ts's defaults produce a normal centred portrait
+// crop when they're all absent). 100×150mm matches the classic 10×15cm
+// print size the original wireframe's now-dropped standalone "10×15" menu
+// button was for (docs/photo-kiosk-requirements.md's menu revision note).
+const AI_BACKGROUND_SPEC: CaptureSpec = {
+  label: 'AI фото',
+  widthMm: 100,
+  heightMm: 150,
+};
 
 const SESSION_ID_STORAGE_KEY = 'photo-kiosk.sessionId';
 const ENDING_SESSION_DELAY_MS = 1200;
@@ -66,6 +84,16 @@ export function PhotoKioskApp() {
   const [spec, setSpec] = useState<CaptureSpec | null>(null);
   const [pendingShot, setPendingShot] = useState<PendingShot | null>(null);
   const [acceptedShot, setAcceptedShot] = useState<string | null>(null);
+  // Non-null only while the customer is inside the "AI бэкграунд" flow —
+  // set on AiBackgroundGalleryScreen's pick, read once ShotReviewScreen's
+  // crop is confirmed to run compositeOntoImageBackground, then cleared on
+  // End Session same as the rest of this screen's photo-related state.
+  const [selectedLook, setSelectedLook] = useState<AiBackgroundLook | null>(null);
+  // The crop ShotReviewScreen just confirmed, waiting for
+  // ai-background-processing's effect (below) to composite it — a separate
+  // piece of state from `acceptedShot` so GalleryScreen never briefly shows
+  // the plain (not-yet-composited) shot while that runs.
+  const [shotAwaitingComposite, setShotAwaitingComposite] = useState<string | null>(null);
   // Which screen led into 'confirm-config' — select-country and custom-size
   // both land there, so its own Back needs to know which one to return to.
   const [configOrigin, setConfigOrigin] = useState<'select-country' | 'custom-size'>(
@@ -93,6 +121,35 @@ export function PhotoKioskApp() {
   // "Добавить в корзину" can open it explicitly to show the customer what
   // just happened — see PhotoKioskLayout.tsx's isCartOpen prop comment.
   const [isCartOpen, setIsCartOpen] = useState(false);
+
+  // "AI бэкграунд"'s compositing step — runs once, when a confirmed crop is
+  // waiting and the customer is actually on ai-background-processing (not
+  // just whenever shotAwaitingComposite happens to be set, since Strict
+  // Mode/re-renders would otherwise risk firing it twice for the same
+  // shot). Falls back to the plain (uncomposited) shot on failure rather
+  // than leaving the customer stuck on a screen with no way forward.
+  useEffect(() => {
+    if (screen !== 'ai-background-processing' || !shotAwaitingComposite || !selectedLook) return;
+    let cancelled = false;
+    const bgImage = new Image();
+    bgImage.src = selectedLook.imageUrl;
+    bgImage
+      .decode()
+      .then(() => compositeOntoImageBackground(shotAwaitingComposite, bgImage))
+      .catch((err: unknown) => {
+        console.error('[PhotoKioskApp] compositeOntoImageBackground failed:', err);
+        return shotAwaitingComposite;
+      })
+      .then((result) => {
+        if (cancelled) return;
+        setAcceptedShot(result);
+        setShotAwaitingComposite(null);
+        setScreen('gallery');
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [screen, shotAwaitingComposite, selectedLook]);
 
   useEffect(() => {
     if (!spec || !acceptedShot) {
@@ -154,6 +211,8 @@ export function PhotoKioskApp() {
         setSpec(null);
         setPendingShot(null);
         setAcceptedShot(null);
+        setSelectedLook(null);
+        setShotAwaitingComposite(null);
         setCart([]);
         setPaymentItems([]);
         setPrintingItems([]);
@@ -263,8 +322,17 @@ export function PhotoKioskApp() {
       'select-country': () => setScreen('document-photo'),
       'custom-size': () => setScreen('document-photo'),
       'confirm-config': () => setScreen(configOrigin),
-      capture: () => setScreen(spec && !acceptedShot ? 'confirm-config' : 'gallery'),
+      'ai-background-gallery': () => setScreen('menu'),
+      capture: () =>
+        setScreen(
+          selectedLook
+            ? 'ai-background-gallery'
+            : spec && !acceptedShot
+              ? 'confirm-config'
+              : 'gallery',
+        ),
       'shot-review': undefined,
+      'ai-background-processing': undefined,
       gallery: undefined,
       payment: undefined,
       print: undefined,
@@ -307,7 +375,16 @@ export function PhotoKioskApp() {
       )}
 
       {screen === 'menu' && (
-        <MenuScreen onSelectDocumentPhoto={() => setScreen('document-photo')} />
+        <MenuScreen
+          onSelectDocumentPhoto={() => {
+            // Guards against a stale selectedLook from an abandoned "AI
+            // бэкграунд" attempt wrongly triggering compositing later in
+            // THIS (document-photo) flow, which shares capture/shot-review.
+            setSelectedLook(null);
+            setScreen('document-photo');
+          }}
+          onSelectAiBackground={() => setScreen('ai-background-gallery')}
+        />
       )}
 
       {screen === 'document-photo' && (
@@ -356,6 +433,16 @@ export function PhotoKioskApp() {
         <ConfirmConfigScreen spec={spec} onConfirm={() => setScreen('capture')} />
       )}
 
+      {screen === 'ai-background-gallery' && (
+        <AiBackgroundGalleryScreen
+          onSelectLook={(look) => {
+            setSelectedLook(look);
+            setSpec(AI_BACKGROUND_SPEC);
+            setScreen('capture');
+          }}
+        />
+      )}
+
       {screen === 'capture' && spec && (
         <CaptureScreen
           spec={spec}
@@ -378,12 +465,21 @@ export function PhotoKioskApp() {
             setScreen('capture');
           }}
           onAccept={(finalDataUrl) => {
-            setAcceptedShot(finalDataUrl);
             setPendingShot(null);
-            setScreen('gallery');
+            if (selectedLook) {
+              // Composited in ai-background-processing's own effect, not
+              // here — needs to await loading the look's image first.
+              setShotAwaitingComposite(finalDataUrl);
+              setScreen('ai-background-processing');
+            } else {
+              setAcceptedShot(finalDataUrl);
+              setScreen('gallery');
+            }
           }}
         />
       )}
+
+      {screen === 'ai-background-processing' && <AiBackgroundProcessingScreen />}
 
       {screen === 'gallery' && spec && (
         <GalleryScreen
