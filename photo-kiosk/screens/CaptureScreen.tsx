@@ -7,7 +7,7 @@ import {
   estimateFallbackLandmarks,
 } from '../cropUtil';
 import { detectFace, preloadFaceDetection } from '../faceDetection';
-import { recolorBackground, preloadBackgroundRemoval } from '../chromaKey';
+import { recolorBackground, preloadBackgroundRemoval } from '../portraitMatting';
 import type { CaptureSpec, PendingShot } from '../types';
 
 interface CaptureScreenProps {
@@ -31,12 +31,21 @@ interface CaptureScreenProps {
 // on the review screen before the actual document-sized crop is cut.
 //
 // When the document specifies a backgroundColorHex, the RAW captured frame is
-// recolored (chromaKey.ts — classical colour-distance keying against the
-// booth's own known backdrop, not ML segmentation; see that file for why)
-// before any of the above, so both the generous preview and the final crop
-// already show the replaced background; face detection then runs on the
-// recolored frame (background replacement doesn't touch foreground pixels,
-// so this doesn't affect it).
+// recolored before any of the above, so both the generous preview and the
+// final crop already show the replaced background; face detection then runs
+// on the recolored frame (background replacement doesn't touch foreground
+// pixels, so this doesn't affect it).
+//
+// 2026-09-15: importing portraitMatting.ts (ML matting, MODNet) here as a
+// real-camera trial run against chromaKey.ts (classical colour-distance
+// keying, still intact and unused for now) — same recolorBackground /
+// preloadBackgroundRemoval signature on both, so this is a one-line import
+// swap either way. See the "Способы замены фона" research artifact and
+// this file's own recent git history for why: real chroma-key tests this
+// session needed a backdrop far more controlled/evenly-lit than anything
+// available to test with, while ML matting needs no known backdrop colour
+// at all — untested against our real camera, same as chroma-key was before
+// its own real tests this session.
 export function CaptureScreen({ spec, onCaptured }: CaptureScreenProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const frameRef = useRef<HTMLDivElement>(null);

@@ -158,9 +158,24 @@ export function CustomSizeScreen({ onConfirm }: CustomSizeScreenProps) {
           <input
             type="color"
             id="custom-size-background-color"
+            // The colour input always displays SOME hex value — defaulting the
+            // swatch to white when nothing's chosen made "not touched yet" look
+            // identical to "explicitly picked white" (confirmed 2026-09-15: a
+            // white pick that was actually just this untouched default did
+            // nothing, since spec.backgroundColorHex stayed undefined). The
+            // status text below disambiguates regardless of swatch colour.
             value={backgroundColorHex ?? '#ffffff'}
             onChange={(e) => setBackgroundColorHex(e.target.value)}
           />
+          <span
+            className="pk-form-hint"
+            id="custom-size-background-color-status"
+            style={{ margin: 0 }}
+          >
+            {backgroundColorHex != null
+              ? `Выбран: ${backgroundColorHex}`
+              : 'Не выбран — фон останется как есть'}
+          </span>
           {backgroundColorHex != null && (
             <button
               type="button"
