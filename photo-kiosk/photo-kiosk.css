@@ -436,6 +436,20 @@ input {
   border-radius: var(--radius-small);
   background: #fff;
 }
+/* CaptureSpec.printMode === 'single-print' variant — no fixed A4 aspect
+   ratio (that hardcoded 210/297 letterboxed a landscape 10×15 print with
+   blank white bars above/below, confirmed 2026-09-16) — the preview just
+   takes on the print's own real shape instead. */
+.pk-sheet-preview-single {
+  width: auto;
+  max-width: 18rem;
+  max-height: 24rem;
+  aspect-ratio: auto;
+  object-fit: contain;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-small);
+  background: #fff;
+}
 
 /* ---------- Capture guide overlay ---------- */
 

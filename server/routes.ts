@@ -66,6 +66,7 @@ import {
 } from './emailSender.js';
 import { reportIncident } from './incidentStore.js';
 import { createShare, consumeShare } from './photoShareStore.js';
+import { compositeViaNanoBanana } from './aiBackgroundCompositor.js';
 import {
   createScanSession,
   addPage,
@@ -997,6 +998,54 @@ router.get('/api/photo-kiosk/share-link/:token', (req, res) => {
   res.setHeader('Content-Disposition', 'attachment; filename="photo.jpg"');
   res.send(entry.buffer);
 });
+
+// "AI бэкграунд" (docs/photo-kiosk-requirements.md) — a SECOND, much less
+// narrow exception to the "no photo pixel data server-side" rule above
+// (confirmed accepted 2026-09-16, scoped only to this optional/decorative
+// branch): the shot is forwarded to Google's Nano Banana Pro API
+// (aiBackgroundCompositor.ts, which also owns the look catalog, the
+// per-look reference image, and the per-look prompt) for real generative
+// compositing, not just held in server memory like "send me a copy"
+// above. memoryStorage still applies — the shot is never written to disk
+// here either.
+const aiBackgroundUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 20 * 1024 * 1024 },
+});
+
+router.post(
+  '/api/photo-kiosk/ai-background',
+  aiBackgroundUpload.single('shot'),
+  async (req, res) => {
+    const { lookId } = (req.body ?? {}) as { lookId?: unknown };
+    if (!req.file || typeof lookId !== 'string') {
+      res.status(400).json({ error: 'A valid lookId and shot are required' });
+      return;
+    }
+    try {
+      const result = await compositeViaNanoBanana(
+        lookId,
+        req.file.buffer.toString('base64'),
+        req.file.mimetype,
+      );
+      if (!result) {
+        res.status(503).json({ error: 'AI compositing is not available right now' });
+        return;
+      }
+      res.json(result);
+    } catch (err) {
+      console.error('[routes] compositeViaNanoBanana failed:', err);
+      void reportIncident({
+        source: 'backend',
+        code: 'backend.ai-background-compositing-failed',
+        severity: 'warning',
+        message: 'Nano Banana compositing failed.',
+        context: { lookId, error: String(err) },
+      });
+      res.status(502).json({ error: 'AI compositing failed. Please try again.' });
+    }
+  },
+);
 
 // Portal-facing "My orders" for the staff-fulfilled half of the shop
 // (docs/shop-checkout-requirements.md) — session-token-authenticated like the

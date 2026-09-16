@@ -26,18 +26,21 @@ export function GalleryScreen({
   onAddToCart,
   isComposingSheet,
 }: GalleryScreenProps) {
+  const isSinglePrint = spec.printMode === 'single-print';
+
   return (
     <div className="pk-screen pk-screen-center" id="view-gallery">
-      <h1 className="pk-title">Предпросмотр листа печати</h1>
+      <h1 className="pk-title">Предпросмотр печати</h1>
       <p className="pk-form-hint">
-        Печать на листе А4 — {spec.label}, {copies} копий. Вы можете вырезать фотографии в зоне
-        самостоятельной работы.
+        {isSinglePrint
+          ? `Печать на фотобумаге 10×15 — ${spec.label}.`
+          : `Печать на листе А4 — ${spec.label}, ${copies} копий. Вы можете вырезать фотографии в зоне самостоятельной работы.`}
       </p>
       {sheetPreview ? (
         <img
           src={sheetPreview}
           alt="Предпросмотр листа печати"
-          className="pk-sheet-preview"
+          className={isSinglePrint ? 'pk-sheet-preview-single' : 'pk-sheet-preview'}
           id="gallery-sheet-preview"
         />
       ) : (

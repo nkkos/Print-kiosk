@@ -17,10 +17,11 @@ import { PaymentScreen } from './screens/PaymentScreen';
 import { PrintScreen } from './screens/PrintScreen';
 import { EndingSessionScreen } from './screens/EndingSessionScreen';
 import { FinalisingSessionScreen } from './screens/FinalisingSessionScreen';
-import { composeA4Sheet, DEFAULT_PHOTOS_PER_SHEET } from './sheetComposer';
+import { composeA4Sheet, composeSinglePrint, DEFAULT_PHOTOS_PER_SHEET } from './sheetComposer';
 import { recordPhotoOrder, markPhotoOrdersPrinted } from './services/photoKioskApi';
 import { DEFAULT_PRICE_CENTS } from './pricing';
 import { compositeOntoImageBackground } from './portraitMatting';
+import { compositeViaNanoBanana } from './services/aiBackgroundApi';
 import type { AiBackgroundLook } from './aiBackgroundLooks';
 import type { CaptureSpec, PendingShot, PhotoCartItem } from './types';
 
@@ -41,17 +42,43 @@ type Screen =
   | 'finalising-session'
   | 'ending-session';
 
-// "AI бэкграунд"'s fixed photo spec — a plain souvenir portrait, not a
-// compliance document, so none of CaptureSpec's crop-anchor/head-size
-// fields apply (cropUtil.ts's defaults produce a normal centred portrait
-// crop when they're all absent). 100×150mm matches the classic 10×15cm
-// print size the original wireframe's now-dropped standalone "10×15" menu
-// button was for (docs/photo-kiosk-requirements.md's menu revision note).
-const AI_BACKGROUND_SPEC: CaptureSpec = {
-  label: 'AI фото',
-  widthMm: 100,
-  heightMm: 150,
-};
+// "AI бэкграунд"'s photo spec — a plain souvenir print, not a compliance
+// document, so none of CaptureSpec's crop-anchor/head-size fields apply
+// (cropUtil.ts's defaults produce a normal centred portrait crop when
+// they're all absent). 100×150mm (or 150×100mm landscape) matches the
+// classic 10×15cm print size the original wireframe's now-dropped
+// standalone "10×15" menu button was for. Orientation follows the chosen
+// look (2026-09-16) rather than a fixed constant — built per-selection,
+// not module-level, since it now depends on which look was picked.
+// printMode: 'single-print' (2026-09-16, added after a real test showed
+// the default A4-sheet-tiling math silently drops every copy beyond the
+// one that physically fits, leaving one photo stuck in a corner of an
+// otherwise-blank A4 page) — this size IS the physical print, not a
+// sheet to tile smaller copies onto; sheetComposer.ts's composeSinglePrint
+// fills the whole page with no margin.
+function buildAiBackgroundSpec(look: AiBackgroundLook): CaptureSpec {
+  const landscape = look.orientation === 'landscape';
+  return {
+    label: 'AI фото',
+    widthMm: landscape ? 150 : 100,
+    heightMm: landscape ? 100 : 150,
+    printMode: 'single-print',
+    copiesPerSheet: 1,
+  };
+}
+
+// One call site for both preview-generation spots below, so 'single-print'
+// specs (see CaptureSpec.printMode's comment) never accidentally go
+// through the A4-tiling path just because a call site forgot to branch.
+function composePreview(
+  shotDataUrl: string,
+  spec: CaptureSpec,
+  photosPerSheet: number,
+): Promise<string> {
+  return spec.printMode === 'single-print'
+    ? composeSinglePrint(shotDataUrl, spec)
+    : composeA4Sheet(shotDataUrl, spec, photosPerSheet);
+}
 
 const SESSION_ID_STORAGE_KEY = 'photo-kiosk.sessionId';
 const ENDING_SESSION_DELAY_MS = 1200;
@@ -126,18 +153,32 @@ export function PhotoKioskApp() {
   // waiting and the customer is actually on ai-background-processing (not
   // just whenever shotAwaitingComposite happens to be set, since Strict
   // Mode/re-renders would otherwise risk firing it twice for the same
-  // shot). Falls back to the plain (uncomposited) shot on failure rather
-  // than leaving the customer stuck on a screen with no way forward.
+  // shot). Two-tier fallback, never leaving the customer stuck on a screen
+  // with no way forward: real generative compositing first (Nano Banana
+  // Pro, harmonizes lighting/perspective — confirmed 2026-09-16 as the
+  // actual desired quality bar, plain matte-and-paste was judged too
+  // amateurish on its own); if that fails (no API key, network down, quota),
+  // fall back to the local MODNet matte-and-paste; if THAT also fails, the
+  // plain uncomposited shot.
   useEffect(() => {
     if (screen !== 'ai-background-processing' || !shotAwaitingComposite || !selectedLook) return;
     let cancelled = false;
-    const bgImage = new Image();
-    bgImage.src = selectedLook.imageUrl;
-    bgImage
-      .decode()
-      .then(() => compositeOntoImageBackground(shotAwaitingComposite, bgImage))
+    const lookId = selectedLook.id;
+    const lookImageUrl = selectedLook.imageUrl;
+
+    compositeViaNanoBanana(shotAwaitingComposite, lookId)
+      .catch(async (err: unknown) => {
+        console.error(
+          '[PhotoKioskApp] compositeViaNanoBanana failed, falling back to local matting:',
+          err,
+        );
+        const bgImage = new Image();
+        bgImage.src = lookImageUrl;
+        await bgImage.decode();
+        return compositeOntoImageBackground(shotAwaitingComposite, bgImage);
+      })
       .catch((err: unknown) => {
-        console.error('[PhotoKioskApp] compositeOntoImageBackground failed:', err);
+        console.error('[PhotoKioskApp] local compositeOntoImageBackground also failed:', err);
         return shotAwaitingComposite;
       })
       .then((result) => {
@@ -157,7 +198,7 @@ export function PhotoKioskApp() {
       return;
     }
     let cancelled = false;
-    composeA4Sheet(acceptedShot, spec, photosPerSheet).then((dataUrl) => {
+    composePreview(acceptedShot, spec, photosPerSheet).then((dataUrl) => {
       if (!cancelled) setSheetPreview(dataUrl);
     });
     return () => {
@@ -227,7 +268,7 @@ export function PhotoKioskApp() {
   async function handleAddToCart() {
     if (!spec || !acceptedShot) return;
     setIsComposingSheet(true);
-    const sheetPreviewDataUrl = await composeA4Sheet(acceptedShot, spec, photosPerSheet);
+    const sheetPreviewDataUrl = await composePreview(acceptedShot, spec, photosPerSheet);
     setCart((prev) => [
       ...prev,
       {
@@ -437,7 +478,7 @@ export function PhotoKioskApp() {
         <AiBackgroundGalleryScreen
           onSelectLook={(look) => {
             setSelectedLook(look);
-            setSpec(AI_BACKGROUND_SPEC);
+            setSpec(buildAiBackgroundSpec(look));
             setScreen('capture');
           }}
         />

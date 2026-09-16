@@ -28,7 +28,9 @@ export function AiBackgroundGalleryScreen({ onSelectLook }: AiBackgroundGalleryS
             id={`ai-background-look-${look.id}`}
             onClick={() => onSelectLook(look)}
           >
-            <img src={look.imageUrl} alt={look.label} className="pk-look-thumb" />
+            {look.imageUrl && (
+              <img src={look.imageUrl} alt={look.label} className="pk-look-thumb" />
+            )}
             <span>{look.label}</span>
           </button>
         ))}

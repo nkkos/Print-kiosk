@@ -79,3 +79,26 @@ export async function composeA4Sheet(
 
   return canvas.toDataURL('image/jpeg', 0.9);
 }
+
+/** CaptureSpec.printMode === 'single-print' companion to composeA4Sheet:
+ * the shot fills the WHOLE canvas at exactly spec.widthMm×heightMm, no
+ * margin, no cut-guides, no tiling — because the "page" here already IS
+ * one physical print (e.g. 10×15cm photo paper), not an A4 sheet several
+ * smaller prints get cut out of. `quantity` (PhotoCartItem's own field)
+ * already means "how many separate prints," so there's nothing here for
+ * copiesPerSheet to do. */
+export async function composeSinglePrint(shotDataUrl: string, spec: CaptureSpec): Promise<string> {
+  const dpi = spec.dpi ?? DEFAULT_DPI;
+  const width = mmToPx(spec.widthMm, dpi);
+  const height = mmToPx(spec.heightMm, dpi);
+
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return '';
+
+  const img = await loadImage(shotDataUrl);
+  ctx.drawImage(img, 0, 0, width, height);
+  return canvas.toDataURL('image/jpeg', 0.92);
+}

@@ -46,7 +46,11 @@ export function PrintScreen({ items, onPrintComplete }: PrintScreenProps) {
             <img
               src={item.sheetPreviewDataUrl}
               alt={item.spec.label}
-              className="pk-sheet-preview"
+              className={
+                item.spec.printMode === 'single-print'
+                  ? 'pk-sheet-preview-single'
+                  : 'pk-sheet-preview'
+              }
             />
             <p className="pk-form-hint">
               {item.spec.label} × {item.quantity} {item.quantity === 1 ? 'лист' : 'листов'}

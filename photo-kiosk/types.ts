@@ -46,6 +46,19 @@ export interface CaptureSpec {
   // "Произвольный размер" never collects this, and a real document only
   // has it once an admin picks a concrete target color.
   backgroundColorHex?: string;
+  // 'a4-sheet' (default when absent) — sheetComposer.ts's composeA4Sheet
+  // tiles `copiesPerSheet` identical small prints onto one A4 page with
+  // cut-guides, for the document-photo sizes this was originally built
+  // for. 'single-print' — sheetComposer.ts's composeSinglePrint instead:
+  // the shot fills the ENTIRE page with no margin/tiling, because the
+  // "page" itself already IS the final print medium (e.g. 10×15cm photo
+  // paper, not an A4 sheet you cut smaller prints out of). Added 2026-09
+  // after "AI бэкграунд"'s first real test showed exactly what tiling a
+  // 100×150mm shot under 'a4-sheet' rules produces: only one physically
+  // fits per "sheet," so every other requested copy silently gets dropped
+  // and the one that IS drawn sits in a corner of an otherwise-blank A4
+  // page instead of filling the actual print.
+  printMode?: 'a4-sheet' | 'single-print';
 }
 
 /** One confirmed shoot, ready for checkout — pushed onto the cart on
