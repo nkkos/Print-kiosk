@@ -475,6 +475,24 @@ export const printTasks = pgTable(
     // 'printer-not-found' | 'submit-failed' | 'paper-jam' | 'out-of-paper' | 'out-of-ink'
     errorReason: text('error_reason'),
     printerName: text('printer_name'),
+    // Pavilion launch plan (2026-09-16): the physical printer feeds a
+    // Brother MX-4000 4-bin mailbox, one bin per customer batch. Null while
+    // the task is still waiting for a free bin (server/pickupBins.ts) —
+    // only assigned, and only then actually submitted to the printer, once
+    // one opens up. No sensor exists on the real hardware yet to detect a
+    // customer actually taking their printout, so `pickedUpAt` is set by an
+    // explicit confirmation (customer or staff), not automatically — see
+    // POST /api/print-tasks/:id/picked-up.
+    binNumber: integer('bin_number'),
+    pickedUpAt: timestamp('picked_up_at', { withTimezone: true }),
+    // The original submission's file/print options (fileId, paperSize,
+    // sides, ...) — stringified JSON, same convention as incidents.context
+    // above (no jsonb precedent in this schema, nothing needs to query
+    // inside it). Persisted so a task that had to wait for a free bin can
+    // actually be submitted later (server/printOrchestrator.ts's
+    // tryPrintTask, re-invoked on every GET /api/print-tasks/:id poll) —
+    // the original HTTP request's closure is long gone by then.
+    printOptions: text('print_options'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },

@@ -167,6 +167,10 @@ export const sk: Translations = {
   printStatus: {
     printingMessage: 'Tlačí sa váš dokument (dokumenty)...',
     succeededMessage: 'Váš dokument (dokumenty) bol úspešne vytlačený.',
+    waitingForBinMessage: 'Všetky výdajné priehradky sú momentálne obsadené — chvíľu počkajte.',
+    readyForPickupMessage: (bin: number) =>
+      `Hotovo! Vyzdvihnite si dokumenty z priehradky č. ${bin}.`,
+    confirmPickedUpLabel: 'Vyzdvihol(a) som si dokumenty',
     continueLabel: 'Pokračovať',
     retry: 'Skúsiť znova',
     errorPrinterNotFound: 'Tlačiareň nie je k dispozícii. Skontrolujte ju a skúste znova.',

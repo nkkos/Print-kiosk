@@ -22,7 +22,12 @@ import type { CopySession } from './services/copyApi';
 import { listEmailMessages } from './services/emailApi';
 import { login } from './services/accountApi';
 import { listAccountOrders } from './services/accountFileApi';
-import { submitPrintJob, getPrintTask, simulatePrintOutcome } from './services/printApi';
+import {
+  submitPrintJob,
+  getPrintTask,
+  simulatePrintOutcome,
+  markPrintTaskPickedUp,
+} from './services/printApi';
 import type { PrintTask } from './services/printApi';
 import { startSession, touchSessionActivity, endSession } from './services/sessionApi';
 import { LanguageProvider } from './i18n';
@@ -839,7 +844,16 @@ function App() {
     setScreen('print-status');
   }
 
-  function handlePrintComplete() {
+  // Pavilion launch plan (2026-09-16): confirms pickup for every task that
+  // reserved a mailbox bin (server/pickupBins.ts), freeing it for the next
+  // customer's job — no sensor exists on the real hardware to detect this
+  // automatically, so "Продолжить" doubles as that confirmation. All tasks
+  // in one batch share a single bin (server/pickupBins.ts's own reuse
+  // logic), but this doesn't assume that — it frees every bin any task in
+  // the batch happens to hold.
+  async function handlePrintComplete() {
+    const withBin = printTasks.filter((task) => task.binNumber != null);
+    await Promise.all(withBin.map((task) => markPrintTaskPickedUp(task.id)));
     setPrintingItems([]);
     setPrintTasks([]);
     setScreen('finalising-session');

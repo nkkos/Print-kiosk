@@ -107,14 +107,16 @@ import {
   hasAcceptedAccountFileExtension,
   AccountStorageQuotaExceededError,
 } from './accountFileLimits.js';
-import { submitPrintJob, PrintSubmitError, PLACEHOLDER_PDF_PATH } from './printerAdapter.js';
-import { getConvertedPath, resolvePrintablePath } from './documentConverter.js';
+import { resolvePrintablePath } from './documentConverter.js';
 import {
   createPrintTask,
   updatePrintTaskStatus,
+  markPrintTaskPickedUp,
   getPrintTask,
   type PrintTaskErrorReason,
+  type PrintOptions,
 } from './printTaskStore.js';
+import { tryPrintTask } from './printOrchestrator.js';
 
 export const DEFAULT_PORT = 3001;
 
@@ -1147,65 +1149,67 @@ router.post('/api/print-tasks', async (req, res) => {
     scale?: unknown;
     pages?: unknown;
   };
+  const resolvedSessionId = typeof sessionId === 'string' ? sessionId : null;
+  const options: PrintOptions = {
+    fileId: typeof fileId === 'string' ? fileId : undefined,
+    sourceFileOrigin: sourceFileOrigin === 'account' ? 'account' : undefined,
+    paperSize: typeof paperSize === 'string' ? paperSize : undefined,
+    sides: sides === 'double' ? 'double' : sides === 'single' ? 'single' : undefined,
+    color: color === 'bw' ? 'bw' : color === 'color' ? 'color' : undefined,
+    orientation:
+      orientation === 'portrait' || orientation === 'landscape' ? orientation : undefined,
+    scale: scale === 'fit' ? 'fit' : scale === 'original' ? 'original' : undefined,
+    pages: typeof pages === 'string' ? pages : undefined,
+    copies: typeof copies === 'number' ? copies : undefined,
+  };
+
   const task = await createPrintTask(
-    typeof sessionId === 'string' ? sessionId : null,
+    resolvedSessionId,
     typeof printOrderId === 'string' ? printOrderId : undefined,
+    options,
   );
-
-  // Only print the real file when it's actually resolvable and scanned
-  // 'ready' — otherwise fall back to the placeholder
-  // (server/printerAdapter.ts), same as when no fileId is given at all.
-  // `sourceFileOrigin: 'account'` resolves against Personal Account's real
-  // "My files" (server/accountFileStore.ts); anything else (the default)
-  // resolves against QR/Email's session-scoped uploads
-  // (server/uploadStore.ts), unchanged from before. Formats pdf-to-printer
-  // can't handle directly are converted at upload time already — this just
-  // checks whether that conversion actually left a usable cached file. If it
-  // was expected but didn't happen (conversion failed, e.g. a
-  // password-protected file), that's a real failure worth surfacing — not
-  // silently printing a placeholder instead.
-  let filePath = PLACEHOLDER_PDF_PATH;
-  if (typeof fileId === 'string') {
-    const file =
-      sourceFileOrigin === 'account' ? await getAccountFile(fileId) : await getUploadedFile(fileId);
-    if (file && file.status === 'ready') {
-      const resolvedPath = resolvePrintablePath(file.absolutePath, file.fileName);
-      if (resolvedPath) {
-        filePath = resolvedPath;
-      } else if (getConvertedPath(file.absolutePath, file.fileName)) {
-        await updatePrintTaskStatus(task.id, 'failed', 'conversion-failed');
-        res.status(201).json(await getPrintTask(task.id));
-        return;
-      }
-    }
-  }
-
-  try {
-    await submitPrintJob(filePath, {
-      copies: typeof copies === 'number' ? copies : undefined,
-      paperSize: typeof paperSize === 'string' ? paperSize : undefined,
-      side: sides === 'double' ? 'duplex' : sides === 'single' ? 'simplex' : undefined,
-      monochrome: color === 'bw' ? true : color === 'color' ? false : undefined,
-      orientation:
-        orientation === 'portrait' || orientation === 'landscape' ? orientation : undefined,
-      scale: scale === 'fit' ? 'fit' : scale === 'original' ? 'noscale' : undefined,
-      pages: typeof pages === 'string' ? pages : undefined,
-    });
-    await updatePrintTaskStatus(task.id, 'printing');
-  } catch (err) {
-    const reason = err instanceof PrintSubmitError ? err.reason : 'submit-failed';
-    await updatePrintTaskStatus(task.id, 'failed', reason);
-  }
-  res.status(201).json(await getPrintTask(task.id));
+  // Pavilion launch plan (2026-09-16): two stands share one printer feeding
+  // a 4-bin mailbox (server/pickupBins.ts) — a task only actually prints
+  // once a bin is free. If all four are occupied right now, this call is a
+  // no-op that leaves the task 'queued' with no bin; GET /api/print-tasks/:id's
+  // own poll below retries it, so the kiosk's existing polling loop is what
+  // eventually gets it printed once space opens, with no separate
+  // background worker needed.
+  res.status(201).json(await tryPrintTask(task.id, resolvedSessionId));
 });
 
 router.get('/api/print-tasks/:id', async (req, res) => {
-  const task = await getPrintTask(paramString(req.params.id));
+  const id = paramString(req.params.id);
+  const beforeRetry = await getPrintTask(id);
+  if (!beforeRetry) {
+    res.status(404).json({ error: 'Print task not found' });
+    return;
+  }
+  const task = await tryPrintTask(id, null);
+  res.json(task);
+});
+
+// Confirms a customer (or staff) actually took their printout from its
+// assigned mailbox bin — no sensor exists on the real hardware to detect
+// this automatically (server/pickupBins.ts). Deliberately does NOT try to
+// eagerly advance whichever task is "next in line" for the freed bin: with
+// no way to tell a genuinely still-active waiting customer apart from a
+// long-abandoned queued row (e.g. a request whose client vanished mid-flow),
+// a global "oldest queued task" sweep can hijack the freed bin for a stale
+// task nobody will ever confirm pickup for, permanently squatting on it
+// instead. Each real waiting task's own GET /api/print-tasks/:id poll
+// (already happening every few seconds from PrintStatusScreen.tsx) already
+// retries tryPrintTask for exactly that task and no other, so the freed bin
+// still reaches the right customer within one poll interval.
+router.post('/api/print-tasks/:id/picked-up', async (req, res) => {
+  const id = paramString(req.params.id);
+  const task = await getPrintTask(id);
   if (!task) {
     res.status(404).json({ error: 'Print task not found' });
     return;
   }
-  res.json(task);
+  await markPrintTaskPickedUp(id);
+  res.json(await getPrintTask(id));
 });
 
 const SIMULATABLE_OUTCOMES = ['success', 'paper-jam', 'out-of-paper', 'out-of-ink'] as const;

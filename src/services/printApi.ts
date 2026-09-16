@@ -16,6 +16,12 @@ export interface PrintTask {
   id: string;
   status: PrintTaskStatus;
   errorReason: PrintTaskErrorReason | null;
+  // Pavilion launch plan (2026-09-16): the two stands share one printer
+  // feeding a 4-bin Brother MX-4000 mailbox (server/pickupBins.ts). Null
+  // while still waiting for a free bin — see PrintStatusScreen.tsx for how
+  // that's shown differently from "printing."
+  binNumber: number | null;
+  pickedUpAt: string | null;
 }
 
 export interface SubmitPrintJobRequest {
@@ -52,6 +58,16 @@ export async function submitPrintJob(request: SubmitPrintJobRequest): Promise<Pr
 
 export async function getPrintTask(id: string): Promise<PrintTask> {
   const response = await fetch(`${API_BASE_URL}/api/print-tasks/${id}`);
+  return response.json();
+}
+
+/** Confirms the customer took their printout from its assigned bin,
+ * freeing it for the next waiting task (server/pickupBins.ts) — no sensor
+ * exists on the real hardware to detect this automatically. */
+export async function markPrintTaskPickedUp(id: string): Promise<PrintTask> {
+  const response = await fetch(`${API_BASE_URL}/api/print-tasks/${id}/picked-up`, {
+    method: 'POST',
+  });
   return response.json();
 }
 

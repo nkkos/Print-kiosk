@@ -166,6 +166,9 @@ export const ru: Translations = {
   printStatus: {
     printingMessage: 'Печать документа(ов)...',
     succeededMessage: 'Документ(ы) успешно распечатан(ы).',
+    waitingForBinMessage: 'Все ячейки выдачи заняты — подождите немного, вас обслужат по очереди.',
+    readyForPickupMessage: (bin: number) => `Готово! Заберите документы из ячейки №${bin}.`,
+    confirmPickedUpLabel: 'Я забрал(а) документы',
     continueLabel: 'Продолжить',
     retry: 'Повторить',
     errorPrinterNotFound: 'Принтер недоступен. Проверьте принтер и повторите попытку.',

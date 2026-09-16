@@ -171,6 +171,10 @@ export const de: Translations = {
   printStatus: {
     printingMessage: 'Ihre Dokument(e) werden gedruckt...',
     succeededMessage: 'Ihre Dokument(e) wurden erfolgreich gedruckt.',
+    waitingForBinMessage: 'Alle Abholfächer sind derzeit belegt — bitte warten Sie kurz.',
+    readyForPickupMessage: (bin: number) =>
+      `Fertig! Holen Sie Ihre Dokumente aus Fach Nr. ${bin} ab.`,
+    confirmPickedUpLabel: 'Ich habe meine Dokumente abgeholt',
     continueLabel: 'Weiter',
     retry: 'Erneut versuchen',
     errorPrinterNotFound: 'Kein Drucker verfügbar. Bitte Drucker prüfen und erneut versuchen.',

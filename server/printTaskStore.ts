@@ -12,27 +12,75 @@ export type PrintTaskStatus = 'queued' | 'printing' | 'succeeded' | 'failed';
 export type PrintTaskErrorReason =
   SubmitFailureReason | 'paper-jam' | 'out-of-paper' | 'out-of-ink' | 'conversion-failed';
 
+// The original submission's file/print options — see schema.ts's
+// printOptions column comment for why this needs to be persisted at all
+// (a task that has to wait for a free bin gets retried from
+// server/printOrchestrator.ts's tryPrintTask on a later, unrelated HTTP
+// request, long after the original request's own closure is gone).
+export interface PrintOptions {
+  fileId?: string;
+  sourceFileOrigin?: 'upload' | 'account';
+  paperSize?: string;
+  sides?: 'single' | 'double';
+  color?: 'bw' | 'color';
+  orientation?: 'portrait' | 'landscape';
+  scale?: 'fit' | 'original';
+  pages?: string;
+  copies?: number;
+}
+
 export interface PrintTask {
   id: string;
   status: PrintTaskStatus;
   errorReason: PrintTaskErrorReason | null;
+  // Pavilion pickup mailbox (server/pickupBins.ts) — null while still
+  // waiting for a free bin (see that module's own comment) or, before that
+  // feature existed, for any task created before it shipped.
+  binNumber: number | null;
+  pickedUpAt: Date | null;
 }
 
 const selectColumns = {
   id: printTasks.id,
   status: printTasks.status,
   errorReason: printTasks.errorReason,
+  binNumber: printTasks.binNumber,
+  pickedUpAt: printTasks.pickedUpAt,
 };
 
 export async function createPrintTask(
   sessionId: string | null,
-  printOrderId?: string,
+  printOrderId: string | undefined,
+  options: PrintOptions,
 ): Promise<PrintTask> {
   const [row] = await db
     .insert(printTasks)
-    .values({ sessionId, printOrderId: printOrderId ?? null })
+    .values({
+      sessionId,
+      printOrderId: printOrderId ?? null,
+      printOptions: JSON.stringify(options),
+    })
     .returning(selectColumns);
   return row as PrintTask;
+}
+
+/** The options a task was originally submitted with — read back by
+ * tryPrintTask on a retry, since the HTTP request that first created the
+ * task is long gone by the time a bin frees up. Returns an empty object
+ * for a task with none stored (shouldn't happen for anything created after
+ * this feature shipped, but stays a harmless no-op rather than a crash for
+ * anything already in the database beforehand). */
+export async function getPrintTaskOptions(id: string): Promise<PrintOptions> {
+  const [row] = await db
+    .select({ printOptions: printTasks.printOptions })
+    .from(printTasks)
+    .where(eq(printTasks.id, id));
+  if (!row?.printOptions) return {};
+  try {
+    return JSON.parse(row.printOptions) as PrintOptions;
+  } catch {
+    return {};
+  }
 }
 
 // Drives the order lifecycle's 'paid' -> 'issued' transition
@@ -88,4 +136,26 @@ export async function updatePrintTaskStatus(
 export async function getPrintTask(id: string): Promise<PrintTask | null> {
   const [row] = await db.select(selectColumns).from(printTasks).where(eq(printTasks.id, id));
   return (row as PrintTask) ?? null;
+}
+
+/** Records which pickup bin a task's output will land in — called once
+ * server/pickupBins.ts's reserveBin() finds one free, immediately before
+ * the job is actually submitted to the printer (server/routes.ts). */
+export async function assignPrintTaskBin(id: string, binNumber: number): Promise<void> {
+  await db
+    .update(printTasks)
+    .set({ binNumber, updatedAt: new Date() })
+    .where(eq(printTasks.id, id));
+}
+
+/** Confirms a customer (or staff, on their behalf) actually took their
+ * printout, freeing the bin for the next waiting task — see
+ * server/pickupBins.ts's own comment on why this is a manual confirmation
+ * rather than a sensor: no real hardware exists yet to detect it
+ * automatically. */
+export async function markPrintTaskPickedUp(id: string): Promise<void> {
+  await db
+    .update(printTasks)
+    .set({ pickedUpAt: new Date(), updatedAt: new Date() })
+    .where(eq(printTasks.id, id));
 }

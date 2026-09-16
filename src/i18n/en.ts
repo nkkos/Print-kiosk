@@ -168,6 +168,10 @@ export const en = {
   printStatus: {
     printingMessage: 'Printing your document(s)...',
     succeededMessage: 'Your document(s) printed successfully.',
+    waitingForBinMessage:
+      'All pickup slots are currently full — please wait, you will be served shortly.',
+    readyForPickupMessage: (bin: number) => `Ready! Collect your documents from slot #${bin}.`,
+    confirmPickedUpLabel: "I've collected my documents",
     continueLabel: 'Continue',
     retry: 'Retry',
     errorPrinterNotFound: 'No printer is available. Please check the printer and retry.',

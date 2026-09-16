@@ -166,6 +166,9 @@ export const uk: Translations = {
   printStatus: {
     printingMessage: 'Друк документа(ів)...',
     succeededMessage: 'Документ(и) успішно надруковано.',
+    waitingForBinMessage: 'Усі комірки видачі зараз зайняті — зачекайте, будь ласка.',
+    readyForPickupMessage: (bin: number) => `Готово! Заберіть документи з комірки №${bin}.`,
+    confirmPickedUpLabel: 'Я забрав(-ла) документи',
     continueLabel: 'Продовжити',
     retry: 'Повторити',
     errorPrinterNotFound: 'Принтер недоступний. Перевірте принтер і повторіть спробу.',

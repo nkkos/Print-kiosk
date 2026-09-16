@@ -104,6 +104,17 @@ export function PrintStatusScreen({
           ? 'succeeded'
           : 'printing';
 
+  // Pavilion launch plan (2026-09-16): all tasks in one batch share a
+  // single mailbox bin (server/pickupBins.ts's reuse-by-session logic), so
+  // the first non-null one found is the batch's bin — null here means
+  // every bin is currently occupied by someone else's still-uncollected
+  // order, not that printing hasn't started (that distinction is what
+  // isWaitingForBin below is for, since "queued"/"printing" alone doesn't
+  // say which).
+  const binNumber = printTasks.find((task) => task.binNumber != null)?.binNumber ?? null;
+  const isWaitingForBin =
+    printTasks.length > 0 && binNumber == null && (status === 'queued' || status === 'printing');
+
   return (
     <KioskScreenLayout
       sessionActive={false}
@@ -126,7 +137,11 @@ export function PrintStatusScreen({
       <div className={styles.body}>
         {status === 'succeeded' && (
           <>
-            <p className={styles.message}>{t.printStatus.succeededMessage}</p>
+            <p className={styles.message}>
+              {binNumber != null
+                ? t.printStatus.readyForPickupMessage(binNumber)
+                : t.printStatus.succeededMessage}
+            </p>
             <Button
               id="print-continue"
               label={t.printStatus.continueLabel}
@@ -147,7 +162,9 @@ export function PrintStatusScreen({
         )}
         {(status === 'queued' || status === 'printing') && (
           <>
-            <p className={styles.message}>{t.printStatus.printingMessage}</p>
+            <p className={styles.message}>
+              {isWaitingForBin ? t.printStatus.waitingForBinMessage : t.printStatus.printingMessage}
+            </p>
             {/* Disabled until the submission itself has actually returned a
                 task (status === 'queued' means it's still in flight — e.g.
                 waiting on document conversion, server/documentConverter.ts,

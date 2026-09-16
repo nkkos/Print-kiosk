@@ -183,6 +183,13 @@
       "when": 1788963178165,
       "tag": "0025_furry_piledriver",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1789563918906,
+      "tag": "0026_freezing_iceman",
+      "breakpoints": true
     }
   ]
 }
