@@ -6,6 +6,7 @@ export type AdminScreen =
   | 'overview'
   | 'equipment-detail'
   | 'incident-log'
+  | 'print-queue'
   | 'alerts'
   | 'catalog'
   | 'shop-catalog'
@@ -60,6 +61,13 @@ export function AdminShell({ session, screen, onNavigate, onLogout }: AdminShell
           onClick={() => onNavigate('incident-log')}
         >
           Лог инцидентов
+        </button>
+        <button
+          id="admin-nav-print-queue"
+          className={`nav-link${screen === 'print-queue' ? ' current' : ''}`}
+          onClick={() => onNavigate('print-queue')}
+        >
+          Очередь печати
         </button>
         <button
           id="admin-nav-alerts"

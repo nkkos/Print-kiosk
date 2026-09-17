@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm';
+import { desc, eq } from 'drizzle-orm';
 import { db } from './db/client.js';
 import { printTasks } from './db/schema.js';
 import type { SubmitFailureReason } from './printerAdapter.js';
@@ -136,6 +136,42 @@ export async function updatePrintTaskStatus(
 export async function getPrintTask(id: string): Promise<PrintTask | null> {
   const [row] = await db.select(selectColumns).from(printTasks).where(eq(printTasks.id, id));
   return (row as PrintTask) ?? null;
+}
+
+export interface PrintTaskAdminRow {
+  id: string;
+  sessionId: string | null;
+  status: PrintTaskStatus;
+  errorReason: PrintTaskErrorReason | null;
+  printerName: string | null;
+  binNumber: number | null;
+  pickedUpAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+/** Feeds the admin panel's Print Queue screen (server/adminRoutes.ts) — the
+ * only place any of this is visible to staff, since the kiosk client only
+ * ever sees its own tasks by id. Most recent first, so a stuck/zombie
+ * task (one that's held a bin without ever being confirmed picked up —
+ * see server/pickupBins.ts's own comment on why that can happen) is easy
+ * to spot without paging through the whole history. */
+export async function listRecentPrintTasks(limit = 200): Promise<PrintTaskAdminRow[]> {
+  return db
+    .select({
+      id: printTasks.id,
+      sessionId: printTasks.sessionId,
+      status: printTasks.status,
+      errorReason: printTasks.errorReason,
+      printerName: printTasks.printerName,
+      binNumber: printTasks.binNumber,
+      pickedUpAt: printTasks.pickedUpAt,
+      createdAt: printTasks.createdAt,
+      updatedAt: printTasks.updatedAt,
+    })
+    .from(printTasks)
+    .orderBy(desc(printTasks.createdAt))
+    .limit(limit) as Promise<PrintTaskAdminRow[]>;
 }
 
 /** Records which pickup bin a task's output will land in — called once

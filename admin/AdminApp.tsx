@@ -5,6 +5,7 @@ import { AdminShell, type AdminScreen } from './AdminShell';
 import { OverviewScreen } from './screens/OverviewScreen';
 import { EquipmentDetailScreen } from './screens/EquipmentDetailScreen';
 import { IncidentLogScreen } from './screens/IncidentLogScreen';
+import { PrintQueueScreen } from './screens/PrintQueueScreen';
 import { AlertsScreen } from './screens/AlertsScreen';
 import { FailureCatalogScreen } from './screens/FailureCatalogScreen';
 import { ShopCatalogScreen } from './screens/ShopCatalogScreen';
@@ -40,6 +41,7 @@ export function AdminApp() {
       {screen === 'incident-log' && (
         <IncidentLogScreen session={session} onSelectSource={selectSource} />
       )}
+      {screen === 'print-queue' && <PrintQueueScreen session={session} />}
       {screen === 'alerts' && <AlertsScreen session={session} />}
       {screen === 'catalog' && <FailureCatalogScreen />}
       {screen === 'shop-catalog' && <ShopCatalogScreen session={session} />}

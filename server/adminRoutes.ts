@@ -16,6 +16,8 @@ import {
 } from './incidentStore.js';
 import { listRoster, getCurrentOnCall } from './rosterStore.js';
 import { hasActiveKioskSession } from './sessionLifecycle.js';
+import { listRecentPrintTasks, markPrintTaskPickedUp, getPrintTask } from './printTaskStore.js';
+import { BIN_COUNT } from './pickupBins.js';
 import { listAllProducts, createProduct, updateProduct } from './productStore.js';
 import {
   listCountries,
@@ -165,6 +167,38 @@ adminRouter.get('/api/admin/roster', requireStaffSession, async (_req, res) => {
 adminRouter.get('/api/admin/kiosk-session-active', requireStaffSession, async (_req, res) => {
   res.json({ active: await hasActiveKioskSession() });
 });
+
+// Pavilion launch plan (2026-09-16): the Print Queue screen — staff-facing
+// visibility into the Brother MX-4000's 4 pickup bins (server/pickupBins.ts),
+// since nothing else surfaces a stuck/zombie task (one holding a bin that
+// nobody will ever confirm picked up — the exact failure mode found and
+// fixed in printOrchestrator.ts's original "advance on pickup" sweep).
+adminRouter.get('/api/admin/print-tasks', requireStaffSession, async (req, res) => {
+  const { limit } = req.query;
+  const parsedLimit = typeof limit === 'string' && /^\d+$/.test(limit) ? Number(limit) : undefined;
+  res.json({ tasks: await listRecentPrintTasks(parsedLimit), binCount: BIN_COUNT });
+});
+
+// Manual override for a task that's holding a bin but will never get a
+// customer-initiated pickup confirmation (abandoned mid-flow, or a 'failed'
+// task whose bin was reserved but never actually printed into) — staff
+// confirm the bin is physically clear, then this frees it for the next
+// waiting task the same way a real customer's confirmation would
+// (server/routes.ts's POST /api/print-tasks/:id/picked-up).
+adminRouter.post(
+  '/api/admin/print-tasks/:id/release-bin',
+  requireStaffSession,
+  async (req, res) => {
+    const id = paramString(req.params.id);
+    const task = await getPrintTask(id);
+    if (!task) {
+      res.status(404).json({ error: 'Print task not found' });
+      return;
+    }
+    await markPrintTaskPickedUp(id);
+    res.json({ ok: true });
+  },
+);
 
 // The one real fix action implemented so far (docs/equipment-monitoring-requirements.md,
 // Section E) — every other equipment-fix-* route in docs/screens/admin-panel-spec.md

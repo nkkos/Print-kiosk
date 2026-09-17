@@ -25,6 +25,18 @@ export interface Incident {
   createdAt: string;
 }
 
+export interface PrintTaskAdmin {
+  id: string;
+  sessionId: string | null;
+  status: string;
+  errorReason: string | null;
+  printerName: string | null;
+  binNumber: number | null;
+  pickedUpAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface RosterEntry {
   dayOfWeek: string;
   staffAccountId: string;
@@ -101,6 +113,18 @@ export async function getRoster(
   sessionToken: string,
 ): Promise<{ roster: RosterEntry[]; current: RosterEntry | null }> {
   return request('GET', '/api/admin/roster', sessionToken);
+}
+
+export async function listPrintTasks(
+  sessionToken: string,
+  limit?: number,
+): Promise<{ tasks: PrintTaskAdmin[]; binCount: number }> {
+  const qs = limit ? `?limit=${limit}` : '';
+  return request('GET', `/api/admin/print-tasks${qs}`, sessionToken);
+}
+
+export async function releasePrintTaskBin(sessionToken: string, id: string): Promise<void> {
+  await request('POST', `/api/admin/print-tasks/${id}/release-bin`, sessionToken);
 }
 
 export async function getKioskSessionActive(sessionToken: string): Promise<boolean> {
