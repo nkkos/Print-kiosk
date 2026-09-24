@@ -10,7 +10,8 @@ export type AdminScreen =
   | 'alerts'
   | 'catalog'
   | 'shop-catalog'
-  | 'photo-documents';
+  | 'photo-documents'
+  | 'companies';
 
 interface AdminShellProps {
   session: AdminSession;
@@ -96,6 +97,13 @@ export function AdminShell({ session, screen, onNavigate, onLogout }: AdminShell
           onClick={() => onNavigate('photo-documents')}
         >
           Фото на документы
+        </button>
+        <button
+          id="admin-nav-companies"
+          className={`nav-link${screen === 'companies' ? ' current' : ''}`}
+          onClick={() => onNavigate('companies')}
+        >
+          Компании
         </button>
         {/* Statistics (screen 6) stays deferred per
             docs/screens/admin-panel-spec.md's own confirmed decision. */}

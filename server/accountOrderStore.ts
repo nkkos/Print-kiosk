@@ -124,6 +124,43 @@ export async function payOrder(accountId: string, orderId: string): Promise<Acco
   return updated as AccountOrder;
 }
 
+/** Pays a 'created' order by billing it to a company instead of a real
+ * payment — 'created' -> 'paid' with `companyId` set, no `paymentOrderId`
+ * (unlike payOrder above): the company hasn't actually paid yet, it's
+ * aggregated into a companyInvoices row later
+ * (server/companyInvoiceStore.ts). `companyId` alone is what marks this row
+ * company-billed, so leaving paymentOrderId null is unambiguous, not a gap.
+ * Same ownership/idempotency guard as payOrder. */
+export async function payOrderForCompany(
+  accountId: string,
+  orderId: string,
+  companyId: string,
+): Promise<AccountOrder | null> {
+  const [order] = await db
+    .select({ quantity: printOrders.quantity })
+    .from(printOrders)
+    .where(
+      and(
+        eq(printOrders.id, orderId),
+        eq(printOrders.accountId, accountId),
+        eq(printOrders.status, 'created'),
+      ),
+    );
+  if (!order) return null;
+
+  const [updated] = await db
+    .update(printOrders)
+    .set({
+      companyId,
+      status: 'paid',
+      paidQuantity: order.quantity,
+    })
+    .where(eq(printOrders.id, orderId))
+    .returning(ORDER_ROW_COLUMNS);
+
+  return updated as AccountOrder;
+}
+
 /** Marks a 'paid' order 'issued' — called once the printTasks row linked to
  * it (printTasks.printOrderId) reaches 'succeeded', real or simulated
  * (server/printTaskStore.ts). Not exposed via any route directly. */

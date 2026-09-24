@@ -115,6 +115,115 @@ export async function getRoster(
   return request('GET', '/api/admin/roster', sessionToken);
 }
 
+export interface Company {
+  id: string;
+  name: string;
+  ico: string;
+  dic: string;
+  icDph: string | null;
+  billingEmail: string;
+  billingAddress: string | null;
+  pricePerPageBwCents: number;
+  pricePerPageColorCents: number;
+  vatRatePercent: number;
+  active: boolean;
+}
+
+export interface CompanyMember {
+  id: string;
+  companyId: string;
+  accountId: string;
+  email: string;
+  role: 'admin' | 'member';
+  invitedAt: string;
+  joinedAt: string | null;
+}
+
+export interface CompanyInvoice {
+  id: string;
+  companyId: string;
+  periodStart: string;
+  periodEnd: string;
+  vatRatePercent: number;
+  totalNetCents: number;
+  totalVatCents: number;
+  totalCents: number;
+  status: 'draft' | 'issued' | 'paid' | 'failed';
+  externalProvider: string | null;
+  externalInvoiceId: string | null;
+  pdfUrl: string | null;
+  issuedAt: string | null;
+  createdAt: string;
+}
+
+export interface CompanyFormFields {
+  name: string;
+  ico: string;
+  dic: string;
+  icDph?: string;
+  billingEmail: string;
+  billingAddress?: string;
+  pricePerPageBwCents: number;
+  pricePerPageColorCents: number;
+  vatRatePercent: number;
+}
+
+export async function listCompanies(sessionToken: string): Promise<Company[]> {
+  return request('GET', '/api/admin/companies', sessionToken);
+}
+
+export async function createCompany(
+  sessionToken: string,
+  fields: CompanyFormFields,
+): Promise<Company> {
+  return request('POST', '/api/admin/companies', sessionToken, fields);
+}
+
+export async function listCompanyMembers(
+  sessionToken: string,
+  companyId: string,
+): Promise<CompanyMember[]> {
+  return request('GET', `/api/admin/companies/${companyId}/members`, sessionToken);
+}
+
+export async function inviteCompanyMember(
+  sessionToken: string,
+  companyId: string,
+  email: string,
+  role: 'admin' | 'member',
+): Promise<void> {
+  await request('POST', `/api/admin/companies/${companyId}/members`, sessionToken, {
+    email,
+    role,
+  });
+}
+
+export async function listCompanyInvoices(
+  sessionToken: string,
+  companyId: string,
+): Promise<CompanyInvoice[]> {
+  return request('GET', `/api/admin/companies/${companyId}/invoices`, sessionToken);
+}
+
+export async function generateCompanyInvoice(
+  sessionToken: string,
+  companyId: string,
+  periodStart: string,
+  periodEnd: string,
+): Promise<CompanyInvoice> {
+  return request('POST', `/api/admin/companies/${companyId}/invoices/generate`, sessionToken, {
+    periodStart,
+    periodEnd,
+  });
+}
+
+export async function issueCompanyInvoice(
+  sessionToken: string,
+  invoiceId: string,
+): Promise<CompanyInvoice> {
+  return request('POST', `/api/admin/company-invoices/${invoiceId}/issue`, sessionToken);
+}
+
 export async function listPrintTasks(
   sessionToken: string,
   limit?: number,

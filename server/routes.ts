@@ -23,7 +23,9 @@ import {
   renameFolder,
   deleteFolder,
 } from './accountFileStore.js';
-import { createOrder, payOrder, listOrders } from './accountOrderStore.js';
+import { createOrder, payOrder, payOrderForCompany, listOrders } from './accountOrderStore.js';
+import { getCompanyForAccount, acceptCompanyInvite } from './companyStore.js';
+import { listInvoicesForCompany } from './companyInvoiceStore.js';
 import { listActiveProducts } from './productStore.js';
 import {
   listCountries,
@@ -824,6 +826,30 @@ router.post('/api/accounts/orders/:id/pay', requireAccountAuth, async (req, res)
   res.json(order);
 });
 
+// B2B company-billing portal (business/) — pays a 'created' order by
+// billing it to the account's company instead of a real payment. 403s if
+// the account isn't an accepted member of any company, rather than silently
+// falling through to "order not found" — a genuinely different failure
+// (docs, "B2B company-billing portal" plan).
+router.post('/api/accounts/orders/:id/pay-company', requireAccountAuth, async (req, res) => {
+  const accountId = (req as AuthenticatedRequest).accountId!;
+  const membership = await getCompanyForAccount(accountId);
+  if (!membership) {
+    res.status(403).json({ error: 'Account is not linked to a company' });
+    return;
+  }
+  const order = await payOrderForCompany(
+    accountId,
+    paramString(req.params.id),
+    membership.company.id,
+  );
+  if (!order) {
+    res.status(404).json({ error: 'Order not found, not owned by this account, or already paid' });
+    return;
+  }
+  res.json(order);
+});
+
 // Portal-facing: every order for the logged-in account, any status — the
 // full "My orders" history (docs/personal-account-requirements.md, "Order
 // status lifecycle"). Session-token-authenticated, unlike the kiosk-facing
@@ -846,6 +872,57 @@ router.get('/api/accounts/me', requireAccountAuth, async (req, res) => {
     return;
   }
   res.json(profile);
+});
+
+// Whether this account can bill jobs to a company — drives the "Bill to
+// <Company>" checkout option (business/) and the kiosk's own account
+// footer, if it ever needs to show the same thing. Null (not 404) for an
+// ordinary account, since "no company" is a normal, expected answer, not
+// missing data.
+router.get('/api/accounts/me/company', requireAccountAuth, async (req, res) => {
+  const accountId = (req as AuthenticatedRequest).accountId!;
+  res.json(await getCompanyForAccount(accountId));
+});
+
+// business/'s own "Invoices" screen — member-facing read of the same
+// company invoices the admin panel manages (server/adminRoutes.ts). 403s
+// for a 'member' role, not just an unlinked account: invoices are
+// deliberately admin-only within a company (business/InvoicesScreen.tsx).
+router.get('/api/accounts/me/company/invoices', requireAccountAuth, async (req, res) => {
+  const accountId = (req as AuthenticatedRequest).accountId!;
+  const membership = await getCompanyForAccount(accountId);
+  if (!membership || membership.role !== 'admin') {
+    res.status(403).json({ error: 'Only a company admin can view invoices' });
+    return;
+  }
+  res.json(await listInvoicesForCompany(membership.company.id));
+});
+
+// business/?token=... — unauthenticated (the invited person has no session
+// yet): the token itself, single-use like email-verification, is the proof
+// of identity. Sets the invited person's real password (their account was
+// created with an unusable random one, server/companyStore.ts's
+// inviteCompanyMember) and marks the invite accepted in one step, then logs
+// them straight in — same "don't make them log in again right after" call
+// already made for the shop's own email-verification gate
+// (docs/shop-checkout-requirements.md).
+router.post('/api/companies/accept-invite', async (req, res) => {
+  const { token, password } = (req.body ?? {}) as { token?: unknown; password?: unknown };
+  if (typeof token !== 'string' || typeof password !== 'string' || password.length < 8) {
+    res.status(400).json({ error: 'A token and an 8+ character password are required' });
+    return;
+  }
+  const accountId = await consumeAccountToken(token, 'company-invite');
+  if (!accountId) {
+    res.status(400).json({ error: 'Invite link is invalid or has expired' });
+    return;
+  }
+  const passwordHash = await bcrypt.hash(password, 10);
+  await updateAccountPassword(accountId, passwordHash);
+  await acceptCompanyInvite(accountId);
+  const profile = await getAccountProfile(accountId);
+  const sessionToken = await createAccountToken(accountId, 'session', SESSION_TOKEN_EXPIRY_MS);
+  res.json({ accountId, email: profile?.email ?? '', sessionToken });
 });
 
 // Optional invoice details (docs/shop-checkout-requirements.md) — reachable both from

@@ -21,7 +21,8 @@ export interface AccountProfile extends Account {
   invoiceTaxId: string | null;
 }
 
-export type AccountTokenType = 'email-verification' | 'password-reset' | 'session';
+export type AccountTokenType =
+  'email-verification' | 'password-reset' | 'session' | 'company-invite';
 
 // Thrown by createAccount() when the email's UNIQUE constraint is violated —
 // mirrors the existing InvalidFileFormatError pattern in server/routes.ts,
@@ -153,7 +154,7 @@ export async function createAccountToken(
 // for email-verification and password-reset tokens.
 export async function consumeAccountToken(
   rawToken: string,
-  type: 'email-verification' | 'password-reset',
+  type: 'email-verification' | 'password-reset' | 'company-invite',
 ): Promise<string | null> {
   const [row] = await db
     .update(accountTokens)

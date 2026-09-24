@@ -10,6 +10,7 @@ import { AlertsScreen } from './screens/AlertsScreen';
 import { FailureCatalogScreen } from './screens/FailureCatalogScreen';
 import { ShopCatalogScreen } from './screens/ShopCatalogScreen';
 import { PhotoDocumentsScreen } from './screens/PhotoDocumentsScreen';
+import { CompaniesScreen } from './screens/CompaniesScreen';
 
 // Composition root — same "no router yet" pattern as src/App.tsx (a plain
 // Screen union + useState), appropriate here for the same reason: five
@@ -46,6 +47,7 @@ export function AdminApp() {
       {screen === 'catalog' && <FailureCatalogScreen />}
       {screen === 'shop-catalog' && <ShopCatalogScreen session={session} />}
       {screen === 'photo-documents' && <PhotoDocumentsScreen session={session} />}
+      {screen === 'companies' && <CompaniesScreen session={session} />}
       {screen === 'equipment-detail' && equipmentSource && (
         <EquipmentDetailScreen
           session={session}

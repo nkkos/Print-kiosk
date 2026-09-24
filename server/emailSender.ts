@@ -44,6 +44,27 @@ export async function sendVerificationEmail(email: string, token: string): Promi
   );
 }
 
+// B2B company-billing portal (business/) — invites an employee to join a
+// company's billing account. `business/` is a single SPA like admin/shop
+// (docs, "B2B company-billing portal" plan), not separate pages like
+// portal/'s — so unlike the two links above, this one carries the token as
+// a query param on the app's own root rather than a dedicated .html file;
+// BusinessApp.tsx reads it on load and shows the accept-invite screen
+// instead of sign-in when present.
+export async function sendCompanyInviteEmail(
+  email: string,
+  token: string,
+  companyName: string,
+): Promise<void> {
+  const link = `${PORTAL_URL}/business/?token=${token}`;
+  await sendEmail(
+    email,
+    `You've been invited to ${companyName} on Digital.Point`,
+    `<p>You've been added as a member of <strong>${companyName}</strong>. Set your password to get started:</p><p><a href="${link}">${link}</a></p>`,
+    link,
+  );
+}
+
 export async function sendPasswordResetEmail(email: string, token: string): Promise<void> {
   const link = `${PORTAL_URL}/portal/reset-password.html?token=${token}`;
   await sendEmail(

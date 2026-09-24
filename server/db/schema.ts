@@ -33,7 +33,7 @@ export const accountTokens = pgTable(
     accountId: uuid('account_id')
       .notNull()
       .references(() => accounts.id, { onDelete: 'cascade' }),
-    // 'email-verification' | 'password-reset' | 'session'
+    // 'email-verification' | 'password-reset' | 'session' | 'company-invite'
     type: text('type').notNull(),
     tokenHash: text('token_hash').notNull().unique(),
     expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
@@ -203,6 +203,13 @@ export const printOrders = pgTable(
     // present only on orders paid in advance via the portal
     paidQuantity: integer('paid_quantity'),
     sourcePaidOrderId: uuid('source_paid_order_id'),
+    // Set instead of a real payment when an authorized company member picks
+    // "Bill to <Company>" at checkout (server/accountOrderStore.ts's
+    // payOrderForCompany) — the order still reaches 'paid' through the same
+    // lifecycle below, it's just aggregated into a companyInvoices row
+    // later instead of being paid per-order. Null for every ordinary,
+    // individually-paid order.
+    companyId: uuid('company_id').references(() => companies.id, { onDelete: 'set null' }),
     // 'created' | 'paid' | 'issued' — the portal order lifecycle
     // (docs/personal-account-requirements.md, "Order status lifecycle").
     // Only meaningful for accountId-owned rows (portal-created orders);
@@ -497,6 +504,139 @@ export const printTasks = pgTable(
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [index('print_tasks_session_id_idx').on(table.sessionId)],
+);
+
+// B2B company billing (docs, "B2B company-billing portal" plan, 2026-09-17) —
+// a company's employees print through the exact same self-service flow as
+// any other Personal Account (accounts/accountFiles/printOrders below), the
+// only difference is how their printOrders rows get paid: instead of a real
+// payment, an authorized member picks "Bill to <Company>"
+// (server/accountOrderStore.ts's payOrderForCompany), and the aggregated
+// total is invoiced to the company later (companyInvoices below) instead of
+// being paid per-order. Deliberately NOT a parallel identity system —
+// `companyMembers` just links existing `accounts` rows to a company, the
+// same reasoning `staffAccounts` above rejected for pavilion staff (a
+// customer ending up with staff privilege) doesn't apply here since company
+// members are still ordinary self-service customers, just billed
+// differently.
+export const companies = pgTable('companies', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  name: text('name').notNull(),
+  ico: text('ico').notNull(),
+  dic: text('dic').notNull(),
+  // Required to actually issue a real invoice (Slovak faktúra náležitosti)
+  // but not to create the company record — an admin may onboard a company
+  // before every detail is confirmed. Validated at invoice-generation time
+  // instead (server/companyInvoiceStore.ts), not at creation time.
+  icDph: text('ic_dph'),
+  billingEmail: text('billing_email').notNull(),
+  billingAddress: text('billing_address'),
+  // One flat negotiated rate per company — deliberately not a graduated
+  // volume-discount engine (a marketing mockup showed one; no real B2B
+  // customer exists yet to design that complexity against, same
+  // "don't build speculative abstractions" call already made elsewhere in
+  // this schema, e.g. products.fulfillmentType's comment above). Both are
+  // NET (before VAT) — Slovak B2B rates are negotiated net, VAT is added on
+  // top at invoice time (server/companyInvoiceStore.ts).
+  pricePerPageBwCents: integer('price_per_page_bw_cents').notNull(),
+  pricePerPageColorCents: integer('price_per_page_color_cents').notNull(),
+  // Defaults to Slovakia's standard rate but is a per-company override, not
+  // a global constant — a diplomatic mission (the Austrian Embassy sits at
+  // this pavilion's own address, docs — location dossier) can be VAT-exempt
+  // under the Vienna Convention, and a foreign company may fall under
+  // reverse-charge instead of domestic VAT. Confirm the real default with an
+  // accountant before the first real invoice goes out.
+  vatRatePercent: integer('vat_rate_percent').notNull().default(20),
+  active: boolean('active').notNull().default(true),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const companyMembers = pgTable(
+  'company_members',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    companyId: uuid('company_id')
+      .notNull()
+      .references(() => companies.id, { onDelete: 'cascade' }),
+    accountId: uuid('account_id')
+      .notNull()
+      .references(() => accounts.id, { onDelete: 'cascade' }),
+    // 'admin' can invite other members and see the company's invoices;
+    // 'member' can only print and bill to the company.
+    role: text('role').notNull().default('member'),
+    invitedAt: timestamp('invited_at', { withTimezone: true }).notNull().defaultNow(),
+    // Null until the invited account actually verifies/accepts — mirrors
+    // accountTokens' email-verification pattern rather than inventing a
+    // separate invite-status enum.
+    joinedAt: timestamp('joined_at', { withTimezone: true }),
+  },
+  (table) => [
+    index('company_members_company_id_idx').on(table.companyId),
+    index('company_members_account_id_idx').on(table.accountId),
+  ],
+);
+
+export const companyInvoices = pgTable(
+  'company_invoices',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    companyId: uuid('company_id')
+      .notNull()
+      .references(() => companies.id, { onDelete: 'cascade' }),
+    periodStart: timestamp('period_start', { withTimezone: true }).notNull(),
+    periodEnd: timestamp('period_end', { withTimezone: true }).notNull(),
+    // Snapshotted from companies.vatRatePercent at draft-generation time —
+    // never read live from `companies` afterward, so a rate correction (or a
+    // company's exemption status changing) never silently rewrites a
+    // historical invoice.
+    vatRatePercent: integer('vat_rate_percent').notNull(),
+    // Sum of companyInvoiceItems.lineTotalCents (základ dane — the taxable
+    // base, before VAT).
+    totalNetCents: integer('total_net_cents').notNull(),
+    totalVatCents: integer('total_vat_cents').notNull(),
+    // What the company actually owes (totalNetCents + totalVatCents) — the
+    // headline figure on the invoice and in every UI that lists invoices.
+    totalCents: integer('total_cents').notNull(),
+    // 'draft' -> 'issued' (a staff-triggered two-step action, never
+    // automatic — server/adminRoutes.ts) -> 'paid' | 'failed'.
+    status: text('status').notNull().default('draft'),
+    // Which server/invoiceAdapter.ts implementation issued this — kept even
+    // though only one exists today, since switching providers ahead of
+    // Slovakia's 2027 e-invoicing mandate is the whole reason this is an
+    // adapter rather than inline code.
+    externalProvider: text('external_provider'),
+    externalInvoiceId: text('external_invoice_id'),
+    pdfUrl: text('pdf_url'),
+    issuedAt: timestamp('issued_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index('company_invoices_company_id_idx').on(table.companyId)],
+);
+
+// Snapshotted at draft-generation time, same reasoning as shopOrderItems
+// above (a real invoice line must never silently change if the underlying
+// printOrders row or the company's rate is edited afterward).
+export const companyInvoiceItems = pgTable(
+  'company_invoice_items',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    companyInvoiceId: uuid('company_invoice_id')
+      .notNull()
+      .references(() => companyInvoices.id, { onDelete: 'cascade' }),
+    printOrderId: uuid('print_order_id').references(() => printOrders.id, {
+      onDelete: 'set null',
+    }),
+    description: text('description').notNull(),
+    quantity: integer('quantity').notNull(),
+    // NET (before VAT) — same convention as companies.pricePerPageBwCents.
+    unitPriceCents: integer('unit_price_cents').notNull(),
+    lineTotalCents: integer('line_total_cents').notNull(),
+    // Computed from the parent invoice's vatRatePercent at generation time,
+    // stored per line (not just once on the invoice) since a real invoice
+    // must show VAT per line item, not only as a single combined total.
+    vatAmountCents: integer('vat_amount_cents').notNull(),
+  },
+  (table) => [index('company_invoice_items_company_invoice_id_idx').on(table.companyInvoiceId)],
 );
 
 // Photo kiosk's document-photo requirement data (docs/photo-kiosk-requirements.md,

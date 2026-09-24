@@ -27,6 +27,19 @@ import {
   createDocument,
   updateDocument,
 } from './photoDocumentStore.js';
+import {
+  createCompany,
+  listCompanies,
+  getCompany,
+  listCompanyMembers,
+  inviteCompanyMember,
+} from './companyStore.js';
+import {
+  createDraftInvoice,
+  issueInvoice as issueCompanyInvoice,
+  listInvoicesForCompany,
+} from './companyInvoiceStore.js';
+import { sendCompanyInviteEmail } from './emailSender.js';
 
 // Admin panel backend (docs/screens/admin-panel-wireframes.md,
 // docs/screens/admin-panel-spec.md) — a distinct router mounted under
@@ -458,6 +471,120 @@ adminRouter.patch('/api/admin/photo-documents/:id', requireStaffSession, async (
     return;
   }
   res.json(document);
+});
+
+// B2B company-billing portal (docs, "B2B company-billing portal" plan,
+// 2026-09-17) — company/member management + the two-step draft/issue
+// invoice flow. Open to either staff role, same call already made for the
+// shop catalog above: creating a company or inviting a member isn't
+// destructive/session-interrupting enough to need requireSeniorRole.
+// Issuing a real invoice is the one genuinely irreversible action here, but
+// gating it behind `senior` can be revisited once a real provider (not the
+// stub in server/invoiceAdapter.ts) is actually wired up.
+interface CompanyBody {
+  name?: unknown;
+  ico?: unknown;
+  dic?: unknown;
+  icDph?: unknown;
+  billingEmail?: unknown;
+  billingAddress?: unknown;
+  pricePerPageBwCents?: unknown;
+  pricePerPageColorCents?: unknown;
+  vatRatePercent?: unknown;
+}
+
+adminRouter.get('/api/admin/companies', requireStaffSession, async (_req, res) => {
+  res.json(await listCompanies());
+});
+
+adminRouter.post('/api/admin/companies', requireStaffSession, async (req, res) => {
+  const body = (req.body ?? {}) as CompanyBody;
+  if (
+    typeof body.name !== 'string' ||
+    !body.name.trim() ||
+    typeof body.ico !== 'string' ||
+    !body.ico.trim() ||
+    typeof body.dic !== 'string' ||
+    !body.dic.trim() ||
+    typeof body.billingEmail !== 'string' ||
+    !body.billingEmail.trim() ||
+    !isFiniteNumber(body.pricePerPageBwCents) ||
+    !isFiniteNumber(body.pricePerPageColorCents)
+  ) {
+    res.status(400).json({ error: 'Invalid company' });
+    return;
+  }
+  const company = await createCompany({
+    name: body.name,
+    ico: body.ico,
+    dic: body.dic,
+    icDph: typeof body.icDph === 'string' ? body.icDph : undefined,
+    billingEmail: body.billingEmail,
+    billingAddress: typeof body.billingAddress === 'string' ? body.billingAddress : undefined,
+    pricePerPageBwCents: body.pricePerPageBwCents,
+    pricePerPageColorCents: body.pricePerPageColorCents,
+    vatRatePercent: isFiniteNumber(body.vatRatePercent) ? body.vatRatePercent : undefined,
+  });
+  res.status(201).json(company);
+});
+
+adminRouter.get('/api/admin/companies/:id/members', requireStaffSession, async (req, res) => {
+  res.json(await listCompanyMembers(paramString(req.params.id)));
+});
+
+adminRouter.post('/api/admin/companies/:id/members', requireStaffSession, async (req, res) => {
+  const companyId = paramString(req.params.id);
+  const { email, role } = (req.body ?? {}) as { email?: unknown; role?: unknown };
+  if (typeof email !== 'string' || !email.trim() || (role !== 'admin' && role !== 'member')) {
+    res.status(400).json({ error: 'A valid email and role are required' });
+    return;
+  }
+  const company = await getCompany(companyId);
+  if (!company) {
+    res.status(404).json({ error: 'Company not found' });
+    return;
+  }
+  const token = await inviteCompanyMember(companyId, email, role);
+  await sendCompanyInviteEmail(email, token, company.name);
+  res.status(201).json({ ok: true });
+});
+
+adminRouter.get('/api/admin/companies/:id/invoices', requireStaffSession, async (req, res) => {
+  res.json(await listInvoicesForCompany(paramString(req.params.id)));
+});
+
+// Step 1/2 — aggregates the period into a reviewable 'draft', doesn't call
+// the invoice provider yet.
+adminRouter.post(
+  '/api/admin/companies/:id/invoices/generate',
+  requireStaffSession,
+  async (req, res) => {
+    const { periodStart, periodEnd } = (req.body ?? {}) as {
+      periodStart?: unknown;
+      periodEnd?: unknown;
+    };
+    if (typeof periodStart !== 'string' || typeof periodEnd !== 'string') {
+      res.status(400).json({ error: 'periodStart and periodEnd (ISO dates) are required' });
+      return;
+    }
+    const invoice = await createDraftInvoice(
+      paramString(req.params.id),
+      new Date(periodStart),
+      new Date(periodEnd),
+    );
+    res.status(201).json(invoice);
+  },
+);
+
+// Step 2/2 — staff reviewed the draft's total and confirmed; only now does
+// server/invoiceAdapter.ts get called.
+adminRouter.post('/api/admin/company-invoices/:id/issue', requireStaffSession, async (req, res) => {
+  const invoice = await issueCompanyInvoice(paramString(req.params.id));
+  if (!invoice) {
+    res.status(404).json({ error: 'Invoice not found or not in draft status' });
+    return;
+  }
+  res.json(invoice);
 });
 
 export { requireStaffSession, requireSeniorRole };

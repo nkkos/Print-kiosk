@@ -38,6 +38,11 @@ export default defineConfig({
         start: resolve(rootDir, 'portal/start.html'),
         orders: resolve(rootDir, 'portal/orders.html'),
         admin: resolve(rootDir, 'admin/index.html'),
+        // The B2B company-billing portal (business/, docs — "B2B company-billing
+        // portal" plan) — a sixth mini-app, same "separate concern, single SPA"
+        // reasoning as admin/shop above: a company employee moves between New print
+        // job / My files / Orders / Invoices repeatedly in one visit.
+        business: resolve(rootDir, 'business/index.html'),
         // The shop (shop/, docs/shop-requirements.md) — a fourth mini-app, same
         // reasoning as admin/'s own entry: real integration with the account
         // system (not something a separately-hosted landing tool can own), and a

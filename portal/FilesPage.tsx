@@ -47,12 +47,24 @@ const STATUS_LABEL: Record<AccountFile['status'], string> = {
   'scan-unavailable': 'Scan unavailable',
 };
 
-interface ConfigureAndPayProps {
+export interface ConfigureAndPayProps {
   sessionToken: string;
   file: AccountFile;
+  // Parameterized once business/NewPrintJobScreen.tsx needed the identical
+  // upload/configure/preview flow but a different final step ("Bill to
+  // <Company>" instead of a real/simulated payment, server/accountOrderStore.ts's
+  // payOrderForCompany) — same two-consumer-extraction rule already governing
+  // this codebase, not a speculative prop.
+  onPay?: (sessionToken: string, orderId: string) => Promise<void>;
+  payLabel?: string;
 }
 
-function ConfigureAndPay({ sessionToken, file }: ConfigureAndPayProps) {
+export function ConfigureAndPay({
+  sessionToken,
+  file,
+  onPay = payOrder,
+  payLabel = 'Pay now (simulated)',
+}: ConfigureAndPayProps) {
   const [paperSize, setPaperSize] = useState<CreateOrderParams['paperSize']>('A4');
   const [sides, setSides] = useState<CreateOrderParams['sides']>('single');
   const [color, setColor] = useState<CreateOrderParams['color']>('bw');
@@ -145,7 +157,7 @@ function ConfigureAndPay({ sessionToken, file }: ConfigureAndPayProps) {
     setError(null);
     try {
       const order = await createOrder(sessionToken, buildOrderParams());
-      await payOrder(sessionToken, order.id);
+      await onPay(sessionToken, order.id);
       setResult('paid');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Payment failed');
@@ -342,7 +354,7 @@ function ConfigureAndPay({ sessionToken, file }: ConfigureAndPayProps) {
         Save
       </button>
       <button type="button" onClick={handlePay} disabled={isSubmitting}>
-        Pay now (simulated)
+        {payLabel}
       </button>
     </div>
   );
