@@ -133,7 +133,12 @@ export async function submitPrintJob(
           bin: options.inputTray ?? inputTrayForPaperSize(options.paperSize),
           side,
           monochrome: options.monochrome,
-          orientation: options.orientation,
+          // Orientation deliberately NOT passed: SumatraPDF's `portrait`/
+          // `landscape` rotate the page's *content* (a portrait page forced
+          // landscape comes out shrunk onto half the sheet). Left alone, it
+          // auto-rotates each page that's wider than tall onto the sheet —
+          // right for every page, mixed documents included. `orientation`
+          // still picks the duplex flip edge above.
           scale: options.scale,
           pages: options.pages,
         }),

@@ -69,7 +69,6 @@ export function ConfigureAndPay({
   const [paperSize, setPaperSize] = useState<CreateOrderParams['paperSize']>('A4');
   const [sides, setSides] = useState<CreateOrderParams['sides']>('single');
   const [color, setColor] = useState<CreateOrderParams['color']>('bw');
-  const [orientation, setOrientation] = useState<CreateOrderParams['orientation']>('portrait');
   const [scale, setScale] = useState<CreateOrderParams['scale']>('fit');
   const [quantity, setQuantity] = useState(1);
   const [error, setError] = useState<string | null>(null);
@@ -77,6 +76,9 @@ export function ConfigureAndPay({
   const [result, setResult] = useState<'none' | 'saved' | 'paid'>('none');
 
   const preview = usePreview(getAccountFileContentUrl(file.id));
+  // Follows the document itself, same as the kiosk
+  // (PrintOrderConfigurationScreen.tsx) — not a choice for a finished file.
+  const orientation: CreateOrderParams['orientation'] = preview.orientation ?? 'portrait';
   const {
     pageRangeMode,
     setPageRangeMode,
@@ -99,11 +101,11 @@ export function ConfigureAndPay({
     if (preview.state !== 'ready' || preview.kind !== 'pdf' || !preview.pdf) return;
     const canvas = thumbnailCanvasRef.current;
     if (!canvas) return;
-    renderPdfPageToCanvas(preview.pdf, 1, canvas, orientation === 'landscape' ? 90 : 0, {
+    renderPdfPageToCanvas(preview.pdf, 1, canvas, {
       kind: 'fit-width',
       targetWidthPx: 160,
     }).catch(() => {});
-  }, [preview.state, preview.kind, preview.pdf, orientation]);
+  }, [preview.state, preview.kind, preview.pdf]);
 
   useEffect(() => {
     if (!isPreviewOpen) setPopupPage(1);
@@ -113,11 +115,11 @@ export function ConfigureAndPay({
     if (!isPreviewOpen || preview.kind !== 'pdf' || !preview.pdf) return;
     const canvas = popupCanvasRef.current;
     if (!canvas) return;
-    renderPdfPageToCanvas(preview.pdf, popupPage, canvas, orientation === 'landscape' ? 90 : 0, {
+    renderPdfPageToCanvas(preview.pdf, popupPage, canvas, {
       kind: 'fit-width',
       targetWidthPx: 480,
     }).catch(() => {});
-  }, [isPreviewOpen, preview.kind, preview.pdf, popupPage, orientation]);
+  }, [isPreviewOpen, preview.kind, preview.pdf, popupPage]);
 
   const isPreviewClickable = preview.state === 'ready';
 
@@ -269,16 +271,6 @@ export function ConfigureAndPay({
         >
           <option value="bw">Black & white</option>
           <option value="color">Color</option>
-        </select>
-      </label>
-      <label>
-        Orientation
-        <select
-          value={orientation}
-          onChange={(e) => setOrientation(e.target.value as CreateOrderParams['orientation'])}
-        >
-          <option value="portrait">Portrait</option>
-          <option value="landscape">Landscape</option>
         </select>
       </label>
       <label>

@@ -13,6 +13,7 @@ import {
   usePreview,
   usePageRangeSelection,
   renderPdfPageToCanvas,
+  getPdfPageOrientation,
   type RenderMode,
 } from '../../utils/documentPreview';
 import styles from './PrintOrderConfigurationScreen.module.css';
@@ -114,7 +115,6 @@ export function PrintOrderConfigurationScreen({
   const [paperSize, setPaperSize] = useState<PrintOrder['paperSize']>('A4');
   const [sides, setSides] = useState<PrintOrder['sides']>('single');
   const [color, setColor] = useState<PrintOrder['color']>('bw');
-  const [orientation, setOrientation] = useState<PrintOrder['orientation']>('portrait');
   const [scale, setScale] = useState<PrintOrder['scale']>('fit');
   const [quantity, setQuantity] = useState(1);
   const contentUrl = sourceFileId
@@ -123,6 +123,10 @@ export function PrintOrderConfigurationScreen({
       : getUploadedFileContentUrl(sourceFileId)
     : undefined;
   const preview = usePreview(contentUrl);
+  // Follows the document itself — a converted file can't be re-laid-out, and
+  // forcing the sheet the other way only shrinks the page onto half of it.
+  // Still recorded on the order: it picks the duplex flip edge.
+  const orientation: PrintOrder['orientation'] = preview.orientation ?? 'portrait';
   const {
     pageRangeMode,
     setPageRangeMode,
@@ -146,25 +150,48 @@ export function PrintOrderConfigurationScreen({
   const thumbnailCanvasRef = useRef<HTMLCanvasElement>(null);
   const popupCanvasRef = useRef<HTMLCanvasElement>(null);
 
-  // Thumbnail: always page 1, fit to the fixed box, rotated per orientation.
-  // Never simulates `scale` — that only becomes meaningful once there's a
-  // real paper-size-calibrated frame to compare against (the popup below).
+  // Thumbnail: always page 1, as the page itself is shaped. Never simulates
+  // `scale` — that only becomes meaningful once there's a real
+  // paper-size-calibrated frame to compare against (the popup below).
   useEffect(() => {
     if (preview.state !== 'ready' || preview.kind !== 'pdf' || !preview.pdf) return;
     const canvas = thumbnailCanvasRef.current;
     if (!canvas) return;
-    renderPdfPageToCanvas(preview.pdf, 1, canvas, orientation === 'landscape' ? 90 : 0, {
+    renderPdfPageToCanvas(preview.pdf, 1, canvas, {
       kind: 'fit-width',
       targetWidthPx: 240,
     }).catch(() => {});
-  }, [preview.state, preview.kind, preview.pdf, orientation]);
+  }, [preview.state, preview.kind, preview.pdf]);
+
+  // The popup's sheet turns with whichever page is shown — mixed documents
+  // print each page onto the sheet the way it fits.
+  const [popupPageOrientation, setPopupPageOrientation] =
+    useState<PrintOrder['orientation']>(orientation);
+  useEffect(() => {
+    if (!isPreviewOpen) return;
+    if (preview.kind !== 'pdf' || !preview.pdf) {
+      setPopupPageOrientation(orientation);
+      return;
+    }
+    let cancelled = false;
+    getPdfPageOrientation(preview.pdf, popupPage)
+      .then((pageOrientation) => {
+        if (!cancelled) setPopupPageOrientation(pageOrientation);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [isPreviewOpen, preview.kind, preview.pdf, popupPage, orientation]);
 
   // Popup frame proportions — real paper size (mm) at a fixed px-per-mm
-  // scale, swapped when landscape, so "original size" vs. "fit" is honestly
-  // comparable against something real rather than an arbitrary box.
+  // scale, turned to match the page, so "original size" vs. "fit" is
+  // honestly comparable against something real rather than an arbitrary box.
   const paperMm = PAPER_SIZE_MM[paperSize];
-  const frameWidthPx = (orientation === 'landscape' ? paperMm.height : paperMm.width) * PX_PER_MM;
-  const frameHeightPx = (orientation === 'landscape' ? paperMm.width : paperMm.height) * PX_PER_MM;
+  const frameWidthPx =
+    (popupPageOrientation === 'landscape' ? paperMm.height : paperMm.width) * PX_PER_MM;
+  const frameHeightPx =
+    (popupPageOrientation === 'landscape' ? paperMm.width : paperMm.height) * PX_PER_MM;
 
   useEffect(() => {
     if (!isPreviewOpen) setPopupPage(1);
@@ -178,23 +205,8 @@ export function PrintOrderConfigurationScreen({
       scale === 'fit'
         ? { kind: 'fit-box', widthPx: frameWidthPx, heightPx: frameHeightPx }
         : { kind: 'absolute-points', pxPerPoint: PX_PER_MM * POINTS_TO_MM };
-    renderPdfPageToCanvas(
-      preview.pdf,
-      popupPage,
-      canvas,
-      orientation === 'landscape' ? 90 : 0,
-      mode,
-    ).catch(() => {});
-  }, [
-    isPreviewOpen,
-    preview.kind,
-    preview.pdf,
-    popupPage,
-    orientation,
-    scale,
-    frameWidthPx,
-    frameHeightPx,
-  ]);
+    renderPdfPageToCanvas(preview.pdf, popupPage, canvas, mode).catch(() => {});
+  }, [isPreviewOpen, preview.kind, preview.pdf, popupPage, scale, frameWidthPx, frameHeightPx]);
 
   function handleAddToCart() {
     onAddToCart({
@@ -238,7 +250,11 @@ export function PrintOrderConfigurationScreen({
       <div className={styles.body}>
         <div
           id="print-order-preview"
-          className={styles.preview}
+          className={
+            orientation === 'landscape'
+              ? `${styles.preview} ${styles.previewLandscape}`
+              : styles.preview
+          }
           onClick={isPreviewClickable ? () => setIsPreviewOpen(true) : undefined}
           style={isPreviewClickable ? { cursor: 'pointer' } : undefined}
         >
@@ -319,28 +335,6 @@ export function PrintOrderConfigurationScreen({
               onChange={() => selectPaperSize('A5')}
             />
             {t.common.paperSizeA5}
-          </label>
-        </fieldset>
-
-        <fieldset className={styles.settings}>
-          <legend>{t.printOrderConfiguration.orientationLegend}</legend>
-          <label>
-            <input
-              type="radio"
-              name="orientation"
-              checked={orientation === 'portrait'}
-              onChange={() => setOrientation('portrait')}
-            />
-            {t.common.orientationPortrait}
-          </label>
-          <label>
-            <input
-              type="radio"
-              name="orientation"
-              checked={orientation === 'landscape'}
-              onChange={() => setOrientation('landscape')}
-            />
-            {t.common.orientationLandscape}
           </label>
         </fieldset>
 

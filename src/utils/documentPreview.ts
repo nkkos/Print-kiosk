@@ -14,6 +14,7 @@ import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 
 export type PreviewState = 'loading' | 'ready' | 'unavailable';
 export type PreviewKind = 'pdf' | 'image';
+export type PageOrientation = 'portrait' | 'landscape';
 
 export interface Preview {
   state: PreviewState;
@@ -24,6 +25,10 @@ export interface Preview {
   pdf: PDFDocumentProxy | null;
   numPages: number;
   imageUrl: string | null;
+  /** The document's own orientation (first page of a PDF, or the image) —
+   * a converted file can't be re-laid-out, so the kiosk follows it instead
+   * of offering a choice (the printer rotates each page onto the sheet). */
+  orientation: PageOrientation | null;
 }
 
 export const EMPTY_PREVIEW: Preview = {
@@ -32,6 +37,7 @@ export const EMPTY_PREVIEW: Preview = {
   pdf: null,
   numPages: 0,
   imageUrl: null,
+  orientation: null,
 };
 
 /** Fetches and decodes the file at `contentUrl` (undefined = no real file —
@@ -58,6 +64,7 @@ export function usePreview(contentUrl: string | undefined): Preview {
         const contentType = response.headers.get('content-type') ?? '';
         if (contentType.startsWith('image/')) {
           const blob = await response.blob();
+          const bitmap = await createImageBitmap(blob).catch(() => null);
           if (cancelled) return;
           objectUrl = URL.createObjectURL(blob);
           setPreview({
@@ -66,7 +73,9 @@ export function usePreview(contentUrl: string | undefined): Preview {
             pdf: null,
             numPages: 0,
             imageUrl: objectUrl,
+            orientation: bitmap ? (bitmap.width > bitmap.height ? 'landscape' : 'portrait') : null,
           });
+          bitmap?.close();
           return;
         }
 
@@ -77,8 +86,16 @@ export function usePreview(contentUrl: string | undefined): Preview {
         const pdfjsLib = await import('pdfjs-dist');
         pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
         const pdf = await pdfjsLib.getDocument({ data }).promise;
+        const orientation = await getPdfPageOrientation(pdf, 1);
         if (cancelled) return;
-        setPreview({ state: 'ready', kind: 'pdf', pdf, numPages: pdf.numPages, imageUrl: null });
+        setPreview({
+          state: 'ready',
+          kind: 'pdf',
+          pdf,
+          numPages: pdf.numPages,
+          imageUrl: null,
+          orientation,
+        });
       })
       .catch(() => {
         if (!cancelled) setPreview(EMPTY_PREVIEW);
@@ -98,26 +115,34 @@ export type RenderMode =
   | { kind: 'fit-box'; widthPx: number; heightPx: number }
   | { kind: 'absolute-points'; pxPerPoint: number };
 
-// `extraRotationDeg` simulates what a driver forcing the selected
-// orientation does to a page shaped the other way — combined with the
-// page's own intrinsic rotation, not replacing it.
+/** A page's orientation as it will look on paper — its own size combined
+ * with any rotation stored in the PDF. */
+export async function getPdfPageOrientation(
+  pdf: PDFDocumentProxy,
+  pageNumber: number,
+): Promise<PageOrientation> {
+  const page = await pdf.getPage(pageNumber);
+  const { width, height } = page.getViewport({ scale: 1 });
+  return width > height ? 'landscape' : 'portrait';
+}
+
+// Renders the page exactly as it is (its own rotation included) — no
+// simulated re-orientation: the printer rotates each page onto the sheet.
 export async function renderPdfPageToCanvas(
   pdf: PDFDocumentProxy,
   pageNumber: number,
   canvas: HTMLCanvasElement,
-  extraRotationDeg: 0 | 90,
   mode: RenderMode,
 ): Promise<void> {
   const page = await pdf.getPage(pageNumber);
-  const rotation = (page.rotate + extraRotationDeg) % 360;
-  const base = page.getViewport({ scale: 1, rotation });
+  const base = page.getViewport({ scale: 1 });
   const scale =
     mode.kind === 'fit-width'
       ? mode.targetWidthPx / base.width
       : mode.kind === 'fit-box'
         ? Math.min(mode.widthPx / base.width, mode.heightPx / base.height)
         : mode.pxPerPoint;
-  const viewport = page.getViewport({ scale, rotation });
+  const viewport = page.getViewport({ scale });
   canvas.width = viewport.width;
   canvas.height = viewport.height;
   const context = canvas.getContext('2d');
