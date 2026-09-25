@@ -16,6 +16,9 @@ interface CartPanelProps {
   onQuantityChange?: (id: string, quantity: number) => void;
   onRemove?: (id: string) => void;
   onProceedToPayment?: (selectedItems: PrintOrder[]) => void;
+  // The printer can't print right now (KioskScreenLayout checks) — payment
+  // is refused rather than taking money for a job that can't come out.
+  printerUnavailable?: boolean;
 }
 
 export function CartPanel({
@@ -23,6 +26,7 @@ export function CartPanel({
   onQuantityChange,
   onRemove,
   onProceedToPayment,
+  printerUnavailable = false,
 }: CartPanelProps) {
   const t = useTranslation();
   // Defaults to "all checked" — this component only ever mounts fresh each
@@ -135,11 +139,19 @@ export function CartPanel({
       <p className={styles.total}>{t.cart.total(total.toFixed(2))}</p>
 
       {onProceedToPayment && relevantItems.length > 0 && (
-        <Button
-          id="cart-proceed-to-payment"
-          label={t.cart.proceedToPayment}
-          onClick={() => onProceedToPayment(relevantItems)}
-        />
+        <>
+          {printerUnavailable && (
+            <p className={styles.unavailable} role="status">
+              {t.cart.printerUnavailable}
+            </p>
+          )}
+          <Button
+            id="cart-proceed-to-payment"
+            label={t.cart.proceedToPayment}
+            onClick={() => onProceedToPayment(relevantItems)}
+            disabled={printerUnavailable}
+          />
+        </>
       )}
     </div>
   );

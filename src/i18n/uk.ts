@@ -56,6 +56,8 @@ export const uk: Translations = {
     pages: (range: string) => `Сторінки: ${range}`,
     total: (amount: string) => `Разом: $${amount}`,
     proceedToPayment: 'Перейти до оплати',
+    printerUnavailable:
+      'Друк тимчасово недоступний — персонал уже повідомлено. Кошик збережено, спробуйте трохи пізніше.',
   },
   login: {
     checkYourEmail: 'Перевірте пошту',

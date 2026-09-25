@@ -11,6 +11,7 @@ import { useRegisterQrImageUrl } from '../../components/LoginPanel/useRegisterQr
 import { useTranslation, LANGUAGE_NAMES } from '../../i18n';
 import type { Language } from '../../i18n';
 import type { EndSessionReason, PrintOrder } from '../../types/kiosk';
+import { isPrinterAvailable } from '../../services/printerStatusApi';
 import styles from './KioskScreenLayout.module.css';
 
 // Automatic timeout (docs/domain/kiosk-session.md, "Automatic timeout"):
@@ -22,6 +23,7 @@ import styles from './KioskScreenLayout.module.css';
 // in the domain doc and is not implemented.
 const IDLE_WARNING_DELAY_MS = 5 * 60 * 1000;
 const IDLE_END_DELAY_MS = 60 * 1000;
+const PRINTER_STATUS_POLL_MS = 10 * 1000;
 // Exported so App.tsx's session-activity heartbeat (docs/data-privacy-requirements.md
 // follow-up) can listen for the same real-activity signal, instead of
 // duplicating this list.
@@ -134,6 +136,24 @@ export function KioskScreenLayout({
 }: KioskScreenLayoutProps) {
   const t = useTranslation();
   const [isCartOpen, setIsCartOpen] = useState(initialCartOpen);
+  const [printerUnavailable, setPrinterUnavailable] = useState(false);
+
+  // Checked only while the Cart is open — the one place payment starts —
+  // and re-checked so a fixed jam unlocks the button without reopening.
+  useEffect(() => {
+    if (!isCartOpen) return;
+    let cancelled = false;
+    const check = () =>
+      isPrinterAvailable().then((available) => {
+        if (!cancelled) setPrinterUnavailable(!available);
+      });
+    check();
+    const intervalId = setInterval(check, PRINTER_STATUS_POLL_MS);
+    return () => {
+      cancelled = true;
+      clearInterval(intervalId);
+    };
+  }, [isCartOpen]);
   const [isEndConfirmOpen, setIsEndConfirmOpen] = useState(false);
   const [isConnectionNotificationVisible, setIsConnectionNotificationVisible] = useState(false);
   const [isIdleWarningOpen, setIsIdleWarningOpen] = useState(false);
@@ -286,6 +306,7 @@ export function KioskScreenLayout({
               onQuantityChange={onQuantityChange}
               onRemove={onRemoveItem}
               onProceedToPayment={onProceedToPayment}
+              printerUnavailable={printerUnavailable}
             />
           </Modal>
         )}

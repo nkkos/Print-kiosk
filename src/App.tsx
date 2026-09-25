@@ -13,6 +13,7 @@ import { PrintStatusScreen } from './features/print-status/PrintStatusScreen';
 import { FinalisingSessionScreen } from './features/finalising-session/FinalisingSessionScreen';
 import { EndingSessionScreen } from './features/ending-session/EndingSessionScreen';
 import { ACTIVITY_EVENTS } from './layouts/KioskScreenLayout/KioskScreenLayout';
+import { getStandId } from './utils/standId';
 import { computeItemPrice } from './utils/pricing';
 import { getUploadConfig, listQrFiles } from './services/qrUploadApi';
 import { createScanSession, getScanSession } from './services/scanApi';
@@ -394,6 +395,7 @@ function App() {
       printingItems.map((item) =>
         submitPrintJob({
           sessionId: session?.id ?? null,
+          standId: getStandId(),
           fileId: item.sourceFileId,
           sourceFileOrigin: item.sourceFileOrigin,
           printOrderId: item.sourcePaidOrderId,

@@ -59,6 +59,7 @@ export async function createPrintTask(
   sessionId: string | null,
   printOrderId: string | undefined,
   options: PrintOptions,
+  standId: string | null = null,
 ): Promise<PrintTask> {
   const [row] = await db
     .insert(printTasks)
@@ -66,6 +67,7 @@ export async function createPrintTask(
       sessionId,
       printOrderId: printOrderId ?? null,
       printOptions: JSON.stringify(options),
+      standId,
     })
     .returning(selectColumns);
   return row as PrintTask;
@@ -149,6 +151,7 @@ export async function getPrintTask(id: string): Promise<PrintTask | null> {
 export interface PrintTaskAdminRow {
   id: string;
   sessionId: string | null;
+  standId: string | null;
   status: PrintTaskStatus;
   errorReason: PrintTaskErrorReason | null;
   printerName: string | null;
@@ -169,6 +172,7 @@ export async function listRecentPrintTasks(limit = 200): Promise<PrintTaskAdminR
     .select({
       id: printTasks.id,
       sessionId: printTasks.sessionId,
+      standId: printTasks.standId,
       status: printTasks.status,
       errorReason: printTasks.errorReason,
       printerName: printTasks.printerName,

@@ -59,6 +59,8 @@ export const en = {
     pages: (range: string) => `Pages: ${range}`,
     total: (amount: string) => `Total: $${amount}`,
     proceedToPayment: 'Proceed to payment',
+    printerUnavailable:
+      'Printing is temporarily unavailable — our staff have been notified. Your cart is saved, please try again shortly.',
   },
   login: {
     checkYourEmail: 'Check your email',

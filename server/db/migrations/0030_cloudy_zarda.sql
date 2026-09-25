@@ -1,0 +1,1 @@
+ALTER TABLE "print_tasks" ADD COLUMN "stand_id" text;

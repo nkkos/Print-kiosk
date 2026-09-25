@@ -45,8 +45,9 @@ The backend was deliberately built without hardening for the prototype (see `CLA
 - [ ] Enable SNMP v1/v2c read access in the Brother's Web Based Management; set `PRINTER_SNMP_HOST` on the agent and confirm `GET /api/printer-status` reflects a real jam / empty tray / open door.
 - [ ] Tune the agent's timings on real hardware (`agent/jobTracker.ts`: grace period, idle readings, 10-minute watch limit) — in particular that a sleeping printer reports "idle" and that a finished job is detected.
 - [ ] Set `VITE_HIDE_PRINT_SIMULATE=true` in the Cloudflare Pages build, so customers never see the "Simulate …" buttons (real outcomes come from the agent).
-- [ ] Set `PRINT_EXECUTION=agent` and `PRINT_AGENT_TOKEN` on Railway, the same token in the agent's `.env`; run the agent as a Windows service that restarts on failure.
-- [ ] Kiosk stands: stop taking payment for printing while `GET /api/printer-status` says unavailable (not built yet).
+- [ ] Set `PRINT_EXECUTION=agent` and `PRINT_AGENT_TOKEN` on Railway, the same token in the agent's `.env`; register the agent's startup task (`agent\windows\install-agent-task.ps1`, elevated) and confirm it survives a reboot and a killed `node.exe`.
+- [ ] Open each stand's kiosk browser with `?stand=A` / `?stand=B`; check the stand shows up in the admin Print Queue.
+- [ ] Check on a real stand that the cart refuses payment while the printer is unavailable (agent stopped, door open) and unlocks by itself once it's back.
 - [ ] Review incident noise: one jam currently yields a device incident (`printer.jammed`), a task incident (`printer.paper-jam`) and, if the job had reached the printer, `printer.job-interrupted` — decide which should reach Telegram.
 
 Known hardware constraint, already handled in code: the automatic duplex unit supports A4 only, so A5 double-sided is blocked in the kiosk UI, the portal and order validation.

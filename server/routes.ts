@@ -1202,6 +1202,10 @@ router.get('/api/accounts/:accountId/orders', async (req, res) => {
 // gives no reliable in-progress signal, so jam/out-of-paper/out-of-ink stay
 // manual "Simulate ..." outcomes below — both paths update the same record,
 // so the frontend only ever reacts to real status, never to how it got there.
+// Short, printable stand labels only ('A', 'B', 'stand-2') — it's shown to
+// staff in the admin panel, so nothing longer or stranger is stored.
+const STAND_ID_PATTERN = /^[A-Za-z0-9-]{1,16}$/;
+
 router.post('/api/print-tasks', async (req, res) => {
   const {
     sessionId,
@@ -1215,7 +1219,9 @@ router.post('/api/print-tasks', async (req, res) => {
     orientation,
     scale,
     pages,
+    standId,
   } = (req.body ?? {}) as {
+    standId?: unknown;
     sessionId?: unknown;
     fileId?: unknown;
     sourceFileOrigin?: unknown;
@@ -1246,6 +1252,7 @@ router.post('/api/print-tasks', async (req, res) => {
     resolvedSessionId,
     typeof printOrderId === 'string' ? printOrderId : undefined,
     options,
+    typeof standId === 'string' && STAND_ID_PATTERN.test(standId) ? standId : null,
   );
   // Pavilion launch plan (2026-09-16): two stands share one printer feeding
   // a 4-bin mailbox (server/pickupBins.ts) — a task only actually prints

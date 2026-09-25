@@ -28,6 +28,8 @@ export interface PrintTask {
 
 export interface SubmitPrintJobRequest {
   sessionId: string | null;
+  /** Which kiosk stand sent the job (src/utils/standId.ts). */
+  standId?: string | null;
   /** The real backing file's id to print — omitted or unresolvable falls
    * back to a placeholder document (server/printerAdapter.ts). */
   fileId?: string;

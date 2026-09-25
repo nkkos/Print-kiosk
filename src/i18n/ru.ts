@@ -56,6 +56,8 @@ export const ru: Translations = {
     pages: (range: string) => `Страницы: ${range}`,
     total: (amount: string) => `Итого: $${amount}`,
     proceedToPayment: 'Перейти к оплате',
+    printerUnavailable:
+      'Печать временно недоступна — сотрудники уже уведомлены. Корзина сохранена, попробуйте чуть позже.',
   },
   login: {
     checkYourEmail: 'Проверьте почту',

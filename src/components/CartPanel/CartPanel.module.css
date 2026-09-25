@@ -64,3 +64,8 @@
   font: var(--font-h2);
   color: var(--color-accent-strong);
 }
+
+.unavailable {
+  margin: 0;
+  color: var(--color-danger-strong);
+}

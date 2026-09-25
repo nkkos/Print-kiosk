@@ -164,6 +164,7 @@ export function PrintQueueScreen({ session }: PrintQueueScreenProps) {
               {occupant ? (
                 <>
                   <span className="equip-metric">
+                    {occupant.standId ? `Стойка ${occupant.standId} · ` : ''}
                     Сессия {shortId(occupant.sessionId)} · с {formatTime(occupant.createdAt)}
                   </span>
                   <button
@@ -199,6 +200,7 @@ export function PrintQueueScreen({ session }: PrintQueueScreenProps) {
           <tr>
             <th>Время</th>
             <th>Задание</th>
+            <th>Стойка</th>
             <th>Сессия</th>
             <th>Статус</th>
             <th>Ячейка</th>
@@ -209,7 +211,7 @@ export function PrintQueueScreen({ session }: PrintQueueScreenProps) {
         <tbody>
           {visibleTasks.length === 0 ? (
             <tr>
-              <td colSpan={7} className="empty-note">
+              <td colSpan={8} className="empty-note">
                 Ничего не найдено
               </td>
             </tr>
@@ -218,6 +220,7 @@ export function PrintQueueScreen({ session }: PrintQueueScreenProps) {
               <tr key={task.id}>
                 <td>{formatTime(task.createdAt)}</td>
                 <td className="equip-metric">{shortId(task.id)}</td>
+                <td>{task.standId ?? '—'}</td>
                 <td className="equip-metric">{shortId(task.sessionId)}</td>
                 <td>
                   <StatusChip status={task.status} />

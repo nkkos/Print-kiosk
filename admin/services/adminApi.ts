@@ -28,6 +28,8 @@ export interface Incident {
 export interface PrintTaskAdmin {
   id: string;
   sessionId: string | null;
+  // Which kiosk stand sent the job — null for anything else.
+  standId: string | null;
   status: string;
   errorReason: string | null;
   printerName: string | null;

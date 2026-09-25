@@ -56,6 +56,8 @@ export const sk: Translations = {
     pages: (range: string) => `Strany: ${range}`,
     total: (amount: string) => `Spolu: $${amount}`,
     proceedToPayment: 'Prejsť k platbe',
+    printerUnavailable:
+      'Tlač je dočasne nedostupná — personál bol upozornený. Košík zostáva uložený, skúste to o chvíľu znova.',
   },
   login: {
     checkYourEmail: 'Skontrolujte si e-mail',

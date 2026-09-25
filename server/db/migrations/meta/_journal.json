@@ -211,6 +211,13 @@
       "when": 1790330365214,
       "tag": "0029_amusing_argent",
       "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1790333327803,
+      "tag": "0030_cloudy_zarda",
+      "breakpoints": true
     }
   ]
 }

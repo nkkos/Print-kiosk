@@ -499,6 +499,10 @@ export const printTasks = pgTable(
     // never reports back (agent crashed mid-job) becomes claimable again
     // after AGENT_CLAIM_TIMEOUT_MS. Always null in 'direct' mode.
     claimedAt: timestamp('claimed_at', { withTimezone: true }),
+    // Which kiosk stand the job came from ('A', 'B', ...) — the stand's
+    // browser opens the kiosk with ?stand=<id> (src/utils/standId.ts). Null
+    // for jobs from anywhere else, or from before this existed.
+    standId: text('stand_id'),
     // The original submission's file/print options (fileId, paperSize,
     // sides, ...) — stringified JSON, same convention as incidents.context
     // above (no jsonb precedent in this schema, nothing needs to query

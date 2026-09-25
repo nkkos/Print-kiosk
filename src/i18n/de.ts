@@ -58,6 +58,8 @@ export const de: Translations = {
     pages: (range: string) => `Seiten: ${range}`,
     total: (amount: string) => `Gesamt: $${amount}`,
     proceedToPayment: 'Zur Zahlung',
+    printerUnavailable:
+      'Drucken ist vorübergehend nicht möglich — unser Personal wurde benachrichtigt. Ihr Warenkorb bleibt gespeichert, bitte versuchen Sie es gleich noch einmal.',
   },
   login: {
     checkYourEmail: 'Überprüfen Sie Ihre E-Mails',
