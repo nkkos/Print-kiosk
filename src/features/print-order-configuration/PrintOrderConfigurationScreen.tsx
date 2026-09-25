@@ -7,7 +7,7 @@ import type { Language } from '../../i18n';
 import type { EndSessionReason, PrintOrder } from '../../types/kiosk';
 import { getUploadedFileContentUrl } from '../../services/uploadedFileApi';
 import { getAccountFileContentUrl } from '../../services/accountFileApi';
-import { supportsDuplex } from '../../utils/printCapabilities';
+import { supportsDuplex, OFFERED_PAPER_SIZES } from '../../utils/printCapabilities';
 import { computeUnitPrice } from '../../utils/pricing';
 import {
   usePreview,
@@ -331,27 +331,22 @@ export function PrintOrderConfigurationScreen({
           </Modal>
         )}
 
-        <fieldset className={styles.settings}>
-          <legend>{t.printOrderConfiguration.paperSizeLegend}</legend>
-          <label>
-            <input
-              type="radio"
-              name="paperSize"
-              checked={paperSize === 'A4'}
-              onChange={() => selectPaperSize('A4')}
-            />
-            {t.common.paperSizeA4}
-          </label>
-          <label>
-            <input
-              type="radio"
-              name="paperSize"
-              checked={paperSize === 'A5'}
-              onChange={() => selectPaperSize('A5')}
-            />
-            {t.common.paperSizeA5}
-          </label>
-        </fieldset>
+        {OFFERED_PAPER_SIZES.length > 1 && (
+          <fieldset className={styles.settings}>
+            <legend>{t.printOrderConfiguration.paperSizeLegend}</legend>
+            {OFFERED_PAPER_SIZES.map((size) => (
+              <label key={size}>
+                <input
+                  type="radio"
+                  name="paperSize"
+                  checked={paperSize === size}
+                  onChange={() => selectPaperSize(size)}
+                />
+                {size === 'A4' ? t.common.paperSizeA4 : t.common.paperSizeA5}
+              </label>
+            ))}
+          </fieldset>
+        )}
 
         <fieldset className={styles.settings}>
           <legend>{t.printOrderConfiguration.scaleLegend}</legend>

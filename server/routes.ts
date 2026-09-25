@@ -119,7 +119,7 @@ import {
   type PrintOptions,
 } from './printTaskStore.js';
 import { tryPrintTask } from './printOrchestrator.js';
-import { supportsDuplex } from './printerAdapter.js';
+import { supportsDuplex, isPaperSizeOffered } from './printerAdapter.js';
 
 export const DEFAULT_PORT = 3001;
 
@@ -785,6 +785,7 @@ router.post('/api/accounts/orders', requireAccountAuth, async (req, res) => {
     typeof accountFileId !== 'string' ||
     typeof fileName !== 'string' ||
     (paperSize !== 'A4' && paperSize !== 'A5') ||
+    !isPaperSizeOffered(paperSize) ||
     (sides !== 'single' && sides !== 'double') ||
     (sides === 'double' && !supportsDuplex(paperSize)) ||
     (color !== 'bw' && color !== 'color') ||

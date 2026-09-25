@@ -78,6 +78,14 @@ function inputTrayForPaperSize(paperSize: string | undefined): string | undefine
 // the driver's *manual* duplex, which needs a person to re-feed the sheets.
 // The kiosk/portal UIs and order validation already refuse A5 double-sided;
 // this is the last line of defence for anything that still arrives here.
+// Paper sizes customers can order — mirrors src/utils/printCapabilities.ts's
+// OFFERED_PAPER_SIZES (A5 hidden while both trays hold A4).
+const OFFERED_PAPER_SIZES = ['A4'];
+
+export function isPaperSizeOffered(paperSize: string): boolean {
+  return OFFERED_PAPER_SIZES.includes(paperSize);
+}
+
 export function supportsDuplex(paperSize: string | undefined): boolean {
   return paperSize === undefined || paperSize === 'A4';
 }

@@ -19,7 +19,7 @@ import {
   type AccountFileLimits,
   type CreateOrderParams,
 } from '../src/services/accountFileApi';
-import { supportsDuplex } from '../src/utils/printCapabilities';
+import { supportsDuplex, OFFERED_PAPER_SIZES } from '../src/utils/printCapabilities';
 import { computeUnitPrice } from '../src/utils/pricing';
 import {
   usePreview,
@@ -237,20 +237,25 @@ export function ConfigureAndPay({
         </div>
       )}
 
-      <label>
-        Paper size
-        <select
-          value={paperSize}
-          onChange={(e) => {
-            const size = e.target.value as CreateOrderParams['paperSize'];
-            setPaperSize(size);
-            if (!supportsDuplex(size)) setSides('single');
-          }}
-        >
-          <option value="A4">A4</option>
-          <option value="A5">A5</option>
-        </select>
-      </label>
+      {OFFERED_PAPER_SIZES.length > 1 && (
+        <label>
+          Paper size
+          <select
+            value={paperSize}
+            onChange={(e) => {
+              const size = e.target.value as CreateOrderParams['paperSize'];
+              setPaperSize(size);
+              if (!supportsDuplex(size)) setSides('single');
+            }}
+          >
+            {OFFERED_PAPER_SIZES.map((size) => (
+              <option key={size} value={size}>
+                {size}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
       <label>
         Sides
         <select
