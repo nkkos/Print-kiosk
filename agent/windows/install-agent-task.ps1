@@ -1,4 +1,4 @@
-# Registers the pavilion print agent to start automatically with Windows
+﻿# Registers the pavilion print agent to start automatically with Windows
 # (see README.md, "Print agent"). Run once, in an elevated PowerShell, on the
 # pavilion mini-PC, after `npm ci` and after creating .env in the repository
 # root:

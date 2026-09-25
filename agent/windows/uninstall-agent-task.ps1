@@ -1,4 +1,4 @@
-# Stops the pavilion print agent and removes its startup task
+﻿# Stops the pavilion print agent and removes its startup task
 # (the reverse of install-agent-task.ps1). Run in an elevated PowerShell.
 #Requires -RunAsAdministrator
 $taskName = 'PrintKioskAgent'

@@ -1,4 +1,4 @@
-# Keeps the pavilion print agent running (see README.md, "Print agent").
+﻿# Keeps the pavilion print agent running (see README.md, "Print agent").
 # Started at boot by the scheduled task from install-agent-task.ps1; can also
 # be run by hand to try it. Runs the agent from the repository root (where
 # its .env lives), appends everything it prints to logs\agent.log, and
