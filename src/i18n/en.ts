@@ -57,6 +57,7 @@ export const en = {
     title: 'Cart',
     qty: (quantity: number) => `Qty: ${quantity}`,
     pages: (range: string) => `Pages: ${range}`,
+    pagesPerSheet: (count: number) => `${count} pages per sheet`,
     total: (amount: string) => `Total: $${amount}`,
     proceedToPayment: 'Proceed to payment',
     printerUnavailable:
@@ -163,6 +164,8 @@ export const en = {
     addToCart: 'Add to cart',
     loadingPreview: 'Loading preview...',
     previewPageIndicator: (current: number, total: number) => `Page ${current} of ${total}`,
+    previewSheetIndicator: (current: number, total: number) => `Sheet ${current} of ${total}`,
+    pagesPerSheetLegend: 'Pages per sheet',
   },
   paymentStatus: {
     cancelPayment: 'Cancel payment',

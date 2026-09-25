@@ -51,7 +51,7 @@ A confirmed scenario distinct from every other upload method: the user configure
 
 Confirmed (2026-08-12, portal redesign discovery): a portal-configured print order has three real states, tracked end-to-end from creation to physical handoff at the kiosk:
 
-1. **Created, awaiting payment** — the user configured print settings on the portal (paperSize/sides/color/orientation/scale/pageRange/quantity) but hasn't paid yet.
+1. **Created, awaiting payment** — the user configured print settings on the portal (paperSize/sides/color/orientation/scale/pageRange/pagesPerSheet/quantity) but hasn't paid yet.
 2. **Paid, awaiting fulfillment** — payment (still simulated — same "Pay now" convention as today, no real gateway exists) completed.
 3. **Issued** — the order's linked real print job (`printTasks`) succeeded at the kiosk. **Automatic**, not a manual confirmation step: printing at this kiosk _is_ the handoff (no separate pickup counter exists in the domain model), so the moment the print task reaches `succeeded`, the order is issued.
 
@@ -70,7 +70,7 @@ This supersedes the "always created already-paid" behavior described under "Acco
 - **`forgot-password.html`** — same request the kiosk's own "forgot password" mode uses (`POST /api/accounts/request-password-reset`); either surface can trigger the email.
 - **`reset-password.html`** — reads `?token=` from the reset email, sets a new password (`POST /api/accounts/reset-password`).
 - **`account.html`** — login, then change password (`POST /api/accounts/change-password`). The only place a session token exists at all — issued by login, kept in memory only (never persisted), used solely to authenticate this one request. The kiosk itself never needs or receives this token.
-- **`files.html`** — folder create/rename/delete, file upload/list/delete (`server/accountFileStore.ts`), and "Configure & pay" per file: the same paperSize/sides/color/orientation/scale/page-range settings and real document preview as the kiosk's Print Order Configuration (shared logic in `src/utils/documentPreview.ts`), plus a simulated "Pay now" button that creates a paid order (`server/accountOrderStore.ts`) — no real payment gateway exists anywhere in this project yet.
+- **`files.html`** — folder create/rename/delete, file upload/list/delete (`server/accountFileStore.ts`), and "Configure & pay" per file: the same paperSize/sides/color/orientation/scale/page-range/pages-per-sheet settings and real document preview as the kiosk's Print Order Configuration (shared logic in `src/utils/documentPreview.ts`), plus a simulated "Pay now" button that creates a paid order (`server/accountOrderStore.ts`) — no real payment gateway exists anywhere in this project yet.
 
 Visual design: see `docs/screens/portal-personal-account-spec.md` for the confirmed redesign (shared sidebar shell across a start screen, My files, and My orders) — in progress; `account.html`/`files.html` above are the current plain/unstyled implementation being restyled into that shell, not a separate product.
 

@@ -33,6 +33,8 @@ export interface PrintOptions {
   orientation?: 'portrait' | 'landscape';
   scale?: 'fit' | 'original';
   pages?: string;
+  /** Pages per printed sheet side — see server/nUpImposer.ts. */
+  pagesPerSheet?: number;
   copies?: number;
 }
 

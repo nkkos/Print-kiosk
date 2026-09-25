@@ -56,6 +56,7 @@ export const de: Translations = {
     title: 'Warenkorb',
     qty: (quantity: number) => `Anzahl: ${quantity}`,
     pages: (range: string) => `Seiten: ${range}`,
+    pagesPerSheet: (count: number) => `${count} Seiten pro Blatt`,
     total: (amount: string) => `Gesamt: $${amount}`,
     proceedToPayment: 'Zur Zahlung',
     printerUnavailable:
@@ -166,6 +167,8 @@ export const de: Translations = {
     addToCart: 'In den Warenkorb',
     loadingPreview: 'Vorschau wird geladen...',
     previewPageIndicator: (current: number, total: number) => `Seite ${current} von ${total}`,
+    previewSheetIndicator: (current: number, total: number) => `Blatt ${current} von ${total}`,
+    pagesPerSheetLegend: 'Seiten pro Blatt',
   },
   paymentStatus: {
     cancelPayment: 'Zahlung abbrechen',

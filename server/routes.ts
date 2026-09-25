@@ -120,6 +120,7 @@ import {
 } from './printTaskStore.js';
 import { tryPrintTask } from './printOrchestrator.js';
 import { supportsDuplex, isPaperSizeOffered } from './printerAdapter.js';
+import { isPagesPerSheet } from '../src/utils/nUpLayout.js';
 
 export const DEFAULT_PORT = 3001;
 
@@ -769,7 +770,9 @@ router.post('/api/accounts/orders', requireAccountAuth, async (req, res) => {
     pageRange,
     quantity,
     unitPriceCents,
+    pagesPerSheet,
   } = (req.body ?? {}) as {
+    pagesPerSheet?: unknown;
     accountFileId?: unknown;
     fileName?: unknown;
     paperSize?: unknown;
@@ -795,7 +798,8 @@ router.post('/api/accounts/orders', requireAccountAuth, async (req, res) => {
     typeof quantity !== 'number' ||
     quantity < 1 ||
     typeof unitPriceCents !== 'number' ||
-    unitPriceCents < 0
+    unitPriceCents < 0 ||
+    (pagesPerSheet !== undefined && !isPagesPerSheet(pagesPerSheet))
   ) {
     res.status(400).json({ error: 'Invalid order' });
     return;
@@ -810,6 +814,7 @@ router.post('/api/accounts/orders', requireAccountAuth, async (req, res) => {
     orientation,
     scale,
     pageRange,
+    pagesPerSheet: pagesPerSheet ?? 1,
     quantity,
     unitPriceCents,
   });
@@ -1221,7 +1226,9 @@ router.post('/api/print-tasks', async (req, res) => {
     scale,
     pages,
     standId,
+    pagesPerSheet,
   } = (req.body ?? {}) as {
+    pagesPerSheet?: unknown;
     standId?: unknown;
     sessionId?: unknown;
     fileId?: unknown;
@@ -1246,6 +1253,7 @@ router.post('/api/print-tasks', async (req, res) => {
       orientation === 'portrait' || orientation === 'landscape' ? orientation : undefined,
     scale: scale === 'fit' ? 'fit' : scale === 'original' ? 'original' : undefined,
     pages: typeof pages === 'string' ? pages : undefined,
+    pagesPerSheet: isPagesPerSheet(pagesPerSheet) ? pagesPerSheet : undefined,
     copies: typeof copies === 'number' ? copies : undefined,
   };
 

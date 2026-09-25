@@ -1,4 +1,5 @@
 import type { PrintOrder } from '../types/kiosk';
+import { sheetSidesFor, type PagesPerSheet } from './nUpLayout';
 
 // Extracted once a second consumer (CartPanel and App.tsx's Payment Status
 // split) needed the exact same calculation — per this project's rule of
@@ -31,8 +32,10 @@ const RATE_PER_PAGE: Record<string, number> = {
   'A5-color-double': 0.18,
 };
 
-// The per-copy price for a configured document — pageCount × the rate for
-// this paperSize/color/sides combination. Stored as a PrintOrder's
+// The per-copy price for a configured document — printed sheet sides × the
+// rate for this paperSize/color/sides combination. With several pages per
+// sheet the customer pays per printed side at the ordinary rate (confirmed
+// 2026-09-25), so 2 pages per sheet costs half. Stored as a PrintOrder's
 // `unitPrice` at "Add to cart" time (src/features/print-order-configuration/PrintOrderConfigurationScreen.tsx),
 // same slot PLACEHOLDER_UNIT_PRICE used to fill — computeItemPrice above is
 // unchanged, it just multiplies whatever unitPrice it's given by quantity.
@@ -41,7 +44,8 @@ export function computeUnitPrice(
   paperSize: PrintOrder['paperSize'],
   color: PrintOrder['color'],
   sides: PrintOrder['sides'],
+  pagesPerSheet: PagesPerSheet = 1,
 ): number {
   const rate = RATE_PER_PAGE[`${paperSize}-${color}-${sides}`] ?? 0;
-  return pageCount * rate;
+  return sheetSidesFor(pageCount, pagesPerSheet) * rate;
 }

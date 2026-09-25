@@ -54,6 +54,7 @@ export const uk: Translations = {
     title: 'Кошик',
     qty: (quantity: number) => `Кількість: ${quantity}`,
     pages: (range: string) => `Сторінки: ${range}`,
+    pagesPerSheet: (count: number) => `${count} стор. на аркуші`,
     total: (amount: string) => `Разом: $${amount}`,
     proceedToPayment: 'Перейти до оплати',
     printerUnavailable:
@@ -161,6 +162,8 @@ export const uk: Translations = {
     addToCart: 'Додати до кошика',
     loadingPreview: 'Завантаження попереднього перегляду...',
     previewPageIndicator: (current: number, total: number) => `Сторінка ${current} з ${total}`,
+    previewSheetIndicator: (current: number, total: number) => `Аркуш ${current} з ${total}`,
+    pagesPerSheetLegend: 'Сторінок на аркуші',
   },
   paymentStatus: {
     cancelPayment: 'Скасувати оплату',

@@ -10,9 +10,16 @@ import { getAccountFileContentUrl } from '../../services/accountFileApi';
 import { supportsDuplex, OFFERED_PAPER_SIZES } from '../../utils/printCapabilities';
 import { computeUnitPrice } from '../../utils/pricing';
 import {
+  PAGES_PER_SHEET_OPTIONS,
+  computeNUpLayout,
+  pageNumbersInRange,
+  type PagesPerSheet,
+} from '../../utils/nUpLayout';
+import {
   usePreview,
   usePageRangeSelection,
   renderPdfPageToCanvas,
+  renderNUpSheetToCanvas,
   getPdfPageOrientation,
   type RenderMode,
 } from '../../utils/documentPreview';
@@ -118,6 +125,7 @@ export function PrintOrderConfigurationScreen({
   const [sides, setSides] = useState<PrintOrder['sides']>('single');
   const [color, setColor] = useState<PrintOrder['color']>('bw');
   const [scale, setScale] = useState<PrintOrder['scale']>('fit');
+  const [pagesPerSheet, setPagesPerSheet] = useState<PagesPerSheet>(1);
   const [quantity, setQuantity] = useState(1);
   const contentUrl = sourceFileId
     ? sourceFileOrigin === 'account'
@@ -139,7 +147,27 @@ export function PrintOrderConfigurationScreen({
     pagesToPrint,
     pageRange,
   } = usePageRangeSelection(preview);
-  const unitPrice = computeUnitPrice(pagesToPrint, paperSize, color, sides);
+  // Pages per sheet (src/utils/nUpLayout.ts) — only offered for a
+  // multi-page PDF. The cloud builds the real imposed PDF from the same
+  // layout (server/nUpImposer.ts), so the preview below is what prints; each
+  // sheet is printed 1:1, which is why "scale" doesn't apply to it.
+  const nUpAvailable = preview.kind === 'pdf' && preview.numPages > 1;
+  const effectivePagesPerSheet: PagesPerSheet = nUpAvailable ? pagesPerSheet : 1;
+  const nUpLayout =
+    effectivePagesPerSheet > 1 && preview.pageAspect
+      ? computeNUpLayout(
+          effectivePagesPerSheet as Exclude<PagesPerSheet, 1>,
+          preview.pageAspect,
+          PAPER_SIZE_MM[paperSize],
+        )
+      : null;
+  const selectedPages = pageNumbersInRange(pageRange, preview.numPages);
+  const sheets: number[][] = [];
+  for (let i = 0; i < selectedPages.length; i += effectivePagesPerSheet) {
+    sheets.push(selectedPages.slice(i, i + effectivePagesPerSheet));
+  }
+  const effectiveScale: PrintOrder['scale'] = nUpLayout ? 'fit' : scale;
+  const unitPrice = computeUnitPrice(pagesToPrint, paperSize, color, sides, effectivePagesPerSheet);
   const duplexAvailable = supportsDuplex(paperSize);
 
   function selectPaperSize(size: PrintOrder['paperSize']) {
@@ -155,22 +183,45 @@ export function PrintOrderConfigurationScreen({
   // Thumbnail: page 1 on a to-scale sheet of the selected paper size, fitted
   // or at original size — the same simulation as the popup, just smaller.
   const thumbnailPaperMm = PAPER_SIZE_MM[paperSize];
-  const thumbnailWidthPx =
-    (orientation === 'landscape' ? thumbnailPaperMm.height : thumbnailPaperMm.width) *
-    THUMBNAIL_PX_PER_MM;
-  const thumbnailHeightPx =
-    (orientation === 'landscape' ? thumbnailPaperMm.width : thumbnailPaperMm.height) *
-    THUMBNAIL_PX_PER_MM;
+  const thumbnailWidthPx = nUpLayout
+    ? nUpLayout.widthMm * THUMBNAIL_PX_PER_MM
+    : (orientation === 'landscape' ? thumbnailPaperMm.height : thumbnailPaperMm.width) *
+      THUMBNAIL_PX_PER_MM;
+  const thumbnailHeightPx = nUpLayout
+    ? nUpLayout.heightMm * THUMBNAIL_PX_PER_MM
+    : (orientation === 'landscape' ? thumbnailPaperMm.width : thumbnailPaperMm.height) *
+      THUMBNAIL_PX_PER_MM;
+  // Joined into a string for the effect deps: the sheet's contents matter,
+  // not the array's identity (rebuilt on every render).
+  const firstSheetKey = (sheets[0] ?? []).join(',');
   useEffect(() => {
     if (preview.state !== 'ready' || preview.kind !== 'pdf' || !preview.pdf) return;
     const canvas = thumbnailCanvasRef.current;
     if (!canvas) return;
+    if (nUpLayout) {
+      const pages = firstSheetKey ? firstSheetKey.split(',').map(Number) : [];
+      renderNUpSheetToCanvas(preview.pdf, pages, nUpLayout, canvas, THUMBNAIL_PX_PER_MM).catch(
+        () => {},
+      );
+      return;
+    }
+    canvas.style.width = '';
+    canvas.style.height = '';
     const mode: RenderMode =
       scale === 'fit'
         ? { kind: 'fit-box', widthPx: thumbnailWidthPx, heightPx: thumbnailHeightPx }
         : { kind: 'absolute-points', pxPerPoint: THUMBNAIL_PX_PER_MM * POINTS_TO_MM };
     renderPdfPageToCanvas(preview.pdf, 1, canvas, mode).catch(() => {});
-  }, [preview.state, preview.kind, preview.pdf, scale, thumbnailWidthPx, thumbnailHeightPx]);
+  }, [
+    preview.state,
+    preview.kind,
+    preview.pdf,
+    scale,
+    thumbnailWidthPx,
+    thumbnailHeightPx,
+    nUpLayout,
+    firstSheetKey,
+  ]);
 
   // The popup's sheet turns with whichever page is shown — mixed documents
   // print each page onto the sheet the way it fits.
@@ -197,25 +248,50 @@ export function PrintOrderConfigurationScreen({
   // scale, turned to match the page, so "original size" vs. "fit" is
   // honestly comparable against something real rather than an arbitrary box.
   const paperMm = PAPER_SIZE_MM[paperSize];
-  const frameWidthPx =
-    (popupPageOrientation === 'landscape' ? paperMm.height : paperMm.width) * PX_PER_MM;
-  const frameHeightPx =
-    (popupPageOrientation === 'landscape' ? paperMm.width : paperMm.height) * PX_PER_MM;
+  const frameWidthPx = nUpLayout
+    ? nUpLayout.widthMm * PX_PER_MM
+    : (popupPageOrientation === 'landscape' ? paperMm.height : paperMm.width) * PX_PER_MM;
+  const frameHeightPx = nUpLayout
+    ? nUpLayout.heightMm * PX_PER_MM
+    : (popupPageOrientation === 'landscape' ? paperMm.width : paperMm.height) * PX_PER_MM;
+  // With pages per sheet the popup steps through printed sheets, not pages.
+  const popupItemCount = nUpLayout ? sheets.length : preview.numPages;
+  const popupSheetKey = (sheets[popupPage - 1] ?? []).join(',');
 
   useEffect(() => {
     if (!isPreviewOpen) setPopupPage(1);
   }, [isPreviewOpen]);
+  useEffect(() => {
+    setPopupPage(1);
+  }, [effectivePagesPerSheet]);
 
   useEffect(() => {
     if (!isPreviewOpen || preview.kind !== 'pdf' || !preview.pdf) return;
     const canvas = popupCanvasRef.current;
     if (!canvas) return;
+    if (nUpLayout) {
+      const pages = popupSheetKey ? popupSheetKey.split(',').map(Number) : [];
+      renderNUpSheetToCanvas(preview.pdf, pages, nUpLayout, canvas, PX_PER_MM).catch(() => {});
+      return;
+    }
+    canvas.style.width = '';
+    canvas.style.height = '';
     const mode: RenderMode =
       scale === 'fit'
         ? { kind: 'fit-box', widthPx: frameWidthPx, heightPx: frameHeightPx }
         : { kind: 'absolute-points', pxPerPoint: PX_PER_MM * POINTS_TO_MM };
     renderPdfPageToCanvas(preview.pdf, popupPage, canvas, mode).catch(() => {});
-  }, [isPreviewOpen, preview.kind, preview.pdf, popupPage, scale, frameWidthPx, frameHeightPx]);
+  }, [
+    isPreviewOpen,
+    preview.kind,
+    preview.pdf,
+    popupPage,
+    scale,
+    frameWidthPx,
+    frameHeightPx,
+    nUpLayout,
+    popupSheetKey,
+  ]);
 
   function handleAddToCart() {
     onAddToCart({
@@ -227,8 +303,9 @@ export function PrintOrderConfigurationScreen({
       sides,
       color,
       orientation,
-      scale,
+      scale: effectiveScale,
       pageRange,
+      pagesPerSheet: effectivePagesPerSheet,
       quantity,
       unitPrice,
     });
@@ -276,7 +353,7 @@ export function PrintOrderConfigurationScreen({
                 there's actually something drawn. */}
             <canvas
               ref={thumbnailCanvasRef}
-              className={scale === 'fit' ? styles.previewMedia : undefined}
+              className={effectiveScale === 'fit' ? styles.previewMedia : undefined}
               hidden={!(preview.state === 'ready' && preview.kind === 'pdf')}
             />
             {/* Images always show as "fit" — same reasoning as the popup's. */}
@@ -297,7 +374,7 @@ export function PrintOrderConfigurationScreen({
               {preview.kind === 'pdf' && (
                 <canvas
                   ref={popupCanvasRef}
-                  className={scale === 'fit' ? styles.previewMedia : undefined}
+                  className={effectiveScale === 'fit' ? styles.previewMedia : undefined}
                 />
               )}
               {/* Images always simulate as "fit" regardless of `scale` — a
@@ -309,7 +386,7 @@ export function PrintOrderConfigurationScreen({
                 <img src={preview.imageUrl} alt={fileName} className={styles.previewMediaContain} />
               )}
             </div>
-            {preview.kind === 'pdf' && preview.numPages > 1 && (
+            {preview.kind === 'pdf' && popupItemCount > 1 && (
               <div className={styles.previewNav}>
                 <Button
                   id="print-order-preview-prev-page"
@@ -318,13 +395,15 @@ export function PrintOrderConfigurationScreen({
                   disabled={popupPage <= 1}
                 />
                 <span>
-                  {t.printOrderConfiguration.previewPageIndicator(popupPage, preview.numPages)}
+                  {nUpLayout
+                    ? t.printOrderConfiguration.previewSheetIndicator(popupPage, popupItemCount)
+                    : t.printOrderConfiguration.previewPageIndicator(popupPage, popupItemCount)}
                 </span>
                 <Button
                   id="print-order-preview-next-page"
                   label="›"
-                  onClick={() => setPopupPage((page) => Math.min(preview.numPages, page + 1))}
-                  disabled={popupPage >= preview.numPages}
+                  onClick={() => setPopupPage((page) => Math.min(popupItemCount, page + 1))}
+                  disabled={popupPage >= popupItemCount}
                 />
               </div>
             )}
@@ -348,27 +427,47 @@ export function PrintOrderConfigurationScreen({
           </fieldset>
         )}
 
-        <fieldset className={styles.settings}>
-          <legend>{t.printOrderConfiguration.scaleLegend}</legend>
-          <label>
-            <input
-              type="radio"
-              name="scale"
-              checked={scale === 'fit'}
-              onChange={() => setScale('fit')}
-            />
-            {t.common.scaleFit}
-          </label>
-          <label>
-            <input
-              type="radio"
-              name="scale"
-              checked={scale === 'original'}
-              onChange={() => setScale('original')}
-            />
-            {t.common.scaleOriginal}
-          </label>
-        </fieldset>
+        {nUpAvailable && (
+          <fieldset className={styles.settings}>
+            <legend>{t.printOrderConfiguration.pagesPerSheetLegend}</legend>
+            {PAGES_PER_SHEET_OPTIONS.map((option) => (
+              <label key={option}>
+                <input
+                  type="radio"
+                  name="pagesPerSheet"
+                  id={`print-order-pages-per-sheet-${option}`}
+                  checked={effectivePagesPerSheet === option}
+                  onChange={() => setPagesPerSheet(option)}
+                />
+                {option}
+              </label>
+            ))}
+          </fieldset>
+        )}
+
+        {!nUpLayout && (
+          <fieldset className={styles.settings}>
+            <legend>{t.printOrderConfiguration.scaleLegend}</legend>
+            <label>
+              <input
+                type="radio"
+                name="scale"
+                checked={scale === 'fit'}
+                onChange={() => setScale('fit')}
+              />
+              {t.common.scaleFit}
+            </label>
+            <label>
+              <input
+                type="radio"
+                name="scale"
+                checked={scale === 'original'}
+                onChange={() => setScale('original')}
+              />
+              {t.common.scaleOriginal}
+            </label>
+          </fieldset>
+        )}
 
         <fieldset className={styles.settings}>
           <legend>{t.printOrderConfiguration.sidesLegend}</legend>

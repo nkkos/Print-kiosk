@@ -405,6 +405,7 @@ function App() {
           orientation: item.orientation,
           scale: item.scale,
           pages: item.pageRange,
+          pagesPerSheet: item.pagesPerSheet,
           copies: item.quantity,
         }),
       ),

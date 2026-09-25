@@ -198,6 +198,8 @@ export const printOrders = pgTable(
     // Set only for orders created via POST /api/accounts/orders; ordinary
     // kiosk Cart items never persist here (Cart/Print Order stay mocked).
     pageRange: text('page_range'),
+    // Pages per printed sheet side, 1 | 2 | 4 | 6 (src/utils/nUpLayout.ts).
+    pagesPerSheet: integer('pages_per_sheet').notNull().default(1),
     quantity: integer('quantity').notNull(),
     unitPriceCents: integer('unit_price_cents').notNull(),
     // present only on orders paid in advance via the portal

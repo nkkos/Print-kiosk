@@ -25,7 +25,14 @@ import {
   usePreview,
   usePageRangeSelection,
   renderPdfPageToCanvas,
+  renderNUpSheetToCanvas,
 } from '../src/utils/documentPreview';
+import {
+  PAGES_PER_SHEET_OPTIONS,
+  computeNUpLayout,
+  pageNumbersInRange,
+  type PagesPerSheet,
+} from '../src/utils/nUpLayout';
 
 // The portal's file/folder/order management — see
 // docs/personal-account-requirements.md: "folder creation/management happens
@@ -56,7 +63,9 @@ export interface ConfigureAndPayProps {
   // <Company>" instead of a real/simulated payment, server/accountOrderStore.ts's
   // payOrderForCompany) — same two-consumer-extraction rule already governing
   // this codebase, not a speculative prop.
-  onPay?: (sessionToken: string, orderId: string) => Promise<void>;
+  // The result is ignored — the portal's payOrder returns the paid order,
+  // the business portal's company billing returns nothing.
+  onPay?: (sessionToken: string, orderId: string) => Promise<unknown>;
   payLabel?: string;
 }
 
@@ -70,6 +79,7 @@ export function ConfigureAndPay({
   const [sides, setSides] = useState<CreateOrderParams['sides']>('single');
   const [color, setColor] = useState<CreateOrderParams['color']>('bw');
   const [scale, setScale] = useState<CreateOrderParams['scale']>('fit');
+  const [pagesPerSheet, setPagesPerSheet] = useState<PagesPerSheet>(1);
   const [quantity, setQuantity] = useState(1);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -89,8 +99,28 @@ export function ConfigureAndPay({
     pagesToPrint,
     pageRange,
   } = usePageRangeSelection(preview);
-  const unitPrice = computeUnitPrice(pagesToPrint, paperSize, color, sides);
+  // Pages per sheet — same rules and layout as the kiosk
+  // (PrintOrderConfigurationScreen.tsx, src/utils/nUpLayout.ts).
+  const nUpAvailable = preview.kind === 'pdf' && preview.numPages > 1;
+  const effectivePagesPerSheet: PagesPerSheet = nUpAvailable ? pagesPerSheet : 1;
+  const nUpLayout =
+    effectivePagesPerSheet > 1 && preview.pageAspect
+      ? computeNUpLayout(
+          effectivePagesPerSheet as Exclude<PagesPerSheet, 1>,
+          preview.pageAspect,
+          paperSize === 'A5' ? { width: 148, height: 210 } : { width: 210, height: 297 },
+        )
+      : null;
+  const selectedPages = pageNumbersInRange(pageRange, preview.numPages);
+  const sheets: number[][] = [];
+  for (let i = 0; i < selectedPages.length; i += effectivePagesPerSheet) {
+    sheets.push(selectedPages.slice(i, i + effectivePagesPerSheet));
+  }
+  const effectiveScale: CreateOrderParams['scale'] = nUpLayout ? 'fit' : scale;
+  const unitPrice = computeUnitPrice(pagesToPrint, paperSize, color, sides, effectivePagesPerSheet);
   const duplexAvailable = supportsDuplex(paperSize);
+  const popupItemCount = nUpLayout ? sheets.length : preview.numPages;
+  const firstSheetKey = (sheets[0] ?? []).join(',');
 
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [popupPage, setPopupPage] = useState(1);
@@ -101,25 +131,47 @@ export function ConfigureAndPay({
     if (preview.state !== 'ready' || preview.kind !== 'pdf' || !preview.pdf) return;
     const canvas = thumbnailCanvasRef.current;
     if (!canvas) return;
+    if (nUpLayout) {
+      const pages = firstSheetKey ? firstSheetKey.split(',').map(Number) : [];
+      renderNUpSheetToCanvas(preview.pdf, pages, nUpLayout, canvas, 160 / nUpLayout.widthMm).catch(
+        () => {},
+      );
+      return;
+    }
+    canvas.style.width = '';
+    canvas.style.height = '';
     renderPdfPageToCanvas(preview.pdf, 1, canvas, {
       kind: 'fit-width',
       targetWidthPx: 160,
     }).catch(() => {});
-  }, [preview.state, preview.kind, preview.pdf]);
+  }, [preview.state, preview.kind, preview.pdf, nUpLayout, firstSheetKey]);
 
   useEffect(() => {
     if (!isPreviewOpen) setPopupPage(1);
   }, [isPreviewOpen]);
+  useEffect(() => {
+    setPopupPage(1);
+  }, [effectivePagesPerSheet]);
+  const popupSheetKey = (sheets[popupPage - 1] ?? []).join(',');
 
   useEffect(() => {
     if (!isPreviewOpen || preview.kind !== 'pdf' || !preview.pdf) return;
     const canvas = popupCanvasRef.current;
     if (!canvas) return;
+    if (nUpLayout) {
+      const pages = popupSheetKey ? popupSheetKey.split(',').map(Number) : [];
+      renderNUpSheetToCanvas(preview.pdf, pages, nUpLayout, canvas, 480 / nUpLayout.widthMm).catch(
+        () => {},
+      );
+      return;
+    }
+    canvas.style.width = '';
+    canvas.style.height = '';
     renderPdfPageToCanvas(preview.pdf, popupPage, canvas, {
       kind: 'fit-width',
       targetWidthPx: 480,
     }).catch(() => {});
-  }, [isPreviewOpen, preview.kind, preview.pdf, popupPage]);
+  }, [isPreviewOpen, preview.kind, preview.pdf, popupPage, nUpLayout, popupSheetKey]);
 
   const isPreviewClickable = preview.state === 'ready';
 
@@ -131,8 +183,9 @@ export function ConfigureAndPay({
       sides,
       color,
       orientation,
-      scale,
+      scale: effectiveScale,
       pageRange,
+      pagesPerSheet: effectivePagesPerSheet,
       quantity,
       unitPriceCents: Math.round(unitPrice * 100),
     };
@@ -212,7 +265,7 @@ export function ConfigureAndPay({
             {preview.kind === 'image' && preview.imageUrl && (
               <img src={preview.imageUrl} alt={file.fileName} className="previewOverlayImg" />
             )}
-            {preview.kind === 'pdf' && preview.numPages > 1 && (
+            {preview.kind === 'pdf' && popupItemCount > 1 && (
               <div className="previewNav">
                 <button
                   type="button"
@@ -222,12 +275,12 @@ export function ConfigureAndPay({
                   ‹
                 </button>
                 <span>
-                  Page {popupPage} of {preview.numPages}
+                  {nUpLayout ? 'Sheet' : 'Page'} {popupPage} of {popupItemCount}
                 </span>
                 <button
                   type="button"
-                  onClick={() => setPopupPage((page) => Math.min(preview.numPages, page + 1))}
-                  disabled={popupPage >= preview.numPages}
+                  onClick={() => setPopupPage((page) => Math.min(popupItemCount, page + 1))}
+                  disabled={popupPage >= popupItemCount}
                 >
                   ›
                 </button>
@@ -278,16 +331,36 @@ export function ConfigureAndPay({
           <option value="color">Color</option>
         </select>
       </label>
-      <label>
-        Scale
-        <select
-          value={scale}
-          onChange={(e) => setScale(e.target.value as CreateOrderParams['scale'])}
-        >
-          <option value="fit">Fit to page</option>
-          <option value="original">Original size</option>
-        </select>
-      </label>
+      {nUpAvailable && (
+        <label>
+          Pages per sheet
+          <select
+            id="portal-pages-per-sheet"
+            value={effectivePagesPerSheet}
+            onChange={(e) => setPagesPerSheet(Number(e.target.value) as PagesPerSheet)}
+          >
+            {PAGES_PER_SHEET_OPTIONS.map((option) => (
+              <option key={option} value={option}>
+                {option}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
+      {/* Each pages-per-sheet sheet prints 1:1, so scale only applies to
+          one page per sheet. */}
+      {!nUpLayout && (
+        <label>
+          Scale
+          <select
+            value={scale}
+            onChange={(e) => setScale(e.target.value as CreateOrderParams['scale'])}
+          >
+            <option value="fit">Fit to page</option>
+            <option value="original">Original size</option>
+          </select>
+        </label>
+      )}
 
       {preview.kind === 'pdf' && preview.numPages > 1 && (
         <fieldset>

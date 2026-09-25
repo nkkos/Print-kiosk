@@ -1,3 +1,4 @@
+import { extname } from 'node:path';
 import { getUploadedFile } from './uploadStore.js';
 import { getAccountFile } from './accountFileStore.js';
 import { getConvertedPath, resolvePrintablePath } from './documentConverter.js';
@@ -9,6 +10,8 @@ import {
   submitOptionsFromPrintOptions,
 } from './printerAdapter.js';
 import { reserveBin } from './pickupBins.js';
+import { imposeNUp } from './nUpImposer.js';
+import { isPagesPerSheet } from '../src/utils/nUpLayout.js';
 import {
   updatePrintTaskStatus,
   assignPrintTaskBin,
@@ -58,8 +61,8 @@ export async function tryPrintTask(
   // Resolve (and conversion-check) the file before reserving a bin — a task
   // that fails here never prints anything, so it has no business holding a
   // bin another customer is waiting for.
-  const filePath = await resolveFilePath(taskId, options);
-  if (filePath === 'conversion-failed') {
+  const job = await prepareTaskJob(taskId, options);
+  if (job === 'conversion-failed') {
     return getPrintTask(taskId);
   }
 
@@ -75,7 +78,10 @@ export async function tryPrintTask(
   // Undefined (no per-bin queues configured) → the Windows default printer.
   const printerName = printerNameForBin(bin);
   try {
-    await submitPrintJob(filePath, { ...submitOptionsFromPrintOptions(options), printerName });
+    await submitPrintJob(job.filePath, {
+      ...submitOptionsFromPrintOptions(job.options),
+      printerName,
+    });
     await updatePrintTaskStatus(taskId, 'printing', undefined, printerName);
   } catch (err) {
     const reason = err instanceof PrintSubmitError ? err.reason : 'submit-failed';
@@ -102,22 +108,59 @@ export async function tryPrintTask(
 // surfacing, not silently printing a placeholder instead — signalled by
 // the 'conversion-failed' sentinel return, having already marked the task
 // failed itself.
-async function resolveFilePath(
+async function prepareTaskJob(
   taskId: string,
   options: PrintOptions,
-): Promise<string | 'conversion-failed'> {
-  const resolved = await resolvePrintableFile(options);
-  if (resolved === 'conversion-failed') {
+): Promise<PreparedPrintJob | 'conversion-failed'> {
+  const job = await preparePrintJob(options);
+  if (job === 'conversion-failed') {
     await updatePrintTaskStatus(taskId, 'failed', 'conversion-failed');
   }
-  return resolved;
+  return job;
 }
 
-/** The file a task should print, without touching the task itself — also
- * what server/agentRoutes.ts serves to the pavilion agent. */
-export async function resolvePrintableFile(
+export interface PreparedPrintJob {
+  filePath: string;
+  /** The options to print `filePath` with — the task's own, except after
+   * pages-per-sheet imposition, where the page range is already applied
+   * and each sheet prints 1:1 in the sheet's orientation. */
+  options: PrintOptions;
+}
+
+/** What a task actually prints, without touching the task itself — used by
+ * direct mode above and by server/agentRoutes.ts (the claim's options and
+ * the file served to the pavilion agent). Several pages per sheet are
+ * imposed here into a new PDF (server/nUpImposer.ts); a PDF that can't be
+ * imposed is a conversion failure, not a silent 1-per-sheet print the
+ * customer didn't pay for. */
+export async function preparePrintJob(
   options: PrintOptions,
-): Promise<string | 'conversion-failed'> {
+): Promise<PreparedPrintJob | 'conversion-failed'> {
+  const filePath = await resolvePrintableFile(options);
+  if (filePath === 'conversion-failed') return filePath;
+  const pagesPerSheet = isPagesPerSheet(options.pagesPerSheet) ? options.pagesPerSheet : 1;
+  if (pagesPerSheet === 1 || extname(filePath).toLowerCase() !== '.pdf') {
+    return { filePath, options };
+  }
+  try {
+    const imposed = await imposeNUp(filePath, pagesPerSheet, options.paperSize, options.pages);
+    return {
+      filePath: imposed.path,
+      options: {
+        ...options,
+        pages: undefined,
+        pagesPerSheet: 1,
+        scale: 'original',
+        orientation: imposed.orientation,
+      },
+    };
+  } catch (err) {
+    console.error('[printOrchestrator] pages-per-sheet imposition failed:', err);
+    return 'conversion-failed';
+  }
+}
+
+async function resolvePrintableFile(options: PrintOptions): Promise<string | 'conversion-failed'> {
   if (!options.fileId) return PLACEHOLDER_PDF_PATH;
 
   const file =

@@ -48,6 +48,9 @@ export interface SubmitPrintJobRequest {
   orientation?: 'portrait' | 'landscape';
   scale?: 'fit' | 'original';
   pages?: string;
+  /** Pages per printed sheet side (src/utils/nUpLayout.ts) — the cloud
+   * builds the imposed PDF (server/nUpImposer.ts). Absent/1 = one per sheet. */
+  pagesPerSheet?: number;
   copies?: number;
 }
 

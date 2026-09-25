@@ -144,6 +144,7 @@ export function PersonalAccountScreen({
       orientation: order.orientation,
       scale: order.scale,
       pageRange: order.pageRange ?? undefined,
+      pagesPerSheet: order.pagesPerSheet,
       quantity: order.quantity,
       unitPrice: order.unitPriceCents / 100,
       paidQuantity: order.quantity,

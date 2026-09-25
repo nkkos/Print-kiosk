@@ -1,3 +1,5 @@
+import type { PagesPerSheet } from '../utils/nUpLayout';
+
 // Shared types (docs/implementation/project-architecture.md, Section 4).
 // Not yet wired into any component — introduced now per the approved
 // skeleton scope, to be consumed once behavior is implemented.
@@ -61,6 +63,10 @@ export interface PrintOrder {
    * `src/utils/pricing.ts`'s `computeUnitPrice` was given as `pageCount` at
    * "Add to cart" time. `undefined` means every page. */
   pageRange?: string;
+  /** Document pages laid out on each printed sheet side (src/utils/nUpLayout.ts).
+   * Absent means 1 — Cart items saved before this existed, and paid portal
+   * orders that never set it. */
+  pagesPerSheet?: PagesPerSheet;
   /** Number of copies of this configured document. Minimum 1 — see
    * docs/cart-requirements.md ("Quantity"). */
   quantity: number;

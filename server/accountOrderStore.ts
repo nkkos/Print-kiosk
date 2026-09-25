@@ -25,6 +25,7 @@ const ORDER_ROW_COLUMNS = {
   orientation: printOrders.orientation,
   scale: printOrders.scale,
   pageRange: printOrders.pageRange,
+  pagesPerSheet: printOrders.pagesPerSheet,
   quantity: printOrders.quantity,
   unitPriceCents: printOrders.unitPriceCents,
   status: printOrders.status,
@@ -42,6 +43,7 @@ export interface AccountOrder {
   /** The exact pdf-to-printer page-range syntax ("2-5") — null means every
    * page, matching the kiosk's own PrintOrder.pageRange. */
   pageRange: string | null;
+  pagesPerSheet: number;
   quantity: number;
   unitPriceCents: number;
   /** 'created' | 'paid' | 'issued' — see "Order status lifecycle" above. */
@@ -58,6 +60,7 @@ export interface CreateOrderParams {
   orientation: 'portrait' | 'landscape';
   scale: 'fit' | 'original';
   pageRange?: string;
+  pagesPerSheet: number;
   quantity: number;
   unitPriceCents: number;
 }
@@ -76,6 +79,7 @@ export async function createOrder(params: CreateOrderParams): Promise<AccountOrd
       orientation: params.orientation,
       scale: params.scale,
       pageRange: params.pageRange ?? null,
+      pagesPerSheet: params.pagesPerSheet,
       quantity: params.quantity,
       unitPriceCents: params.unitPriceCents,
       status: 'created',

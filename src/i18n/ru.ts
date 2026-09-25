@@ -54,6 +54,7 @@ export const ru: Translations = {
     title: 'Корзина',
     qty: (quantity: number) => `Кол-во: ${quantity}`,
     pages: (range: string) => `Страницы: ${range}`,
+    pagesPerSheet: (count: number) => `${count} стр. на листе`,
     total: (amount: string) => `Итого: $${amount}`,
     proceedToPayment: 'Перейти к оплате',
     printerUnavailable:
@@ -161,6 +162,8 @@ export const ru: Translations = {
     addToCart: 'Добавить в корзину',
     loadingPreview: 'Загрузка предпросмотра...',
     previewPageIndicator: (current: number, total: number) => `Страница ${current} из ${total}`,
+    previewSheetIndicator: (current: number, total: number) => `Лист ${current} из ${total}`,
+    pagesPerSheetLegend: 'Страниц на листе',
   },
   paymentStatus: {
     cancelPayment: 'Отменить оплату',

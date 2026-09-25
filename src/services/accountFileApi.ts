@@ -1,3 +1,5 @@
+import type { PagesPerSheet } from '../utils/nUpLayout';
+
 // Personal Account's "My files"/"My orders" (docs/personal-account-requirements.md,
 // server/accountFileStore.ts, server/accountOrderStore.ts). Two audiences,
 // two auth models, both hitting the same backend:
@@ -44,6 +46,9 @@ export interface AccountOrder {
   /** The exact pdf-to-printer page-range syntax ("2-5") — null means every
    * page, matching the kiosk's own PrintOrder.pageRange (src/types/kiosk.ts). */
   pageRange: string | null;
+  /** Pages per printed sheet side (src/utils/nUpLayout.ts) — 1 for orders
+   * created before this existed. */
+  pagesPerSheet: PagesPerSheet;
   quantity: number;
   unitPriceCents: number;
   /** 'created' (configured, not paid) | 'paid' (awaiting fulfillment) |
@@ -129,6 +134,7 @@ export interface CreateOrderParams {
   orientation: 'portrait' | 'landscape';
   scale: 'fit' | 'original';
   pageRange?: string;
+  pagesPerSheet?: PagesPerSheet;
   quantity: number;
   unitPriceCents: number;
 }

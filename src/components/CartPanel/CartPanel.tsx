@@ -106,6 +106,9 @@ export function CartPanel({
               {SETTINGS_LABEL[item.paperSize]}, {SIDES_LABEL[item.sides]}, {COLOR_LABEL[item.color]}
               , {ORIENTATION_LABEL[item.orientation]}, {SCALE_LABEL[item.scale]}
               {item.pageRange && <>, {t.cart.pages(item.pageRange)}</>}
+              {item.pagesPerSheet && item.pagesPerSheet > 1 && (
+                <>, {t.cart.pagesPerSheet(item.pagesPerSheet)}</>
+              )}
             </span>
 
             <div className={styles.itemRow}>

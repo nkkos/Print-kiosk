@@ -10,7 +10,7 @@ import {
   releasePrintTaskBin,
   type PrintTaskErrorReason,
 } from './printTaskStore.js';
-import { resolvePrintableFile, printExecutionMode } from './printOrchestrator.js';
+import { preparePrintJob, printExecutionMode } from './printOrchestrator.js';
 import { reportIncident, type IncidentSeverity } from './incidentStore.js';
 import { blockingProblems, type PrinterProblem, type PrinterSnapshot } from './printerStatus.js';
 
@@ -73,15 +73,23 @@ agentRouter.post('/api/agent/claim', async (_req, res) => {
     res.json({ task: null });
     return;
   }
-  const filePath = await resolvePrintableFile(task.options);
-  if (filePath === 'conversion-failed') {
+  const job = await preparePrintJob(task.options);
+  if (job === 'conversion-failed') {
     // The file broke between bin reservation and now — nothing will print.
     await releasePrintTaskBin(task.id);
     await updatePrintTaskStatus(task.id, 'failed', 'conversion-failed');
     res.json({ task: null });
     return;
   }
-  res.json({ task: { ...task, fileExtension: extname(filePath).toLowerCase() || '.pdf' } });
+  // The options the agent prints with are the prepared ones (after any
+  // pages-per-sheet imposition), not the task's raw ones.
+  res.json({
+    task: {
+      ...task,
+      options: job.options,
+      fileExtension: extname(job.filePath).toLowerCase() || '.pdf',
+    },
+  });
 });
 
 agentRouter.get('/api/agent/print-tasks/:id/file', async (req, res) => {
@@ -90,12 +98,12 @@ agentRouter.get('/api/agent/print-tasks/:id/file', async (req, res) => {
     res.status(404).json({ error: 'No such claimed task' });
     return;
   }
-  const filePath = await resolvePrintableFile(await getPrintTaskOptions(id));
-  if (filePath === 'conversion-failed') {
+  const job = await preparePrintJob(await getPrintTaskOptions(id));
+  if (job === 'conversion-failed') {
     res.status(409).json({ error: 'File is not printable' });
     return;
   }
-  res.sendFile(filePath);
+  res.sendFile(job.filePath);
 });
 
 const REPORTABLE_FAILURES: PrintTaskErrorReason[] = [

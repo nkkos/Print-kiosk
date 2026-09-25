@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { PDFDocumentProxy } from 'pdfjs-dist';
 import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
+import { fitIntoCell, type SheetLayout } from './nUpLayout';
 
 // Real document preview + page-range selection (docs/email-upload-requirements.md,
 // "Preview and print configuration") — shared between the kiosk's
@@ -29,6 +30,9 @@ export interface Preview {
    * a converted file can't be re-laid-out, so the kiosk follows it instead
    * of offering a choice (the printer rotates each page onto the sheet). */
   orientation: PageOrientation | null;
+  /** First page's width / height — sizes the pages-per-sheet grid
+   * (src/utils/nUpLayout.ts). Null until known, and for images. */
+  pageAspect: number | null;
 }
 
 export const EMPTY_PREVIEW: Preview = {
@@ -38,6 +42,7 @@ export const EMPTY_PREVIEW: Preview = {
   numPages: 0,
   imageUrl: null,
   orientation: null,
+  pageAspect: null,
 };
 
 /** Fetches and decodes the file at `contentUrl` (undefined = no real file —
@@ -74,6 +79,7 @@ export function usePreview(contentUrl: string | undefined): Preview {
             numPages: 0,
             imageUrl: objectUrl,
             orientation: bitmap ? (bitmap.width > bitmap.height ? 'landscape' : 'portrait') : null,
+            pageAspect: null,
           });
           bitmap?.close();
           return;
@@ -86,7 +92,10 @@ export function usePreview(contentUrl: string | undefined): Preview {
         const pdfjsLib = await import('pdfjs-dist');
         pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
         const pdf = await pdfjsLib.getDocument({ data }).promise;
-        const orientation = await getPdfPageOrientation(pdf, 1);
+        const firstPage = await pdf.getPage(1);
+        const firstViewport = firstPage.getViewport({ scale: 1 });
+        const orientation: PageOrientation =
+          firstViewport.width > firstViewport.height ? 'landscape' : 'portrait';
         if (cancelled) return;
         setPreview({
           state: 'ready',
@@ -95,6 +104,7 @@ export function usePreview(contentUrl: string | undefined): Preview {
           numPages: pdf.numPages,
           imageUrl: null,
           orientation,
+          pageAspect: firstViewport.width / firstViewport.height,
         });
       })
       .catch(() => {
@@ -148,6 +158,59 @@ export async function renderPdfPageToCanvas(
   const context = canvas.getContext('2d');
   if (!context) return;
   await page.render({ canvasContext: context, viewport, canvas }).promise;
+}
+
+/** Draws one pages-per-sheet sheet: `pageNumbers` (1-based, up to one per
+ * cell) laid out by `layout` — the same geometry the cloud uses to build the
+ * PDF that actually prints (server/nUpImposer.ts). */
+export async function renderNUpSheetToCanvas(
+  pdf: PDFDocumentProxy,
+  pageNumbers: number[],
+  layout: SheetLayout,
+  canvas: HTMLCanvasElement,
+  pxPerMm: number,
+): Promise<void> {
+  // Rendered at device resolution, displayed at the CSS size — a thumbnail
+  // of 4–6 pages is unreadable otherwise.
+  const pixelRatio = window.devicePixelRatio || 1;
+  const scale = pxPerMm * pixelRatio;
+  canvas.width = Math.round(layout.widthMm * scale);
+  canvas.height = Math.round(layout.heightMm * scale);
+  canvas.style.width = `${layout.widthMm * pxPerMm}px`;
+  canvas.style.height = `${layout.heightMm * pxPerMm}px`;
+  const context = canvas.getContext('2d');
+  if (!context) return;
+  context.fillStyle = '#ffffff';
+  context.fillRect(0, 0, canvas.width, canvas.height);
+
+  for (const [index, pageNumber] of pageNumbers.entries()) {
+    const cell = layout.cells[index];
+    if (!cell) break;
+    const page = await pdf.getPage(pageNumber);
+    const base = page.getViewport({ scale: 1 });
+    const box = fitIntoCell(
+      {
+        x: cell.x * scale,
+        y: cell.y * scale,
+        width: cell.width * scale,
+        height: cell.height * scale,
+      },
+      base.width,
+      base.height,
+    );
+    const viewport = page.getViewport({ scale: box.width / base.width });
+    const pageCanvas = document.createElement('canvas');
+    pageCanvas.width = Math.ceil(viewport.width);
+    pageCanvas.height = Math.ceil(viewport.height);
+    const pageContext = pageCanvas.getContext('2d');
+    if (!pageContext) continue;
+    await page.render({ canvasContext: pageContext, viewport, canvas: pageCanvas }).promise;
+    context.drawImage(pageCanvas, box.x, box.y, box.width, box.height);
+    // A hairline around each page, so blank-edged pages still read as pages.
+    context.strokeStyle = '#d0d0d0';
+    context.lineWidth = Math.max(1, pixelRatio);
+    context.strokeRect(box.x, box.y, box.width, box.height);
+  }
 }
 
 export interface PageRangeSelection {

@@ -54,6 +54,7 @@ export const sk: Translations = {
     title: 'Košík',
     qty: (quantity: number) => `Počet: ${quantity}`,
     pages: (range: string) => `Strany: ${range}`,
+    pagesPerSheet: (count: number) => `${count} strany na hárok`,
     total: (amount: string) => `Spolu: $${amount}`,
     proceedToPayment: 'Prejsť k platbe',
     printerUnavailable:
@@ -162,6 +163,8 @@ export const sk: Translations = {
     addToCart: 'Pridať do košíka',
     loadingPreview: 'Načítava sa náhľad...',
     previewPageIndicator: (current: number, total: number) => `Strana ${current} z ${total}`,
+    previewSheetIndicator: (current: number, total: number) => `Hárok ${current} z ${total}`,
+    pagesPerSheetLegend: 'Strán na hárok',
   },
   paymentStatus: {
     cancelPayment: 'Zrušiť platbu',
