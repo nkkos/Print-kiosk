@@ -39,8 +39,8 @@ The backend was deliberately built without hardening for the prototype (see `CLA
 ## Before opening — printer (after the hardware arrives)
 
 - [ ] Install the full Brother PCL driver on the mini-PC (not the Microsoft IPP class driver); tick the MX-4000 and the lower tray under Device Settings.
-- [ ] Create 4 queues (`HL9430-Bin1`…`Bin4`) with Printing Defaults pinned to "MX bin N"; set `PRINTER_QUEUE_BIN_1..4` and `PRINTER_TRAY_A4=1` / `PRINTER_TRAY_A5=2` (see `server/printerAdapter.ts`).
-- [ ] Check that A5 lands in the MX-4000 bins (Brother does not document this).
+- [ ] Create 4 queues (`HL9430-Bin1`…`Bin4`) with Printing Defaults pinned to "MX bin N"; set `PRINTER_QUEUE_BIN_1..4` (see `server/printerAdapter.ts`). Both trays hold A4 (decided 2026-09-25: the LT-330CL is a reserve A4 tray, not A5 — A5 has little walk-in demand and the printer cannot do A3 at all); leave `PRINTER_TRAY_A4` unset so the driver switches to tray 2 by itself when tray 1 runs out, and set tray 2's paper size to A4 in the printer menu.
+- [ ] Decide what happens to the A5 option in the kiosk and portal, now that no tray holds A5 (hide it, or keep A5 via the MP tray with staff refilling it).
 - [ ] Run the acceptance scenarios (the HL-L9430CDN acceptance checklist artifact).
 - [ ] Enable SNMP v1/v2c read access in the Brother's Web Based Management; set `PRINTER_SNMP_HOST` on the agent and confirm `GET /api/printer-status` reflects a real jam / empty tray / open door.
 - [ ] Tune the agent's timings on real hardware (`agent/jobTracker.ts`: grace period, idle readings, 10-minute watch limit) — in particular that a sleeping printer reports "idle" and that a finished job is detected.
