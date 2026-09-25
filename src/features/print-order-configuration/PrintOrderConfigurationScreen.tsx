@@ -7,6 +7,7 @@ import type { Language } from '../../i18n';
 import type { EndSessionReason, PrintOrder } from '../../types/kiosk';
 import { getUploadedFileContentUrl } from '../../services/uploadedFileApi';
 import { getAccountFileContentUrl } from '../../services/accountFileApi';
+import { supportsDuplex } from '../../utils/printCapabilities';
 import { computeUnitPrice } from '../../utils/pricing';
 import {
   usePreview,
@@ -133,6 +134,12 @@ export function PrintOrderConfigurationScreen({
     pageRange,
   } = usePageRangeSelection(preview);
   const unitPrice = computeUnitPrice(pagesToPrint, paperSize, color, sides);
+  const duplexAvailable = supportsDuplex(paperSize);
+
+  function selectPaperSize(size: PrintOrder['paperSize']) {
+    setPaperSize(size);
+    if (!supportsDuplex(size)) setSides('single');
+  }
 
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [popupPage, setPopupPage] = useState(1);
@@ -300,7 +307,7 @@ export function PrintOrderConfigurationScreen({
               type="radio"
               name="paperSize"
               checked={paperSize === 'A4'}
-              onChange={() => setPaperSize('A4')}
+              onChange={() => selectPaperSize('A4')}
             />
             {t.common.paperSizeA4}
           </label>
@@ -309,7 +316,7 @@ export function PrintOrderConfigurationScreen({
               type="radio"
               name="paperSize"
               checked={paperSize === 'A5'}
-              onChange={() => setPaperSize('A5')}
+              onChange={() => selectPaperSize('A5')}
             />
             {t.common.paperSizeA5}
           </label>
@@ -375,10 +382,12 @@ export function PrintOrderConfigurationScreen({
               type="radio"
               name="sides"
               checked={sides === 'double'}
+              disabled={!duplexAvailable}
               onChange={() => setSides('double')}
             />
             {t.common.sidesDouble}
           </label>
+          {!duplexAvailable && <p className={styles.hint}>{t.common.sidesDoubleA4Only}</p>}
         </fieldset>
 
         <fieldset className={styles.settings}>

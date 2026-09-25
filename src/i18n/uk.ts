@@ -12,6 +12,7 @@ export const uk: Translations = {
     paperSizeA5: 'A5',
     sidesSingle: 'Односторонній',
     sidesDouble: 'Двосторонній',
+    sidesDoubleA4Only: 'Двосторонній друк доступний лише для A4',
     colorBw: 'Чорно-білий',
     colorColor: 'Кольоровий',
     orientationPortrait: 'Книжна',

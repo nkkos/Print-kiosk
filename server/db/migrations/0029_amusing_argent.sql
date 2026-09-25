@@ -1,0 +1,1 @@
+ALTER TABLE "print_tasks" ADD COLUMN "claimed_at" timestamp with time zone;

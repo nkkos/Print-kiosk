@@ -57,7 +57,14 @@
 
 .settings {
   display: flex;
+  flex-wrap: wrap;
   gap: var(--space-m);
+}
+
+.hint {
+  flex-basis: 100%;
+  margin: 0;
+  color: var(--color-ink-soft);
 }
 
 .pageRangeInputs {

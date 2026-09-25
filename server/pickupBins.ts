@@ -5,11 +5,10 @@ import { printTasks } from './db/schema.js';
 // Pavilion launch plan (2026-09-16): the two kiosk stands share one printer
 // feeding a Brother MX-4000 — a real 4-bin mailbox, confirmed to support
 // per-job output-bin selection at the driver level (Brother's own
-// documentation), though that's NOT yet verified against our stack
-// (pdf-to-printer/SumatraPDF) since no real MX-4000 exists to test against
-// yet — see server/printerAdapter.ts's own note once that's wired up. This
-// module only tracks bin OCCUPANCY in software; it doesn't yet talk to the
-// printer driver about which physical bin a job lands in.
+// documentation), though that's NOT yet verified against real hardware.
+// This module only tracks bin OCCUPANCY; routing a job to the physical bin
+// happens in server/printerAdapter.ts's printerNameForBin (one Windows
+// queue per bin, PRINTER_QUEUE_BIN_N).
 export const BIN_COUNT = 4;
 
 // A bin is "occupied" by any task that's been assigned one and not yet

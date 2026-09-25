@@ -15,6 +15,7 @@ export const en = {
     paperSizeA5: 'A5',
     sidesSingle: 'Single-sided',
     sidesDouble: 'Double-sided',
+    sidesDoubleA4Only: 'Double-sided is available for A4 only',
     colorBw: 'Black & white',
     colorColor: 'Color',
     orientationPortrait: 'Portrait',

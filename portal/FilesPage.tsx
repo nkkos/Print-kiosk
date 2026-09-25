@@ -19,6 +19,7 @@ import {
   type AccountFileLimits,
   type CreateOrderParams,
 } from '../src/services/accountFileApi';
+import { supportsDuplex } from '../src/utils/printCapabilities';
 import { computeUnitPrice } from '../src/utils/pricing';
 import {
   usePreview,
@@ -87,6 +88,7 @@ export function ConfigureAndPay({
     pageRange,
   } = usePageRangeSelection(preview);
   const unitPrice = computeUnitPrice(pagesToPrint, paperSize, color, sides);
+  const duplexAvailable = supportsDuplex(paperSize);
 
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [popupPage, setPopupPage] = useState(1);
@@ -237,7 +239,11 @@ export function ConfigureAndPay({
         Paper size
         <select
           value={paperSize}
-          onChange={(e) => setPaperSize(e.target.value as CreateOrderParams['paperSize'])}
+          onChange={(e) => {
+            const size = e.target.value as CreateOrderParams['paperSize'];
+            setPaperSize(size);
+            if (!supportsDuplex(size)) setSides('single');
+          }}
         >
           <option value="A4">A4</option>
           <option value="A5">A5</option>
@@ -250,7 +256,9 @@ export function ConfigureAndPay({
           onChange={(e) => setSides(e.target.value as CreateOrderParams['sides'])}
         >
           <option value="single">Single-sided</option>
-          <option value="double">Double-sided</option>
+          <option value="double" disabled={!duplexAvailable}>
+            {duplexAvailable ? 'Double-sided' : 'Double-sided (A4 only)'}
+          </option>
         </select>
       </label>
       <label>

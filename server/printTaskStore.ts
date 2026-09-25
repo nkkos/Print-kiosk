@@ -1,4 +1,4 @@
-import { desc, eq } from 'drizzle-orm';
+import { desc, eq, sql } from 'drizzle-orm';
 import { db } from './db/client.js';
 import { printTasks } from './db/schema.js';
 import type { SubmitFailureReason } from './printerAdapter.js';
@@ -184,6 +184,17 @@ export async function assignPrintTaskBin(id: string, binNumber: number): Promise
     .where(eq(printTasks.id, id));
 }
 
+/** Un-assigns a bin from a task that failed before anything could print
+ * into it (server/printOrchestrator.ts) — unlike markPrintTaskPickedUp,
+ * there's nothing physical to collect, so the bin just goes back to the
+ * pool. */
+export async function releasePrintTaskBin(id: string): Promise<void> {
+  await db
+    .update(printTasks)
+    .set({ binNumber: null, updatedAt: new Date() })
+    .where(eq(printTasks.id, id));
+}
+
 /** Confirms a customer (or staff, on their behalf) actually took their
  * printout, freeing the bin for the next waiting task — see
  * server/pickupBins.ts's own comment on why this is a manual confirmation
@@ -194,4 +205,61 @@ export async function markPrintTaskPickedUp(id: string): Promise<void> {
     .update(printTasks)
     .set({ pickedUpAt: new Date(), updatedAt: new Date() })
     .where(eq(printTasks.id, id));
+}
+
+// A claim that never reported back (agent crashed or lost its connection
+// mid-job) is handed out again after this long — longer than the agent's
+// own submit timeout plus a file download, so a slow-but-alive agent never
+// has its job double-printed.
+export const AGENT_CLAIM_TIMEOUT_MS = 2 * 60 * 1000;
+
+export interface ClaimedPrintTask {
+  id: string;
+  binNumber: number;
+  options: PrintOptions;
+}
+
+/** Hands the pavilion print agent the oldest task that's ready to print
+ * (bin assigned, still 'queued', not picked up, not already claimed) —
+ * atomically, so two agent polls can never claim the same task. */
+export async function claimNextPrintTask(): Promise<ClaimedPrintTask | null> {
+  const staleBefore = new Date(Date.now() - AGENT_CLAIM_TIMEOUT_MS);
+  const result = await db.execute<{
+    id: string;
+    bin_number: number;
+    print_options: string | null;
+  }>(sql`
+    UPDATE print_tasks SET claimed_at = now(), updated_at = now()
+    WHERE id = (
+      SELECT id FROM print_tasks
+      WHERE status = 'queued'
+        AND bin_number IS NOT NULL
+        AND picked_up_at IS NULL
+        AND (claimed_at IS NULL OR claimed_at < ${staleBefore})
+      ORDER BY created_at
+      LIMIT 1
+      FOR UPDATE SKIP LOCKED
+    )
+    RETURNING id, bin_number, print_options
+  `);
+  const row = result.rows[0];
+  if (!row) return null;
+  let options: PrintOptions = {};
+  try {
+    options = row.print_options ? (JSON.parse(row.print_options) as PrintOptions) : {};
+  } catch {
+    // unreadable options — print with defaults, same as getPrintTaskOptions
+  }
+  return { id: row.id, binNumber: row.bin_number, options };
+}
+
+/** Whether `id` is currently claimed by the agent and still in flight —
+ * gates the agent's file download and status reports, so a stale or
+ * forged task id can't touch a task the agent doesn't hold. */
+export async function isClaimedInFlight(id: string): Promise<boolean> {
+  const [row] = await db
+    .select({ status: printTasks.status, claimedAt: printTasks.claimedAt })
+    .from(printTasks)
+    .where(eq(printTasks.id, id));
+  return !!row?.claimedAt && (row.status === 'queued' || row.status === 'printing');
 }

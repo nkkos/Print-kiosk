@@ -12,6 +12,7 @@ export const sk: Translations = {
     paperSizeA5: 'A5',
     sidesSingle: 'Jednostranne',
     sidesDouble: 'Obojstranne',
+    sidesDoubleA4Only: 'Obojstranná tlač je dostupná len pre A4',
     colorBw: 'Čiernobielo',
     colorColor: 'Farebne',
     orientationPortrait: 'Na výšku',

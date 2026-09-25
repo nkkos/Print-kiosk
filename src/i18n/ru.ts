@@ -12,6 +12,7 @@ export const ru: Translations = {
     paperSizeA5: 'A5',
     sidesSingle: 'Односторонняя',
     sidesDouble: 'Двусторонняя',
+    sidesDoubleA4Only: 'Двусторонняя печать доступна только для A4',
     colorBw: 'Чёрно-белая',
     colorColor: 'Цветная',
     orientationPortrait: 'Книжная',

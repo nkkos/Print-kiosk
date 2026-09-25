@@ -12,6 +12,7 @@ export const de: Translations = {
     paperSizeA5: 'A5',
     sidesSingle: 'Einseitig',
     sidesDouble: 'Beidseitig',
+    sidesDoubleA4Only: 'Beidseitiger Druck nur für A4 verfügbar',
     colorBw: 'Schwarz-weiß',
     colorColor: 'Farbig',
     orientationPortrait: 'Hochformat',

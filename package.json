@@ -8,6 +8,7 @@
     "dev:server": "tsx watch server/index.ts",
     "dev:all": "concurrently \"npm:dev\" \"npm:dev:server\"",
     "start": "tsx server/index.ts",
+    "agent": "tsx agent/index.ts",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "seed:staff": "tsx server/scripts/seedStaffAccount.ts",

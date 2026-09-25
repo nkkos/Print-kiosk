@@ -492,6 +492,13 @@ export const printTasks = pgTable(
     // POST /api/print-tasks/:id/picked-up.
     binNumber: integer('bin_number'),
     pickedUpAt: timestamp('picked_up_at', { withTimezone: true }),
+    // Pavilion architecture (docs/pavilion-launch-checklist.md): in 'agent'
+    // print mode the cloud never prints itself — the print agent on the
+    // pavilion mini-PC claims a bin-assigned task (server/agentRoutes.ts),
+    // prints it locally and reports back. Set when claimed; a claim that
+    // never reports back (agent crashed mid-job) becomes claimable again
+    // after AGENT_CLAIM_TIMEOUT_MS. Always null in 'direct' mode.
+    claimedAt: timestamp('claimed_at', { withTimezone: true }),
     // The original submission's file/print options (fileId, paperSize,
     // sides, ...) — stringified JSON, same convention as incidents.context
     // above (no jsonb precedent in this schema, nothing needs to query

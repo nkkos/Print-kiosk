@@ -1,11 +1,18 @@
 import { getUploadedFile } from './uploadStore.js';
 import { getAccountFile } from './accountFileStore.js';
 import { getConvertedPath, resolvePrintablePath } from './documentConverter.js';
-import { submitPrintJob, PrintSubmitError, PLACEHOLDER_PDF_PATH } from './printerAdapter.js';
+import {
+  submitPrintJob,
+  PrintSubmitError,
+  PLACEHOLDER_PDF_PATH,
+  printerNameForBin,
+  submitOptionsFromPrintOptions,
+} from './printerAdapter.js';
 import { reserveBin } from './pickupBins.js';
 import {
   updatePrintTaskStatus,
   assignPrintTaskBin,
+  releasePrintTaskBin,
   getPrintTask,
   getPrintTaskOptions,
   type PrintTask,
@@ -16,6 +23,18 @@ import {
 // logic out of server/routes.ts's POST /api/print-tasks handler so it can
 // be re-invoked later, on a completely different HTTP request, once a
 // pickup bin frees up — see tryPrintTask's own comment.
+
+export type PrintExecutionMode = 'direct' | 'agent';
+
+/** Where jobs actually get printed (docs/pavilion-launch-checklist.md,
+ * "Target architecture"). 'direct' — this backend prints to a printer
+ * attached to its own machine (local development, the original setup).
+ * 'agent' — the cloud deployment: this backend only reserves the bin and
+ * leaves the task for the pavilion's print agent (agent/, via
+ * server/agentRoutes.ts), since a cloud server has no printer. */
+export function printExecutionMode(): PrintExecutionMode {
+  return process.env.PRINT_EXECUTION === 'agent' ? 'agent' : 'direct';
+}
 
 /** Attempts to actually print `taskId` — reserves a pickup bin first
  * (server/pickupBins.ts); if all `BIN_COUNT` are occupied, leaves the task
@@ -34,32 +53,37 @@ export async function tryPrintTask(
     return current;
   }
 
-  const bin = await reserveBin(sessionId);
-  if (bin == null) return current; // still waiting for a free bin — retried on the next poll
-
-  await assignPrintTaskBin(taskId, bin);
   const options = await getPrintTaskOptions(taskId);
 
+  // Resolve (and conversion-check) the file before reserving a bin — a task
+  // that fails here never prints anything, so it has no business holding a
+  // bin another customer is waiting for.
   const filePath = await resolveFilePath(taskId, options);
   if (filePath === 'conversion-failed') {
     return getPrintTask(taskId);
   }
 
+  const bin = await reserveBin(sessionId);
+  if (bin == null) return current; // still waiting for a free bin — retried on the next poll
+
+  await assignPrintTaskBin(taskId, bin);
+
+  // Agent mode: the task now waits, 'queued' with its bin, until the
+  // pavilion agent claims it (server/agentRoutes.ts).
+  if (printExecutionMode() === 'agent') return getPrintTask(taskId);
+
+  // Undefined (no per-bin queues configured) → the Windows default printer.
+  const printerName = printerNameForBin(bin);
   try {
-    await submitPrintJob(filePath, {
-      copies: options.copies,
-      paperSize: options.paperSize,
-      side:
-        options.sides === 'double' ? 'duplex' : options.sides === 'single' ? 'simplex' : undefined,
-      monochrome: options.color === 'bw' ? true : options.color === 'color' ? false : undefined,
-      orientation: options.orientation,
-      scale: options.scale === 'fit' ? 'fit' : options.scale === 'original' ? 'noscale' : undefined,
-      pages: options.pages,
-    });
-    await updatePrintTaskStatus(taskId, 'printing');
+    await submitPrintJob(filePath, { ...submitOptionsFromPrintOptions(options), printerName });
+    await updatePrintTaskStatus(taskId, 'printing', undefined, printerName);
   } catch (err) {
     const reason = err instanceof PrintSubmitError ? err.reason : 'submit-failed';
-    await updatePrintTaskStatus(taskId, 'failed', reason);
+    // The spooler refused the job outright, so nothing can land in the bin —
+    // free it. A timeout is different: SumatraPDF may still hand the job over
+    // late, so that bin stays reserved until staff release it.
+    if (reason !== 'submit-timeout') await releasePrintTaskBin(taskId);
+    await updatePrintTaskStatus(taskId, 'failed', reason, printerName);
   }
 
   return getPrintTask(taskId);
@@ -82,6 +106,18 @@ async function resolveFilePath(
   taskId: string,
   options: PrintOptions,
 ): Promise<string | 'conversion-failed'> {
+  const resolved = await resolvePrintableFile(options);
+  if (resolved === 'conversion-failed') {
+    await updatePrintTaskStatus(taskId, 'failed', 'conversion-failed');
+  }
+  return resolved;
+}
+
+/** The file a task should print, without touching the task itself — also
+ * what server/agentRoutes.ts serves to the pavilion agent. */
+export async function resolvePrintableFile(
+  options: PrintOptions,
+): Promise<string | 'conversion-failed'> {
   if (!options.fileId) return PLACEHOLDER_PDF_PATH;
 
   const file =
@@ -92,9 +128,6 @@ async function resolveFilePath(
 
   const resolvedPath = resolvePrintablePath(file.absolutePath, file.fileName);
   if (resolvedPath) return resolvedPath;
-  if (getConvertedPath(file.absolutePath, file.fileName)) {
-    await updatePrintTaskStatus(taskId, 'failed', 'conversion-failed');
-    return 'conversion-failed';
-  }
+  if (getConvertedPath(file.absolutePath, file.fileName)) return 'conversion-failed';
   return PLACEHOLDER_PDF_PATH;
 }
