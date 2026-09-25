@@ -9,7 +9,7 @@ A React + TypeScript + Vite client application for a self-service printing kiosk
 ## Commands
 
 - `npm run dev` — start the Vite dev server (HMR).
-- `npm run build` — type-check (`tsc -b`) then production-build (`vite build`). Run this after any code change.
+- `npm run build` — type-check (`tsc -b`) then production-build (`vite build`). Run this after any code change. The type-check covers every frontend (`src/` plus the `portal/`, `business/`, `admin/`, `shop/`, `photo-kiosk/` mini-apps, via `tsconfig.app.json`) and the backend (`server/`, `agent/`, via `tsconfig.server.json`).
 - `npm run lint` — oxlint.
 - `npx prettier . --check` — verify formatting; `npm run format` (or `npx prettier . --write`) to fix.
 - `npm run preview` — serve the production build locally.

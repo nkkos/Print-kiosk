@@ -26,7 +26,8 @@ interface CatalogEntry {
   code: string;
   severity: keyof typeof SEVERITY_LABEL;
   autoFix: string;
-  monitoring: 'реализовано' | 'не реализовано' | 'не подтверждено';
+  monitoring:
+    'реализовано' | 'реализовано (не проверено вживую)' | 'не реализовано' | 'не подтверждено';
   message: string;
 }
 

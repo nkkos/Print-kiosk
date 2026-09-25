@@ -172,6 +172,8 @@ export function PhotoKioskApp() {
           '[PhotoKioskApp] compositeViaNanoBanana failed, falling back to local matting:',
           err,
         );
+        // A look with no artwork yet has nothing to fall back onto.
+        if (!lookImageUrl) throw err;
         const bgImage = new Image();
         bgImage.src = lookImageUrl;
         await bgImage.decode();
