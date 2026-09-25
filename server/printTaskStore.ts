@@ -10,7 +10,14 @@ import { reportIncident } from './incidentStore.js';
 
 export type PrintTaskStatus = 'queued' | 'printing' | 'succeeded' | 'failed';
 export type PrintTaskErrorReason =
-  SubmitFailureReason | 'paper-jam' | 'out-of-paper' | 'out-of-ink' | 'conversion-failed';
+  | SubmitFailureReason
+  | 'paper-jam'
+  | 'out-of-paper'
+  | 'out-of-ink'
+  | 'conversion-failed'
+  // Any other problem that stops the printer (door open, output bin full,
+  // offline, unreachable) — see server/printerStatus.ts's failureReasonFor.
+  | 'printer-error';
 
 // The original submission's file/print options — see schema.ts's
 // printOptions column comment for why this needs to be persisted at all
@@ -99,6 +106,7 @@ const PRINTER_INCIDENT_CODE: Record<PrintTaskErrorReason, string> = {
   'out-of-paper': 'printer.out-of-paper',
   'out-of-ink': 'printer.out-of-ink',
   'conversion-failed': 'printer.conversion-failed',
+  'printer-error': 'printer.error',
 };
 
 export async function updatePrintTaskStatus(

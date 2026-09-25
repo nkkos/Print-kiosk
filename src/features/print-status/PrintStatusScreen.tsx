@@ -49,6 +49,8 @@ interface PrintStatusScreenProps {
   onLanguageChange: (language: Language) => void;
 }
 
+const HIDE_PRINT_SIMULATE = import.meta.env.VITE_HIDE_PRINT_SIMULATE === 'true';
+
 function errorMessage(
   t: ReturnType<typeof useTranslation>,
   reason: PrintTaskErrorReason | null,
@@ -64,6 +66,8 @@ function errorMessage(
       return t.printStatus.errorOutOfInk;
     case 'conversion-failed':
       return t.printStatus.errorConversionFailed;
+    case 'printer-error':
+      return t.printStatus.errorPrinterError;
     default:
       return t.printStatus.errorSubmitFailed;
   }
@@ -165,35 +169,42 @@ export function PrintStatusScreen({
             <p className={styles.message}>
               {isWaitingForBin ? t.printStatus.waitingForBinMessage : t.printStatus.printingMessage}
             </p>
-            {/* Disabled until the submission itself has actually returned a
-                task (status === 'queued' means it's still in flight — e.g.
-                waiting on document conversion, server/documentConverter.ts,
-                which can take tens of seconds) — clicking earlier had
-                nothing to act on yet and silently did nothing. */}
-            <Button
-              id="print-simulate-success"
-              label="Simulate success"
-              onClick={() => onSimulatePrintOutcome('success')}
-              disabled={isConnectionLost || status === 'queued'}
-            />
-            <Button
-              id="print-simulate-paper-jam"
-              label="Simulate paper jam"
-              onClick={() => onSimulatePrintOutcome('paper-jam')}
-              disabled={isConnectionLost || status === 'queued'}
-            />
-            <Button
-              id="print-simulate-out-of-paper"
-              label="Simulate out of paper"
-              onClick={() => onSimulatePrintOutcome('out-of-paper')}
-              disabled={isConnectionLost || status === 'queued'}
-            />
-            <Button
-              id="print-simulate-out-of-ink"
-              label="Simulate out of ink"
-              onClick={() => onSimulatePrintOutcome('out-of-ink')}
-              disabled={isConnectionLost || status === 'queued'}
-            />
+            {/* Scaffolding for testing without a real printer. The real
+                outcome comes from the pavilion print agent (agent/); set
+                VITE_HIDE_PRINT_SIMULATE=true for customer-facing builds. */}
+            {!HIDE_PRINT_SIMULATE && (
+              <>
+                {/* Disabled until the submission itself has actually returned a
+                    task (status === 'queued' means it's still in flight — e.g.
+                    waiting on document conversion, server/documentConverter.ts,
+                    which can take tens of seconds) — clicking earlier had
+                    nothing to act on yet and silently did nothing. */}
+                <Button
+                  id="print-simulate-success"
+                  label="Simulate success"
+                  onClick={() => onSimulatePrintOutcome('success')}
+                  disabled={isConnectionLost || status === 'queued'}
+                />
+                <Button
+                  id="print-simulate-paper-jam"
+                  label="Simulate paper jam"
+                  onClick={() => onSimulatePrintOutcome('paper-jam')}
+                  disabled={isConnectionLost || status === 'queued'}
+                />
+                <Button
+                  id="print-simulate-out-of-paper"
+                  label="Simulate out of paper"
+                  onClick={() => onSimulatePrintOutcome('out-of-paper')}
+                  disabled={isConnectionLost || status === 'queued'}
+                />
+                <Button
+                  id="print-simulate-out-of-ink"
+                  label="Simulate out of ink"
+                  onClick={() => onSimulatePrintOutcome('out-of-ink')}
+                  disabled={isConnectionLost || status === 'queued'}
+                />
+              </>
+            )}
           </>
         )}
       </div>

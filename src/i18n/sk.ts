@@ -178,6 +178,8 @@ export const sk: Translations = {
     errorPaperJam: 'V tlačiarni sa zasekol papier. Odstráňte ho a skúste znova.',
     errorOutOfPaper: 'V tlačiarni došiel papier. Doplňte ho a skúste znova.',
     errorOutOfInk: 'V tlačiarni došiel atrament. Vymeňte ho a skúste znova.',
+    errorPrinterError:
+      'Tlačiareň potrebuje obsluhu. Personál bol upozornený — skúste to o chvíľu znova.',
     errorSubmitFailed: 'Tlač zlyhala. Skúste znova.',
     errorConversionFailed: 'Tento dokument sa nepodarilo pripraviť na tlač.',
   },

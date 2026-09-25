@@ -182,6 +182,8 @@ export const de: Translations = {
     errorPaperJam: 'Papierstau im Drucker. Bitte beheben und erneut versuchen.',
     errorOutOfPaper: 'Kein Papier mehr im Drucker. Bitte nachfüllen und erneut versuchen.',
     errorOutOfInk: 'Keine Tinte mehr im Drucker. Bitte ersetzen und erneut versuchen.',
+    errorPrinterError:
+      'Der Drucker benötigt Wartung. Unser Personal wurde benachrichtigt — bitte versuchen Sie es gleich noch einmal.',
     errorSubmitFailed: 'Drucken fehlgeschlagen. Bitte erneut versuchen.',
     errorConversionFailed: 'Dieses Dokument konnte nicht für den Druck vorbereitet werden.',
   },

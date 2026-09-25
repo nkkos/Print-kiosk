@@ -42,6 +42,11 @@ The backend was deliberately built without hardening for the prototype (see `CLA
 - [ ] Create 4 queues (`HL9430-Bin1`…`Bin4`) with Printing Defaults pinned to "MX bin N"; set `PRINTER_QUEUE_BIN_1..4` and `PRINTER_TRAY_A4=1` / `PRINTER_TRAY_A5=2` (see `server/printerAdapter.ts`).
 - [ ] Check that A5 lands in the MX-4000 bins (Brother does not document this).
 - [ ] Run the acceptance scenarios (the HL-L9430CDN acceptance checklist artifact).
-- [ ] Replace the "Simulate …" print outcome buttons with real printer status (spooler + SNMP) in production.
+- [ ] Enable SNMP v1/v2c read access in the Brother's Web Based Management; set `PRINTER_SNMP_HOST` on the agent and confirm `GET /api/printer-status` reflects a real jam / empty tray / open door.
+- [ ] Tune the agent's timings on real hardware (`agent/jobTracker.ts`: grace period, idle readings, 10-minute watch limit) — in particular that a sleeping printer reports "idle" and that a finished job is detected.
+- [ ] Set `VITE_HIDE_PRINT_SIMULATE=true` in the Cloudflare Pages build, so customers never see the "Simulate …" buttons (real outcomes come from the agent).
+- [ ] Set `PRINT_EXECUTION=agent` and `PRINT_AGENT_TOKEN` on Railway, the same token in the agent's `.env`; run the agent as a Windows service that restarts on failure.
+- [ ] Kiosk stands: stop taking payment for printing while `GET /api/printer-status` says unavailable (not built yet).
+- [ ] Review incident noise: one jam currently yields a device incident (`printer.jammed`), a task incident (`printer.paper-jam`) and, if the job had reached the printer, `printer.job-interrupted` — decide which should reach Telegram.
 
 Known hardware constraint, already handled in code: the automatic duplex unit supports A4 only, so A5 double-sided is blocked in the kiosk UI, the portal and order validation.

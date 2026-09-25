@@ -179,6 +179,8 @@ export const en = {
     errorPaperJam: 'The printer has a paper jam. Please clear it and retry.',
     errorOutOfPaper: 'The printer is out of paper. Please refill it and retry.',
     errorOutOfInk: 'The printer is out of ink. Please replace it and retry.',
+    errorPrinterError:
+      'The printer needs attention. Our staff have been notified — please try again shortly.',
     errorSubmitFailed: 'Printing failed. Please retry.',
     errorConversionFailed: 'This document could not be prepared for printing.',
   },

@@ -10,7 +10,9 @@ export type PrintTaskErrorReason =
   | 'paper-jam'
   | 'out-of-paper'
   | 'out-of-ink'
-  | 'conversion-failed';
+  | 'conversion-failed'
+  | 'submit-timeout'
+  | 'printer-error';
 
 export interface PrintTask {
   id: string;

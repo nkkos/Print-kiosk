@@ -86,7 +86,11 @@ Without the Railway CLI, steps 1–2 have no other path — there's no admin-pan
 
 In the pavilion the cloud backend (`PRINT_EXECUTION=agent`) never prints itself — it has no printer. A small agent (`agent/index.ts`) runs on the Windows mini-PC the Brother printer is attached to. It only makes outbound HTTPS calls to `server/agentRoutes.ts`, so the pavilion needs no open ports: every 2 s it claims the next task that has a pickup bin reserved, downloads the ready-to-print file (already scanned and converted in the cloud), prints it to that bin's queue (`PRINTER_QUEUE_BIN_N`) and reports the result. See `docs/pavilion-launch-checklist.md` for the architecture.
 
-On the mini-PC: clone the repo, `npm ci`, create `.env` with `AGENT_CLOUD_URL`, `PRINT_AGENT_TOKEN` and the `PRINTER_*` variables, then `npm run agent`. Not yet reported by the agent: the job actually finishing or physical failures (jam, out of paper) — that needs the printer status module, the next step; until then a task stays "printing" after a clean submit.
+On the mini-PC: clone the repo, `npm ci`, create `.env` with `AGENT_CLOUD_URL`, `PRINT_AGENT_TOKEN` and the `PRINTER_*` variables, then `npm run agent`.
+
+After submitting, the agent follows the job (`agent/jobTracker.ts`) — first in the Windows print queue, then on the printer itself over SNMP (`agent/printerStatusSource.ts`, `PRINTER_SNMP_HOST`) — and reports `succeeded`, or `failed` with the reason (jam, out of paper, out of toner, other printer error) once a problem outlasts its grace period. Every 15 s it also reports the printer's health; the cloud raises incidents for new problems and answers the stands' `GET /api/printer-status` ("can a job be printed right now?"). While the printer is blocked the agent claims nothing, so paid jobs wait in the queue instead of failing.
+
+Without hardware: `AGENT_DRY_RUN=true` skips the actual print, and `PRINTER_STATUS_SIMULATOR_FILE` points at a JSON file (`{"state":"idle","problems":[]}`; e.g. `"problems":["jammed"]`) that is re-read on every poll — edit it to simulate printer states. `AGENT_PROBLEM_GRACE_MS` (default 60000) sets how long a problem must last before a job is failed.
 
 ## Deploying to Railway
 
