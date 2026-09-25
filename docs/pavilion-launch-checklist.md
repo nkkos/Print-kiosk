@@ -1,0 +1,47 @@
+# Pavilion launch checklist
+
+Decisions and must-do items before the first pavilion (Hodžovo námestie) opens to real customers. Confirmed with the product owner on 2026-09-25. Tick items off here as they land, so nothing is lost between sessions.
+
+Expected load: 1 pavilion, 2 kiosk stands, 10–15 visitors/day.
+
+## Target architecture (confirmed)
+
+- **Cloud (Railway)** holds all logic and data: sessions, uploads (QR / email / portal), antivirus scan (ClamAV service), document conversion (LibreOffice), orders, payments, the print-task queue and pickup-bin allocation (`server/pickupBins.ts`), the admin panel.
+- **Kiosk stands** (2 × simple PC + monitor) are thin clients: a browser in kiosk mode on the Cloudflare Pages site, tagged with a stand id (A/B). No local server, no printer driver.
+- **Pavilion mini-PC** (Windows) runs the **print agent**: it polls the cloud for print tasks (outbound only, no open ports), downloads the ready-to-print PDF, prints it to the Brother queue of the reserved bin, and reports status and printer health back. Later it also drives the smart lock and cameras. It holds the Brother driver and the per-bin print queues.
+- **Printer**: Brother HL-L9430CDN + MX-4000 (4 × 100-sheet mailbox bins) + LT-330CL lower tray, on the pavilion LAN.
+- Local development keeps a "direct" mode where the backend prints to the local default printer itself (the current behavior).
+
+## Before opening — infrastructure (Railway)
+
+- [ ] Move to the **Pro plan** (support, backups, sane limits). Budget estimate $20–40/month; ClamAV's 2–3 GB of RAM is the biggest cost.
+- [ ] Confirm all services run in an **EU region** (Settings → Region), for GDPR and latency.
+- [ ] Enable and verify **Postgres backups**; decide on backups for `print-kiosk-volume` (uploaded files).
+- [ ] Create a **staging environment**; production deploys only after checking on staging (today every push to `main` deploys straight to production).
+- [ ] **Uptime monitoring** of the backend and the print agent's heartbeat, alerting through the existing Telegram bot.
+- [ ] Install **LibreOffice** in the cloud build, so `.doc`/`.docx` conversion (preview + page count + pricing) works in the cloud — today it only works on a developer machine that has LibreOffice installed.
+
+## Before opening — application security
+
+The backend was deliberately built without hardening for the prototype (see `CLAUDE.md`, "Backend"). With real customer documents that is no longer acceptable:
+
+- [ ] Stand and agent **device keys**; agent-only API routes are rejected without a valid key.
+- [ ] **Session ownership checks**: a client can only list and read its own session's files and print tasks (today anyone who guesses a session id can list its files).
+- [ ] **CORS** restricted to our own domains.
+- [ ] Review the remaining unauthenticated routes one by one.
+
+## Before opening — legal / GDPR
+
+- [ ] Sign Railway's **DPA** (data processing agreement).
+- [ ] Define the **retention period** for uploaded files and make sure deletion actually happens (see `docs/data-privacy-requirements.md`).
+- [ ] Privacy notice on the kiosk and the website.
+
+## Before opening — printer (after the hardware arrives)
+
+- [ ] Install the full Brother PCL driver on the mini-PC (not the Microsoft IPP class driver); tick the MX-4000 and the lower tray under Device Settings.
+- [ ] Create 4 queues (`HL9430-Bin1`…`Bin4`) with Printing Defaults pinned to "MX bin N"; set `PRINTER_QUEUE_BIN_1..4` and `PRINTER_TRAY_A4=1` / `PRINTER_TRAY_A5=2` (see `server/printerAdapter.ts`).
+- [ ] Check that A5 lands in the MX-4000 bins (Brother does not document this).
+- [ ] Run the acceptance scenarios (the HL-L9430CDN acceptance checklist artifact).
+- [ ] Replace the "Simulate …" print outcome buttons with real printer status (spooler + SNMP) in production.
+
+Known hardware constraint, already handled in code: the automatic duplex unit supports A4 only, so A5 double-sided is blocked in the kiosk UI, the portal and order validation.
