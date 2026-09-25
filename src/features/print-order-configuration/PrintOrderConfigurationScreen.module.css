@@ -21,12 +21,17 @@
   background: var(--color-surface);
   box-shadow: var(--elevation-raised);
   color: var(--color-ink-soft);
+  /* Once ready it's a to-scale sheet (inline size, THUMBNAIL_PX_PER_MM):
+     a page larger than the sheet at original size is cropped, as printed. */
+  overflow: hidden;
 }
 
-/* A landscape document gets a landscape thumbnail box. */
-.previewLandscape {
-  width: 20rem;
-  height: 16rem;
+/* Tall enough for an A4 portrait sheet (297 mm × 1.07 px/mm). */
+.previewSlot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 20rem;
 }
 
 .previewMedia {

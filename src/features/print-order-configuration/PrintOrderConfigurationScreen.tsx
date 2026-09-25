@@ -30,11 +30,13 @@ import styles from './PrintOrderConfigurationScreen.module.css';
 // Quantity (docs/cart-requirements.md) is set here initially and can be
 // adjusted again later directly in the Cart popup — same underlying value.
 
-// Calibrates the popup's preview frame to real paper proportions, so
-// "original size" vs. "fit to paper" is honestly comparable against
-// something — the inline thumbnail's box is just an arbitrary fixed CSS
-// size and doesn't need this (see usePreview below).
+// Calibrates the preview sheets to real paper proportions, so the paper
+// size and "original size" vs. "fit to paper" are honestly comparable
+// against something: an A5 sheet is drawn smaller than an A4 one, and a page
+// that doesn't fit the sheet at original size shows up cropped. The inline
+// thumbnail uses the same idea at a smaller scale (A4's long side ≈ 20rem).
 const PX_PER_MM = 2.2;
+const THUMBNAIL_PX_PER_MM = 1.07;
 const POINTS_TO_MM = 25.4 / 72;
 const PAPER_SIZE_MM: Record<PrintOrder['paperSize'], { width: number; height: number }> = {
   A4: { width: 210, height: 297 },
@@ -150,18 +152,25 @@ export function PrintOrderConfigurationScreen({
   const thumbnailCanvasRef = useRef<HTMLCanvasElement>(null);
   const popupCanvasRef = useRef<HTMLCanvasElement>(null);
 
-  // Thumbnail: always page 1, as the page itself is shaped. Never simulates
-  // `scale` — that only becomes meaningful once there's a real
-  // paper-size-calibrated frame to compare against (the popup below).
+  // Thumbnail: page 1 on a to-scale sheet of the selected paper size, fitted
+  // or at original size — the same simulation as the popup, just smaller.
+  const thumbnailPaperMm = PAPER_SIZE_MM[paperSize];
+  const thumbnailWidthPx =
+    (orientation === 'landscape' ? thumbnailPaperMm.height : thumbnailPaperMm.width) *
+    THUMBNAIL_PX_PER_MM;
+  const thumbnailHeightPx =
+    (orientation === 'landscape' ? thumbnailPaperMm.width : thumbnailPaperMm.height) *
+    THUMBNAIL_PX_PER_MM;
   useEffect(() => {
     if (preview.state !== 'ready' || preview.kind !== 'pdf' || !preview.pdf) return;
     const canvas = thumbnailCanvasRef.current;
     if (!canvas) return;
-    renderPdfPageToCanvas(preview.pdf, 1, canvas, {
-      kind: 'fit-width',
-      targetWidthPx: 240,
-    }).catch(() => {});
-  }, [preview.state, preview.kind, preview.pdf]);
+    const mode: RenderMode =
+      scale === 'fit'
+        ? { kind: 'fit-box', widthPx: thumbnailWidthPx, heightPx: thumbnailHeightPx }
+        : { kind: 'absolute-points', pxPerPoint: THUMBNAIL_PX_PER_MM * POINTS_TO_MM };
+    renderPdfPageToCanvas(preview.pdf, 1, canvas, mode).catch(() => {});
+  }, [preview.state, preview.kind, preview.pdf, scale, thumbnailWidthPx, thumbnailHeightPx]);
 
   // The popup's sheet turns with whichever page is shown — mixed documents
   // print each page onto the sheet the way it fits.
@@ -248,29 +257,35 @@ export function PrintOrderConfigurationScreen({
       onLanguageChange={onLanguageChange}
     >
       <div className={styles.body}>
-        <div
-          id="print-order-preview"
-          className={
-            orientation === 'landscape'
-              ? `${styles.preview} ${styles.previewLandscape}`
-              : styles.preview
-          }
-          onClick={isPreviewClickable ? () => setIsPreviewOpen(true) : undefined}
-          style={isPreviewClickable ? { cursor: 'pointer' } : undefined}
-        >
-          {/* Always mounted (not just when ready) so the ref exists before
-              the preview effect tries to render onto it — hidden until
-              there's actually something drawn. */}
-          <canvas
-            ref={thumbnailCanvasRef}
-            className={styles.previewMedia}
-            hidden={!(preview.state === 'ready' && preview.kind === 'pdf')}
-          />
-          {preview.state === 'ready' && preview.kind === 'image' && preview.imageUrl && (
-            <img src={preview.imageUrl} alt={fileName} className={styles.previewMedia} />
-          )}
-          {preview.state === 'loading' && t.printOrderConfiguration.loadingPreview}
-          {preview.state === 'unavailable' && fileName}
+        {/* Fixed-height slot: switching A4/A5 resizes the sheet without
+            shifting the settings below it. */}
+        <div className={styles.previewSlot}>
+          <div
+            id="print-order-preview"
+            className={styles.preview}
+            onClick={isPreviewClickable ? () => setIsPreviewOpen(true) : undefined}
+            style={{
+              ...(preview.state === 'ready'
+                ? { width: `${thumbnailWidthPx}px`, height: `${thumbnailHeightPx}px` }
+                : undefined),
+              ...(isPreviewClickable ? { cursor: 'pointer' } : undefined),
+            }}
+          >
+            {/* Always mounted (not just when ready) so the ref exists before
+                the preview effect tries to render onto it — hidden until
+                there's actually something drawn. */}
+            <canvas
+              ref={thumbnailCanvasRef}
+              className={scale === 'fit' ? styles.previewMedia : undefined}
+              hidden={!(preview.state === 'ready' && preview.kind === 'pdf')}
+            />
+            {/* Images always show as "fit" — same reasoning as the popup's. */}
+            {preview.state === 'ready' && preview.kind === 'image' && preview.imageUrl && (
+              <img src={preview.imageUrl} alt={fileName} className={styles.previewMediaContain} />
+            )}
+            {preview.state === 'loading' && t.printOrderConfiguration.loadingPreview}
+            {preview.state === 'unavailable' && fileName}
+          </div>
         </div>
 
         {isPreviewOpen && (
