@@ -11,7 +11,12 @@ import {
   type PrintTaskErrorReason,
 } from './printTaskStore.js';
 import { preparePrintJob, printExecutionMode } from './printOrchestrator.js';
-import { reportIncident, type IncidentSeverity } from './incidentStore.js';
+import {
+  reportIncident,
+  hasOpenIncident,
+  resolveOpenIncidents,
+  type IncidentSeverity,
+} from './incidentStore.js';
 import { blockingProblems, type PrinterProblem, type PrinterSnapshot } from './printerStatus.js';
 
 // The cloud side of the pavilion print agent (agent/, docs/pavilion-launch-checklist.md,
@@ -190,7 +195,7 @@ const PRINTER_PROBLEMS: PrinterProblem[] = [
   'unreachable',
 ];
 
-agentRouter.post('/api/agent/printer-status', (req, res) => {
+agentRouter.post('/api/agent/printer-status', async (req, res) => {
   const body = (req.body ?? {}) as Partial<PrinterSnapshot>;
   if (typeof body.state !== 'string' || !Array.isArray(body.problems)) {
     res.status(400).json({ error: 'Invalid printer status' });
@@ -199,24 +204,31 @@ agentRouter.post('/api/agent/printer-status', (req, res) => {
   const problems = body.problems.filter((p): p is PrinterProblem =>
     PRINTER_PROBLEMS.includes(p as PrinterProblem),
   );
-  const previous = new Set(latestPrinterSnapshot?.problems ?? []);
   latestPrinterSnapshot = {
     state: body.state,
     problems,
     supplies: Array.isArray(body.supplies) ? body.supplies : [],
     checkedAt: typeof body.checkedAt === 'string' ? body.checkedAt : new Date().toISOString(),
   };
-  // One incident per problem as it appears, not one per report.
+  // One incident per problem while it lasts — checked against the database,
+  // so a backend restart doesn't raise every current problem a second time —
+  // and closed again as soon as the printer stops reporting it.
   const blocking = blockingProblems(problems);
-  for (const problem of problems.filter((p) => !previous.has(p))) {
+  for (const problem of problems) {
+    const code = `printer.${problem}`;
+    if (await hasOpenIncident(code)) continue;
     void reportIncident({
       source: 'printer',
-      code: `printer.${problem}`,
+      code,
       severity: blocking.includes(problem) ? 'critical' : 'warning',
       message: `Printer reports: ${problem}`,
       context: { state: body.state, problems },
     });
   }
+  await resolveOpenIncidents(
+    PRINTER_PROBLEMS.filter((p) => !problems.includes(p)).map((p) => `printer.${p}`),
+    { reason: 'the printer no longer reports it' },
+  );
   res.json({ ok: true });
 });
 
@@ -267,3 +279,49 @@ agentRouter.get('/api/printer-status', (_req, res) => {
     checkedAt: latestPrinterSnapshot?.checkedAt ?? null,
   });
 });
+
+// --- Agent watchdog ----------------------------------------------------------
+// The stands already stop taking payment when the agent goes quiet (GET
+// /api/printer-status), but nobody would be told why. After a short grace
+// period this raises one critical incident — which reaches Telegram — and
+// closes it by itself once the agent calls in again.
+const AGENT_OFFLINE_INCIDENT = 'pc.print-agent-offline';
+const WATCHDOG_INTERVAL_MS = 30_000;
+// Longer than AGENT_OFFLINE_AFTER_MS, so a redeploy or a brief network blip
+// doesn't page anyone.
+const AGENT_OFFLINE_GRACE_MS = 2 * 60_000;
+
+export function startAgentWatchdog(): void {
+  const bootedAt = Date.now();
+  let lastState: 'unknown' | 'online' | 'offline' = 'unknown';
+  setInterval(() => {
+    if (printExecutionMode() !== 'agent') return;
+    const lastSeen = agentLastSeenAt?.getTime() ?? null;
+    const online = lastSeen != null && Date.now() - lastSeen < AGENT_OFFLINE_AFTER_MS;
+    if (online) {
+      if (lastState !== 'online') {
+        lastState = 'online';
+        void resolveOpenIncidents([AGENT_OFFLINE_INCIDENT], {
+          reason: 'the agent called in again',
+        });
+      }
+      return;
+    }
+    const silentSince = lastSeen ?? bootedAt;
+    if (lastState === 'offline' || Date.now() - silentSince < AGENT_OFFLINE_GRACE_MS) return;
+    lastState = 'offline';
+    void (async () => {
+      if (await hasOpenIncident(AGENT_OFFLINE_INCIDENT)) return;
+      await reportIncident({
+        source: 'pc',
+        code: AGENT_OFFLINE_INCIDENT,
+        severity: 'critical',
+        message:
+          lastSeen == null
+            ? 'The pavilion print agent has not called in since the backend started — nothing can print, and the stands refuse payment.'
+            : `The pavilion print agent has been silent since ${new Date(lastSeen).toISOString()} — nothing can print, and the stands refuse payment. Check the mini-PC and its PrintKioskAgent task.`,
+        context: { lastSeenAt: lastSeen ? new Date(lastSeen).toISOString() : null },
+      });
+    })();
+  }, WATCHDOG_INTERVAL_MS).unref();
+}

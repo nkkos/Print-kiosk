@@ -13,7 +13,7 @@ try {
 
 const { router, DEFAULT_PORT } = await import('./routes.js');
 const { adminRouter } = await import('./adminRoutes.js');
-const { agentRouter } = await import('./agentRoutes.js');
+const { agentRouter, startAgentWatchdog } = await import('./agentRoutes.js');
 const { corsOptions, logSecurityPosture, securityHeaders, trustedProxyHops } =
   await import('./security.js');
 const { getLanIPv4 } = await import('./lanIp.js');
@@ -49,6 +49,7 @@ async function main() {
   app.use(router);
   app.use(adminRouter);
   app.use(agentRouter);
+  startAgentWatchdog();
 
   // Catch-all safety net (docs/equipment-monitoring-requirements.md's own
   // "Notes for implementation" open item): Express 5 auto-forwards a

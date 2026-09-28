@@ -3,6 +3,7 @@ import type { CorsOptions } from 'cors';
 import { createHash, timingSafeEqual } from 'node:crypto';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
+import { reportIncident } from './incidentStore.js';
 
 // Access control for the pavilion deployment (docs/pavilion-launch-checklist.md,
 // "Before opening — application security"). Every check here is switched on
@@ -69,6 +70,25 @@ export function requireStand(req: Request, res: Response, next: NextFunction): v
   res.status(401).json({ error: 'Unknown kiosk stand' });
 }
 
+// A rejected relay call is most likely our own Worker with a missing or
+// mismatched RELAY_SECRET — every customer e-mail would then bounce
+// silently. At most one warning per half hour, so probes can't flood it.
+const RELAY_REJECTION_REPORT_INTERVAL_MS = 30 * 60_000;
+let lastRelayRejectionReportAt = 0;
+
+function reportRelayRejection(hadSecret: boolean): void {
+  if (Date.now() - lastRelayRejectionReportAt < RELAY_REJECTION_REPORT_INTERVAL_MS) return;
+  lastRelayRejectionReportAt = Date.now();
+  void reportIncident({
+    source: 'backend',
+    code: 'backend.email-relay-rejected',
+    severity: 'warning',
+    message: hadSecret
+      ? 'Inbound e-mail was rejected: wrong relay secret. If this is our Cloudflare Worker, its RELAY_SECRET does not match EMAIL_RELAY_SECRET.'
+      : 'Inbound e-mail was rejected: no relay secret. If this is our Cloudflare Worker, it has no RELAY_SECRET set.',
+  });
+}
+
 /** POST /api/email/incoming only accepts mail relayed by our Cloudflare
  * Worker — otherwise anyone could drop "attachments" into a session. */
 export function requireEmailRelay(req: Request, res: Response, next: NextFunction): void {
@@ -79,6 +99,7 @@ export function requireEmailRelay(req: Request, res: Response, next: NextFunctio
   }
   const given = req.header('X-Relay-Secret') ?? '';
   if (!given || !secretsMatch(given, secret)) {
+    reportRelayRejection(given !== '');
     res.status(401).json({ error: 'Not the email relay' });
     return;
   }

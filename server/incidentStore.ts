@@ -1,4 +1,4 @@
-import { and, desc, eq, isNull } from 'drizzle-orm';
+import { and, desc, eq, inArray, isNull } from 'drizzle-orm';
 import { db } from './db/client.js';
 import { incidents } from './db/schema.js';
 import { notifyIfNeeded } from './telegramNotifier.js';
@@ -76,6 +76,40 @@ export async function resolveIncident(
       ...(autoRemediation ? { autoRemediation: JSON.stringify(autoRemediation) } : {}),
     })
     .where(eq(incidents.id, id));
+}
+
+/** Whether an incident with this code is still open — lets a condition that
+ * keeps being reported (a printer problem, an offline agent) raise one
+ * incident, not one per report or one more after every backend restart. */
+export async function hasOpenIncident(code: string): Promise<boolean> {
+  const [row] = await db
+    .select({ id: incidents.id })
+    .from(incidents)
+    .where(and(eq(incidents.code, code), isNull(incidents.resolvedAt)))
+    .limit(1);
+  return !!row;
+}
+
+/** Closes every open incident with one of these codes as auto-resolved —
+ * for conditions that clear by themselves (the printer stops reporting a
+ * jam, the agent calls in again). Never throws, same as reportIncident. */
+export async function resolveOpenIncidents(
+  codes: string[],
+  autoRemediation: Record<string, unknown>,
+): Promise<void> {
+  if (codes.length === 0) return;
+  try {
+    await db
+      .update(incidents)
+      .set({
+        resolvedAt: new Date(),
+        resolvedBy: 'auto',
+        autoRemediation: JSON.stringify(autoRemediation),
+      })
+      .where(and(inArray(incidents.code, codes), isNull(incidents.resolvedAt)));
+  } catch (err) {
+    console.error('[incidentStore] Failed to auto-resolve incidents:', codes, err);
+  }
 }
 
 export interface ListIncidentsFilters {

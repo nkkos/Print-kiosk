@@ -69,6 +69,15 @@ const CATALOG: Record<string, CatalogEntry[]> = {
       message: 'Health-check приложения перестал отвечать',
     },
     {
+      code: 'pc.print-agent-offline',
+      severity: 'critical',
+      autoFix:
+        'агент перезапускается сам (задача PrintKioskAgent); инцидент закрывается, когда агент снова на связи',
+      monitoring: 'реализовано',
+      message:
+        'Агент печати на мини-ПК молчит больше 2 минут — печать недоступна, стойки не принимают оплату',
+    },
+    {
       code: 'pc.dead',
       severity: 'emergency',
       autoFix: 'Каскад (не реализовано)',
@@ -91,6 +100,28 @@ const CATALOG: Record<string, CatalogEntry[]> = {
     },
   ],
   printer: [
+    {
+      code: 'printer.<проблема по SNMP>',
+      severity: 'critical',
+      autoFix: 'нет — закрывается сам, когда принтер перестаёт сообщать о проблеме',
+      monitoring: 'реализовано (не проверено вживую)',
+      message:
+        'Состояние от агента: замятие, нет бумаги/тонера, открыта крышка, ячейка переполнена, нет связи… (мало бумаги/тонера — warning)',
+    },
+    {
+      code: 'printer.job-interrupted',
+      severity: 'critical',
+      autoFix: 'нет — проверить ячейку перед повтором: лист может выйти после устранения',
+      monitoring: 'реализовано (не проверено вживую)',
+      message: 'Проблема принтера возникла, когда задание уже было в принтере',
+    },
+    {
+      code: 'printer.job-unconfirmed',
+      severity: 'critical',
+      autoFix: 'нет — проверить ячейку и подтвердить вручную',
+      monitoring: 'реализовано (не проверено вживую)',
+      message: 'Агент 10 минут не видит завершения задания (заменяет queue-stuck в режиме агента)',
+    },
     {
       code: 'printer.out-of-paper',
       severity: 'critical',
@@ -217,6 +248,14 @@ const CATALOG: Record<string, CatalogEntry[]> = {
     },
   ],
   backend: [
+    {
+      code: 'backend.email-relay-rejected',
+      severity: 'warning',
+      autoFix: 'нет — сверить RELAY_SECRET воркера с EMAIL_RELAY_SECRET',
+      monitoring: 'реализовано',
+      message:
+        'Входящая почта отклонена: нет или неверный секрет воркера (не чаще раза в 30 минут)',
+    },
     {
       code: 'backend.db-unreachable',
       severity: 'critical',
