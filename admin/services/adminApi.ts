@@ -226,10 +226,26 @@ export async function issueCompanyInvoice(
   return request('POST', `/api/admin/company-invoices/${invoiceId}/issue`, sessionToken);
 }
 
+// Mirrors server/printerStatus.ts's PrinterSnapshot and
+// server/agentRoutes.ts's getPrinterStatusForStaff().
+export interface PrinterSnapshotAdmin {
+  state: 'idle' | 'printing' | 'warmup' | 'other' | 'unknown' | 'unreachable';
+  problems: string[];
+  supplies: { name: string; levelPercent: number | null }[];
+  checkedAt: string;
+}
+
+export interface PrinterStatusAdmin {
+  mode: 'direct' | 'agent';
+  agentOnline: boolean | null;
+  agentLastSeenAt: string | null;
+  printer: PrinterSnapshotAdmin | null;
+}
+
 export async function listPrintTasks(
   sessionToken: string,
   limit?: number,
-): Promise<{ tasks: PrintTaskAdmin[]; binCount: number }> {
+): Promise<{ tasks: PrintTaskAdmin[]; binCount: number; printerStatus: PrinterStatusAdmin }> {
   const qs = limit ? `?limit=${limit}` : '';
   return request('GET', `/api/admin/print-tasks${qs}`, sessionToken);
 }

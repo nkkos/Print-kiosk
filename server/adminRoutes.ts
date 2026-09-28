@@ -1,3 +1,4 @@
+import { getPrinterStatusForStaff } from './agentRoutes.js';
 import { Router } from 'express';
 import type { Request, Response, NextFunction } from 'express';
 import bcrypt from 'bcryptjs';
@@ -189,7 +190,11 @@ adminRouter.get('/api/admin/kiosk-session-active', requireStaffSession, async (_
 adminRouter.get('/api/admin/print-tasks', requireStaffSession, async (req, res) => {
   const { limit } = req.query;
   const parsedLimit = typeof limit === 'string' && /^\d+$/.test(limit) ? Number(limit) : undefined;
-  res.json({ tasks: await listRecentPrintTasks(parsedLimit), binCount: BIN_COUNT });
+  res.json({
+    tasks: await listRecentPrintTasks(parsedLimit),
+    binCount: BIN_COUNT,
+    printerStatus: getPrinterStatusForStaff(),
+  });
 });
 
 // Manual override for a task that's holding a bin but will never get a

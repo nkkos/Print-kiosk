@@ -50,6 +50,7 @@ The backend was deliberately built without hardening for the prototype (see `CLA
 - [ ] Set `PRINT_EXECUTION=agent` and `PRINT_AGENT_TOKEN` on Railway, the same token in the agent's `.env`; register the agent's startup task (`agent\windows\install-agent-task.ps1`, elevated) and confirm it survives a reboot and a killed `node.exe`.
 - [ ] Open each stand's kiosk browser with `?stand=A` / `?stand=B`; check the stand shows up in the admin Print Queue.
 - [ ] Check on a real stand that the cart refuses payment while the printer is unavailable (agent stopped, door open) and unlocks by itself once it's back.
+- [x] Admin Print Queue shows the printer's live state from the agent (state, blocking problems and warnings, toner/drum levels, when the agent last called in).
 - [ ] Review incident noise: one jam currently yields a device incident (`printer.jammed`), a task incident (`printer.paper-jam`) and, if the job had reached the printer, `printer.job-interrupted` — decide which should reach Telegram.
 
 Known hardware constraint, already handled in code: the automatic duplex unit supports A4 only, so A5 double-sided is blocked in the kiosk UI, the portal and order validation.

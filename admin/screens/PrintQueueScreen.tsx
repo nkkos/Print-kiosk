@@ -1,5 +1,10 @@
 import { useEffect, useState } from 'react';
-import { listPrintTasks, releasePrintTaskBin, type PrintTaskAdmin } from '../services/adminApi';
+import {
+  listPrintTasks,
+  releasePrintTaskBin,
+  type PrintTaskAdmin,
+  type PrinterStatusAdmin,
+} from '../services/adminApi';
 import type { AdminSession } from '../adminSession';
 
 interface PrintQueueScreenProps {
@@ -31,6 +36,133 @@ function StatusChip({ status }: { status: string }) {
   );
 }
 
+// server/printerStatus.ts's PrinterProblem codes, as staff read them.
+const PROBLEM_LABEL: Record<string, string> = {
+  'low-paper': 'Мало бумаги',
+  'no-paper': 'Нет бумаги',
+  'low-toner': 'Мало тонера',
+  'no-toner': 'Нет тонера',
+  'door-open': 'Открыта крышка',
+  jammed: 'Замятие',
+  offline: 'Принтер офлайн',
+  'service-requested': 'Нужен сервис',
+  'input-tray-missing': 'Лоток вынут',
+  'output-tray-missing': 'Нет выходного лотка / мэйлбокса',
+  'marker-supply-missing': 'Нет картриджа',
+  'output-near-full': 'Ячейка почти полна',
+  'output-full': 'Ячейка переполнена',
+  'input-tray-empty': 'Лоток пуст',
+  'overdue-maintenance': 'Просрочено ТО',
+  unreachable: 'Нет связи с принтером',
+};
+// Warnings only — everything else stops printing (server/printerStatus.ts,
+// blockingProblems).
+const WARNING_PROBLEMS = new Set([
+  'low-paper',
+  'low-toner',
+  'output-near-full',
+  'overdue-maintenance',
+]);
+
+const STATE_LABEL: Record<string, string> = {
+  idle: 'Готов',
+  printing: 'Печатает',
+  warmup: 'Прогревается',
+  other: 'Занят / сон',
+  unknown: 'Неизвестно',
+  unreachable: 'Нет связи',
+};
+
+// Printer health from the pavilion print agent (agent/, SNMP). Shown above
+// the bins so staff see why printing might be blocked before customers
+// report it.
+function PrinterStatusPanel({ status }: { status: PrinterStatusAdmin }) {
+  if (status.mode === 'direct') {
+    return (
+      <div className="equip-card" style={{ cursor: 'default' }} id="print-queue-printer">
+        <div className="equip-card-top">
+          <span className="equip-name">Принтер</span>
+          <span className="sev sev-neutral">Локальный режим</span>
+        </div>
+        <span className="equip-metric">
+          Сервер печатает сам (PRINT_EXECUTION=direct) — состояния от агента нет.
+        </span>
+      </div>
+    );
+  }
+  const printer = status.printer;
+  const blocking = (printer?.problems ?? []).filter((p) => !WARNING_PROBLEMS.has(p));
+  const warnings = (printer?.problems ?? []).filter((p) => WARNING_PROBLEMS.has(p));
+  const headline = !status.agentOnline
+    ? { sev: 'critical', text: 'Агент не на связи' }
+    : blocking.length > 0
+      ? { sev: 'critical', text: 'Печать остановлена' }
+      : warnings.length > 0
+        ? { sev: 'warning', text: 'Есть предупреждения' }
+        : printer
+          ? { sev: 'ok', text: STATE_LABEL[printer.state] ?? printer.state }
+          : { sev: 'neutral', text: 'Нет данных' };
+  return (
+    <div
+      className="equip-card"
+      style={{ cursor: 'default' }}
+      id="print-queue-printer"
+      data-sev={headline.sev === 'critical' ? 'critical' : undefined}
+    >
+      <div className="equip-card-top">
+        <span className="equip-name">Принтер</span>
+        <span className={`sev sev-${headline.sev}`}>{headline.text}</span>
+      </div>
+      {[...blocking, ...warnings].length > 0 && (
+        <div className="printer-problems">
+          {blocking.map((p) => (
+            <span key={p} className="sev sev-critical">
+              {PROBLEM_LABEL[p] ?? p}
+            </span>
+          ))}
+          {warnings.map((p) => (
+            <span key={p} className="sev sev-warning">
+              {PROBLEM_LABEL[p] ?? p}
+            </span>
+          ))}
+        </div>
+      )}
+      {printer && printer.supplies.length > 0 && (
+        <ul className="printer-supplies">
+          {printer.supplies.map((supply) => (
+            <li key={supply.name}>
+              <span>{supply.name}</span>
+              {supply.levelPercent == null ? (
+                <span className="equip-metric">есть</span>
+              ) : (
+                <>
+                  <span className="supply-meter" aria-hidden="true">
+                    <span
+                      className="supply-meter-fill"
+                      data-low={supply.levelPercent <= 15 ? 'true' : undefined}
+                      style={{ width: `${supply.levelPercent}%` }}
+                    />
+                  </span>
+                  <span className="equip-metric">{supply.levelPercent}%</span>
+                </>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+      <span className="equip-metric">
+        {printer
+          ? `Данные принтера: ${formatTime(printer.checkedAt)}`
+          : 'Агент ещё не присылал состояние'}
+        {' · '}
+        {status.agentLastSeenAt
+          ? `агент на связи: ${formatTime(status.agentLastSeenAt)}`
+          : 'агент не выходил на связь'}
+      </span>
+    </div>
+  );
+}
+
 function shortId(id: string | null): string {
   return id ? id.slice(0, 8) : '—';
 }
@@ -55,6 +187,7 @@ function formatTime(iso: string): string {
 export function PrintQueueScreen({ session }: PrintQueueScreenProps) {
   const [tasks, setTasks] = useState<PrintTaskAdmin[] | null>(null);
   const [binCount, setBinCount] = useState(4);
+  const [printerStatus, setPrinterStatus] = useState<PrinterStatusAdmin | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [activeOnly, setActiveOnly] = useState(true);
   const [releaseTarget, setReleaseTarget] = useState<PrintTaskAdmin | null>(null);
@@ -64,10 +197,11 @@ export function PrintQueueScreen({ session }: PrintQueueScreenProps) {
     let cancelled = false;
     function poll() {
       listPrintTasks(session.sessionToken, 100)
-        .then(({ tasks: rows, binCount: count }) => {
+        .then(({ tasks: rows, binCount: count, printerStatus: printerRow }) => {
           if (!cancelled) {
             setTasks(rows);
             setBinCount(count);
+            setPrinterStatus(printerRow);
             setError(null);
           }
         })
@@ -143,6 +277,12 @@ export function PrintQueueScreen({ session }: PrintQueueScreenProps) {
       </div>
 
       {error && <p className="login-error">{error}</p>}
+
+      {printerStatus && (
+        <div className="printer-status-row">
+          <PrinterStatusPanel status={printerStatus} />
+        </div>
+      )}
 
       <div className="equipment-grid" id="print-queue-bins">
         {Array.from({ length: binCount }, (_, i) => i + 1).map((bin) => {

@@ -31,6 +31,27 @@ let latestPrinterSnapshot: PrinterSnapshot | null = null;
 // silence longer than this means it's down or cut off.
 const AGENT_OFFLINE_AFTER_MS = 60_000;
 
+/** Everything staff see about the printer (admin Print Queue screen,
+ * server/adminRoutes.ts) — the full latest snapshot, warnings and supply
+ * levels included, unlike the stands' yes/no GET /api/printer-status. */
+export function getPrinterStatusForStaff(): {
+  mode: 'direct' | 'agent';
+  agentOnline: boolean | null;
+  agentLastSeenAt: string | null;
+  printer: PrinterSnapshot | null;
+} {
+  const mode = printExecutionMode();
+  return {
+    mode,
+    agentOnline:
+      mode === 'direct'
+        ? null
+        : !!agentLastSeenAt && Date.now() - agentLastSeenAt.getTime() < AGENT_OFFLINE_AFTER_MS,
+    agentLastSeenAt: agentLastSeenAt?.toISOString() ?? null,
+    printer: latestPrinterSnapshot,
+  };
+}
+
 /** When the agent last called in — for uptime monitoring (a later step). */
 export function getAgentLastSeenAt(): Date | null {
   return agentLastSeenAt;
