@@ -1,6 +1,8 @@
 import type { Request, Response, NextFunction } from 'express';
 import type { CorsOptions } from 'cors';
 import { createHash, timingSafeEqual } from 'node:crypto';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 
 // Access control for the pavilion deployment (docs/pavilion-launch-checklist.md,
 // "Before opening — application security"). Every check here is switched on
@@ -118,4 +120,50 @@ export function logSecurityPosture(): void {
   if (!process.env.EMAIL_RELAY_SECRET) off.push('EMAIL_RELAY_SECRET (anyone can post "email")');
   if (!process.env.CORS_ORIGINS) off.push('CORS_ORIGINS (any site may call the API)');
   for (const item of off) console.warn(`[security] not configured: ${item}`);
+}
+
+// --- Abuse limits -----------------------------------------------------------
+// Per client IP. Only the routes phones and the public can reach are limited
+// — both stands share the pavilion's one public IP, so stand routes aren't.
+
+/** Railway sits one proxy hop in front of the backend; without trusting it
+ * every client looks like the proxy's IP and each limit becomes one shared
+ * bucket for everybody. Not trusted locally, where there's no proxy and the
+ * header could be spoofed. */
+export function trustedProxyHops(): number {
+  if (process.env.TRUST_PROXY_HOPS) return Number(process.env.TRUST_PROXY_HOPS) || 0;
+  return process.env.RAILWAY_PUBLIC_DOMAIN ? 1 : 0;
+}
+
+/** File and photo uploads from phones (QR upload, scan/copy pages and their
+ * corner detection, My files uploads) — generous enough for a long scan. */
+export const uploadRateLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  limit: 120,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many uploads — please wait a few minutes and try again.' },
+});
+
+/** Routes that send an e-mail to an address the caller chooses (scan
+ * delivery, photo sharing) — the obvious spam-relay target. */
+export const emailSendRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many e-mails sent — please wait a few minutes and try again.' },
+});
+
+/** Standard security headers. The Content-Security-Policy stays off: the
+ * phone pages this backend serves carry inline scripts. Resources stay
+ * loadable cross-origin, since the kiosk and portal run on another origin
+ * (Cloudflare Pages) and load files from here. The referrer policy keeps
+ * capability links (QR upload, scan download) out of Referer headers. */
+export function securityHeaders() {
+  return helmet({
+    contentSecurityPolicy: false,
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+    referrerPolicy: { policy: 'no-referrer' },
+  });
 }

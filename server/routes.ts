@@ -123,6 +123,8 @@ import {
   requireStand,
   requireEmailRelay,
   requireSimulationAllowed,
+  uploadRateLimiter,
+  emailSendRateLimiter,
   type StandRequest,
 } from './security.js';
 import { supportsDuplex, isPaperSizeOffered } from './printerAdapter.js';
@@ -250,12 +252,17 @@ router.get('/upload/:sessionId', (req, res) => {
 </html>`);
 });
 
-router.post('/api/qr-sessions/:sessionId/files', handleFileUpload, async (req, res) => {
-  const sessionId = paramString(req.params.sessionId);
-  const files = Array.isArray(req.files) ? req.files : [];
-  await Promise.all(files.map((file) => addFile(sessionId, file.originalname, file.path)));
-  res.redirect(303, `/upload/${sessionId}?uploaded=1`);
-});
+router.post(
+  '/api/qr-sessions/:sessionId/files',
+  uploadRateLimiter,
+  handleFileUpload,
+  async (req, res) => {
+    const sessionId = paramString(req.params.sessionId);
+    const files = Array.isArray(req.files) ? req.files : [];
+    await Promise.all(files.map((file) => addFile(sessionId, file.originalname, file.path)));
+    res.redirect(303, `/upload/${sessionId}?uploaded=1`);
+  },
+);
 
 router.get('/api/qr-sessions/:sessionId/files', requireStand, async (req, res) => {
   res.json(await listFiles(paramString(req.params.sessionId)));
@@ -706,6 +713,7 @@ function handleAccountFileUpload(req: Request, res: Response, next: NextFunction
 
 router.post(
   '/api/accounts/files',
+  uploadRateLimiter,
   requireAccountAuth,
   handleAccountFileUpload,
   async (req, res) => {
@@ -1072,6 +1080,7 @@ const photoShareUpload = multer({
 router.post(
   '/api/photo-kiosk/share-email',
   requireStand,
+  emailSendRateLimiter,
   photoShareUpload.single('photo'),
   async (req, res) => {
     const { email } = (req.body ?? {}) as { email?: unknown };
@@ -1475,6 +1484,7 @@ const detectUpload = multer({
 // upload to POST /api/scan-sessions/:id/pages is.
 router.post(
   '/api/scan-sessions/:id/detect-corners',
+  uploadRateLimiter,
   (req, res, next) => {
     detectUpload.single('photo')(req, res, (err: unknown) => {
       if (err) {
@@ -1529,19 +1539,24 @@ function parseCorners(raw: unknown): Corners | null {
   return points.every((point) => point !== null) ? (points as Corners) : null;
 }
 
-router.post('/api/scan-sessions/:id/pages', handleScanPhotoUpload, async (req, res) => {
-  const scanSessionId = paramString(req.params.id);
-  const corners = parseCorners(req.body.corners);
-  if (!req.file || !corners) {
-    if (req.file) await unlink(req.file.path).catch(() => {});
-    res.status(400).json({ error: 'A photo and four corner points are required' });
-    return;
-  }
-  const existingPages = await listPages(scanSessionId);
-  res
-    .status(201)
-    .json(await addPage(scanSessionId, existingPages.length + 1, req.file.path, corners));
-});
+router.post(
+  '/api/scan-sessions/:id/pages',
+  uploadRateLimiter,
+  handleScanPhotoUpload,
+  async (req, res) => {
+    const scanSessionId = paramString(req.params.id);
+    const corners = parseCorners(req.body.corners);
+    if (!req.file || !corners) {
+      if (req.file) await unlink(req.file.path).catch(() => {});
+      res.status(400).json({ error: 'A photo and four corner points are required' });
+      return;
+    }
+    const existingPages = await listPages(scanSessionId);
+    res
+      .status(201)
+      .json(await addPage(scanSessionId, existingPages.length + 1, req.file.path, corners));
+  },
+);
 
 // Real preview for P3's scan-page-preview / the thumbnail strip — same
 // content-endpoint shape as GET /api/uploaded-files/:fileId/content.
@@ -1562,7 +1577,7 @@ router.get('/api/scan-sessions/:id/pages/:pageId/content', async (req, res) => {
 // requires an Authorization: Bearer session token (same requireSession as
 // change-password above) — enforced here, not just on the phone UI, since
 // the phone-facing page is a separate untrusted client.
-router.post('/api/scan-sessions/:id/deliver', async (req, res) => {
+router.post('/api/scan-sessions/:id/deliver', emailSendRateLimiter, async (req, res) => {
   const scanSessionId = paramString(req.params.id);
   const { methods, email } = (req.body ?? {}) as { methods?: unknown; email?: unknown };
   if (
@@ -1751,6 +1766,7 @@ const copyDetectUpload = multer({
 // duplicating the call.
 router.post(
   '/api/copy-sessions/:id/detect-corners',
+  uploadRateLimiter,
   (req, res, next) => {
     copyDetectUpload.single('photo')(req, res, (err: unknown) => {
       if (err) {
@@ -1777,19 +1793,24 @@ router.post(
   },
 );
 
-router.post('/api/copy-sessions/:id/pages', handleCopyPhotoUpload, async (req, res) => {
-  const copySessionId = paramString(req.params.id);
-  const corners = parseCorners(req.body.corners);
-  if (!req.file || !corners) {
-    if (req.file) await unlink(req.file.path).catch(() => {});
-    res.status(400).json({ error: 'A photo and four corner points are required' });
-    return;
-  }
-  const existingPages = await listCopyPages(copySessionId);
-  res
-    .status(201)
-    .json(await addCopyPage(copySessionId, existingPages.length + 1, req.file.path, corners));
-});
+router.post(
+  '/api/copy-sessions/:id/pages',
+  uploadRateLimiter,
+  handleCopyPhotoUpload,
+  async (req, res) => {
+    const copySessionId = paramString(req.params.id);
+    const corners = parseCorners(req.body.corners);
+    if (!req.file || !corners) {
+      if (req.file) await unlink(req.file.path).catch(() => {});
+      res.status(400).json({ error: 'A photo and four corner points are required' });
+      return;
+    }
+    const existingPages = await listCopyPages(copySessionId);
+    res
+      .status(201)
+      .json(await addCopyPage(copySessionId, existingPages.length + 1, req.file.path, corners));
+  },
+);
 
 router.get('/api/copy-sessions/:id/pages/:pageId/content', async (req, res) => {
   const path = await getProcessedCopyPagePath(

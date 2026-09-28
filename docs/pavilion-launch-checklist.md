@@ -30,7 +30,7 @@ The backend was deliberately built without hardening for the prototype (see `CLA
 - [x] **Email relay secret** (`EMAIL_RELAY_SECRET` + the Worker's `RELAY_SECRET`); **Simulate** print outcomes closed in agent mode; **CORS** allow-list (`CORS_ORIGINS`).
 - [ ] **Turn them on**: set `STAND_API_KEYS`, `EMAIL_RELAY_SECRET`, `CORS_ORIGINS` on Railway, `RELAY_SECRET` on the Cloudflare Worker, and open each stand (and the photo kiosk) once with `?stand=…&key=…`. The backend logs `[security] not configured: …` at boot for anything still off.
 - [ ] Phone-side capability links (QR upload page, scan/copy pages, scan download links) are still "whoever has the link": a bystander who photographs the QR on screen can upload into that session (not read it). Decide whether that needs a separate short-lived upload token.
-- [ ] Rate limits on uploads and on the photo e-mail share; security headers (e.g. helmet).
+- [x] Rate limits per client IP on phone/public uploads (120 per 10 min) and on routes that send e-mail (10 per 15 min); security headers (helmet, no CSP because the phone pages use inline scripts). The backend now trusts Railway's proxy hop, so limits — including the existing login limit — are per client, not one bucket for everybody.
 
 ## Before opening — legal / GDPR
 
