@@ -567,7 +567,9 @@ function App() {
     // Logging out only clears accountId — the Kiosk Session itself (and any
     // Cart contents) stays intact (docs/personal-account-requirements.md,
     // "Kiosk-side login"; docs/domain/kiosk-session.md, "Login relationship").
-    setSession((current) => (current ? { ...current, accountId: null } : current));
+    setSession((current) =>
+      current ? { ...current, accountId: null, accountToken: undefined } : current,
+    );
     setHasPendingPaidOrders(false);
     goToUploadMethodSelection(false);
   }
@@ -702,12 +704,16 @@ function App() {
     // the account if one is already active — it never creates a second
     // session (docs/personal-account-requirements.md, "Kiosk-side login").
     if (session) {
-      setSession({ ...session, accountId: account.id });
+      setSession({ ...session, accountId: account.id, accountToken: account.sessionToken });
       touchSessionActivity(session.id, account.id).catch((err: unknown) => {
         console.error('[App] touchSessionActivity request failed:', err);
       });
     } else {
-      const newSession: KioskSession = { id: crypto.randomUUID(), accountId: account.id };
+      const newSession: KioskSession = {
+        id: crypto.randomUUID(),
+        accountId: account.id,
+        accountToken: account.sessionToken,
+      };
       localStorage.setItem(SESSION_ID_STORAGE_KEY, newSession.id);
       setSession(newSession);
       startSession(newSession.id, account.id, 'login').catch((err: unknown) => {
@@ -717,7 +723,7 @@ function App() {
 
     // Detection and prompt (docs/personal-account-requirements.md, "Paid
     // orders awaiting print") — checked on every login, from any screen.
-    const orders = await listAccountOrders(account.id);
+    const orders = await listAccountOrders(account.id, account.sessionToken);
     if (orders.length > 0) {
       setHasPendingPaidOrders(true);
     }
@@ -1117,6 +1123,7 @@ function App() {
           onSimulateConnectionRestored={handleSimulateConnectionRestored}
           onLogin={handleLogin}
           accountId={session?.accountId ?? null}
+          accountToken={session?.accountToken}
           onGoToPersonalAccount={() => goToPersonalAccount(false)}
           onLogout={handleLogout}
           hasPendingPaidOrders={hasPendingPaidOrders}
@@ -1138,6 +1145,7 @@ function App() {
           sourceFileOrigin={
             selectedFile.sourceMethod === 'upload-method-account' ? 'account' : undefined
           }
+          accountToken={session?.accountToken}
           onAddToCart={handleAddToCart}
           onBack={() => {
             // Leaving mid-batch abandons the rest of the queue — continuing a

@@ -101,11 +101,15 @@ export async function listFiles(accountId: string): Promise<AccountFile[]> {
 // Resolves a real account file's absolute path — for the content endpoint
 // (preview) and for POST /api/print-tasks's account-origin resolution path
 // (server/routes.ts), mirroring server/uploadStore.ts's getUploadedFile.
-export async function getAccountFile(
-  id: string,
-): Promise<{ absolutePath: string; fileName: string; status: AccountFile['status'] } | null> {
+export async function getAccountFile(id: string): Promise<{
+  absolutePath: string;
+  fileName: string;
+  status: AccountFile['status'];
+  accountId: string;
+} | null> {
   const [row] = await db
     .select({
+      accountId: accountFiles.accountId,
       fileName: accountFiles.fileName,
       storagePath: accountFiles.storagePath,
       status: accountFiles.status,
@@ -114,6 +118,7 @@ export async function getAccountFile(
     .where(eq(accountFiles.id, id));
   if (!row) return null;
   return {
+    accountId: row.accountId,
     absolutePath: join(accountUploadsDir, row.storagePath),
     fileName: row.fileName,
     status: row.status as AccountFile['status'],

@@ -1,3 +1,5 @@
+import { standHeaders } from './standAuth';
+
 // Talks to the real print-task backend (server/printerAdapter.ts,
 // server/printTaskStore.ts) — see docs/domain/kiosk-session.md, "Related
 // entities" (Print Task).
@@ -57,14 +59,16 @@ export interface SubmitPrintJobRequest {
 export async function submitPrintJob(request: SubmitPrintJobRequest): Promise<PrintTask> {
   const response = await fetch(`${API_BASE_URL}/api/print-tasks`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...standHeaders() },
     body: JSON.stringify(request),
   });
   return response.json();
 }
 
 export async function getPrintTask(id: string): Promise<PrintTask> {
-  const response = await fetch(`${API_BASE_URL}/api/print-tasks/${id}`);
+  const response = await fetch(`${API_BASE_URL}/api/print-tasks/${id}`, {
+    headers: standHeaders(),
+  });
   return response.json();
 }
 
@@ -73,6 +77,7 @@ export async function getPrintTask(id: string): Promise<PrintTask> {
  * exists on the real hardware to detect this automatically. */
 export async function markPrintTaskPickedUp(id: string): Promise<PrintTask> {
   const response = await fetch(`${API_BASE_URL}/api/print-tasks/${id}/picked-up`, {
+    headers: standHeaders(),
     method: 'POST',
   });
   return response.json();
@@ -84,7 +89,7 @@ export async function simulatePrintOutcome(
 ): Promise<PrintTask> {
   const response = await fetch(`${API_BASE_URL}/api/print-tasks/${id}/simulate`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...standHeaders() },
     body: JSON.stringify({ outcome }),
   });
   return response.json();

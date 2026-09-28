@@ -85,7 +85,9 @@ export function ConfigureAndPay({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [result, setResult] = useState<'none' | 'saved' | 'paid'>('none');
 
-  const preview = usePreview(getAccountFileContentUrl(file.id));
+  const preview = usePreview(getAccountFileContentUrl(file.id), {
+    Authorization: `Bearer ${sessionToken}`,
+  });
   // Follows the document itself, same as the kiosk
   // (PrintOrderConfigurationScreen.tsx) — not a choice for a finished file.
   const orientation: CreateOrderParams['orientation'] = preview.orientation ?? 'portrait';

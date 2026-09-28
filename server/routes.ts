@@ -119,6 +119,12 @@ import {
   type PrintOptions,
 } from './printTaskStore.js';
 import { tryPrintTask } from './printOrchestrator.js';
+import {
+  requireStand,
+  requireEmailRelay,
+  requireSimulationAllowed,
+  type StandRequest,
+} from './security.js';
 import { supportsDuplex, isPaperSizeOffered } from './printerAdapter.js';
 import { isPagesPerSheet } from '../src/utils/nUpLayout.js';
 
@@ -251,7 +257,7 @@ router.post('/api/qr-sessions/:sessionId/files', handleFileUpload, async (req, r
   res.redirect(303, `/upload/${sessionId}?uploaded=1`);
 });
 
-router.get('/api/qr-sessions/:sessionId/files', async (req, res) => {
+router.get('/api/qr-sessions/:sessionId/files', requireStand, async (req, res) => {
   res.json(await listFiles(paramString(req.params.sessionId)));
 });
 
@@ -261,7 +267,7 @@ router.get('/api/qr-sessions/:sessionId/files', async (req, res) => {
 // printable, else its cached conversion), just returned to the client
 // instead of handed to the local printer. res.sendFile infers Content-Type
 // from the extension automatically (application/pdf, image/jpeg, ...).
-router.get('/api/uploaded-files/:fileId/content', async (req, res) => {
+router.get('/api/uploaded-files/:fileId/content', requireStand, async (req, res) => {
   const file = await getUploadedFile(paramString(req.params.fileId));
   if (!file || file.status !== 'ready') {
     res.status(404).end();
@@ -280,7 +286,7 @@ router.get('/api/uploaded-files/:fileId/content', async (req, res) => {
 // started_at/started_via are honest (docs/data-privacy-requirements.md
 // follow-up: session-log analysis needs real timestamps, not just the
 // end-of-session row endSession() below already writes).
-router.post('/api/sessions/:sessionId/start', async (req, res) => {
+router.post('/api/sessions/:sessionId/start', requireStand, async (req, res) => {
   const sessionId = paramString(req.params.sessionId);
   const { accountId, startedVia } = (req.body ?? {}) as {
     accountId?: unknown;
@@ -297,7 +303,7 @@ router.post('/api/sessions/:sessionId/start', async (req, res) => {
 // Activity heartbeat — bumps last_activity_at and opportunistically records
 // the account once known (e.g. a mid-session login). Fired both on login
 // and, throttled, on real user activity (src/App.tsx).
-router.post('/api/sessions/:sessionId/activity', async (req, res) => {
+router.post('/api/sessions/:sessionId/activity', requireStand, async (req, res) => {
   const sessionId = paramString(req.params.sessionId);
   const { accountId } = (req.body ?? {}) as { accountId?: unknown };
   await touchSessionActivity(sessionId, typeof accountId === 'string' ? accountId : null);
@@ -311,7 +317,7 @@ router.post('/api/sessions/:sessionId/activity', async (req, res) => {
 // responds ok; a cleanup failure is logged server-side and recorded as
 // 'cleanup-failed', never surfaced to the user (docs/domain/kiosk-session.md,
 // "Privacy guarantee").
-router.post('/api/sessions/:sessionId/end', async (req, res) => {
+router.post('/api/sessions/:sessionId/end', requireStand, async (req, res) => {
   const sessionId = paramString(req.params.sessionId);
   const { reason, accountId } = (req.body ?? {}) as { reason?: unknown; accountId?: unknown };
   await endSession(
@@ -341,6 +347,7 @@ function extractSessionPrefix(toAddress: string): string {
 // server/emailStore.ts.
 router.post(
   '/api/email/incoming',
+  requireEmailRelay,
   express.raw({ type: '*/*', limit: `${MAX_FILE_SIZE_MB * 5}mb` }),
   async (req, res) => {
     const toHeader = req.header('X-Original-To');
@@ -379,7 +386,7 @@ router.post(
   },
 );
 
-router.get('/api/email-sessions/:prefix/messages', async (req, res) => {
+router.get('/api/email-sessions/:prefix/messages', requireStand, async (req, res) => {
   res.json(await listEmails(paramString(req.params.prefix)));
 });
 
@@ -599,6 +606,23 @@ async function requireAccountAuth(req: Request, res: Response, next: NextFunctio
   next();
 }
 
+/** Same as requireAccountAuth, plus the `:accountId` in the path must be the
+ * signed-in account's own — for the kiosk's reads, which name the account
+ * in the URL. */
+async function requireOwnAccount(req: Request, res: Response, next: NextFunction) {
+  const account = await requireSession(req);
+  if (!account) {
+    res.status(401).json({ error: 'Not authenticated' });
+    return;
+  }
+  if (account.id !== paramString(req.params.accountId)) {
+    res.status(403).json({ error: 'Not your account' });
+    return;
+  }
+  (req as AuthenticatedRequest).accountId = account.id;
+  next();
+}
+
 router.post('/api/accounts/folders', requireAccountAuth, async (req, res) => {
   const { name } = (req.body ?? {}) as { name?: unknown };
   if (typeof name !== 'string' || !name.trim()) {
@@ -734,13 +758,17 @@ router.delete('/api/accounts/files/:id', requireAccountAuth, async (req, res) =>
 });
 
 // Same shape as GET /api/uploaded-files/:fileId/content above — real preview
-// for My-files items, both on the portal and (no token available there) the
-// kiosk's own Print Order Configuration preview. Deliberately unauthenticated
-// to support that second, tokenless consumer — matches the existing
-// uploaded-files content endpoint's same posture.
-router.get('/api/account-files/:fileId/content', async (req, res) => {
+// for My-files items, on the portal and in the kiosk's own Print Order
+// Configuration preview. Both send the account's session token; only the
+// file's owner gets its bytes.
+router.get('/api/account-files/:fileId/content', requireAccountAuth, async (req, res) => {
   const file = await getAccountFile(paramString(req.params.fileId));
-  if (!file || file.status !== 'ready') {
+  // Someone else's file answers exactly like a missing one.
+  if (
+    !file ||
+    file.status !== 'ready' ||
+    file.accountId !== (req as AuthenticatedRequest).accountId
+  ) {
     res.status(404).end();
     return;
   }
@@ -988,7 +1016,7 @@ router.get('/api/photo-documents/:id', async (req, res) => {
 // no auth, same as the other photo-kiosk routes above. Records metadata only; no
 // photo content is ever sent here, since A4 composition happens entirely
 // client-side (photo privacy is confirmed more sensitive than document privacy).
-router.post('/api/photo-orders', async (req, res) => {
+router.post('/api/photo-orders', requireStand, async (req, res) => {
   const body = req.body as {
     sessionId?: unknown;
     spec?: { label?: unknown; widthMm?: unknown; heightMm?: unknown; dpi?: unknown };
@@ -1021,7 +1049,7 @@ router.post('/api/photo-orders', async (req, res) => {
   res.status(201).json(order);
 });
 
-router.post('/api/photo-orders/printed', async (req, res) => {
+router.post('/api/photo-orders/printed', requireStand, async (req, res) => {
   const { ids } = (req.body ?? {}) as { ids?: unknown };
   if (!Array.isArray(ids) || !ids.every((id) => typeof id === 'string')) {
     res.status(400).json({ error: 'Invalid ids' });
@@ -1041,37 +1069,47 @@ const photoShareUpload = multer({
   limits: { fileSize: 20 * 1024 * 1024 },
 });
 
-router.post('/api/photo-kiosk/share-email', photoShareUpload.single('photo'), async (req, res) => {
-  const { email } = (req.body ?? {}) as { email?: unknown };
-  if (typeof email !== 'string' || !email.includes('@') || !req.file) {
-    res.status(400).json({ error: 'A valid email and photo are required' });
-    return;
-  }
-  try {
-    await sendPhotoEmail(email, req.file.buffer, 'photo.jpg');
-  } catch (err) {
-    console.error('[routes] sendPhotoEmail failed:', err);
-    void reportIncident({
-      source: 'backend',
-      code: 'backend.email-send-failed',
-      severity: 'warning',
-      message: `Failed to send photo to ${email}.`,
-      context: { email, error: String(err) },
-    });
-    res.status(502).json({ error: 'Failed to send the email. Please try again.' });
-    return;
-  }
-  res.json({ ok: true });
-});
+router.post(
+  '/api/photo-kiosk/share-email',
+  requireStand,
+  photoShareUpload.single('photo'),
+  async (req, res) => {
+    const { email } = (req.body ?? {}) as { email?: unknown };
+    if (typeof email !== 'string' || !email.includes('@') || !req.file) {
+      res.status(400).json({ error: 'A valid email and photo are required' });
+      return;
+    }
+    try {
+      await sendPhotoEmail(email, req.file.buffer, 'photo.jpg');
+    } catch (err) {
+      console.error('[routes] sendPhotoEmail failed:', err);
+      void reportIncident({
+        source: 'backend',
+        code: 'backend.email-send-failed',
+        severity: 'warning',
+        message: `Failed to send photo to ${email}.`,
+        context: { email, error: String(err) },
+      });
+      res.status(502).json({ error: 'Failed to send the email. Please try again.' });
+      return;
+    }
+    res.json({ ok: true });
+  },
+);
 
-router.post('/api/photo-kiosk/share-link', photoShareUpload.single('photo'), (req, res) => {
-  if (!req.file) {
-    res.status(400).json({ error: 'A photo is required' });
-    return;
-  }
-  const token = createShare(req.file.buffer, req.file.mimetype);
-  res.json({ token });
-});
+router.post(
+  '/api/photo-kiosk/share-link',
+  requireStand,
+  photoShareUpload.single('photo'),
+  (req, res) => {
+    if (!req.file) {
+      res.status(400).json({ error: 'A photo is required' });
+      return;
+    }
+    const token = createShare(req.file.buffer, req.file.mimetype);
+    res.json({ token });
+  },
+);
 
 // One-time download — consumeShare deletes the entry whether this succeeds
 // or the token was already used/expired, so a link never serves twice.
@@ -1102,6 +1140,7 @@ const aiBackgroundUpload = multer({
 
 router.post(
   '/api/photo-kiosk/ai-background',
+  requireStand,
   aiBackgroundUpload.single('shot'),
   async (req, res) => {
     const { lookId } = (req.body ?? {}) as { lookId?: unknown };
@@ -1183,21 +1222,21 @@ router.post('/api/shop/checkout', requireAccountAuth, async (req, res) => {
   }
 });
 
-// Kiosk-facing reads for My files/My orders — accountId-only, no token,
-// matching every other kiosk-facing route today (the kiosk has never carried
-// a session token; see CLAUDE.md, "the kiosk still doesn't need one").
-router.get('/api/accounts/:accountId/files', async (req, res) => {
+// Kiosk-facing reads for My files/My orders. The kiosk keeps the session
+// token its login returned (src/App.tsx) for exactly this — an account id
+// alone is not proof of anything.
+router.get('/api/accounts/:accountId/files', requireOwnAccount, async (req, res) => {
   res.json(await listAccountFiles(paramString(req.params.accountId)));
 });
 
-router.get('/api/accounts/:accountId/folders', async (req, res) => {
+router.get('/api/accounts/:accountId/folders', requireOwnAccount, async (req, res) => {
   res.json(await listFolders(paramString(req.params.accountId)));
 });
 
 // The kiosk's My orders stays scoped to "paid, awaiting print" only — not
 // the portal's full order history (docs/personal-account-requirements.md,
 // "Two separate surfaces" and "Order status lifecycle").
-router.get('/api/accounts/:accountId/orders', async (req, res) => {
+router.get('/api/accounts/:accountId/orders', requireOwnAccount, async (req, res) => {
   const orders = await listOrders(paramString(req.params.accountId));
   res.json(orders.filter((order) => order.status === 'paid'));
 });
@@ -1212,7 +1251,7 @@ router.get('/api/accounts/:accountId/orders', async (req, res) => {
 // staff in the admin panel, so nothing longer or stranger is stored.
 const STAND_ID_PATTERN = /^[A-Za-z0-9-]{1,16}$/;
 
-router.post('/api/print-tasks', async (req, res) => {
+router.post('/api/print-tasks', requireStand, async (req, res) => {
   const {
     sessionId,
     fileId,
@@ -1261,7 +1300,8 @@ router.post('/api/print-tasks', async (req, res) => {
     resolvedSessionId,
     typeof printOrderId === 'string' ? printOrderId : undefined,
     options,
-    typeof standId === 'string' && STAND_ID_PATTERN.test(standId) ? standId : null,
+    (req as StandRequest).standId ??
+      (typeof standId === 'string' && STAND_ID_PATTERN.test(standId) ? standId : null),
   );
   // Pavilion launch plan (2026-09-16): two stands share one printer feeding
   // a 4-bin mailbox (server/pickupBins.ts) — a task only actually prints
@@ -1273,7 +1313,7 @@ router.post('/api/print-tasks', async (req, res) => {
   res.status(201).json(await tryPrintTask(task.id, resolvedSessionId));
 });
 
-router.get('/api/print-tasks/:id', async (req, res) => {
+router.get('/api/print-tasks/:id', requireStand, async (req, res) => {
   const id = paramString(req.params.id);
   const beforeRetry = await getPrintTask(id);
   if (!beforeRetry) {
@@ -1296,7 +1336,7 @@ router.get('/api/print-tasks/:id', async (req, res) => {
 // (already happening every few seconds from PrintStatusScreen.tsx) already
 // retries tryPrintTask for exactly that task and no other, so the freed bin
 // still reaches the right customer within one poll interval.
-router.post('/api/print-tasks/:id/picked-up', async (req, res) => {
+router.post('/api/print-tasks/:id/picked-up', requireStand, async (req, res) => {
   const id = paramString(req.params.id);
   const task = await getPrintTask(id);
   if (!task) {
@@ -1310,28 +1350,33 @@ router.post('/api/print-tasks/:id/picked-up', async (req, res) => {
 const SIMULATABLE_OUTCOMES = ['success', 'paper-jam', 'out-of-paper', 'out-of-ink'] as const;
 type SimulatableOutcome = (typeof SIMULATABLE_OUTCOMES)[number];
 
-router.post('/api/print-tasks/:id/simulate', async (req, res) => {
-  const id = paramString(req.params.id);
-  const { outcome } = (req.body ?? {}) as { outcome?: unknown };
-  if (
-    typeof outcome !== 'string' ||
-    !SIMULATABLE_OUTCOMES.includes(outcome as SimulatableOutcome)
-  ) {
-    res.status(400).json({ error: 'Invalid outcome' });
-    return;
-  }
-  if (outcome === 'success') {
-    await updatePrintTaskStatus(id, 'succeeded');
-  } else {
-    await updatePrintTaskStatus(id, 'failed', outcome as PrintTaskErrorReason);
-  }
-  const task = await getPrintTask(id);
-  if (!task) {
-    res.status(404).json({ error: 'Print task not found' });
-    return;
-  }
-  res.json(task);
-});
+router.post(
+  '/api/print-tasks/:id/simulate',
+  requireStand,
+  requireSimulationAllowed,
+  async (req, res) => {
+    const id = paramString(req.params.id);
+    const { outcome } = (req.body ?? {}) as { outcome?: unknown };
+    if (
+      typeof outcome !== 'string' ||
+      !SIMULATABLE_OUTCOMES.includes(outcome as SimulatableOutcome)
+    ) {
+      res.status(400).json({ error: 'Invalid outcome' });
+      return;
+    }
+    if (outcome === 'success') {
+      await updatePrintTaskStatus(id, 'succeeded');
+    } else {
+      await updatePrintTaskStatus(id, 'failed', outcome as PrintTaskErrorReason);
+    }
+    const task = await getPrintTask(id);
+    if (!task) {
+      res.status(404).json({ error: 'Print task not found' });
+      return;
+    }
+    res.json(task);
+  },
+);
 
 // Phone-Camera Scan (docs/scan-upload-requirements.md, docs/screens/scan-spec.md)
 // — same anonymous, session-scoped architecture as QR upload: the kiosk
@@ -1339,7 +1384,7 @@ router.post('/api/print-tasks/:id/simulate', async (req, res) => {
 // page (server/scanPhoneApp.ts, not yet built) uploads photo+corners here,
 // and the kiosk polls GET /api/scan-sessions/:id (scan-status,
 // docs/screens/scan-spec.md) the same 3s-interval way QR upload already does.
-router.post('/api/scan-sessions', async (req, res) => {
+router.post('/api/scan-sessions', requireStand, async (req, res) => {
   const { sessionId } = (req.body ?? {}) as { sessionId?: unknown };
   if (typeof sessionId !== 'string' || !sessionId) {
     res.status(400).json({ error: 'sessionId is required' });
@@ -1623,7 +1668,7 @@ router.get('/api/scan-sessions/:id/download', (req, res) => {
 // flow, same server-side warp/cleanup pipeline) but has no delivery step;
 // see server/copyStore.ts's own header comment for why there's no
 // deliver/download route here the way Scan has one.
-router.post('/api/copy-sessions', async (req, res) => {
+router.post('/api/copy-sessions', requireStand, async (req, res) => {
   const { sessionId } = (req.body ?? {}) as { sessionId?: unknown };
   if (typeof sessionId !== 'string' || !sessionId) {
     res.status(400).json({ error: 'sessionId is required' });

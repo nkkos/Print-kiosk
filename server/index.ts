@@ -14,6 +14,7 @@ try {
 const { router, DEFAULT_PORT } = await import('./routes.js');
 const { adminRouter } = await import('./adminRoutes.js');
 const { agentRouter } = await import('./agentRoutes.js');
+const { corsOptions, logSecurityPosture } = await import('./security.js');
 const { getLanIPv4 } = await import('./lanIp.js');
 const { db } = await import('./db/client.js');
 const { sweepExpiredFiles, ORPHAN_FILE_TTL_MS } = await import('./sessionLifecycle.js');
@@ -39,7 +40,8 @@ async function main() {
   await migrate(db, { migrationsFolder: join(serverDir, 'db', 'migrations') });
 
   const app = express();
-  app.use(cors());
+  app.use(cors(corsOptions()));
+  logSecurityPosture();
   app.use(express.json());
   app.use(router);
   app.use(adminRouter);

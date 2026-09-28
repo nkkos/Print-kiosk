@@ -9,7 +9,9 @@
 // 1. Workers & Pages → Create Worker → paste this file's contents.
 // 2. Worker → Settings → Variables → add BACKEND_URL, set to the deployed
 //    backend's public URL (e.g. the Railway `backend` service's domain),
-//    no trailing slash.
+//    no trailing slash. Also add RELAY_SECRET (type: Secret) with the same
+//    value as the backend's EMAIL_RELAY_SECRET — once the backend has that
+//    set, it rejects anything that doesn't carry it (server/security.ts).
 // 3. Email → Email Routing → Routing rules → Catch-all address → Send to a
 //    Worker → select this Worker.
 export default {
@@ -19,6 +21,7 @@ export default {
       headers: {
         'Content-Type': 'message/rfc822',
         'X-Original-To': message.to,
+        ...(env.RELAY_SECRET ? { 'X-Relay-Secret': env.RELAY_SECRET } : {}),
       },
       body: message.raw,
     });

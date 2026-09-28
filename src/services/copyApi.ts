@@ -1,3 +1,5 @@
+import { standHeaders } from './standAuth';
+
 // Talks to the dev-only Copy backend (server/) — see
 // docs/copy-upload-requirements.md, docs/screens/copy-spec.md. Mirrors
 // src/services/scanApi.ts's shape (same architecture, reused).
@@ -23,13 +25,15 @@ export interface CopySession {
 export async function createCopySession(sessionId: string): Promise<{ id: string }> {
   const response = await fetch(`${API_BASE_URL}/api/copy-sessions`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...standHeaders() },
     body: JSON.stringify({ sessionId }),
   });
   return response.json();
 }
 
 export async function getCopySession(id: string): Promise<CopySession> {
-  const response = await fetch(`${API_BASE_URL}/api/copy-sessions/${id}`);
+  const response = await fetch(`${API_BASE_URL}/api/copy-sessions/${id}`, {
+    headers: standHeaders(),
+  });
   return response.json();
 }

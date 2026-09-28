@@ -1,3 +1,5 @@
+import { standHeaders } from '../../src/services/standAuth';
+
 // Talks to server/routes.ts's POST /api/photo-kiosk/ai-background — the
 // generative (Nano Banana Pro) compositor, a deliberate, narrow exception
 // to this app's "photo pixel data never leaves the client" rule, scoped
@@ -16,6 +18,7 @@ export async function compositeViaNanoBanana(shotDataUrl: string, lookId: string
   formData.append('lookId', lookId);
 
   const response = await fetch(`${API_BASE_URL}/api/photo-kiosk/ai-background`, {
+    headers: standHeaders(),
     method: 'POST',
     body: formData,
   });

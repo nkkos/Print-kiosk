@@ -27,6 +27,8 @@ import styles from './PersonalAccountScreen.module.css';
 //   Print Order Configuration step) with `paidQuantity` set, making its
 //   Cart price $0 unless the quantity is raised on-site.
 interface PersonalAccountScreenProps {
+  /** The kiosk login's session token (KioskSession.accountToken). */
+  accountToken?: string;
   onFileSelect: (fileId: string, fileName: string) => void;
   onConfigureSelectedFiles: (files: { fileId: string; fileName: string }[]) => void;
   onAddPaidOrderToCart: (order: PrintOrder) => void;
@@ -58,6 +60,7 @@ interface PersonalAccountScreenProps {
 }
 
 export function PersonalAccountScreen({
+  accountToken,
   onFileSelect,
   onConfigureSelectedFiles,
   onAddPaidOrderToCart,
@@ -94,11 +97,11 @@ export function PersonalAccountScreen({
   // the kiosk only ever browses/selects/prints what's already there, never
   // creates/renames/deletes folders or files itself.
   useEffect(() => {
-    if (!accountId) return;
-    listAccountFolders(accountId).then(setFolders);
-    listAccountFiles(accountId).then(setFiles);
-    listAccountOrders(accountId).then(setOrders);
-  }, [accountId]);
+    if (!accountId || !accountToken) return;
+    listAccountFolders(accountId, accountToken).then(setFolders);
+    listAccountFiles(accountId, accountToken).then(setFiles);
+    listAccountOrders(accountId, accountToken).then(setOrders);
+  }, [accountId, accountToken]);
 
   const openFolder = folders.find((folder) => folder.id === openFolderId) ?? null;
   const visibleFiles = files.filter((file) => file.folderId === openFolderId);

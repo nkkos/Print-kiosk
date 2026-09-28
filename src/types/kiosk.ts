@@ -27,6 +27,11 @@ export interface KioskSession {
    * The real account id (server/db/schema.ts's `accounts.id`), returned by
    * POST /api/accounts/login (docs/personal-account-requirements.md). */
   accountId: string | null;
+  /** The session token the kiosk login returned — proves the account for
+   * its My files / My orders reads (server/routes.ts, requireOwnAccount).
+   * Kept in memory only, never in localStorage, and dropped with the
+   * account or the session. */
+  accountToken?: string;
 }
 
 /** How a Kiosk Session ended — the manual "Finish and clear data" button, or

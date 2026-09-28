@@ -1,3 +1,5 @@
+import { standHeaders } from '../../src/services/standAuth';
+
 // Talks to the real photo-document backend (server/routes.ts's /api/photo-countries,
 // /api/photo-documents) — see docs/photo-kiosk-requirements.md. Public, no auth, same
 // as the shop's own catalog reads (this is reference data, not account-specific).
@@ -66,7 +68,7 @@ export async function recordPhotoOrder(
 ): Promise<{ id: string; status: string }> {
   const response = await fetch(`${API_BASE_URL}/api/photo-orders`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...standHeaders() },
     body: JSON.stringify(body),
   });
   const data = await response.json().catch(() => ({}));
@@ -79,7 +81,7 @@ export async function recordPhotoOrder(
 export async function markPhotoOrdersPrinted(ids: string[]): Promise<void> {
   await fetch(`${API_BASE_URL}/api/photo-orders/printed`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...standHeaders() },
     body: JSON.stringify({ ids }),
   });
 }
@@ -94,7 +96,11 @@ function dataUrlToBlob(dataUrl: string): Blob {
 }
 
 async function postForm<T>(path: string, form: FormData): Promise<T> {
-  const response = await fetch(`${API_BASE_URL}${path}`, { method: 'POST', body: form });
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    method: 'POST',
+    headers: standHeaders(),
+    body: form,
+  });
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
     throw new Error((data as { error?: string }).error ?? 'Request failed');

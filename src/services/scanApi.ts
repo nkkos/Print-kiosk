@@ -1,3 +1,5 @@
+import { standHeaders } from './standAuth';
+
 // Talks to the dev-only Phone-Camera Scan backend (server/) — see
 // docs/scan-upload-requirements.md, docs/screens/scan-spec.md. Mirrors
 // src/services/qrUploadApi.ts's shape (same architecture, reused).
@@ -21,13 +23,15 @@ export interface ScanSession {
 export async function createScanSession(sessionId: string): Promise<{ id: string }> {
   const response = await fetch(`${API_BASE_URL}/api/scan-sessions`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...standHeaders() },
     body: JSON.stringify({ sessionId }),
   });
   return response.json();
 }
 
 export async function getScanSession(id: string): Promise<ScanSession> {
-  const response = await fetch(`${API_BASE_URL}/api/scan-sessions/${id}`);
+  const response = await fetch(`${API_BASE_URL}/api/scan-sessions/${id}`, {
+    headers: standHeaders(),
+  });
   return response.json();
 }

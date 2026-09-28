@@ -6,6 +6,7 @@ import { useTranslation } from '../../i18n';
 import type { Language } from '../../i18n';
 import type { EndSessionReason, PrintOrder } from '../../types/kiosk';
 import { getUploadedFileContentUrl } from '../../services/uploadedFileApi';
+import { standHeaders } from '../../services/standAuth';
 import { getAccountFileContentUrl } from '../../services/accountFileApi';
 import { supportsDuplex, OFFERED_PAPER_SIZES } from '../../utils/printCapabilities';
 import { computeUnitPrice } from '../../utils/pricing';
@@ -71,6 +72,8 @@ interface PrintOrderConfigurationScreenProps {
   /** Which store `sourceFileId` resolves against — absent/`'upload'` = QR/Email,
    * `'account'` = Personal Account (server/routes.ts). */
   sourceFileOrigin?: 'upload' | 'account';
+  /** Needed to preview an account file (only its owner may read it). */
+  accountToken?: string;
   onAddToCart: (order: PrintOrder) => void;
   onBack: () => void;
   onHome: () => void;
@@ -98,6 +101,7 @@ interface PrintOrderConfigurationScreenProps {
 }
 
 export function PrintOrderConfigurationScreen({
+  accountToken,
   fileName,
   sourceFileId,
   sourceFileOrigin,
@@ -132,7 +136,16 @@ export function PrintOrderConfigurationScreen({
       ? getAccountFileContentUrl(sourceFileId)
       : getUploadedFileContentUrl(sourceFileId)
     : undefined;
-  const preview = usePreview(contentUrl);
+  // Account files are read with the account's token, QR/Email uploads with
+  // the stand's key (server/security.ts).
+  const preview = usePreview(
+    contentUrl,
+    sourceFileOrigin === 'account'
+      ? accountToken
+        ? { Authorization: `Bearer ${accountToken}` }
+        : undefined
+      : standHeaders(),
+  );
   // Follows the document itself — a converted file can't be re-laid-out, and
   // forcing the sheet the other way only shrinks the page onto half of it.
   // Still recorded on the order: it picks the duplex flip edge.

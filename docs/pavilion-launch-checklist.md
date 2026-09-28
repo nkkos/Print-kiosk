@@ -25,10 +25,12 @@ Expected load: 1 pavilion, 2 kiosk stands, 10–15 visitors/day.
 
 The backend was deliberately built without hardening for the prototype (see `CLAUDE.md`, "Backend"). With real customer documents that is no longer acceptable:
 
-- [ ] Stand and agent **device keys**; agent-only API routes are rejected without a valid key.
-- [ ] **Session ownership checks**: a client can only list and read its own session's files and print tasks (today anyone who guesses a session id can list its files).
-- [ ] **CORS** restricted to our own domains.
-- [ ] Review the remaining unauthenticated routes one by one.
+- [x] Stand and agent **device keys** in code (`server/security.ts`, `STAND_API_KEYS`; agent: `PRINT_AGENT_TOKEN`) — stand-only routes: print tasks, session files and content, email messages, session start/end, scan/copy creation, photo orders, photo sharing, AI backgrounds.
+- [x] **Account ownership**: the kiosk reads My files / My orders with the login's session token; an account's files and file content go only to that account.
+- [x] **Email relay secret** (`EMAIL_RELAY_SECRET` + the Worker's `RELAY_SECRET`); **Simulate** print outcomes closed in agent mode; **CORS** allow-list (`CORS_ORIGINS`).
+- [ ] **Turn them on**: set `STAND_API_KEYS`, `EMAIL_RELAY_SECRET`, `CORS_ORIGINS` on Railway, `RELAY_SECRET` on the Cloudflare Worker, and open each stand (and the photo kiosk) once with `?stand=…&key=…`. The backend logs `[security] not configured: …` at boot for anything still off.
+- [ ] Phone-side capability links (QR upload page, scan/copy pages, scan download links) are still "whoever has the link": a bystander who photographs the QR on screen can upload into that session (not read it). Decide whether that needs a separate short-lived upload token.
+- [ ] Rate limits on uploads and on the photo e-mail share; security headers (e.g. helmet).
 
 ## Before opening — legal / GDPR
 

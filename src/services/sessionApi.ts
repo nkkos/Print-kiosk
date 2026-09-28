@@ -1,4 +1,5 @@
 import type { EndSessionReason } from '../types/kiosk';
+import { standHeaders } from './standAuth';
 
 // Talks to the kiosk_sessions lifecycle backend (server/sessionLifecycle.ts,
 // docs/data-privacy-requirements.md). Callers treat any failure (network,
@@ -17,7 +18,7 @@ export async function startSession(
 ): Promise<void> {
   await fetch(`${API_BASE_URL}/api/sessions/${sessionId}/start`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...standHeaders() },
     body: JSON.stringify({ accountId, startedVia }),
     signal: AbortSignal.timeout(5000),
   });
@@ -31,7 +32,7 @@ export async function touchSessionActivity(
 ): Promise<void> {
   await fetch(`${API_BASE_URL}/api/sessions/${sessionId}/activity`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...standHeaders() },
     body: JSON.stringify({ accountId }),
     signal: AbortSignal.timeout(5000),
   });
@@ -44,7 +45,7 @@ export async function endSession(
 ): Promise<void> {
   await fetch(`${API_BASE_URL}/api/sessions/${sessionId}/end`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...standHeaders() },
     body: JSON.stringify({ reason, accountId }),
     signal: AbortSignal.timeout(5000),
   });

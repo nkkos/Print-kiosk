@@ -165,17 +165,32 @@ export async function listMyOrders(sessionToken: string): Promise<AccountOrder[]
 
 // --- Kiosk ---
 
-export async function listAccountFiles(accountId: string): Promise<AccountFile[]> {
-  const response = await fetch(`${API_BASE_URL}/api/accounts/${accountId}/files`);
+export async function listAccountFiles(
+  accountId: string,
+  sessionToken: string,
+): Promise<AccountFile[]> {
+  const response = await fetch(`${API_BASE_URL}/api/accounts/${accountId}/files`, {
+    headers: { Authorization: `Bearer ${sessionToken}` },
+  });
   return response.json();
 }
 
-export async function listAccountFolders(accountId: string): Promise<AccountFolder[]> {
-  const response = await fetch(`${API_BASE_URL}/api/accounts/${accountId}/folders`);
+export async function listAccountFolders(
+  accountId: string,
+  sessionToken: string,
+): Promise<AccountFolder[]> {
+  const response = await fetch(`${API_BASE_URL}/api/accounts/${accountId}/folders`, {
+    headers: { Authorization: `Bearer ${sessionToken}` },
+  });
   return response.json();
 }
 
-export async function listAccountOrders(accountId: string): Promise<AccountOrder[]> {
-  const response = await fetch(`${API_BASE_URL}/api/accounts/${accountId}/orders`);
+export async function listAccountOrders(
+  accountId: string,
+  sessionToken: string,
+): Promise<AccountOrder[]> {
+  const response = await fetch(`${API_BASE_URL}/api/accounts/${accountId}/orders`, {
+    headers: { Authorization: `Bearer ${sessionToken}` },
+  });
   return response.json();
 }

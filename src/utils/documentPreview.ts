@@ -49,7 +49,12 @@ export const EMPTY_PREVIEW: Preview = {
  * e.g. a mocked item with nothing to preview) into a `Preview`. The caller
  * resolves which content endpoint to hit (uploadedFileApi vs
  * accountFileApi) — this hook only cares about the final URL. */
-export function usePreview(contentUrl: string | undefined): Preview {
+export function usePreview(
+  contentUrl: string | undefined,
+  requestHeaders?: Record<string, string>,
+): Preview {
+  // Compared by value: callers build the object inline on every render.
+  const headersKey = JSON.stringify(requestHeaders ?? {});
   const [preview, setPreview] = useState<Preview>(
     contentUrl ? { ...EMPTY_PREVIEW, state: 'loading' } : EMPTY_PREVIEW,
   );
@@ -63,7 +68,7 @@ export function usePreview(contentUrl: string | undefined): Preview {
     let objectUrl: string | null = null;
     setPreview({ ...EMPTY_PREVIEW, state: 'loading' });
 
-    fetch(contentUrl)
+    fetch(contentUrl, { headers: JSON.parse(headersKey) as Record<string, string> })
       .then(async (response) => {
         if (!response.ok) throw new Error('Preview unavailable');
         const contentType = response.headers.get('content-type') ?? '';
@@ -115,7 +120,7 @@ export function usePreview(contentUrl: string | undefined): Preview {
       cancelled = true;
       if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
-  }, [contentUrl]);
+  }, [contentUrl, headersKey]);
 
   return preview;
 }
