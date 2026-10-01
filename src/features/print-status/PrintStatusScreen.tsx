@@ -9,9 +9,14 @@ import styles from './PrintStatusScreen.module.css';
 // Print Status screen — see docs/domain/kiosk-session.md: "Print Status has
 // no Back action (or it is disabled) — this screen is fully
 // system-controlled; the persistent footer ... remains accessible
-// regardless." No navigation-back/navigation-home here at all, and
-// end-session stays hidden (sessionActive=false) — the transaction is still
-// committed until the order is delivered.
+// regardless." No navigation-back/navigation-home here at all. End Session
+// stays blocked (sessionActive=false) while the transaction is committed —
+// until the order is delivered, i.e. printed into its bin ('succeeded'),
+// per the same doc's "Blocked during a committed transaction". From then on
+// End Session and the inactivity timeout work again, so a customer who walks
+// away without tapping "Continue" doesn't leave the session — and its bin,
+// released when the session ends (server/sessionLifecycle.ts) — open forever.
+// A failure stays blocked until staff resolve it, as the doc requires.
 //
 // Real backend (server/printerAdapter.ts): App.tsx submits a Print Task
 // automatically on entering this screen and polls its status. Only
@@ -121,7 +126,7 @@ export function PrintStatusScreen({
 
   return (
     <KioskScreenLayout
-      sessionActive={false}
+      sessionActive={status === 'succeeded'}
       onEndSession={onEndSession}
       cartItems={cartItems}
       onQuantityChange={onQuantityChange}

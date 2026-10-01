@@ -1,4 +1,4 @@
-import { desc, eq, sql } from 'drizzle-orm';
+import { and, desc, eq, isNotNull, isNull, sql } from 'drizzle-orm';
 import { db } from './db/client.js';
 import { printTasks } from './db/schema.js';
 import type { SubmitFailureReason } from './printerAdapter.js';
@@ -276,4 +276,24 @@ export async function isClaimedInFlight(id: string): Promise<boolean> {
     .from(printTasks)
     .where(eq(printTasks.id, id));
   return !!row?.claimedAt && (row.status === 'queued' || row.status === 'printing');
+}
+
+/** Frees the bins of a Kiosk Session's printed tasks when the session ends
+ * (server/sessionLifecycle.ts) — decided 2026-09-25: with no bin sensor,
+ * customers are responsible for collecting what they paid for, and a
+ * customer who walks away without tapping "Continue" would otherwise hold
+ * the bin until staff release it. Only 'succeeded' tasks: a failed one may
+ * have left a partial printout in its bin, which staff check first. */
+export async function releaseBinsForEndedSession(sessionId: string): Promise<void> {
+  await db
+    .update(printTasks)
+    .set({ pickedUpAt: new Date(), updatedAt: new Date() })
+    .where(
+      and(
+        eq(printTasks.sessionId, sessionId),
+        eq(printTasks.status, 'succeeded'),
+        isNotNull(printTasks.binNumber),
+        isNull(printTasks.pickedUpAt),
+      ),
+    );
 }
