@@ -391,7 +391,8 @@ button {
   font-size: 0.78rem;
   color: var(--ink-faint);
   font-variant-numeric: tabular-nums;
-  width: 4.6rem;
+  /* Room for "17.09 13:25" — older incidents show their date too. */
+  width: 6.6rem;
   flex: none;
 }
 

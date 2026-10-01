@@ -36,6 +36,15 @@ function SevChip({ severity, label }: { severity: string; label?: string }) {
 // Ports docs/screens/admin-panel-spec.md's Overview screen from the
 // approved HTML mockup — same markup/ids, now driven by real
 // GET /api/admin/incidents (openOnly=true) instead of hardcoded data.
+// Time only for today's incidents; older ones also get the date — a bare
+// "13:25" from weeks ago read as today's.
+function formatIncidentTime(iso: string): string {
+  const date = new Date(iso);
+  const time = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  if (date.toDateString() === new Date().toDateString()) return time;
+  return `${date.toLocaleDateString([], { day: '2-digit', month: '2-digit' })} ${time}`;
+}
+
 export function OverviewScreen({ session, onSelectSource }: OverviewScreenProps) {
   const [incidents, setIncidents] = useState<Incident[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -97,12 +106,7 @@ export function OverviewScreen({ session, onSelectSource }: OverviewScreenProps)
               id={`incident-row-${incident.id}`}
               onClick={() => onSelectSource(incident.source)}
             >
-              <span className="incident-time">
-                {new Date(incident.createdAt).toLocaleTimeString([], {
-                  hour: '2-digit',
-                  minute: '2-digit',
-                })}
-              </span>
+              <span className="incident-time">{formatIncidentTime(incident.createdAt)}</span>
               <SevChip severity={incident.severity} />
               <span className="incident-code">{incident.code}</span>
               <span className="incident-target">
