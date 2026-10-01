@@ -45,6 +45,9 @@ import styles from './PrintOrderConfigurationScreen.module.css';
 // thumbnail uses the same idea at a smaller scale (A4's long side ≈ 20rem).
 const PX_PER_MM = 2.2;
 const THUMBNAIL_PX_PER_MM = 1.07;
+// Header, footer, the popup's Close button and page navigation — what's left
+// of the window height is the most the popup's sheet may take.
+const POPUP_VERTICAL_CHROME_PX = 420;
 const POINTS_TO_MM = 25.4 / 72;
 const PAPER_SIZE_MM: Record<PrintOrder['paperSize'], { width: number; height: number }> = {
   A4: { width: 210, height: 297 },
@@ -261,12 +264,40 @@ export function PrintOrderConfigurationScreen({
   // scale, turned to match the page, so "original size" vs. "fit" is
   // honestly comparable against something real rather than an arbitrary box.
   const paperMm = PAPER_SIZE_MM[paperSize];
-  const frameWidthPx = nUpLayout
-    ? nUpLayout.widthMm * PX_PER_MM
-    : (popupPageOrientation === 'landscape' ? paperMm.height : paperMm.width) * PX_PER_MM;
-  const frameHeightPx = nUpLayout
-    ? nUpLayout.heightMm * PX_PER_MM
-    : (popupPageOrientation === 'landscape' ? paperMm.width : paperMm.height) * PX_PER_MM;
+  const sheetWidthMm = nUpLayout
+    ? nUpLayout.widthMm
+    : popupPageOrientation === 'landscape'
+      ? paperMm.height
+      : paperMm.width;
+  const sheetHeightMm = nUpLayout
+    ? nUpLayout.heightMm
+    : popupPageOrientation === 'landscape'
+      ? paperMm.width
+      : paperMm.height;
+  // The sheet shrinks to fit the popup — at PX_PER_MM a landscape A4 is
+  // wider than the popup and got cropped. Sheet and page scale together, so
+  // "fit" vs. "original size" still compare honestly.
+  const popupBoxRef = useRef<HTMLDivElement>(null);
+  const [popupAvailableWidthPx, setPopupAvailableWidthPx] = useState<number | null>(null);
+  useEffect(() => {
+    const box = popupBoxRef.current;
+    if (!isPreviewOpen || !box) return;
+    const measure = () => setPopupAvailableWidthPx(box.clientWidth);
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(box);
+    return () => observer.disconnect();
+  }, [isPreviewOpen]);
+  // Room left for the sheet under the Close button and above the page
+  // navigation, within the screen's content area.
+  const popupAvailableHeightPx = Math.max(240, window.innerHeight - POPUP_VERTICAL_CHROME_PX);
+  const popupPxPerMm = Math.min(
+    PX_PER_MM,
+    (popupAvailableWidthPx ?? sheetWidthMm * PX_PER_MM) / sheetWidthMm,
+    popupAvailableHeightPx / sheetHeightMm,
+  );
+  const frameWidthPx = sheetWidthMm * popupPxPerMm;
+  const frameHeightPx = sheetHeightMm * popupPxPerMm;
   // With pages per sheet the popup steps through printed sheets, not pages.
   const popupItemCount = nUpLayout ? sheets.length : preview.numPages;
   const popupSheetKey = (sheets[popupPage - 1] ?? []).join(',');
@@ -284,7 +315,7 @@ export function PrintOrderConfigurationScreen({
     if (!canvas) return;
     if (nUpLayout) {
       const pages = popupSheetKey ? popupSheetKey.split(',').map(Number) : [];
-      renderNUpSheetToCanvas(preview.pdf, pages, nUpLayout, canvas, PX_PER_MM).catch(() => {});
+      renderNUpSheetToCanvas(preview.pdf, pages, nUpLayout, canvas, popupPxPerMm).catch(() => {});
       return;
     }
     canvas.style.width = '';
@@ -292,7 +323,7 @@ export function PrintOrderConfigurationScreen({
     const mode: RenderMode =
       scale === 'fit'
         ? { kind: 'fit-box', widthPx: frameWidthPx, heightPx: frameHeightPx }
-        : { kind: 'absolute-points', pxPerPoint: PX_PER_MM * POINTS_TO_MM };
+        : { kind: 'absolute-points', pxPerPoint: popupPxPerMm * POINTS_TO_MM };
     renderPdfPageToCanvas(preview.pdf, popupPage, canvas, mode).catch(() => {});
   }, [
     isPreviewOpen,
@@ -302,6 +333,7 @@ export function PrintOrderConfigurationScreen({
     scale,
     frameWidthPx,
     frameHeightPx,
+    popupPxPerMm,
     nUpLayout,
     popupSheetKey,
   ]);
@@ -380,24 +412,30 @@ export function PrintOrderConfigurationScreen({
 
         {isPreviewOpen && (
           <Modal onClose={() => setIsPreviewOpen(false)}>
-            <div
-              className={styles.previewFrame}
-              style={{ width: `${frameWidthPx}px`, height: `${frameHeightPx}px` }}
-            >
-              {preview.kind === 'pdf' && (
-                <canvas
-                  ref={popupCanvasRef}
-                  className={effectiveScale === 'fit' ? styles.previewMedia : undefined}
-                />
-              )}
-              {/* Images always simulate as "fit" regardless of `scale` — a
+            <div ref={popupBoxRef} className={styles.previewFrameBox}>
+              <div
+                className={styles.previewFrame}
+                style={{ width: `${frameWidthPx}px`, height: `${frameHeightPx}px` }}
+              >
+                {preview.kind === 'pdf' && (
+                  <canvas
+                    ref={popupCanvasRef}
+                    className={effectiveScale === 'fit' ? styles.previewMedia : undefined}
+                  />
+                )}
+                {/* Images always simulate as "fit" regardless of `scale` — a
                   raster image has no inherent physical size (unlike a PDF
                   page, whose points convert directly to mm), so an "original
                   size" comparison against real paper would need an assumed
                   DPI. Not worth the ambiguity for a secondary content type. */}
-              {preview.kind === 'image' && preview.imageUrl && (
-                <img src={preview.imageUrl} alt={fileName} className={styles.previewMediaContain} />
-              )}
+                {preview.kind === 'image' && preview.imageUrl && (
+                  <img
+                    src={preview.imageUrl}
+                    alt={fileName}
+                    className={styles.previewMediaContain}
+                  />
+                )}
+              </div>
             </div>
             {preview.kind === 'pdf' && popupItemCount > 1 && (
               <div className={styles.previewNav}>

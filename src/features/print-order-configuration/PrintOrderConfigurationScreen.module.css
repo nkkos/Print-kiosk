@@ -42,6 +42,12 @@
 /* The popup's paper-size-calibrated frame (PX_PER_MM in the .tsx) —
    overflow:hidden is what makes "original size" honestly show a document
    that doesn't fit the selected paper as cropped, not silently shrunk. */
+.previewFrameBox {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
 .previewFrame {
   display: flex;
   align-items: center;
