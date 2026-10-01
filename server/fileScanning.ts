@@ -2,7 +2,7 @@ import { unlink } from 'node:fs/promises';
 import NodeClam from 'clamscan';
 import { hasPrintableExtension } from './fileValidation.js';
 import { convertToPrintable } from './documentConverter.js';
-import { reportIncident } from './incidentStore.js';
+import { reportIncident, hasOpenIncident } from './incidentStore.js';
 
 // Real antivirus scanning + conversion-to-printable, shared by every real
 // file store (server/uploadStore.ts for QR/Email — session-scoped; and
@@ -113,15 +113,18 @@ export async function scanAndConvert(
     }
     // Dev-only fail-open: if clamd itself is unreachable (e.g. a developer
     // forgot to start it), don't silently block every upload — log clearly
-    // and let the file through instead.
+    // and let the file through instead. One open warning is enough: on a
+    // dev machine without clamd every upload would otherwise add another.
     console.error(`[fileScanning] Scan failed for ${filePath}, failing open:`, err);
-    void reportIncident({
-      source: 'backend',
-      code: 'backend.clamav-unreachable',
-      severity: 'warning',
-      message: 'ClamAV unreachable — scan skipped (dev fail-open).',
-      context: { filePath, fileName, error: String(err) },
-    });
+    if (!(await hasOpenIncident('backend.clamav-unreachable'))) {
+      void reportIncident({
+        source: 'backend',
+        code: 'backend.clamav-unreachable',
+        severity: 'warning',
+        message: 'ClamAV unreachable — scans skipped (dev fail-open). Raised once until closed.',
+        context: { filePath, fileName, error: String(err) },
+      });
+    }
   }
   await convertIfNeeded(filePath, fileName, onStatusChange);
   await onStatusChange('ready');
