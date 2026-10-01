@@ -7,12 +7,21 @@
 #   powershell -ExecutionPolicy Bypass -File agent\windows\setup-printer.ps1 `
 #     -PrinterIp 192.168.1.50 -DriverInf C:\Brother\HL-L9430CDN\gdi\BROCH19A.INF
 #
+# Printer on USB instead of the network (testing before it's cabled to a
+# router): pass the USB port Windows gave it instead of -PrinterIp, e.g.
+# -UsbPort USB002 (see Get-Printer / the port column of any queue Windows
+# created for it). The port name can change if the cable moves to another
+# USB socket; re-run with the new one. Over USB there is no SNMP, so the
+# agent can't read the printer's state — re-run with -PrinterIp once the
+# printer is on the network; existing queues are moved to the new port.
+#
 # What it does:
 #   1. Installs the Brother PCL driver from its INF (skipped if installed).
 #      Get the driver from support.brother.com (HL-L9430CDN → Downloads →
 #      "Printer Driver"); running the downloaded .exe unpacks it — point
 #      -DriverInf at gdi\BROCH19A.INF inside the unpacked folder.
-#   2. Creates a Standard TCP/IP port for the printer (RAW 9100, SNMP on).
+#   2. Creates a Standard TCP/IP port for the printer (RAW 9100, SNMP on) —
+#      or uses the given USB port.
 #   3. Creates queues HL9430-Bin1..Bin4 (one per mailbox bin) and HL9430-Staff.
 #   4. Pins each queue's Printing Defaults to its output bin: "MX bin N" for
 #      BinN, the standard output tray for Staff. The mailbox bin is a Brother
@@ -34,7 +43,8 @@
 
 #Requires -RunAsAdministrator
 param(
-  [Parameter(Mandatory = $true)] [string] $PrinterIp,
+  [string] $PrinterIp,
+  [string] $UsbPort,
   [string] $DriverInf,
   [string] $DriverName = 'Brother HL-L9430CDN series',
   [string] $QueuePrefix = 'HL9430',
@@ -43,6 +53,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.Printing
+if ([bool]$PrinterIp -eq [bool]$UsbPort) { throw 'Pass exactly one of -PrinterIp <address> or -UsbPort <USB00N>.' }
 
 function Step($text) { Write-Host "`n== $text" -ForegroundColor Cyan }
 function Ok($text) { Write-Host "   OK   $text" -ForegroundColor Green }
@@ -61,12 +72,20 @@ if (Get-PrinterDriver -Name $DriverName -ErrorAction SilentlyContinue) {
 
 # --- 2. Port ---------------------------------------------------------------
 Step 'Port'
-$portName = "IP_$PrinterIp"
-if (Get-PrinterPort -Name $portName -ErrorAction SilentlyContinue) {
-  Ok "port $portName exists"
+if ($UsbPort) {
+  $portName = $UsbPort
+  if (-not (Get-PrinterPort -Name $portName -ErrorAction SilentlyContinue)) {
+    throw "USB port '$portName' not found — check which USB00N port Windows gave the printer (Get-PrinterPort)."
+  }
+  Ok "using USB port $portName (no SNMP over USB)"
 } else {
-  Add-PrinterPort -Name $portName -PrinterHostAddress $PrinterIp -PortNumber 9100 -SNMP 1 -SNMPCommunity 'public'
-  Ok "created port $portName (RAW 9100, SNMP public)"
+  $portName = "IP_$PrinterIp"
+  if (Get-PrinterPort -Name $portName -ErrorAction SilentlyContinue) {
+    Ok "port $portName exists"
+  } else {
+    Add-PrinterPort -Name $portName -PrinterHostAddress $PrinterIp -PortNumber 9100 -SNMP 1 -SNMPCommunity 'public'
+    Ok "created port $portName (RAW 9100, SNMP public)"
+  }
 }
 
 # --- 3. Queues -------------------------------------------------------------
@@ -75,7 +94,11 @@ $queues = @()
 foreach ($n in 1..4) { $queues += @{ Name = "$QueuePrefix-Bin$n"; Bin = "MailBox$n"; Label = "MX bin $n" } }
 $queues += @{ Name = "$QueuePrefix-Staff"; Bin = 'BuiltinBin'; Label = 'standard output tray' }
 foreach ($q in $queues) {
-  if (Get-Printer -Name $q.Name -ErrorAction SilentlyContinue) {
+  $existing = Get-Printer -Name $q.Name -ErrorAction SilentlyContinue
+  if ($existing -and $existing.PortName -ne $portName) {
+    Set-Printer -Name $q.Name -PortName $portName
+    Ok "$($q.Name) moved to $portName"
+  } elseif ($existing) {
     Ok "$($q.Name) exists"
   } else {
     Add-Printer -Name $q.Name -DriverName $DriverName -PortName $portName
@@ -185,6 +208,6 @@ if ($CaptureDriverOutput) {
 # --- 5. Agent settings -----------------------------------------------------
 Step 'Put these lines in the print agent''s .env (repository root)'
 foreach ($n in 1..4) { Write-Host "PRINTER_QUEUE_BIN_$n=$QueuePrefix-Bin$n" }
-Write-Host "PRINTER_SNMP_HOST=$PrinterIp"
+if ($PrinterIp) { Write-Host "PRINTER_SNMP_HOST=$PrinterIp" }
 Write-Host ''
 Write-Host 'Then check P5 in the acceptance checklist: open each queue → Advanced → Printing Defaults and confirm the Output Tray shown there.'
