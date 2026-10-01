@@ -15,21 +15,36 @@ import { networkInterfaces } from 'node:os';
 // local-dev console-logged verification/reset links — importing it from
 // routes.ts directly would be circular (routes.ts already imports from
 // emailSender.ts).
+// Virtual adapters whose names can still contain "Ethernet" — Windows names
+// the WSL / Hyper-V switch "vEthernet (WSL ...)", which the old Wi-Fi/Ethernet
+// match picked up first, handing phones an address they can't reach.
+const VIRTUAL_ADAPTER =
+  /vethernet|wsl|hyper-?v|virtualbox|vmware|docker|vpn|hamachi|radmin|tailscale|zerotier|bluetooth|loopback/i;
+
 export function getLanIPv4(): string {
-  const interfaces = Object.entries(networkInterfaces());
+  // Manual override for a machine where the guess is still wrong.
+  if (process.env.LAN_HOST) return process.env.LAN_HOST;
 
-  const wifiOrEthernet = interfaces.find(([name]) => /wi-?fi|wireless|ethernet/i.test(name));
-  const wifiAddress = wifiOrEthernet?.[1]?.find(
-    (entry) => entry.family === 'IPv4' && !entry.internal,
+  const interfaces = Object.entries(networkInterfaces()).filter(
+    ([name]) => !VIRTUAL_ADAPTER.test(name),
   );
-  if (wifiAddress) return wifiAddress.address;
+  const ipv4Of = (name: string) =>
+    interfaces
+      .find(([candidate]) => candidate === name)?.[1]
+      ?.find((entry) => entry.family === 'IPv4' && !entry.internal)?.address;
 
-  for (const [, entries] of interfaces) {
-    for (const entry of entries ?? []) {
-      if (entry.family === 'IPv4' && !entry.internal) {
-        return entry.address;
-      }
+  // Wi-Fi first (what a phone is on), then wired.
+  for (const pattern of [/wi-?fi|wireless|wlan/i, /ethernet|^eth|^en/i]) {
+    for (const [name] of interfaces) {
+      if (!pattern.test(name)) continue;
+      const address = ipv4Of(name);
+      if (address) return address;
     }
+  }
+
+  for (const [name] of interfaces) {
+    const address = ipv4Of(name);
+    if (address) return address;
   }
   return 'localhost';
 }
