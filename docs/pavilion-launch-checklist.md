@@ -32,6 +32,13 @@ The backend was deliberately built without hardening for the prototype (see `CLA
 - [ ] Phone-side capability links (QR upload page, scan/copy pages, scan download links) are still "whoever has the link": a bystander who photographs the QR on screen can upload into that session (not read it). Decide whether that needs a separate short-lived upload token.
 - [x] Rate limits per client IP on phone/public uploads (120 per 10 min) and on routes that send e-mail (10 per 15 min); security headers (helmet, no CSP because the phone pages use inline scripts). The backend now trusts Railway's proxy hop, so limits — including the existing login limit — are per client, not one bucket for everybody.
 
+## Before opening — payments and receipts
+
+- [ ] Real Viva terminals connected (`PAYMENT_TERMINAL=viva`, B5) — until then the kiosk takes simulated payments only.
+- [ ] Cash register: NineDigit CHDÚ on the mini-PC, fiscalised by the service partner; `FISCAL_REGISTER=agent` on Railway, `FISCAL_DEVICE=ninedigit` on the agent (B8).
+- [ ] Set the company's details for the receipt page: `RECEIPT_SELLER_NAME`, `RECEIPT_SELLER_ADDRESS`, `RECEIPT_SELLER_ICO`, `RECEIPT_SELLER_DIC`, `RECEIPT_SELLER_IC_DPH`.
+- [ ] Real price list in `src/utils/tariff.ts`.
+
 ## Before opening — legal / GDPR
 
 - [ ] Sign Railway's **DPA** (data processing agreement).

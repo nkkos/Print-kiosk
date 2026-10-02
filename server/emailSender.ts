@@ -125,3 +125,26 @@ export async function sendPhotoEmail(
     throw new Error(error.message);
   }
 }
+
+/** The customer's eKasa receipt (docs/payments-business-requirements.md,
+ * "Receipts") — a link to the receipt page this backend serves
+ * (GET /receipts/:id), in Slovak and English. */
+export async function sendReceiptEmail(
+  email: string,
+  link: string,
+  kind: 'sale' | 'return',
+  totalCents: number,
+): Promise<void> {
+  const amount = `${(Math.abs(totalCents) / 100).toFixed(2).replace('.', ',')} €`;
+  const [subject, intro] =
+    kind === 'sale'
+      ? [
+          'Váš doklad / Your receipt',
+          `Ďakujeme za nákup (${amount}). / Thank you for your purchase (${amount}).`,
+        ]
+      : [
+          'Doklad o vrátení / Refund receipt',
+          `Vrátili sme vám ${amount}. / We have refunded ${amount}.`,
+        ];
+  await sendEmail(email, subject, `<p>${intro}</p><p><a href="${link}">${link}</a></p>`, link);
+}

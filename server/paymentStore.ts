@@ -4,6 +4,12 @@ import { db } from './db/client.js';
 import { paymentItems, paymentOrders, paymentRefunds, printOrders } from './db/schema.js';
 import { getPaymentTerminal, type RefundOutcome, type TerminalOutcome } from './paymentTerminal.js';
 import { reportIncident } from './incidentStore.js';
+import {
+  createReturnReceipt,
+  createSaleReceipt,
+  getSaleReceiptView,
+  type SaleReceiptView,
+} from './fiscalReceiptStore.js';
 import { isPaperSizeOffered, supportsDuplex } from './printerAdapter.js';
 import { isPagesPerSheet, sheetSidesFor } from '../src/utils/nUpLayout.js';
 import { PRINT_VAT_RATE_PERCENT, unitPriceCentsFor } from '../src/utils/tariff.js';
@@ -44,6 +50,8 @@ export interface PaymentView {
   status: string;
   provider: string | null;
   receiptDelivery: string | null;
+  /** The eKasa sale receipt, once the customer has chosen how to get it. */
+  receipt: SaleReceiptView | null;
   amountCents: number;
   failureReason: string | null;
   expiresAt: string | null;
@@ -296,6 +304,7 @@ export async function getPaymentView(id: string): Promise<PaymentView | null> {
     status: order.status,
     provider: order.provider,
     receiptDelivery: order.receiptDelivery,
+    receipt: await getSaleReceiptView(order.id),
     amountCents: order.amountCents,
     failureReason: order.failureReason,
     expiresAt: order.expiresAt?.toISOString() ?? null,
@@ -321,6 +330,9 @@ export async function setReceiptDelivery(
         isNull(paymentOrders.receiptDelivery),
       ),
     );
+  // Registered now that the delivery is known — paper has to be decided
+  // before the register prints (server/fiscalReceiptStore.ts).
+  await createSaleReceipt(id);
   return getPaymentView(id);
 }
 
@@ -453,6 +465,11 @@ export async function refundFailedPrintTask(
       .update(paymentOrders)
       .set({ status: fullyRefunded ? 'refunded' : 'partially-refunded', updatedAt: now })
       .where(eq(paymentOrders.id, item.paymentOrderId));
+    try {
+      await createReturnReceipt(refund.id);
+    } catch (err) {
+      console.error('[paymentStore] Return receipt could not be created:', refund.id, err);
+    }
   } else {
     // Not refunded after all — the item stays refundable, by staff (B7).
     await db.update(paymentItems).set({ refundedCents: 0 }).where(eq(paymentItems.id, item.id));

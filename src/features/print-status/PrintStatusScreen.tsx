@@ -5,6 +5,7 @@ import type { Language } from '../../i18n';
 import type { EndSessionReason, PrintOrder } from '../../types/kiosk';
 import type { PrintTask, PrintTaskErrorReason } from '../../services/printApi';
 import { formatEuroCents } from '../../utils/pricing';
+import { ReceiptPanel } from './ReceiptPanel';
 import styles from './PrintStatusScreen.module.css';
 
 // Print Status screen — see docs/domain/kiosk-session.md: "Print Status has
@@ -36,6 +37,8 @@ interface PrintStatusScreenProps {
   /** One Print Task per item being printed this visit (App.tsx's
    * `printingItems`) — aggregated below into a single displayed status. */
   printTasks: PrintTask[];
+  /** The payment whose receipt to show (src/features/print-status/ReceiptPanel.tsx). */
+  receiptPaymentId: string | null;
   onPrintComplete: () => void;
   onSimulatePrintOutcome: (
     outcome: 'success' | 'paper-jam' | 'out-of-paper' | 'out-of-ink',
@@ -88,6 +91,7 @@ export function PrintStatusScreen({
   onQuantityChange,
   onRemoveItem,
   printTasks,
+  receiptPaymentId,
   onPrintComplete,
   onSimulatePrintOutcome,
   onEndSession,
@@ -246,6 +250,7 @@ export function PrintStatusScreen({
             )}
           </>
         )}
+        {receiptPaymentId && <ReceiptPanel paymentId={receiptPaymentId} />}
       </div>
     </KioskScreenLayout>
   );

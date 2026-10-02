@@ -65,7 +65,7 @@ interface PaymentStatusScreenProps {
   /** Called once paid (and the receipt chosen) with the batch, each item now
    * carrying its server `paymentItemId` — or straight away with the batch
    * unchanged when the server says nothing needs paying. */
-  onPaymentSuccess: (paidItems: PrintOrder[]) => void;
+  onPaymentSuccess: (paidItems: PrintOrder[], paymentId: string | null) => void;
   onCancelPayment: () => void;
   onReturnHome: () => void;
   onEndSession: (reason: EndSessionReason) => void;
@@ -140,7 +140,7 @@ export function PaymentStatusScreen({
         if (created === null) {
           // Everything was paid in advance — nothing to charge.
           setFinished(true);
-          latest.current.onPaymentSuccess(items);
+          latest.current.onPaymentSuccess(items, null);
         } else {
           setPayment(created);
         }
@@ -177,6 +177,7 @@ export function PaymentStatusScreen({
         ...item,
         paymentItemId: lineFor.get(item.id),
       })),
+      paid.id,
     );
   }
 

@@ -9,7 +9,7 @@ import { writeFile, readFile, unlink } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { randomUUID } from 'node:crypto';
-import { getLanIPv4 } from './lanIp.js';
+import { getLanIPv4, publicBackendUrl } from './lanIp.js';
 import { addFile, listFiles, uploadsDir, getUploadedFile } from './uploadStore.js';
 import { addEmail, listEmails } from './emailStore.js';
 import {
@@ -95,6 +95,9 @@ import {
   NoReadyPagesError as NoReadyCopyPagesError,
 } from './copyStore.js';
 import { renderCopyPhoneApp } from './copyPhoneApp.js';
+import QRCode from 'qrcode';
+import { getReceipt } from './fiscalReceiptStore.js';
+import { renderReceiptPage } from './receiptPage.js';
 import {
   ACCEPTED_EXTENSIONS,
   MAX_FILE_SIZE_BYTES,
@@ -208,11 +211,7 @@ export const router = Router();
 // backend from any network. Falls back to LAN-IP detection for local dev,
 // where no public domain exists.
 router.get('/api/config', (_req, res) => {
-  const port = Number(process.env.PORT ?? DEFAULT_PORT);
-  const railwayDomain = process.env.RAILWAY_PUBLIC_DOMAIN;
-  const lanUploadUrl = railwayDomain
-    ? `https://${railwayDomain}`
-    : `http://${getLanIPv4()}:${port}`;
+  const lanUploadUrl = publicBackendUrl();
   // The deployed portal's real, globally-reachable URL (Cloudflare Pages —
   // same env var server/emailSender.ts already uses for email links) when
   // set. Falls back to this dev machine's LAN IP at Vite's default port —
@@ -1279,6 +1278,21 @@ const STAND_ID_PATTERN = /^[A-Za-z0-9-]{1,16}$/;
 async function withRefund<T extends { id: string }>(task: T | null) {
   return task ? { ...task, refund: await getRefundForPrintTask(task.id) } : task;
 }
+
+// The customer's eKasa receipt (docs/payments-business-requirements.md,
+// "Receipts") — what the stand's QR code and the receipt e-mail open. A
+// capability link by receipt id, like the phone upload pages.
+router.get('/receipts/:id', async (req, res) => {
+  const id = paramString(req.params.id);
+  const receipt = /^[0-9a-f-]{36}$/i.test(id) ? await getReceipt(id) : null;
+  if (!receipt || (receipt.status !== 'registered' && receipt.status !== 'registered-offline')) {
+    res.status(404).type('html').send(renderReceiptPage(null, null));
+    return;
+  }
+  const verification = receipt.receiptUid ?? receipt.okp ?? '';
+  const qrDataUrl = verification ? await QRCode.toDataURL(verification, { margin: 1 }) : null;
+  res.type('html').send(renderReceiptPage(receipt, qrDataUrl));
+});
 
 // Kiosk card payments (docs/payments-technical-requirements.md, "API").
 // The stand sends what is being bought; the server prices it and runs the

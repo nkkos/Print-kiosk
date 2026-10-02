@@ -11,6 +11,7 @@ import {
   type PrintTaskErrorReason,
 } from './printTaskStore.js';
 import { preparePrintJob, printExecutionMode } from './printOrchestrator.js';
+import { claimNextFiscalJob, completeFiscalJob, fiscalMode } from './fiscalReceiptStore.js';
 import {
   reportIncident,
   hasOpenIncident,
@@ -234,6 +235,46 @@ agentRouter.post('/api/agent/printer-status', async (req, res) => {
 
 // Anything the agent notices that isn't tied to a status report — e.g. a
 // job it stopped watching without knowing whether paper came out.
+// eKasa relay (docs/payments-technical-requirements.md, "eKasa"): the
+// register's API is local to the pavilion mini-PC, so the agent pulls
+// receipts to register — the same pull model as print tasks — and reports
+// the register's answer. Only used with FISCAL_REGISTER=agent.
+agentRouter.post('/api/agent/fiscal-jobs/claim', async (_req, res) => {
+  if (fiscalMode() !== 'agent') {
+    res.json({ job: null });
+    return;
+  }
+  res.json({ job: await claimNextFiscalJob() });
+});
+
+agentRouter.post('/api/agent/fiscal-jobs/:id/result', async (req, res) => {
+  const id = typeof req.params.id === 'string' ? req.params.id : '';
+  const body = (req.body ?? {}) as Record<string, unknown>;
+  const text = (value: unknown) => (typeof value === 'string' && value ? value : null);
+  if (body.status === 'registered' || body.status === 'registered-offline') {
+    const okp = text(body.okp);
+    const receiptNumber = text(body.receiptNumber);
+    const cashRegisterCode = text(body.cashRegisterCode);
+    if (!okp || !receiptNumber || !cashRegisterCode) {
+      res.status(400).json({ error: 'okp, receiptNumber and cashRegisterCode are required' });
+      return;
+    }
+    await completeFiscalJob(id, {
+      status: body.status,
+      receiptUid: text(body.receiptUid),
+      okp,
+      receiptNumber,
+      cashRegisterCode,
+    });
+  } else if (body.status === 'failed') {
+    await completeFiscalJob(id, { status: 'failed', reason: text(body.reason) ?? 'unknown' });
+  } else {
+    res.status(400).json({ error: 'Invalid fiscal result' });
+    return;
+  }
+  res.json({ ok: true });
+});
+
 agentRouter.post('/api/agent/incident', (req, res) => {
   const { code, message, severity, context } = (req.body ?? {}) as {
     code?: unknown;

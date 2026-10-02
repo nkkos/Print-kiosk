@@ -1,6 +1,6 @@
 # Payments and fiscal receipts — technical requirements
 
-Business rules: `docs/payments-business-requirements.md`. Hardware and vendor background: `docs/payments-and-receipts-plan.md`. Status 2026-10-02: B1, B1b, B2 and B3 are done, on the simulated terminal — server-side pricing, the kiosk Payment screen, printing only what was paid, and the automatic refund + Telegram alert when a paid item fails to print. Receipts are only recorded as a choice until B4.
+Business rules: `docs/payments-business-requirements.md`. Hardware and vendor background: `docs/payments-and-receipts-plan.md`. Status 2026-10-02: B1–B4 are done on simulators — server-side pricing, the kiosk Payment screen, printing only what was paid, the automatic refund + Telegram alert, and eKasa receipts (sale and return) registered in the cloud simulator or through the pavilion agent, delivered by QR, e-mail or paper. Next: B5 (Viva client).
 
 ## Principles
 
@@ -78,7 +78,7 @@ Terminal map: `VIVA_TERMINAL_IDS="A:16001234,B:16005678"` (stand id → Viva ter
 
 ## Configuration
 
-`PAYMENT_TERMINAL`, `FISCAL_REGISTER`, `ONLINE_CHECKOUT` (simulator by default); `VIVA_ENV=demo|live`, `VIVA_CLIENT_ID`, `VIVA_CLIENT_SECRET` (POS API / OAuth), `VIVA_MERCHANT_ID`, `VIVA_API_KEY` (Smart Checkout / webhook verification), `VIVA_SOURCE_CODE`, `VIVA_TERMINAL_IDS`; agent: `NINEDIGIT_URL` (default `http://localhost:3010`). Secrets only in `.env` / Railway variables.
+`PAYMENT_TERMINAL`, `FISCAL_REGISTER` (`simulator` default, or `agent` = registered by the pavilion agent), `ONLINE_CHECKOUT` (simulator by default); receipt page seller details `RECEIPT_SELLER_NAME`, `RECEIPT_SELLER_ADDRESS`, `RECEIPT_SELLER_ICO`, `RECEIPT_SELLER_DIC`, `RECEIPT_SELLER_IC_DPH`; `VIVA_ENV=demo|live`, `VIVA_CLIENT_ID`, `VIVA_CLIENT_SECRET` (POS API / OAuth), `VIVA_MERCHANT_ID`, `VIVA_API_KEY` (Smart Checkout / webhook verification), `VIVA_SOURCE_CODE`, `VIVA_TERMINAL_IDS`; agent: `FISCAL_DEVICE` (`simulator` default; `ninedigit` in B8), `NINEDIGIT_URL` (default `http://localhost:3010`). Secrets only in `.env` / Railway variables.
 
 ## Build order
 
@@ -86,7 +86,7 @@ Terminal map: `VIVA_TERMINAL_IDS="A:16001234,B:16005678"` (stand id → Viva ter
 - **B1b** — print tasks require a paid item; the print settings come from the paid line, a repeat submission returns the same task. _Done 2026-10-02._ Still open: count pages on the server instead of trusting the stand's `pageCount`.
 - **B2** — kiosk Payment screen on the real API (90 s countdown, declined/timeout/cancel with "Try again"), receipt-choice screen (QR default after 30 s), prices shown in euros. _Done 2026-10-02._ The Print Status "Retry" button now returns the same tasks (no reprint) — it is replaced by the refund flow in B3.
 - **B3** — refund on print failure + incidents/Telegram. _Done 2026-10-02:_ `refundFailedPrintTask` (`server/paymentStore.ts`, called from `updatePrintTaskStatus`), `payment_refunds` table, `payment.refunded-after-print-failure` (critical) / `payment.refund-failed` (emergency) incidents with the payment item as `correlationId`, so every refund alerts on Telegram despite the 10-minute cooldown; Print Status shows the refund instead of a Retry button. `PAYMENT_SIMULATE_REFUND_FAILURE=true` makes the simulator's refund fail. Return receipts follow in B4.
-- **B4** — fiscal register adapter + simulator + agent relay; receipts (QR / e-mail / paper).
+- **B4** — fiscal register adapter + simulator + agent relay; receipts (QR / e-mail / paper). _Done 2026-10-02:_ `server/fiscalReceiptStore.ts` (`fiscal_receipts` table), agent relay `POST /api/agent/fiscal-jobs/claim` + `/:id/result` with its own loop in `agent/index.ts` and `agent/fiscalDevice.ts` (simulator), receipt page `GET /receipts/:id` (`server/receiptPage.ts`), receipt e-mail, QR on Print Status. The sale receipt is registered once the customer picks the delivery (paper must be known before the register prints); no choice within 2 minutes → paper. A return receipt waits for its sale receipt. Failed registration retries up to 5 times, then an emergency incident; a receipt pending over 5 minutes raises a critical one. Simulated receipts carry ids starting `O-SIM` and the page marks them as test receipts.
 - **B5** — Viva Cloud Terminal client against the demo account (phone with the Viva Terminal DEMO app).
 - **B6** — portal online checkout (Smart Checkout) + webhook.
 - **B7** — admin: payments list, manual refund, daily reconciliation.

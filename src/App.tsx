@@ -258,6 +258,9 @@ function App() {
   // `paymentItems` (cleared once payment succeeds). Set right before
   // navigating to Print Status, cleared once printing completes.
   const [printingItems, setPrintingItems] = useState<PrintOrder[]>([]);
+  // The payment whose eKasa receipt Print Status shows (its QR code) while
+  // the batch prints — null when nothing was charged.
+  const [receiptPaymentId, setReceiptPaymentId] = useState<string | null>(null);
   // One Print Task per `printingItems` entry (server/printTaskStore.ts) —
   // empty before Print Status has submitted any yet. Cleared once the user
   // leaves Print Status, so revisiting later starts a fresh submission.
@@ -846,7 +849,8 @@ function App() {
   // `paidItems` is the batch with each item's server `paymentItemId` attached
   // — Print Status submits it, and the server prints only what was paid
   // (docs/payments-technical-requirements.md, "Principles" 3).
-  function handlePaymentSuccess(paidItems: PrintOrder[]) {
+  function handlePaymentSuccess(paidItems: PrintOrder[], paymentId: string | null) {
+    setReceiptPaymentId(paymentId);
     // Only the paid batch leaves the cart — anything left unchecked stays
     // behind (docs/cart-requirements.md, "Selection for payment").
     setCart((current) => current.filter((item) => !paidItems.some((paid) => paid.id === item.id)));
@@ -1227,6 +1231,7 @@ function App() {
           onQuantityChange={handleQuantityChange}
           onRemoveItem={handleRemoveItem}
           printTasks={printTasks}
+          receiptPaymentId={receiptPaymentId}
           onPrintComplete={handlePrintComplete}
           onSimulatePrintOutcome={handleSimulatePrintOutcome}
           onEndSession={handleEndSession}

@@ -48,3 +48,14 @@ export function getLanIPv4(): string {
   }
   return 'localhost';
 }
+
+/** This backend's address as another device (a phone scanning a QR code)
+ * reaches it: the Railway public domain when deployed, else this machine's
+ * LAN IP — the same rule GET /api/config hands the stand for QR upload
+ * links (server/routes.ts), also used for receipt links
+ * (server/fiscalReceiptStore.ts). */
+export function publicBackendUrl(): string {
+  const railwayDomain = process.env.RAILWAY_PUBLIC_DOMAIN;
+  if (railwayDomain) return `https://${railwayDomain}`;
+  return `http://${getLanIPv4()}:${Number(process.env.PORT ?? 3001)}`;
+}

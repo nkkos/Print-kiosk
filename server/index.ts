@@ -24,6 +24,7 @@ const { ACCOUNT_FILE_RETENTION_DAYS } = await import('./accountFileLimits.js');
 const { sweepExpiredScanSessions, SCAN_SESSION_RETENTION_HOURS } = await import('./scanStore.js');
 const { sweepOrphanedCopySessions } = await import('./copyStore.js');
 const { warmUpLibreOffice } = await import('./documentConverter.js');
+const { sweepReceipts } = await import('./fiscalReceiptStore.js');
 const { reportIncident } = await import('./incidentStore.js');
 
 // Dev-only backend for the QR/Email upload methods (docs/qr-upload-requirements.md,
@@ -132,6 +133,13 @@ async function main() {
       .catch((err: unknown) => console.error('[index] Orphaned copy-session sweep failed:', err));
   void runCopySweep();
   setInterval(runCopySweep, 30 * 60 * 1000);
+
+  // eKasa receipts (server/fiscalReceiptStore.ts): the paper default for a
+  // customer who never chose a delivery, retries, and alerts for receipts
+  // stuck unregistered. Every 30 s — receipts are time-sensitive.
+  const runReceiptSweep = () =>
+    sweepReceipts().catch((err: unknown) => console.error('[index] Receipt sweep failed:', err));
+  setInterval(runReceiptSweep, 30_000);
 
   // Pays LibreOffice's cold-start cost once now instead of during a real
   // user's first .doc/.docx conversion (server/documentConverter.ts).

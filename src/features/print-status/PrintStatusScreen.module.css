@@ -14,3 +14,20 @@
 .message {
   margin: 0;
 }
+
+.receipt {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-s);
+}
+
+.receipt img {
+  width: 10rem;
+  height: 10rem;
+}
+
+.receiptNote {
+  color: var(--color-ink-soft);
+  text-align: center;
+}

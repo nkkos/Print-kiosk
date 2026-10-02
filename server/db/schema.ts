@@ -223,6 +223,47 @@ export const paymentRefunds = pgTable(
   ],
 );
 
+// eKasa receipts (docs/payments-technical-requirements.md, "eKasa") — one per
+// sale and one per refund (a return receipt). `document` is the stringified
+// receipt as registered (lines, VAT, totals, print flag), snapshotted when
+// the receipt is created so it never changes afterwards.
+export const fiscalReceipts = pgTable(
+  'fiscal_receipts',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    paymentOrderId: uuid('payment_order_id')
+      .notNull()
+      .references(() => paymentOrders.id, { onDelete: 'cascade' }),
+    refundId: uuid('refund_id').references(() => paymentRefunds.id, { onDelete: 'set null' }),
+    // 'sale' | 'return'
+    kind: text('kind').notNull(),
+    // 'pending' | 'registered' | 'registered-offline' | 'failed'
+    status: text('status').notNull().default('pending'),
+    // 'qr' | 'email' | 'paper' — paper means the register prints it
+    delivery: text('delivery').notNull(),
+    email: text('email'),
+    document: text('document').notNull(),
+    // What the register answered — eKasa receipt id (online), the offline
+    // control code (OKP), its own number and cash register code.
+    receiptUid: text('receipt_uid'),
+    okp: text('okp'),
+    receiptNumber: text('receipt_number'),
+    cashRegisterCode: text('cash_register_code'),
+    registeredAt: timestamp('registered_at', { withTimezone: true }),
+    failureReason: text('failure_reason'),
+    attempts: integer('attempts').notNull().default(0),
+    // Agent relay: when the pavilion agent took the job (re-claimable after
+    // a timeout, in case the agent died mid-way).
+    claimedAt: timestamp('claimed_at', { withTimezone: true }),
+    deliveredAt: timestamp('delivered_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index('fiscal_receipts_payment_order_id_idx').on(table.paymentOrderId),
+    index('fiscal_receipts_status_idx').on(table.status),
+  ],
+);
+
 // The priced snapshot of each Cart item a kiosk payment covers
 // (docs/payments-technical-requirements.md, "Data model") — the server's own
 // price, and the print configuration a print task is later created from.

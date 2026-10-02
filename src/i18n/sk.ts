@@ -212,6 +212,10 @@ export const sk: Translations = {
       'Peniaze sa nepodarilo vrátiť automaticky. Naši pracovníci sú informovaní a vrátia vám ich čo najskôr.',
     prepaidKept:
       'Vopred zaplatená objednávka zostáva v časti Moje objednávky — môžete ju vytlačiť neskôr.',
+    receiptPending: 'Vystavujeme doklad…',
+    receiptQr: 'Váš doklad — naskenujte kód a otvorte ho v telefóne',
+    receiptEmailed: 'Doklad sme vám poslali e-mailom.',
+    receiptPaper: 'Vezmite si doklad z tlačiarne dokladov.',
   },
   finalisingSession: {
     message: 'Vaše dokumenty boli vytlačené. Ďakujeme!',

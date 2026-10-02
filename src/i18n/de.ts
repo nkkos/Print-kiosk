@@ -216,6 +216,10 @@ export const de: Translations = {
       'Die automatische Rückerstattung ist fehlgeschlagen. Unser Personal ist informiert und erstattet Ihnen den Betrag so schnell wie möglich.',
     prepaidKept:
       'Ihre vorab bezahlte Bestellung bleibt unter „Meine Bestellungen“ — Sie können sie später drucken.',
+    receiptPending: 'Ihr Beleg wird ausgestellt…',
+    receiptQr: 'Ihr Beleg — scannen Sie den Code, um ihn auf dem Handy zu öffnen',
+    receiptEmailed: 'Ihr Beleg wurde per E-Mail gesendet.',
+    receiptPaper: 'Bitte entnehmen Sie Ihren Beleg dem Belegdrucker.',
   },
   finalisingSession: {
     message: 'Ihre Dokumente wurden gedruckt. Vielen Dank!',

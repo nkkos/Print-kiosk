@@ -12,6 +12,8 @@ import type { PrintOptions } from '../server/printTaskStore.js';
 import { blockingProblems, type PrinterSnapshot } from '../server/printerStatus.js';
 import { createPrinterStatusSource } from './printerStatusSource.js';
 import { waitForJobOutcome } from './jobTracker.js';
+import { createFiscalDevice } from './fiscalDevice.js';
+import type { FiscalJob } from '../server/fiscalReceiptStore.js';
 
 // Pavilion print agent (docs/pavilion-launch-checklist.md, "Target
 // architecture"). Runs on the pavilion mini-PC that the Brother printer is
@@ -34,6 +36,7 @@ import { waitForJobOutcome } from './jobTracker.js';
 //                          see server/printerAdapter.ts
 //   PRINTER_SNMP_HOST / PRINTER_SNMP_COMMUNITY / PRINTER_STATUS_SIMULATOR_FILE
 //                          see agent/printerStatusSource.ts
+//   FISCAL_DEVICE          eKasa register — see agent/fiscalDevice.ts
 //   AGENT_POLL_INTERVAL_MS optional, default 2000
 //   AGENT_DRY_RUN=true     do everything except send the job to a printer —
 //                          with PRINTER_STATUS_SIMULATOR_FILE this runs the
@@ -208,6 +211,46 @@ async function runStatusLoop(): Promise<void> {
   }
 }
 
+// eKasa receipts (server/fiscalReceiptStore.ts, FISCAL_REGISTER=agent):
+// their own loop, so a receipt never waits behind a print job the agent is
+// following for minutes.
+const fiscalDevice = createFiscalDevice();
+const FISCAL_POLL_INTERVAL_MS = 2000;
+
+async function registerNextReceipt(): Promise<boolean> {
+  const response = await callCloud('/api/agent/fiscal-jobs/claim', { method: 'POST' });
+  const { job } = (await response.json()) as { job: FiscalJob | null };
+  if (!job) return false;
+  let outcome;
+  try {
+    outcome = await fiscalDevice.register(job);
+  } catch (err) {
+    outcome = {
+      status: 'failed' as const,
+      reason: err instanceof Error ? err.message : String(err),
+    };
+  }
+  console.log(`[agent] receipt ${job.id} (${job.document.kind}): ${outcome.status}`);
+  await callCloud(`/api/agent/fiscal-jobs/${job.id}/result`, {
+    method: 'POST',
+    body: JSON.stringify(outcome),
+  });
+  return true;
+}
+
+async function runFiscalLoop(): Promise<void> {
+  console.log(`[agent] cash register: ${fiscalDevice.name}`);
+  for (;;) {
+    let didWork = false;
+    try {
+      didWork = await registerNextReceipt();
+    } catch (err) {
+      console.error('[agent] receipt relay failed:', err instanceof Error ? err.message : err);
+    }
+    if (!didWork) await new Promise((resolve) => setTimeout(resolve, FISCAL_POLL_INTERVAL_MS));
+  }
+}
+
 async function run(): Promise<void> {
   console.log(`[agent] polling ${CLOUD_URL} every ${POLL_INTERVAL_MS} ms`);
   let backoffMs = POLL_INTERVAL_MS;
@@ -234,4 +277,4 @@ console.log(
         : 'none (spooler only)'
   }`,
 );
-await Promise.all([runStatusLoop(), run()]);
+await Promise.all([runStatusLoop(), run(), runFiscalLoop()]);

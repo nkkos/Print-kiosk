@@ -16,6 +16,9 @@ export interface Payment {
   status: PaymentStatus;
   provider: string | null;
   receiptDelivery: ReceiptDelivery | null;
+  /** The eKasa sale receipt (server/fiscalReceiptStore.ts) — `url` is set
+   * once the register has issued it. */
+  receipt: { status: string; delivery: ReceiptDelivery; url: string | null } | null;
   amountCents: number;
   failureReason: string | null;
   expiresAt: string | null;

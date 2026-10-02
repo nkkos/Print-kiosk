@@ -212,6 +212,10 @@ export const en = {
     refundFailed:
       'We could not return the money automatically. Our staff have been notified and will refund you as soon as possible.',
     prepaidKept: 'Your order paid in advance stays in My orders — you can print it later.',
+    receiptPending: 'Issuing your receipt…',
+    receiptQr: 'Your receipt — scan the code to open it on your phone',
+    receiptEmailed: 'Your receipt has been sent to your e-mail.',
+    receiptPaper: 'Take your receipt from the receipt printer.',
   },
   finalisingSession: {
     message: 'Your documents have been printed. Thank you!',
