@@ -26,6 +26,10 @@ export interface PrintTask {
   // that's shown differently from "printing."
   binNumber: number | null;
   pickedUpAt: string | null;
+  /** The refund of this task's payment item once its print failed
+   * (docs/payments-business-requirements.md, "When printing fails") — null
+   * otherwise, and always for a portal order paid in advance. */
+  refund?: { status: 'pending' | 'succeeded' | 'failed'; amountCents: number } | null;
 }
 
 export interface SubmitPrintJobRequest {

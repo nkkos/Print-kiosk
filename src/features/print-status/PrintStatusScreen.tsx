@@ -4,6 +4,7 @@ import { useTranslation } from '../../i18n';
 import type { Language } from '../../i18n';
 import type { EndSessionReason, PrintOrder } from '../../types/kiosk';
 import type { PrintTask, PrintTaskErrorReason } from '../../services/printApi';
+import { formatEuroCents } from '../../utils/pricing';
 import styles from './PrintStatusScreen.module.css';
 
 // Print Status screen — see docs/domain/kiosk-session.md: "Print Status has
@@ -16,7 +17,12 @@ import styles from './PrintStatusScreen.module.css';
 // End Session and the inactivity timeout work again, so a customer who walks
 // away without tapping "Continue" doesn't leave the session — and its bin,
 // released when the session ends (server/sessionLifecycle.ts) — open forever.
-// A failure stays blocked until staff resolve it, as the doc requires.
+// A failure is resolved by the automatic refund of the failed items
+// (docs/payments-business-requirements.md, "When printing fails") — once
+// every task has finished and no refund is still in flight, the session can
+// end again; a refund that didn't go through is staff's to finish, they're
+// alerted on Telegram. There is no "Retry": a failed item's money is
+// already on its way back.
 //
 // Real backend (server/printerAdapter.ts): App.tsx submits a Print Task
 // automatically on entering this screen and polls its status. Only
@@ -31,7 +37,6 @@ interface PrintStatusScreenProps {
    * `printingItems`) — aggregated below into a single displayed status. */
   printTasks: PrintTask[];
   onPrintComplete: () => void;
-  onRetryPrint: () => void;
   onSimulatePrintOutcome: (
     outcome: 'success' | 'paper-jam' | 'out-of-paper' | 'out-of-ink',
   ) => void;
@@ -84,7 +89,6 @@ export function PrintStatusScreen({
   onRemoveItem,
   printTasks,
   onPrintComplete,
-  onRetryPrint,
   onSimulatePrintOutcome,
   onEndSession,
   onProceedToPayment,
@@ -101,17 +105,29 @@ export function PrintStatusScreen({
 }: PrintStatusScreenProps) {
   const t = useTranslation();
   // Aggregated across every task in the batch: still 'printing' while any
-  // task is non-terminal, 'failed' if any task failed (its reason is shown),
-  // 'succeeded' only once every task has succeeded.
-  const failedTask = printTasks.find((task) => task.status === 'failed');
+  // task is non-terminal; once all have finished, 'failed' if any failed
+  // (its reason and the refund are shown), else 'succeeded'.
+  const allFinished =
+    printTasks.length > 0 &&
+    printTasks.every((task) => task.status === 'succeeded' || task.status === 'failed');
+  const failedTasks = printTasks.filter((task) => task.status === 'failed');
   const status: PrintTask['status'] =
     printTasks.length === 0
       ? 'queued'
-      : failedTask
-        ? 'failed'
-        : printTasks.every((task) => task.status === 'succeeded')
-          ? 'succeeded'
-          : 'printing';
+      : !allFinished
+        ? 'printing'
+        : failedTasks.length > 0
+          ? 'failed'
+          : 'succeeded';
+  const anyPrinted = printTasks.some((task) => task.status === 'succeeded');
+  const refundedCents = failedTasks
+    .filter((task) => task.refund?.status === 'succeeded')
+    .reduce((sum, task) => sum + (task.refund?.amountCents ?? 0), 0);
+  const refundPending = failedTasks.some((task) => task.refund?.status === 'pending');
+  const refundFailed = failedTasks.some((task) => task.refund?.status === 'failed');
+  // Failed with no refund at all: a portal order paid in advance — it
+  // stays in My orders.
+  const prepaidNotPrinted = failedTasks.some((task) => !task.refund);
 
   // Pavilion launch plan (2026-09-16): all tasks in one batch share a
   // single mailbox bin (server/pickupBins.ts's reuse-by-session logic), so
@@ -126,7 +142,7 @@ export function PrintStatusScreen({
 
   return (
     <KioskScreenLayout
-      sessionActive={status === 'succeeded'}
+      sessionActive={status === 'succeeded' || (status === 'failed' && !refundPending)}
       onEndSession={onEndSession}
       cartItems={cartItems}
       onQuantityChange={onQuantityChange}
@@ -160,12 +176,30 @@ export function PrintStatusScreen({
         )}
         {status === 'failed' && (
           <>
-            <p className={styles.message}>{errorMessage(t, failedTask?.errorReason ?? null)}</p>
+            <p className={styles.message}>{errorMessage(t, failedTasks[0]?.errorReason ?? null)}</p>
+            {anyPrinted && (
+              <p className={styles.message}>
+                {t.printStatus.partlyPrinted}{' '}
+                {binNumber != null && t.printStatus.readyForPickupMessage(binNumber)}
+              </p>
+            )}
+            {refundedCents > 0 && (
+              <p className={styles.message} id="print-refunded">
+                {t.printStatus.refunded(formatEuroCents(refundedCents))}
+              </p>
+            )}
+            {refundPending && <p className={styles.message}>{t.printStatus.refundPending}</p>}
+            {refundFailed && (
+              <p className={styles.message} id="print-refund-failed">
+                {t.printStatus.refundFailed}
+              </p>
+            )}
+            {prepaidNotPrinted && <p className={styles.message}>{t.printStatus.prepaidKept}</p>}
             <Button
-              id="print-retry"
-              label={t.printStatus.retry}
-              onClick={onRetryPrint}
-              disabled={isConnectionLost}
+              id="print-continue"
+              label={t.printStatus.continueLabel}
+              onClick={onPrintComplete}
+              disabled={refundPending}
             />
           </>
         )}

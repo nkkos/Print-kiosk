@@ -197,15 +197,21 @@ export const sk: Translations = {
       `Hotovo! Vyzdvihnite si dokumenty z priehradky č. ${bin}.`,
     confirmPickedUpLabel: 'Vyzdvihol(a) som si dokumenty',
     continueLabel: 'Pokračovať',
-    retry: 'Skúsiť znova',
-    errorPrinterNotFound: 'Tlačiareň nie je k dispozícii. Skontrolujte ju a skúste znova.',
-    errorPaperJam: 'V tlačiarni sa zasekol papier. Odstráňte ho a skúste znova.',
-    errorOutOfPaper: 'V tlačiarni došiel papier. Doplňte ho a skúste znova.',
-    errorOutOfInk: 'V tlačiarni došiel atrament. Vymeňte ho a skúste znova.',
-    errorPrinterError:
-      'Tlačiareň potrebuje obsluhu. Personál bol upozornený — skúste to o chvíľu znova.',
-    errorSubmitFailed: 'Tlač zlyhala. Skúste znova.',
+    errorPrinterNotFound: 'Tlačiareň nie je dostupná.',
+    errorPaperJam: 'V tlačiarni sa zasekol papier.',
+    errorOutOfPaper: 'V tlačiarni došiel papier.',
+    errorOutOfInk: 'V tlačiarni došiel toner.',
+    errorPrinterError: 'Tlačiareň potrebuje obsluhu.',
+    errorSubmitFailed: 'Tlač zlyhala.',
     errorConversionFailed: 'Tento dokument sa nepodarilo pripraviť na tlač.',
+    partlyPrinted: 'Ostatné dokumenty sa vytlačili.',
+    refunded: (amount: string) =>
+      `Za to, čo sa nepodarilo vytlačiť, sme vám vrátili ${amount} na kartu.`,
+    refundPending: 'Vraciame vám peniaze za nevytlačené dokumenty na kartu…',
+    refundFailed:
+      'Peniaze sa nepodarilo vrátiť automaticky. Naši pracovníci sú informovaní a vrátia vám ich čo najskôr.',
+    prepaidKept:
+      'Vopred zaplatená objednávka zostáva v časti Moje objednávky — môžete ju vytlačiť neskôr.',
   },
   finalisingSession: {
     message: 'Vaše dokumenty boli vytlačené. Ďakujeme!',

@@ -29,7 +29,21 @@ export interface PaymentTerminal {
   /** Asks the terminal to stop waiting for a card. The returned outcome is
    * authoritative: a card accepted just before the abort means 'paid'. */
   abort(sessionId: string): Promise<TerminalOutcome>;
+  /** Returns part or all of a paid sale to the same card, without the card
+   * being presented again (to confirm with Viva for the CM30P). */
+  refund(input: RefundInput): Promise<RefundOutcome>;
 }
+
+export interface RefundInput {
+  /** The original sale's provider transaction id. */
+  transactionId: string;
+  amountCents: number;
+  /** Our refund id — the provider's merchant reference for this refund. */
+  reference: string;
+}
+
+export type RefundOutcome =
+  { state: 'succeeded'; refundId: string } | { state: 'failed'; reason: string };
 
 export type SimulatedOutcome = 'paid' | 'declined' | 'cancelled-on-terminal' | 'failed';
 
@@ -58,6 +72,14 @@ export const simulatorTerminal: PaymentTerminal & {
     const aborted: TerminalOutcome = { state: 'cancelled', reason: 'aborted' };
     simulatedSales.set(sessionId, aborted);
     return aborted;
+  },
+  async refund({ reference }) {
+    // PAYMENT_SIMULATE_REFUND_FAILURE=true exercises the "refund failed →
+    // staff refund by hand" path without a real terminal.
+    if (process.env.PAYMENT_SIMULATE_REFUND_FAILURE === 'true') {
+      return { state: 'failed', reason: 'simulated-refund-failure' };
+    }
+    return { state: 'succeeded', refundId: `sim-refund-${reference}` };
   },
   simulate(sessionId, outcome) {
     const current = simulatedSales.get(sessionId);

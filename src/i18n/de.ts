@@ -201,15 +201,21 @@ export const de: Translations = {
       `Fertig! Holen Sie Ihre Dokumente aus Fach Nr. ${bin} ab.`,
     confirmPickedUpLabel: 'Ich habe meine Dokumente abgeholt',
     continueLabel: 'Weiter',
-    retry: 'Erneut versuchen',
-    errorPrinterNotFound: 'Kein Drucker verfügbar. Bitte Drucker prüfen und erneut versuchen.',
-    errorPaperJam: 'Papierstau im Drucker. Bitte beheben und erneut versuchen.',
-    errorOutOfPaper: 'Kein Papier mehr im Drucker. Bitte nachfüllen und erneut versuchen.',
-    errorOutOfInk: 'Keine Tinte mehr im Drucker. Bitte ersetzen und erneut versuchen.',
-    errorPrinterError:
-      'Der Drucker benötigt Wartung. Unser Personal wurde benachrichtigt — bitte versuchen Sie es gleich noch einmal.',
-    errorSubmitFailed: 'Drucken fehlgeschlagen. Bitte erneut versuchen.',
+    errorPrinterNotFound: 'Der Drucker ist nicht verfügbar.',
+    errorPaperJam: 'Im Drucker gibt es einen Papierstau.',
+    errorOutOfPaper: 'Dem Drucker ist das Papier ausgegangen.',
+    errorOutOfInk: 'Dem Drucker ist der Toner ausgegangen.',
+    errorPrinterError: 'Der Drucker benötigt Wartung.',
+    errorSubmitFailed: 'Der Druck ist fehlgeschlagen.',
     errorConversionFailed: 'Dieses Dokument konnte nicht für den Druck vorbereitet werden.',
+    partlyPrinted: 'Ihre übrigen Dokumente wurden gedruckt.',
+    refunded: (amount: string) =>
+      `Für das, was nicht gedruckt werden konnte, haben wir ${amount} auf Ihre Karte zurückerstattet.`,
+    refundPending: 'Wir erstatten den Betrag für nicht Gedrucktes auf Ihre Karte…',
+    refundFailed:
+      'Die automatische Rückerstattung ist fehlgeschlagen. Unser Personal ist informiert und erstattet Ihnen den Betrag so schnell wie möglich.',
+    prepaidKept:
+      'Ihre vorab bezahlte Bestellung bleibt unter „Meine Bestellungen“ — Sie können sie später drucken.',
   },
   finalisingSession: {
     message: 'Ihre Dokumente wurden gedruckt. Vielen Dank!',

@@ -4,6 +4,7 @@ import { printTasks } from './db/schema.js';
 import type { SubmitFailureReason } from './printerAdapter.js';
 import { markOrderIssued } from './accountOrderStore.js';
 import { reportIncident } from './incidentStore.js';
+import { refundFailedPrintTask } from './paymentStore.js';
 
 // Real, DB-backed store for Print Tasks — see server/routes.ts and
 // docs/domain/kiosk-session.md, "Related entities" (Print Task).
@@ -144,6 +145,25 @@ export async function updatePrintTaskStatus(
       message: `Print task ${id} failed: ${errorReason}`,
       context: { printTaskId: id, errorReason, printerName },
     });
+  }
+
+  // A paid item that failed to print is refunded at once
+  // (docs/payments-business-requirements.md, "When printing fails"). Awaited
+  // so the stand's next poll already sees the refund's outcome.
+  if (status === 'failed') {
+    try {
+      await refundFailedPrintTask(id, errorReason ?? null);
+    } catch (err) {
+      console.error('[printTaskStore] Refund after print failure crashed:', id, err);
+      void reportIncident({
+        source: 'payment-terminal',
+        code: 'payment.refund-failed',
+        severity: 'emergency',
+        message: `Print task ${id} failed and its automatic refund crashed — check the payment and refund the customer by hand.`,
+        context: { printTaskId: id },
+        correlationId: id,
+      });
+    }
   }
 }
 

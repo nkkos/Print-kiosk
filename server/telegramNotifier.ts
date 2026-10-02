@@ -17,8 +17,9 @@ import type { IncidentRow } from './incidentStore.js';
 //    chat ids anyway. The on-duty person is still named in the message
 //    text, resolved from server/rosterStore.ts.
 // 2. Deduplication is a plain (source, code, recent notifiedAt) time-window
-//    check, not a correlationId chain — no real reportIncident() call site
-//    populates correlationId yet, so there's nothing to chain against.
+//    check, not a correlationId chain — narrowed to the same correlationId
+//    when an incident carries one (payment refunds, one per item), so every
+//    customer's refund still alerts.
 //
 // Dev fallback matches every other external-service integration in this
 // project (Resend, ClamAV): missing config logs instead of sending, rather
@@ -70,6 +71,10 @@ export async function notifyIfNeeded(incident: IncidentRow): Promise<void> {
           eq(incidents.source, incident.source),
           eq(incidents.code, incident.code),
           gt(incidents.notifiedAt, cooldownCutoff),
+          // An incident about one specific thing (the refund of one payment
+          // item) is never silenced by another one's alert — only a repeat
+          // about the same thing is.
+          incident.correlationId ? eq(incidents.correlationId, incident.correlationId) : undefined,
         ),
       )
       .limit(1);

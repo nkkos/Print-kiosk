@@ -1,8 +1,9 @@
 import { randomUUID } from 'node:crypto';
-import { and, eq, inArray, isNull } from 'drizzle-orm';
+import { and, desc, eq, inArray, isNull, sql } from 'drizzle-orm';
 import { db } from './db/client.js';
-import { paymentItems, paymentOrders, printOrders } from './db/schema.js';
-import { getPaymentTerminal, type TerminalOutcome } from './paymentTerminal.js';
+import { paymentItems, paymentOrders, paymentRefunds, printOrders } from './db/schema.js';
+import { getPaymentTerminal, type RefundOutcome, type TerminalOutcome } from './paymentTerminal.js';
+import { reportIncident } from './incidentStore.js';
 import { isPaperSizeOffered, supportsDuplex } from './printerAdapter.js';
 import { isPagesPerSheet, sheetSidesFor } from '../src/utils/nUpLayout.js';
 import { PRINT_VAT_RATE_PERCENT, unitPriceCentsFor } from '../src/utils/tariff.js';
@@ -346,7 +347,7 @@ export async function claimPaymentItemForPrint(paymentItemId: string): Promise<P
           db
             .select({ id: paymentOrders.id })
             .from(paymentOrders)
-            .where(eq(paymentOrders.status, 'paid')),
+            .where(inArray(paymentOrders.status, ['paid', 'partially-refunded'])),
         ),
       ),
     )
@@ -372,4 +373,129 @@ export async function claimPaymentItemForPrint(paymentItemId: string): Promise<P
 export async function paidOrderQuantity(printOrderId: string): Promise<number | null> {
   const order = (await prepaidOrders([printOrderId])).get(printOrderId);
   return order?.quantity ?? null;
+}
+
+function formatCents(cents: number): string {
+  return `${(cents / 100).toFixed(2).replace('.', ',')} €`;
+}
+
+/** Refund on print failure (docs/payments-business-requirements.md, "When
+ * printing fails"): returns the money for exactly the item whose print task
+ * failed — automatically, at once — and alerts staff on Telegram either
+ * way. Called from updatePrintTaskStatus; a task with no payment item (a
+ * portal order paid in advance) is left alone — that order stays "paid,
+ * awaiting print" in My orders. Safe to call twice: the item is claimed
+ * for refunding first. */
+export async function refundFailedPrintTask(
+  printTaskId: string,
+  errorReason: string | null,
+): Promise<void> {
+  const [item] = await db
+    .update(paymentItems)
+    .set({ refundedCents: sql`${paymentItems.amountCents}` })
+    .where(and(eq(paymentItems.printTaskId, printTaskId), eq(paymentItems.refundedCents, 0)))
+    .returning({
+      id: paymentItems.id,
+      paymentOrderId: paymentItems.paymentOrderId,
+      amountCents: paymentItems.amountCents,
+      description: paymentItems.description,
+    });
+  if (!item) return;
+  const [order] = await db
+    .select()
+    .from(paymentOrders)
+    .where(eq(paymentOrders.id, item.paymentOrderId));
+  const [refund] = await db
+    .insert(paymentRefunds)
+    .values({
+      paymentOrderId: item.paymentOrderId,
+      paymentItemId: item.id,
+      amountCents: item.amountCents,
+      reason: 'print-failed',
+    })
+    .returning({ id: paymentRefunds.id });
+
+  let outcome: RefundOutcome;
+  if (!order?.providerTransactionId) {
+    outcome = { state: 'failed', reason: 'no-transaction-id' };
+  } else {
+    try {
+      outcome = await getPaymentTerminal().refund({
+        transactionId: order.providerTransactionId,
+        amountCents: item.amountCents,
+        reference: refund.id,
+      });
+    } catch (error) {
+      outcome = {
+        state: 'failed',
+        reason: error instanceof Error ? error.message : 'refund-request-failed',
+      };
+    }
+  }
+
+  const now = new Date();
+  await db
+    .update(paymentRefunds)
+    .set(
+      outcome.state === 'succeeded'
+        ? { status: 'succeeded', providerRefundId: outcome.refundId, completedAt: now }
+        : { status: 'failed', failureReason: outcome.reason, completedAt: now },
+    )
+    .where(eq(paymentRefunds.id, refund.id));
+
+  if (outcome.state === 'succeeded') {
+    const items = await db
+      .select({ amountCents: paymentItems.amountCents, refundedCents: paymentItems.refundedCents })
+      .from(paymentItems)
+      .where(eq(paymentItems.paymentOrderId, item.paymentOrderId));
+    const fullyRefunded = items.every((line) => line.refundedCents >= line.amountCents);
+    await db
+      .update(paymentOrders)
+      .set({ status: fullyRefunded ? 'refunded' : 'partially-refunded', updatedAt: now })
+      .where(eq(paymentOrders.id, item.paymentOrderId));
+  } else {
+    // Not refunded after all — the item stays refundable, by staff (B7).
+    await db.update(paymentItems).set({ refundedCents: 0 }).where(eq(paymentItems.id, item.id));
+  }
+
+  const where = order?.standId ? `stand ${order.standId}` : 'a kiosk stand';
+  const what = `"${item.description}" failed to print on ${where} (${errorReason ?? 'unknown reason'})`;
+  const context = { paymentOrderId: item.paymentOrderId, paymentItemId: item.id, printTaskId };
+  void reportIncident(
+    outcome.state === 'succeeded'
+      ? {
+          source: 'payment-terminal',
+          code: 'payment.refunded-after-print-failure',
+          severity: 'critical',
+          message: `${what}. ${formatCents(item.amountCents)} was refunded to the customer's card automatically.`,
+          context,
+          correlationId: item.id,
+        }
+      : {
+          source: 'payment-terminal',
+          code: 'payment.refund-failed',
+          severity: 'emergency',
+          message: `${what}. The automatic refund of ${formatCents(item.amountCents)} FAILED (${outcome.reason}) — refund the customer by hand.`,
+          context,
+          correlationId: item.id,
+        },
+  );
+}
+
+export interface PrintTaskRefund {
+  status: 'pending' | 'succeeded' | 'failed';
+  amountCents: number;
+}
+
+/** The latest refund of the payment item a print task prints — shown on
+ * the stand's Print Status. Null when the task isn't a paid item's. */
+export async function getRefundForPrintTask(printTaskId: string): Promise<PrintTaskRefund | null> {
+  const [row] = await db
+    .select({ status: paymentRefunds.status, amountCents: paymentRefunds.amountCents })
+    .from(paymentRefunds)
+    .innerJoin(paymentItems, eq(paymentItems.id, paymentRefunds.paymentItemId))
+    .where(eq(paymentItems.printTaskId, printTaskId))
+    .orderBy(desc(paymentRefunds.createdAt))
+    .limit(1);
+  return (row as PrintTaskRefund | undefined) ?? null;
 }

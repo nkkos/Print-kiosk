@@ -198,15 +198,20 @@ export const en = {
     readyForPickupMessage: (bin: number) => `Ready! Collect your documents from slot #${bin}.`,
     confirmPickedUpLabel: "I've collected my documents",
     continueLabel: 'Continue',
-    retry: 'Retry',
-    errorPrinterNotFound: 'No printer is available. Please check the printer and retry.',
-    errorPaperJam: 'The printer has a paper jam. Please clear it and retry.',
-    errorOutOfPaper: 'The printer is out of paper. Please refill it and retry.',
-    errorOutOfInk: 'The printer is out of ink. Please replace it and retry.',
-    errorPrinterError:
-      'The printer needs attention. Our staff have been notified — please try again shortly.',
-    errorSubmitFailed: 'Printing failed. Please retry.',
+    errorPrinterNotFound: 'The printer is not available.',
+    errorPaperJam: 'The printer has a paper jam.',
+    errorOutOfPaper: 'The printer ran out of paper.',
+    errorOutOfInk: 'The printer ran out of toner.',
+    errorPrinterError: 'The printer needs attention.',
+    errorSubmitFailed: 'Printing failed.',
     errorConversionFailed: 'This document could not be prepared for printing.',
+    partlyPrinted: 'Your other documents were printed.',
+    refunded: (amount: string) =>
+      `We have returned ${amount} to your card for what could not be printed.`,
+    refundPending: 'We are returning the money for what could not be printed to your card…',
+    refundFailed:
+      'We could not return the money automatically. Our staff have been notified and will refund you as soon as possible.',
+    prepaidKept: 'Your order paid in advance stays in My orders — you can print it later.',
   },
   finalisingSession: {
     message: 'Your documents have been printed. Thank you!',

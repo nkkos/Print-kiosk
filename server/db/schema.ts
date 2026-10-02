@@ -167,7 +167,8 @@ export const paymentOrders = pgTable('payment_orders', {
   // Portal/shop rows: 'ready-for-payment' | 'paid' | 'cancelled-by-client'.
   // Kiosk terminal rows (server/paymentStore.ts): 'awaiting-card' -> 'paid' |
   // 'declined' | 'cancelled' | 'timed-out' | 'failed', 'unknown' while the
-  // outcome is being recovered (docs/payments-technical-requirements.md).
+  // outcome is being recovered (docs/payments-technical-requirements.md);
+  // after a refund 'partially-refunded' | 'refunded'.
   status: text('status').notNull().default('ready-for-payment'),
   amountCents: integer('amount_cents').notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
@@ -188,6 +189,39 @@ export const paymentOrders = pgTable('payment_orders', {
   receiptEmail: text('receipt_email'),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
+
+// Money returned on a kiosk payment (docs/payments-technical-requirements.md,
+// "Refund on print failure") — automatic for an item whose print failed,
+// later also by staff. One row per attempt, so a failed refund stays on
+// record next to the one that eventually succeeds.
+export const paymentRefunds = pgTable(
+  'payment_refunds',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    paymentOrderId: uuid('payment_order_id')
+      .notNull()
+      .references(() => paymentOrders.id, { onDelete: 'cascade' }),
+    // The item refunded — every refund so far covers exactly one.
+    paymentItemId: uuid('payment_item_id').references(() => paymentItems.id, {
+      onDelete: 'set null',
+    }),
+    amountCents: integer('amount_cents').notNull(),
+    // 'print-failed' | 'staff'
+    reason: text('reason').notNull(),
+    // 'pending' | 'succeeded' | 'failed'
+    status: text('status').notNull().default('pending'),
+    providerRefundId: text('provider_refund_id'),
+    failureReason: text('failure_reason'),
+    // 'system' or the staff account's id
+    createdBy: text('created_by').notNull().default('system'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    completedAt: timestamp('completed_at', { withTimezone: true }),
+  },
+  (table) => [
+    index('payment_refunds_payment_order_id_idx').on(table.paymentOrderId),
+    index('payment_refunds_payment_item_id_idx').on(table.paymentItemId),
+  ],
+);
 
 // The priced snapshot of each Cart item a kiosk payment covers
 // (docs/payments-technical-requirements.md, "Data model") — the server's own

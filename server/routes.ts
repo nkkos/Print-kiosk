@@ -129,6 +129,7 @@ import {
   setReceiptDelivery,
   claimPaymentItemForPrint,
   paidOrderQuantity,
+  getRefundForPrintTask,
 } from './paymentStore.js';
 import { getPaymentTerminal, simulatorTerminal } from './paymentTerminal.js';
 import {
@@ -1272,6 +1273,13 @@ router.get('/api/accounts/:accountId/orders', requireOwnAccount, async (req, res
 // staff in the admin panel, so nothing longer or stranger is stored.
 const STAND_ID_PATTERN = /^[A-Za-z0-9-]{1,16}$/;
 
+/** A print task as the stand sees it: plus the refund of its payment item,
+ * if printing failed (docs/payments-business-requirements.md, "When
+ * printing fails"), so Print Status can tell the customer. */
+async function withRefund<T extends { id: string }>(task: T | null) {
+  return task ? { ...task, refund: await getRefundForPrintTask(task.id) } : task;
+}
+
 // Kiosk card payments (docs/payments-technical-requirements.md, "API").
 // The stand sends what is being bought; the server prices it and runs the
 // terminal sale. 204 = nothing to pay (everything was paid in advance).
@@ -1416,7 +1424,7 @@ router.post('/api/print-tasks', requireStand, async (req, res) => {
       return;
     }
     if (claim.kind === 'already-printing') {
-      res.json(await getPrintTask(claim.taskId));
+      res.json(await withRefund(await getPrintTask(claim.taskId)));
       return;
     }
     const paid = claim.config;
@@ -1438,7 +1446,7 @@ router.post('/api/print-tasks', requireStand, async (req, res) => {
       resolvedStandId,
       claim.taskId,
     );
-    res.status(201).json(await tryPrintTask(task.id, resolvedSessionId));
+    res.status(201).json(await withRefund(await tryPrintTask(task.id, resolvedSessionId)));
     return;
   }
   if (typeof printOrderId !== 'string') {
@@ -1489,7 +1497,7 @@ router.get('/api/print-tasks/:id', requireStand, async (req, res) => {
     return;
   }
   const task = await tryPrintTask(id, null);
-  res.json(task);
+  res.json(await withRefund(task));
 });
 
 // Confirms a customer (or staff) actually took their printout from its
@@ -1542,7 +1550,7 @@ router.post(
       res.status(404).json({ error: 'Print task not found' });
       return;
     }
-    res.json(task);
+    res.json(await withRefund(task));
   },
 );
 

@@ -386,8 +386,8 @@ function App() {
   // is "fully system-controlled" (docs/domain/kiosk-session.md), so
   // submission isn't gated on a button click. Each item's real
   // `sourceFileId` (QR/Email only) prints that file for real; anything else
-  // falls back to a placeholder document server-side. handleRetryPrint
-  // resets `printTasks` to [] to trigger a fresh submission.
+  // falls back to a placeholder document server-side. Each paid item carries
+  // its `paymentItemId`, so the server prints exactly what was paid, once.
   useEffect(() => {
     if (screen !== 'print-status' || printingItems.length === 0 || printTasks.length > 0) return;
     let cancelled = false;
@@ -872,10 +872,6 @@ function App() {
 
   // Resetting to [] re-triggers the submit effect above, which submits a
   // fresh real batch (`printingItems` is untouched, so it's the same files).
-  function handleRetryPrint() {
-    setPrintTasks([]);
-  }
-
   async function handleSimulatePrintOutcome(
     outcome: 'success' | 'paper-jam' | 'out-of-paper' | 'out-of-ink',
   ) {
@@ -1232,7 +1228,6 @@ function App() {
           onRemoveItem={handleRemoveItem}
           printTasks={printTasks}
           onPrintComplete={handlePrintComplete}
-          onRetryPrint={handleRetryPrint}
           onSimulatePrintOutcome={handleSimulatePrintOutcome}
           onEndSession={handleEndSession}
           onProceedToPayment={handleProceedToPayment}

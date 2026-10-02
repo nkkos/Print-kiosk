@@ -1,6 +1,6 @@
 # Payments and fiscal receipts — technical requirements
 
-Business rules: `docs/payments-business-requirements.md`. Hardware and vendor background: `docs/payments-and-receipts-plan.md`. Status 2026-10-02: B1, B1b (print only what was paid) and B2 (kiosk Payment screen on the real API, receipt choice) are done, on the simulated terminal; receipts are only recorded as a choice until B4.
+Business rules: `docs/payments-business-requirements.md`. Hardware and vendor background: `docs/payments-and-receipts-plan.md`. Status 2026-10-02: B1, B1b, B2 and B3 are done, on the simulated terminal — server-side pricing, the kiosk Payment screen, printing only what was paid, and the automatic refund + Telegram alert when a paid item fails to print. Receipts are only recorded as a choice until B4.
 
 ## Principles
 
@@ -85,7 +85,7 @@ Terminal map: `VIVA_TERMINAL_IDS="A:16001234,B:16005678"` (stand id → Viva ter
 - **B1** — tables + payment state machine + terminal simulator + `/api/payments` routes; server-side pricing shared with the frontend. _Done 2026-10-02._
 - **B1b** — print tasks require a paid item; the print settings come from the paid line, a repeat submission returns the same task. _Done 2026-10-02._ Still open: count pages on the server instead of trusting the stand's `pageCount`.
 - **B2** — kiosk Payment screen on the real API (90 s countdown, declined/timeout/cancel with "Try again"), receipt-choice screen (QR default after 30 s), prices shown in euros. _Done 2026-10-02._ The Print Status "Retry" button now returns the same tasks (no reprint) — it is replaced by the refund flow in B3.
-- **B3** — refund on print failure + incidents/Telegram.
+- **B3** — refund on print failure + incidents/Telegram. _Done 2026-10-02:_ `refundFailedPrintTask` (`server/paymentStore.ts`, called from `updatePrintTaskStatus`), `payment_refunds` table, `payment.refunded-after-print-failure` (critical) / `payment.refund-failed` (emergency) incidents with the payment item as `correlationId`, so every refund alerts on Telegram despite the 10-minute cooldown; Print Status shows the refund instead of a Retry button. `PAYMENT_SIMULATE_REFUND_FAILURE=true` makes the simulator's refund fail. Return receipts follow in B4.
 - **B4** — fiscal register adapter + simulator + agent relay; receipts (QR / e-mail / paper).
 - **B5** — Viva Cloud Terminal client against the demo account (phone with the Viva Terminal DEMO app).
 - **B6** — portal online checkout (Smart Checkout) + webhook.
