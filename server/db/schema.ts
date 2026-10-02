@@ -164,12 +164,53 @@ export const paymentOrders = pgTable('payment_orders', {
   // being inferred by joining through either child table. Not set for the kiosk's own
   // (still-mocked) Cart/Payment flow, which has no account requirement.
   accountId: uuid('account_id').references(() => accounts.id, { onDelete: 'set null' }),
-  // 'ready-for-payment' | 'paid' | 'cancelled-by-client'
+  // Portal/shop rows: 'ready-for-payment' | 'paid' | 'cancelled-by-client'.
+  // Kiosk terminal rows (server/paymentStore.ts): 'awaiting-card' -> 'paid' |
+  // 'declined' | 'cancelled' | 'timed-out' | 'failed', 'unknown' while the
+  // outcome is being recovered (docs/payments-technical-requirements.md).
   status: text('status').notNull().default('ready-for-payment'),
   amountCents: integer('amount_cents').notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   paidAt: timestamp('paid_at', { withTimezone: true }),
+  // 'online-checkout' (portal/shop, still simulated) | 'kiosk-terminal'
+  channel: text('channel').notNull().default('online-checkout'),
+  standId: text('stand_id'),
+  // 'simulator' | 'viva' — set for kiosk terminal payments
+  provider: text('provider'),
+  providerSessionId: text('provider_session_id'),
+  providerTransactionId: text('provider_transaction_id'),
+  failureReason: text('failure_reason'),
+  // The customer's 90-second window on the terminal.
+  expiresAt: timestamp('expires_at', { withTimezone: true }),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
+
+// The priced snapshot of each Cart item a kiosk payment covers
+// (docs/payments-technical-requirements.md, "Data model") — the server's own
+// price, and the print configuration a print task is later created from.
+export const paymentItems = pgTable(
+  'payment_items',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    paymentOrderId: uuid('payment_order_id')
+      .notNull()
+      .references(() => paymentOrders.id, { onDelete: 'cascade' }),
+    // The stand's own Cart item id, so the stand can match lines back.
+    cartItemId: text('cart_item_id').notNull(),
+    description: text('description').notNull(),
+    quantity: integer('quantity').notNull(),
+    unitPriceCents: integer('unit_price_cents').notNull(),
+    amountCents: integer('amount_cents').notNull(),
+    vatRatePercent: integer('vat_rate_percent').notNull(),
+    // Stringified JSON (same convention as the rest of this schema):
+    // { fileId, sourceFileOrigin, paperSize, sides, color, orientation,
+    //   scale, pages, pagesPerSheet, pageCount }
+    printConfig: text('print_config').notNull(),
+    printTaskId: uuid('print_task_id'),
+    refundedCents: integer('refunded_cents').notNull().default(0),
+  },
+  (table) => [index('payment_items_payment_order_id_idx').on(table.paymentOrderId)],
+);
 
 export const printOrders = pgTable(
   'print_orders',

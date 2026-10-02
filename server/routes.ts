@@ -120,6 +120,14 @@ import {
 } from './printTaskStore.js';
 import { tryPrintTask } from './printOrchestrator.js';
 import {
+  createKioskPayment,
+  refreshPayment,
+  cancelPayment,
+  getProviderSessionId,
+  PaymentInputError,
+} from './paymentStore.js';
+import { getPaymentTerminal, simulatorTerminal } from './paymentTerminal.js';
+import {
   requireStand,
   requireEmailRelay,
   requireSimulationAllowed,
@@ -1259,6 +1267,80 @@ router.get('/api/accounts/:accountId/orders', requireOwnAccount, async (req, res
 // Short, printable stand labels only ('A', 'B', 'stand-2') — it's shown to
 // staff in the admin panel, so nothing longer or stranger is stored.
 const STAND_ID_PATTERN = /^[A-Za-z0-9-]{1,16}$/;
+
+// Kiosk card payments (docs/payments-technical-requirements.md, "API").
+// The stand sends what is being bought; the server prices it and runs the
+// terminal sale. 204 = nothing to pay (everything was paid in advance).
+router.post('/api/payments', requireStand, async (req, res) => {
+  const { sessionId, standId, items } = (req.body ?? {}) as {
+    sessionId?: unknown;
+    standId?: unknown;
+    items?: unknown;
+  };
+  try {
+    const payment = await createKioskPayment({
+      sessionId: typeof sessionId === 'string' ? sessionId : null,
+      standId:
+        (req as StandRequest).standId ??
+        (typeof standId === 'string' && STAND_ID_PATTERN.test(standId) ? standId : null),
+      items: Array.isArray(items) ? items : [],
+    });
+    if (!payment) {
+      res.status(204).end();
+      return;
+    }
+    res.status(201).json(payment);
+  } catch (error) {
+    if (error instanceof PaymentInputError) {
+      res.status(400).json({ error: error.message });
+      return;
+    }
+    throw error;
+  }
+});
+
+router.get('/api/payments/:id', requireStand, async (req, res) => {
+  const payment = await refreshPayment(paramString(req.params.id));
+  if (!payment) {
+    res.status(404).json({ error: 'Payment not found' });
+    return;
+  }
+  res.json(payment);
+});
+
+router.post('/api/payments/:id/cancel', requireStand, async (req, res) => {
+  const payment = await cancelPayment(paramString(req.params.id));
+  if (!payment) {
+    res.status(404).json({ error: 'Payment not found' });
+    return;
+  }
+  res.json(payment);
+});
+
+// "Simulate …" terminal outcomes — only while the terminal itself is the
+// simulator (PAYMENT_TERMINAL unset), so a real terminal can't be faked.
+router.post('/api/payments/:id/simulate', requireStand, async (req, res) => {
+  if (getPaymentTerminal().provider !== 'simulator') {
+    res.status(403).json({ error: 'Simulated payment outcomes are disabled' });
+    return;
+  }
+  const { outcome } = (req.body ?? {}) as { outcome?: unknown };
+  if (
+    outcome !== 'paid' &&
+    outcome !== 'declined' &&
+    outcome !== 'cancelled-on-terminal' &&
+    outcome !== 'failed'
+  ) {
+    res.status(400).json({ error: 'Unknown outcome' });
+    return;
+  }
+  const sessionId = await getProviderSessionId(paramString(req.params.id));
+  if (!sessionId || !simulatorTerminal.simulate(sessionId, outcome)) {
+    res.status(409).json({ error: 'Payment is not waiting for a card' });
+    return;
+  }
+  res.json(await refreshPayment(paramString(req.params.id)));
+});
 
 router.post('/api/print-tasks', requireStand, async (req, res) => {
   const {

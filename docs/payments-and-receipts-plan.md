@@ -2,6 +2,8 @@
 
 Decisions confirmed with the product owner on 2026-10-01/02. Implementation hasn't started; the kiosk's Payment step is still the "Simulate …" mock.
 
+Detailed requirements: `docs/payments-business-requirements.md` (business rules) and `docs/payments-technical-requirements.md` (design and build order).
+
 ## Card payments — Viva.com
 
 - Acquirer: **Viva.com**. Terminal: **Ciontek CM30P** (chip & PIN + contactless, unattended-certified by Viva), **one per kiosk stand**, 330 € each. Chosen over the contactless-only CM30C because cards periodically demand chip + PIN (strong customer authentication) and amounts above the contactless limit need a PIN.
