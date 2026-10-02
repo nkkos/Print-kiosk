@@ -399,6 +399,7 @@ function App() {
           fileId: item.sourceFileId,
           sourceFileOrigin: item.sourceFileOrigin,
           printOrderId: item.sourcePaidOrderId,
+          paymentItemId: item.paymentItemId,
           paperSize: item.paperSize,
           sides: item.sides,
           color: item.color,
@@ -842,13 +843,14 @@ function App() {
     setScreen('payment-status');
   }
 
-  function handlePaymentSuccess() {
+  // `paidItems` is the batch with each item's server `paymentItemId` attached
+  // — Print Status submits it, and the server prints only what was paid
+  // (docs/payments-technical-requirements.md, "Principles" 3).
+  function handlePaymentSuccess(paidItems: PrintOrder[]) {
     // Only the paid batch leaves the cart — anything left unchecked stays
     // behind (docs/cart-requirements.md, "Selection for payment").
-    setCart((current) =>
-      current.filter((item) => !paymentItems.some((paid) => paid.id === item.id)),
-    );
-    setPrintingItems(paymentItems);
+    setCart((current) => current.filter((item) => !paidItems.some((paid) => paid.id === item.id)));
+    setPrintingItems(paidItems);
     setPaymentItems([]);
     setScreen('print-status');
   }
@@ -1191,6 +1193,7 @@ function App() {
       <LanguageProvider language={language}>
         <PaymentStatusScreen
           paymentItems={paymentItems}
+          sessionId={session?.id ?? null}
           cartItems={cart}
           onQuantityChange={handleQuantityChange}
           onRemoveItem={handleRemoveItem}

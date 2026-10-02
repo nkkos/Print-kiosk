@@ -44,6 +44,9 @@ export interface SubmitPrintJobRequest {
    * 'paid' -> 'issued' transition (docs/personal-account-requirements.md,
    * "Order status lifecycle"). Omitted for QR/Email/unpaid My-files jobs. */
   printOrderId?: string;
+  /** The paid payment line (server/paymentStore.ts) this job prints — the
+   * server then prints exactly what was paid for, once. */
+  paymentItemId?: string;
   paperSize?: 'A4' | 'A5';
   sides?: 'single' | 'double';
   color?: 'bw' | 'color';

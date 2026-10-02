@@ -76,6 +76,14 @@ export interface PrintOrder {
    * docs/cart-requirements.md ("Quantity"). */
   quantity: number;
   unitPrice: number;
+  /** Pages selected for printing — what `unitPrice` was computed from. The
+   * server prices the payment from it again (server/paymentStore.ts).
+   * Absent on paid portal orders, which the server prices from the order. */
+  pageCount?: number;
+  /** Set once paid: the server's payment line this item prints under —
+   * Print Status submits it so the server prints only what was paid
+   * (docs/payments-technical-requirements.md, "Principles" 3). */
+  paymentItemId?: string;
   /** Present only on orders paid in advance via the web portal
    * (docs/personal-account-requirements.md, "Paid orders awaiting print").
    * How many copies were already paid for — see `computeItemPrice`

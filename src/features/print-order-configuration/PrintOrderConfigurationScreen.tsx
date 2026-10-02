@@ -9,7 +9,7 @@ import { getUploadedFileContentUrl } from '../../services/uploadedFileApi';
 import { standHeaders } from '../../services/standAuth';
 import { getAccountFileContentUrl } from '../../services/accountFileApi';
 import { supportsDuplex, OFFERED_PAPER_SIZES } from '../../utils/printCapabilities';
-import { computeUnitPrice } from '../../utils/pricing';
+import { computeUnitPrice, formatEuro } from '../../utils/pricing';
 import {
   PAGES_PER_SHEET_OPTIONS,
   computeNUpLayout,
@@ -353,6 +353,7 @@ export function PrintOrderConfigurationScreen({
       pagesPerSheet: effectivePagesPerSheet,
       quantity,
       unitPrice,
+      pageCount: pagesToPrint,
     });
   }
 
@@ -637,7 +638,7 @@ export function PrintOrderConfigurationScreen({
         </div>
 
         <p className={styles.price}>
-          {t.printOrderConfiguration.price((unitPrice * quantity).toFixed(2))}
+          {t.printOrderConfiguration.price(formatEuro(unitPrice * quantity))}
         </p>
 
         <Button

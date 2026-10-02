@@ -182,6 +182,10 @@ export const paymentOrders = pgTable('payment_orders', {
   failureReason: text('failure_reason'),
   // The customer's 90-second window on the terminal.
   expiresAt: timestamp('expires_at', { withTimezone: true }),
+  // The customer's receipt choice after paying: 'qr' | 'email' | 'paper'
+  // (docs/payments-business-requirements.md, "Receipts").
+  receiptDelivery: text('receipt_delivery'),
+  receiptEmail: text('receipt_email'),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
 

@@ -20,7 +20,7 @@ import {
   type CreateOrderParams,
 } from '../src/services/accountFileApi';
 import { supportsDuplex, OFFERED_PAPER_SIZES } from '../src/utils/printCapabilities';
-import { computeUnitPrice } from '../src/utils/pricing';
+import { computeUnitPrice, formatEuro } from '../src/utils/pricing';
 import {
   usePreview,
   usePageRangeSelection,
@@ -428,7 +428,7 @@ export function ConfigureAndPay({
           onChange={(e) => setQuantity(Math.max(1, Number(e.target.value) || 1))}
         />
       </label>
-      <p>Price: ${(unitPrice * quantity).toFixed(2)}</p>
+      <p>Price: {formatEuro(unitPrice * quantity)}</p>
       {error && <p className="error">{error}</p>}
       <button type="button" onClick={handleSave} disabled={isSubmitting}>
         Save

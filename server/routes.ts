@@ -114,6 +114,7 @@ import {
   createPrintTask,
   updatePrintTaskStatus,
   markPrintTaskPickedUp,
+  findActiveTaskForPrintOrder,
   getPrintTask,
   type PrintTaskErrorReason,
   type PrintOptions,
@@ -125,6 +126,9 @@ import {
   cancelPayment,
   getProviderSessionId,
   PaymentInputError,
+  setReceiptDelivery,
+  claimPaymentItemForPrint,
+  paidOrderQuantity,
 } from './paymentStore.js';
 import { getPaymentTerminal, simulatorTerminal } from './paymentTerminal.js';
 import {
@@ -1317,6 +1321,29 @@ router.post('/api/payments/:id/cancel', requireStand, async (req, res) => {
   res.json(payment);
 });
 
+router.post('/api/payments/:id/receipt', requireStand, async (req, res) => {
+  const { via, email } = (req.body ?? {}) as { via?: unknown; email?: unknown };
+  if (via !== 'qr' && via !== 'email' && via !== 'paper') {
+    res.status(400).json({ error: 'Unknown receipt delivery' });
+    return;
+  }
+  const address = typeof email === 'string' ? email.trim() : '';
+  if (via === 'email' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(address)) {
+    res.status(400).json({ error: 'Invalid e-mail address' });
+    return;
+  }
+  const payment = await setReceiptDelivery(
+    paramString(req.params.id),
+    via,
+    via === 'email' ? address : null,
+  );
+  if (!payment) {
+    res.status(404).json({ error: 'Payment not found' });
+    return;
+  }
+  res.json(payment);
+});
+
 // "Simulate …" terminal outcomes — only while the terminal itself is the
 // simulator (PAYMENT_TERMINAL unset), so a real terminal can't be faked.
 router.post('/api/payments/:id/simulate', requireStand, async (req, res) => {
@@ -1373,6 +1400,62 @@ router.post('/api/print-tasks', requireStand, async (req, res) => {
     pages?: unknown;
   };
   const resolvedSessionId = typeof sessionId === 'string' ? sessionId : null;
+  const resolvedStandId =
+    (req as StandRequest).standId ??
+    (typeof standId === 'string' && STAND_ID_PATTERN.test(standId) ? standId : null);
+  const { paymentItemId } = req.body as { paymentItemId?: unknown };
+
+  // Nothing prints unpaid (docs/payments-technical-requirements.md,
+  // "Principles" 3): a paid payment item prints exactly once, with the
+  // settings that were paid for; a portal order paid in advance prints at
+  // most the copies it covers. A repeated submission gets its task back.
+  if (typeof paymentItemId === 'string') {
+    const claim = await claimPaymentItemForPrint(paymentItemId);
+    if (claim.kind === 'not-paid') {
+      res.status(402).json({ error: 'This item has not been paid for' });
+      return;
+    }
+    if (claim.kind === 'already-printing') {
+      res.json(await getPrintTask(claim.taskId));
+      return;
+    }
+    const paid = claim.config;
+    const task = await createPrintTask(
+      resolvedSessionId,
+      paid.sourcePaidOrderId,
+      {
+        fileId: paid.fileId,
+        sourceFileOrigin: paid.sourceFileOrigin === 'account' ? 'account' : undefined,
+        paperSize: paid.paperSize,
+        sides: paid.sides,
+        color: paid.color,
+        orientation: paid.orientation,
+        scale: paid.scale,
+        pages: paid.pages,
+        pagesPerSheet: isPagesPerSheet(paid.pagesPerSheet) ? paid.pagesPerSheet : undefined,
+        copies: paid.quantity,
+      },
+      resolvedStandId,
+      claim.taskId,
+    );
+    res.status(201).json(await tryPrintTask(task.id, resolvedSessionId));
+    return;
+  }
+  if (typeof printOrderId !== 'string') {
+    res.status(402).json({ error: 'Payment required' });
+    return;
+  }
+  const existing = await findActiveTaskForPrintOrder(printOrderId);
+  if (existing) {
+    res.json(existing);
+    return;
+  }
+  const paidCopies = await paidOrderQuantity(printOrderId);
+  if (paidCopies === null) {
+    res.status(402).json({ error: 'This order is not awaiting print' });
+    return;
+  }
+
   const options: PrintOptions = {
     fileId: typeof fileId === 'string' ? fileId : undefined,
     sourceFileOrigin: sourceFileOrigin === 'account' ? 'account' : undefined,
@@ -1384,16 +1467,10 @@ router.post('/api/print-tasks', requireStand, async (req, res) => {
     scale: scale === 'fit' ? 'fit' : scale === 'original' ? 'original' : undefined,
     pages: typeof pages === 'string' ? pages : undefined,
     pagesPerSheet: isPagesPerSheet(pagesPerSheet) ? pagesPerSheet : undefined,
-    copies: typeof copies === 'number' ? copies : undefined,
+    copies: Math.min(typeof copies === 'number' ? copies : paidCopies, paidCopies),
   };
 
-  const task = await createPrintTask(
-    resolvedSessionId,
-    typeof printOrderId === 'string' ? printOrderId : undefined,
-    options,
-    (req as StandRequest).standId ??
-      (typeof standId === 'string' && STAND_ID_PATTERN.test(standId) ? standId : null),
-  );
+  const task = await createPrintTask(resolvedSessionId, printOrderId, options, resolvedStandId);
   // Pavilion launch plan (2026-09-16): two stands share one printer feeding
   // a 4-bin mailbox (server/pickupBins.ts) — a task only actually prints
   // once a bin is free. If all four are occupied right now, this call is a

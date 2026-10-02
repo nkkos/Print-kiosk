@@ -62,10 +62,12 @@ export async function createPrintTask(
   printOrderId: string | undefined,
   options: PrintOptions,
   standId: string | null = null,
+  id?: string,
 ): Promise<PrintTask> {
   const [row] = await db
     .insert(printTasks)
     .values({
+      ...(id ? { id } : {}),
       sessionId,
       printOrderId: printOrderId ?? null,
       printOptions: JSON.stringify(options),
@@ -296,4 +298,17 @@ export async function releaseBinsForEndedSession(sessionId: string): Promise<voi
         isNull(printTasks.pickedUpAt),
       ),
     );
+}
+
+/** The task already printing (or printed) a paid-in-advance portal order —
+ * a repeated submission from the stand gets this one back instead of a
+ * second free printout. */
+export async function findActiveTaskForPrintOrder(printOrderId: string): Promise<PrintTask | null> {
+  const [row] = await db
+    .select(selectColumns)
+    .from(printTasks)
+    .where(and(eq(printTasks.printOrderId, printOrderId), sql`${printTasks.status} <> 'failed'`))
+    .orderBy(desc(printTasks.createdAt))
+    .limit(1);
+  return (row as PrintTask | undefined) ?? null;
 }

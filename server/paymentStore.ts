@@ -1,4 +1,5 @@
-import { and, eq, inArray } from 'drizzle-orm';
+import { randomUUID } from 'node:crypto';
+import { and, eq, inArray, isNull } from 'drizzle-orm';
 import { db } from './db/client.js';
 import { paymentItems, paymentOrders, printOrders } from './db/schema.js';
 import { getPaymentTerminal, type TerminalOutcome } from './paymentTerminal.js';
@@ -31,7 +32,8 @@ export interface PaymentItemInput {
   scale: 'fit' | 'original';
   pages?: string;
   pagesPerSheet: number;
-  /** Pages selected for printing — what the stand priced from. */
+  /** Pages selected for printing — what the stand priced from. 0 for a
+   * paid-in-advance item, which is priced from its portal order instead. */
   pageCount: number;
   quantity: number;
 }
@@ -39,6 +41,8 @@ export interface PaymentItemInput {
 export interface PaymentView {
   id: string;
   status: string;
+  provider: string | null;
+  receiptDelivery: string | null;
   amountCents: number;
   failureReason: string | null;
   expiresAt: string | null;
@@ -70,7 +74,14 @@ function parseItem(raw: unknown): PaymentItemInput {
   const pageCount = int(item.pageCount);
   const quantity = int(item.quantity);
   const paperSize = str(item.paperSize);
-  if (!cartItemId || !pageCount || !quantity || !paperSize || !isPaperSizeOffered(paperSize)) {
+  const sourcePaidOrderId = str(item.sourcePaidOrderId);
+  if (
+    !cartItemId ||
+    !quantity ||
+    !paperSize ||
+    !isPaperSizeOffered(paperSize) ||
+    (!pageCount && !sourcePaidOrderId)
+  ) {
     throw new PaymentInputError('Invalid cart item');
   }
   if (item.sides !== 'single' && item.sides !== 'double') throw new PaymentInputError('sides');
@@ -85,7 +96,7 @@ function parseItem(raw: unknown): PaymentItemInput {
     fileName: str(item.fileName) ?? 'document',
     fileId: str(item.fileId),
     sourceFileOrigin: item.sourceFileOrigin === 'account' ? 'account' : 'upload',
-    sourcePaidOrderId: str(item.sourcePaidOrderId),
+    sourcePaidOrderId,
     paperSize,
     sides: item.sides,
     color: item.color,
@@ -93,20 +104,28 @@ function parseItem(raw: unknown): PaymentItemInput {
     scale: item.scale === 'original' ? 'original' : 'fit',
     pages: str(item.pages),
     pagesPerSheet,
-    pageCount,
+    pageCount: pageCount ?? 0,
     quantity,
   };
 }
 
-/** Copies already paid for online — read from the portal order itself,
- * never taken from the stand. */
-async function prepaidQuantities(orderIds: string[]): Promise<Map<string, number>> {
+/** Portal orders paid in advance — read from the order itself, never taken
+ * from the stand: how many copies are paid, and the order's own unit price,
+ * which extra copies raised on-site are charged at (the same price the
+ * stand's Cart shows for them). */
+async function prepaidOrders(
+  orderIds: string[],
+): Promise<Map<string, { quantity: number; unitPriceCents: number }>> {
   if (orderIds.length === 0) return new Map();
   const rows = await db
-    .select({ id: printOrders.id, quantity: printOrders.quantity })
+    .select({
+      id: printOrders.id,
+      quantity: printOrders.quantity,
+      unitPriceCents: printOrders.unitPriceCents,
+    })
     .from(printOrders)
     .where(and(inArray(printOrders.id, orderIds), eq(printOrders.status, 'paid')));
-  return new Map(rows.map((row) => [row.id, row.quantity]));
+  return new Map(rows.map((row) => [row.id, row]));
 }
 
 /** Prices the selection and starts the sale on the stand's terminal. Items
@@ -121,23 +140,31 @@ export async function createKioskPayment(input: {
     throw new PaymentInputError('No items');
   }
   const items = input.items.map(parseItem);
-  const prepaid = await prepaidQuantities(
+  const prepaid = await prepaidOrders(
     items.flatMap((item) => (item.sourcePaidOrderId ? [item.sourcePaidOrderId] : [])),
   );
 
   const priced = items.map((item) => {
-    const unitPriceCents = unitPriceCentsFor(
-      sheetSidesFor(item.pageCount, item.pagesPerSheet as 1 | 2 | 4 | 6),
-      item.paperSize,
-      item.color,
-      item.sides,
-    );
+    const order = item.sourcePaidOrderId ? prepaid.get(item.sourcePaidOrderId) : undefined;
+    if (item.sourcePaidOrderId && !order) {
+      throw new PaymentInputError('The paid order is not awaiting print');
+    }
+    const unitPriceCents = order
+      ? order.unitPriceCents
+      : unitPriceCentsFor(
+          sheetSidesFor(item.pageCount, item.pagesPerSheet as 1 | 2 | 4 | 6),
+          item.paperSize,
+          item.color,
+          item.sides,
+        );
     if (unitPriceCents === null) throw new PaymentInputError('No price for this configuration');
-    const paidQuantity = item.sourcePaidOrderId ? (prepaid.get(item.sourcePaidOrderId) ?? 0) : 0;
-    const chargedQuantity = Math.max(0, item.quantity - paidQuantity);
+    const chargedQuantity = Math.max(0, item.quantity - (order?.quantity ?? 0));
     return { item, unitPriceCents, chargedQuantity };
   });
-  const amountCents = priced.reduce(
+  // Lines that cost nothing (fully paid in advance) aren't part of this
+  // payment — they print on their portal order alone.
+  const charged = priced.filter((line) => line.chargedQuantity > 0);
+  const amountCents = charged.reduce(
     (sum, line) => sum + line.unitPriceCents * line.chargedQuantity,
     0,
   );
@@ -157,7 +184,7 @@ export async function createKioskPayment(input: {
     })
     .returning({ id: paymentOrders.id });
   await db.insert(paymentItems).values(
-    priced.map(({ item, unitPriceCents, chargedQuantity }) => ({
+    charged.map(({ item, unitPriceCents, chargedQuantity }) => ({
       paymentOrderId: order.id,
       cartItemId: item.cartItemId,
       description: describeItem(item),
@@ -266,9 +293,83 @@ export async function getPaymentView(id: string): Promise<PaymentView | null> {
   return {
     id: order.id,
     status: order.status,
+    provider: order.provider,
+    receiptDelivery: order.receiptDelivery,
     amountCents: order.amountCents,
     failureReason: order.failureReason,
     expiresAt: order.expiresAt?.toISOString() ?? null,
     items,
   };
+}
+
+/** The customer's receipt choice (docs/payments-business-requirements.md,
+ * "Receipts") — only once paid, and only once. Actual delivery is the
+ * fiscal register's job (B4). */
+export async function setReceiptDelivery(
+  id: string,
+  via: 'qr' | 'email' | 'paper',
+  email: string | null,
+): Promise<PaymentView | null> {
+  await db
+    .update(paymentOrders)
+    .set({ receiptDelivery: via, receiptEmail: email, updatedAt: new Date() })
+    .where(
+      and(
+        eq(paymentOrders.id, id),
+        eq(paymentOrders.status, 'paid'),
+        isNull(paymentOrders.receiptDelivery),
+      ),
+    );
+  return getPaymentView(id);
+}
+
+export type PrintClaim =
+  | { kind: 'claimed'; taskId: string; config: PaymentItemInput }
+  | { kind: 'already-printing'; taskId: string }
+  | { kind: 'not-paid' };
+
+/** Nothing prints unpaid (docs/payments-technical-requirements.md,
+ * "Principles" 3): reserves a paid payment item for exactly one print task.
+ * The print settings come from what was paid for, not from the request. A
+ * repeated submission gets the existing task back. */
+export async function claimPaymentItemForPrint(paymentItemId: string): Promise<PrintClaim> {
+  const taskId = randomUUID();
+  const [claimed] = await db
+    .update(paymentItems)
+    .set({ printTaskId: taskId })
+    .where(
+      and(
+        eq(paymentItems.id, paymentItemId),
+        isNull(paymentItems.printTaskId),
+        inArray(
+          paymentItems.paymentOrderId,
+          db
+            .select({ id: paymentOrders.id })
+            .from(paymentOrders)
+            .where(eq(paymentOrders.status, 'paid')),
+        ),
+      ),
+    )
+    .returning({ printConfig: paymentItems.printConfig });
+  if (claimed) {
+    return {
+      kind: 'claimed',
+      taskId,
+      config: JSON.parse(claimed.printConfig) as PaymentItemInput,
+    };
+  }
+  const [existing] = await db
+    .select({ printTaskId: paymentItems.printTaskId })
+    .from(paymentItems)
+    .where(eq(paymentItems.id, paymentItemId));
+  return existing?.printTaskId
+    ? { kind: 'already-printing', taskId: existing.printTaskId }
+    : { kind: 'not-paid' };
+}
+
+/** How many copies a paid-in-advance portal order covers, if it's still
+ * awaiting print — the cap for printing it without a payment. */
+export async function paidOrderQuantity(printOrderId: string): Promise<number | null> {
+  const order = (await prepaidOrders([printOrderId])).get(printOrderId);
+  return order?.quantity ?? null;
 }

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Button } from '../Button/Button';
-import { computeItemPrice } from '../../utils/pricing';
+import { computeItemPrice, formatEuro } from '../../utils/pricing';
 import { useTranslation } from '../../i18n';
 import type { PrintOrder } from '../../types/kiosk';
 import styles from './CartPanel.module.css';
@@ -134,12 +134,12 @@ export function CartPanel({
                 <span>{t.cart.qty(item.quantity)}</span>
               )}
 
-              <span className={styles.price}>${computeItemPrice(item).toFixed(2)}</span>
+              <span className={styles.price}>{formatEuro(computeItemPrice(item))}</span>
             </div>
           </li>
         ))}
       </ul>
-      <p className={styles.total}>{t.cart.total(total.toFixed(2))}</p>
+      <p className={styles.total}>{t.cart.total(formatEuro(total))}</p>
 
       {onProceedToPayment && relevantItems.length > 0 && (
         <>

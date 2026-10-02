@@ -33,3 +33,16 @@ export function computeUnitPrice(
   const cents = unitPriceCentsFor(sheetSidesFor(pageCount, pagesPerSheet), paperSize, color, sides);
   return (cents ?? 0) / 100;
 }
+
+// Prices are in euros (src/utils/tariff.ts) — shown the Slovak way,
+// "1,40 €", in every UI language, since that's what the terminal and the
+// receipt show too.
+const EURO = new Intl.NumberFormat('sk-SK', { style: 'currency', currency: 'EUR' });
+
+export function formatEuro(amount: number): string {
+  return EURO.format(amount);
+}
+
+export function formatEuroCents(cents: number): string {
+  return EURO.format(cents / 100);
+}
