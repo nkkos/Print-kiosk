@@ -50,6 +50,8 @@ export const ru: Translations = {
     selectLanguage: 'Выберите язык',
   },
   cart: {
+    minimumCharge: (amount: string) =>
+      `Минимальная оплата картой — ${amount}; меньший заказ доплачивается до этой суммы.`,
     empty: 'Корзина пуста',
     title: 'Корзина',
     qty: (quantity: number) => `Кол-во: ${quantity}`,

@@ -1,3 +1,4 @@
+import { MIN_CARD_PAYMENT_CENTS } from '../../src/utils/tariff';
 import { useEffect, useState } from 'react';
 import { listProducts, listPrintOrders, type Product, type PrintOrder } from '../services/shopApi';
 import { formatPrice } from '../formatPrice';
@@ -151,6 +152,12 @@ export function CartScreen({
             <span>Итого</span>
             <span>{formatPrice(shopTotalCents + printTotalCents)}</span>
           </div>
+          {shopTotalCents + printTotalCents < MIN_CARD_PAYMENT_CENTS && (
+            <p className="shop-hint" id="cart-minimum-charge">
+              Минимальная оплата картой — {formatPrice(MIN_CARD_PAYMENT_CENTS)}; меньший заказ
+              доплачивается до этой суммы.
+            </p>
+          )}
 
           <button
             type="button"

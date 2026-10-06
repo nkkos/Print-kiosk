@@ -252,3 +252,8 @@ body:has(.shell) {
   border-radius: var(--radius-small);
   background: #fafafa;
 }
+
+.hint {
+  color: #56635f;
+  font-size: 0.875rem;
+}

@@ -1,4 +1,5 @@
 import { and, eq, inArray } from 'drizzle-orm';
+import { minimumChargeTopUp } from '../src/utils/tariff.js';
 import { db } from './db/client.js';
 import { accounts, printOrders, products, shopOrders, shopOrderItems } from './db/schema.js';
 
@@ -44,6 +45,8 @@ export interface PricedCheckout {
   printOrderIds: string[];
   printOrderQuantities: Record<string, number>;
   shopItems: { productId: string; productName: string; unitPriceCents: number; quantity: number }[];
+  /** Added to reach Viva's minimum card payment (src/utils/tariff.ts). */
+  minimumChargeCents: number;
   totalCents: number;
 }
 
@@ -120,12 +123,14 @@ export async function priceCheckout(
     }
   }
 
+  const minimumChargeCents = minimumChargeTopUp(totalCents);
   return {
     accountId: params.accountId,
     printOrderIds: params.printOrderIds,
     printOrderQuantities,
     shopItems,
-    totalCents,
+    minimumChargeCents,
+    totalCents: totalCents + minimumChargeCents,
   };
 }
 

@@ -21,6 +21,7 @@ import {
 } from '../src/services/accountFileApi';
 import { supportsDuplex, OFFERED_PAPER_SIZES } from '../src/utils/printCapabilities';
 import { computeUnitPrice, formatEuro } from '../src/utils/pricing';
+import { MIN_CARD_PAYMENT_CENTS } from '../src/utils/tariff';
 import {
   usePreview,
   usePageRangeSelection,
@@ -435,6 +436,12 @@ export function ConfigureAndPay({
         />
       </label>
       <p>Price: {formatEuro(unitPrice * quantity)}</p>
+      {unitPrice * quantity * 100 < MIN_CARD_PAYMENT_CENTS - 0.5 && (
+        <p className="hint">
+          Card payments are at least {formatEuro(MIN_CARD_PAYMENT_CENTS / 100)} — a smaller order is
+          topped up to it at checkout.
+        </p>
+      )}
       {error && <p className="error">{error}</p>}
       <button type="button" onClick={handleSave} disabled={isSubmitting}>
         Save

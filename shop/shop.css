@@ -506,3 +506,9 @@ select {
   color: var(--color-accent-strong);
   font-weight: 700;
 }
+
+.shop-hint {
+  color: var(--shop-ink-soft, #56635f);
+  font-size: 0.875rem;
+  margin: 4px 0 0;
+}

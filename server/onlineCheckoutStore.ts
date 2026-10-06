@@ -3,6 +3,7 @@ import { db } from './db/client.js';
 import { accounts, paymentItems, paymentOrders, printOrders, shopOrders } from './db/schema.js';
 import { PRINT_VAT_RATE_PERCENT } from '../src/utils/tariff.js';
 import { CHECKOUT_TIMEOUT_SECONDS, getOnlineCheckout } from './onlineCheckout.js';
+import { minimumChargeItem } from './paymentStore.js';
 import {
   fulfilCheckout,
   priceCheckout,
@@ -92,6 +93,9 @@ async function recordCheckoutItems(
       printConfig: '{}',
       shopOrderId: result.shopOrderId,
     });
+  }
+  if (priced.minimumChargeCents > 0) {
+    rows.push(minimumChargeItem(paymentId, priced.minimumChargeCents));
   }
   if (rows.length > 0) await db.insert(paymentItems).values(rows);
 }

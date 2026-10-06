@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Button } from '../Button/Button';
 import { computeItemPrice, formatEuro } from '../../utils/pricing';
+import { MIN_CARD_PAYMENT_CENTS } from '../../utils/tariff';
 import { useTranslation } from '../../i18n';
 import type { PrintOrder } from '../../types/kiosk';
 import styles from './CartPanel.module.css';
@@ -140,6 +141,14 @@ export function CartPanel({
         ))}
       </ul>
       <p className={styles.total}>{t.cart.total(formatEuro(total))}</p>
+      {/* Viva takes no card payment below the minimum — the server tops the
+          order up (src/utils/tariff.ts); said here so the higher amount on
+          the terminal isn't a surprise. */}
+      {total > 0 && total * 100 < MIN_CARD_PAYMENT_CENTS - 0.5 && (
+        <p className={styles.minimumNote} id="cart-minimum-charge">
+          {t.cart.minimumCharge(formatEuro(MIN_CARD_PAYMENT_CENTS / 100))}
+        </p>
+      )}
 
       {onProceedToPayment && relevantItems.length > 0 && (
         <>

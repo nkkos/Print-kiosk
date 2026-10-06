@@ -52,6 +52,8 @@ export const de: Translations = {
     selectLanguage: 'Sprache auswählen',
   },
   cart: {
+    minimumCharge: (amount: string) =>
+      `Kartenzahlungen betragen mindestens ${amount} — eine kleinere Bestellung wird aufgerundet.`,
     empty: 'Der Warenkorb ist leer',
     title: 'Warenkorb',
     qty: (quantity: number) => `Anzahl: ${quantity}`,

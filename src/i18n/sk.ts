@@ -50,6 +50,8 @@ export const sk: Translations = {
     selectLanguage: 'Vyberte jazyk',
   },
   cart: {
+    minimumCharge: (amount: string) =>
+      `Minimálna platba kartou je ${amount} — menšia objednávka sa doplatí do tejto sumy.`,
     empty: 'Košík je prázdny',
     title: 'Košík',
     qty: (quantity: number) => `Počet: ${quantity}`,

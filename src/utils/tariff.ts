@@ -31,3 +31,19 @@ export function unitPriceCentsFor(
   const rate = RATE_PER_SIDE_CENTS[`${paperSize}-${color}-${sides}`];
   return rate === undefined ? null : sheetSides * rate;
 }
+
+/** Viva accepts no card payment below 0.30 € (demo and live alike). A
+ * smaller order is topped up to it with a separate line — confirmed
+ * 2026-10-06 (docs/payments-business-requirements.md, "Prices"). */
+export const MIN_CARD_PAYMENT_CENTS = 30;
+
+/** The top-up line's id and receipt text (Slovak — it's on the eKasa receipt). */
+export const MINIMUM_CHARGE_ITEM_ID = 'minimum-charge';
+export const MINIMUM_CHARGE_DESCRIPTION = 'Doplatok do minimálnej sumy platby kartou';
+
+/** How much to add to a payment of `amountCents` to reach the minimum. */
+export function minimumChargeTopUp(amountCents: number): number {
+  return amountCents > 0 && amountCents < MIN_CARD_PAYMENT_CENTS
+    ? MIN_CARD_PAYMENT_CENTS - amountCents
+    : 0;
+}

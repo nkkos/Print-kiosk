@@ -25,7 +25,30 @@ import {
 } from './fiscalReceiptStore.js';
 import { isPaperSizeOffered, supportsDuplex } from './printerAdapter.js';
 import { isPagesPerSheet, sheetSidesFor } from '../src/utils/nUpLayout.js';
-import { PRINT_VAT_RATE_PERCENT, unitPriceCentsFor } from '../src/utils/tariff.js';
+import {
+  MINIMUM_CHARGE_DESCRIPTION,
+  MINIMUM_CHARGE_ITEM_ID,
+  PRINT_VAT_RATE_PERCENT,
+  minimumChargeTopUp,
+  unitPriceCentsFor,
+} from '../src/utils/tariff.js';
+
+/** The line that tops a payment up to Viva's minimum (never printed). */
+export function minimumChargeItem(
+  paymentOrderId: string,
+  topUpCents: number,
+): typeof paymentItems.$inferInsert {
+  return {
+    paymentOrderId,
+    cartItemId: MINIMUM_CHARGE_ITEM_ID,
+    description: MINIMUM_CHARGE_DESCRIPTION,
+    quantity: 1,
+    unitPriceCents: topUpCents,
+    amountCents: topUpCents,
+    vatRatePercent: PRINT_VAT_RATE_PERCENT,
+    printConfig: '{}',
+  };
+}
 
 // Kiosk card payments on the stand's terminal (docs/payments-technical-requirements.md,
 // "Kiosk payment flow"). The server prices the selection itself — the
@@ -186,11 +209,15 @@ export async function createKioskPayment(input: {
   // Lines that cost nothing (fully paid in advance) aren't part of this
   // payment — they print on their portal order alone.
   const charged = priced.filter((line) => line.chargedQuantity > 0);
-  const amountCents = charged.reduce(
+  const itemsCents = charged.reduce(
     (sum, line) => sum + line.unitPriceCents * line.chargedQuantity,
     0,
   );
-  if (amountCents === 0) return null;
+  if (itemsCents === 0) return null;
+  // Below Viva's minimum card payment the order is topped up with its own
+  // line (src/utils/tariff.ts, MIN_CARD_PAYMENT_CENTS).
+  const topUpCents = minimumChargeTopUp(itemsCents);
+  const amountCents = itemsCents + topUpCents;
 
   const terminal = getPaymentTerminal();
   const [order] = await db
@@ -217,6 +244,9 @@ export async function createKioskPayment(input: {
       printConfig: JSON.stringify(item),
     })),
   );
+  if (topUpCents > 0) {
+    await db.insert(paymentItems).values(minimumChargeItem(order.id, topUpCents));
+  }
 
   try {
     const { sessionId } = await terminal.startSale({
@@ -514,6 +544,11 @@ async function refundClaimedItem(
     .where(eq(paymentRefunds.id, refund.id));
 
   if (outcome.state === 'succeeded') {
+    // Everything the customer bought is refunded — the minimum-charge top-up
+    // goes back too, nobody pays it for nothing.
+    if (item.description !== MINIMUM_CHARGE_DESCRIPTION) {
+      await refundOrphanedTopUp(item.paymentOrderId, reason, createdBy);
+    }
     const items = await db
       .select({ amountCents: paymentItems.amountCents, refundedCents: paymentItems.refundedCents })
       .from(paymentItems)
@@ -533,6 +568,35 @@ async function refundClaimedItem(
     await db.update(paymentItems).set({ refundedCents: 0 }).where(eq(paymentItems.id, item.id));
   }
   return { order, outcome };
+}
+
+async function refundOrphanedTopUp(
+  paymentOrderId: string,
+  reason: 'print-failed' | 'staff',
+  createdBy: string,
+): Promise<void> {
+  const lines = await db
+    .select({
+      cartItemId: paymentItems.cartItemId,
+      amountCents: paymentItems.amountCents,
+      refundedCents: paymentItems.refundedCents,
+    })
+    .from(paymentItems)
+    .where(eq(paymentItems.paymentOrderId, paymentOrderId));
+  const bought = lines.filter((line) => line.cartItemId !== MINIMUM_CHARGE_ITEM_ID);
+  if (!bought.every((line) => line.refundedCents >= line.amountCents)) return;
+  const [topUp] = await db
+    .update(paymentItems)
+    .set({ refundedCents: sql`${paymentItems.amountCents}` })
+    .where(
+      and(
+        eq(paymentItems.paymentOrderId, paymentOrderId),
+        eq(paymentItems.cartItemId, MINIMUM_CHARGE_ITEM_ID),
+        eq(paymentItems.refundedCents, 0),
+      ),
+    )
+    .returning(CLAIMED_ITEM_COLUMNS);
+  if (topUp) await refundClaimedItem(topUp, reason, createdBy);
 }
 
 /** Refund on print failure (docs/payments-business-requirements.md, "When
@@ -639,14 +703,44 @@ export interface PrintTaskRefund {
 }
 
 /** The latest refund of the payment item a print task prints — shown on
- * the stand's Print Status. Null when the task isn't a paid item's. */
+ * the stand's Print Status. Null when the task isn't a paid item's. When
+ * the refund also returned the minimum-charge top-up (nothing left bought),
+ * the top-up is counted with the item refunded last, so the stand tells the
+ * customer the whole amount that came back. */
 export async function getRefundForPrintTask(printTaskId: string): Promise<PrintTaskRefund | null> {
   const [row] = await db
-    .select({ status: paymentRefunds.status, amountCents: paymentRefunds.amountCents })
+    .select({
+      id: paymentRefunds.id,
+      status: paymentRefunds.status,
+      amountCents: paymentRefunds.amountCents,
+      paymentOrderId: paymentRefunds.paymentOrderId,
+    })
     .from(paymentRefunds)
     .innerJoin(paymentItems, eq(paymentItems.id, paymentRefunds.paymentItemId))
     .where(eq(paymentItems.printTaskId, printTaskId))
     .orderBy(desc(paymentRefunds.createdAt))
     .limit(1);
-  return (row as PrintTaskRefund | undefined) ?? null;
+  if (!row) return null;
+  let amountCents = row.amountCents;
+  if (row.status === 'succeeded') {
+    const refunds = await db
+      .select({
+        id: paymentRefunds.id,
+        amountCents: paymentRefunds.amountCents,
+        cartItemId: paymentItems.cartItemId,
+      })
+      .from(paymentRefunds)
+      .innerJoin(paymentItems, eq(paymentItems.id, paymentRefunds.paymentItemId))
+      .where(
+        and(
+          eq(paymentRefunds.paymentOrderId, row.paymentOrderId),
+          eq(paymentRefunds.status, 'succeeded'),
+        ),
+      )
+      .orderBy(desc(paymentRefunds.createdAt));
+    const topUp = refunds.find((refund) => refund.cartItemId === MINIMUM_CHARGE_ITEM_ID);
+    const lastItemRefund = refunds.find((refund) => refund.cartItemId !== MINIMUM_CHARGE_ITEM_ID);
+    if (topUp && lastItemRefund?.id === row.id) amountCents += topUp.amountCents;
+  }
+  return { status: row.status as PrintTaskRefund['status'], amountCents };
 }

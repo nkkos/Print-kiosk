@@ -50,6 +50,8 @@ export const uk: Translations = {
     selectLanguage: 'Виберіть мову',
   },
   cart: {
+    minimumCharge: (amount: string) =>
+      `Мінімальна оплата карткою — ${amount}; менше замовлення доплачується до цієї суми.`,
     empty: 'Кошик порожній',
     title: 'Кошик',
     qty: (quantity: number) => `Кількість: ${quantity}`,

@@ -17,7 +17,7 @@ Scan stays free — no payment step (`docs/scan-upload-requirements.md`).
 
 - Prices are in **EUR, VAT included** (the company is a VAT payer, 23 %). The customer always sees the final price.
 - Until the real price list is confirmed, **placeholder prices in euro cents** are used, kept in one place so the real ones replace them without other changes.
-- **No minimum order amount** — any amount from 0.01 € can be paid by card.
+- **Minimum card payment 0.30 €** (changed 2026-10-06 — Viva accepts no card payment below 0.30 €, demo and live alike). A smaller order is topped up to 0.30 € with its own line («Doplatok do minimálnej sumy platby kartou», also on the receipt); the Cart, the portal and the shop say so before paying. If every document of the payment ends up refunded, the top-up is refunded too.
 - The amount charged is always calculated by the server from the order's settings, never taken from what the stand's screen shows.
 
 ## Kiosk: the customer's journey

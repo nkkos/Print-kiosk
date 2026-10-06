@@ -53,6 +53,8 @@ export const en = {
     selectLanguage: 'Select language',
   },
   cart: {
+    minimumCharge: (amount: string) =>
+      `Card payments are at least ${amount} — a smaller order is topped up to it.`,
     empty: 'Cart is empty',
     title: 'Cart',
     qty: (quantity: number) => `Qty: ${quantity}`,
