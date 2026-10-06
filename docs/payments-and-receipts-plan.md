@@ -2,7 +2,7 @@
 
 Decisions confirmed with the product owner on 2026-10-01/02. Implementation hasn't started; the kiosk's Payment step is still the "Simulate …" mock.
 
-Detailed requirements: `docs/payments-business-requirements.md` (business rules) and `docs/payments-technical-requirements.md` (design and build order).
+Detailed requirements: `docs/payments-business-requirements.md` (business rules) and `docs/payments-technical-requirements.md` (design and build order); vendor questions and hardware acceptance tests: `docs/payments-open-items.md`.
 
 ## Card payments — Viva.com
 
