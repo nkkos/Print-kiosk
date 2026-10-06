@@ -916,3 +916,71 @@ button {
     justify-content: space-between;
   }
 }
+
+/* Payments (admin/screens/PaymentsScreen.tsx) */
+.payments-day {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--ink-soft);
+}
+
+.reconciliation {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: var(--shadow-card);
+  padding: 16px;
+  margin-bottom: 20px;
+}
+
+.reconciliation-totals {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 32px;
+}
+
+.reconciliation-totals > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-variant-numeric: tabular-nums;
+}
+
+.reconciliation-totals b {
+  font-size: 1.25rem;
+}
+
+.reconciliation-issues {
+  margin: 12px 0 0;
+  padding-left: 20px;
+  color: var(--sev-critical);
+}
+
+.payments-amount {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.payments-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.payments-details td {
+  background: var(--surface-raised);
+}
+
+.payments-details ul,
+.refund-items,
+.refund-results {
+  margin: 0 0 8px;
+  padding-left: 20px;
+}
+
+.refund-items {
+  list-style: none;
+  padding-left: 0;
+}

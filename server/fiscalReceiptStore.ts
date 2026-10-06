@@ -1,5 +1,5 @@
 import { randomBytes } from 'node:crypto';
-import { and, eq, inArray, isNull, lt, sql } from 'drizzle-orm';
+import { and, eq, inArray, isNotNull, isNull, lt, sql } from 'drizzle-orm';
 import { db } from './db/client.js';
 import { fiscalReceipts, paymentItems, paymentOrders, paymentRefunds } from './db/schema.js';
 import { reportIncident } from './incidentStore.js';
@@ -379,6 +379,33 @@ export async function sweepReceipts(): Promise<void> {
         lt(paymentOrders.paidAt, new Date(Date.now() - RECEIPT_CHOICE_TIMEOUT_MS)),
       ),
     );
+  // A delivery chosen but no sale receipt made (the server stopped in
+  // between) — issue it now.
+  const chosenWithoutReceipt = await db
+    .select({ id: paymentOrders.id })
+    .from(paymentOrders)
+    .where(
+      and(
+        eq(paymentOrders.channel, 'kiosk-terminal'),
+        inArray(paymentOrders.status, ['paid', 'partially-refunded', 'refunded']),
+        isNotNull(paymentOrders.receiptDelivery),
+        sql`NOT EXISTS (SELECT 1 FROM fiscal_receipts r WHERE r.payment_order_id = ${paymentOrders.id} AND r.kind = 'sale')`,
+      ),
+    );
+  for (const order of chosenWithoutReceipt) await createSaleReceipt(order.id);
+
+  // Likewise a succeeded refund with no return receipt.
+  const refundsWithoutReceipt = await db
+    .select({ id: paymentRefunds.id })
+    .from(paymentRefunds)
+    .where(
+      and(
+        eq(paymentRefunds.status, 'succeeded'),
+        sql`NOT EXISTS (SELECT 1 FROM fiscal_receipts r WHERE r.refund_id = ${paymentRefunds.id})`,
+      ),
+    );
+  for (const refund of refundsWithoutReceipt) await createReturnReceipt(refund.id);
+
   for (const order of unchosen) {
     await db
       .update(paymentOrders)

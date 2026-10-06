@@ -210,3 +210,48 @@ export async function searchDevices(): Promise<unknown> {
   if (!response.ok) throw new Error(`Viva device search failed (HTTP ${response.status})`);
   return response.json();
 }
+
+export interface VivaTransaction {
+  transactionId: string;
+  amountCents: number;
+  /** Viva's status letter — F finished, X cancelled (voided the same day),
+   * A in progress, E error… */
+  statusId: string;
+  parentId: string | null;
+  merchantReference: string | null;
+  createdAt: Date;
+}
+
+/** The merchant's transactions Viva recorded on one calendar day (Viva's own
+ * time zone) — sales positive, refunds negative — for the daily
+ * reconciliation (server/paymentReconciliation.ts). Null when Viva isn't
+ * configured. */
+export async function listVivaTransactions(day: string): Promise<VivaTransaction[] | null> {
+  if (!process.env.VIVA_MERCHANT_ID || !process.env.VIVA_API_KEY) return null;
+  const basic = Buffer.from(`${process.env.VIVA_MERCHANT_ID}:${process.env.VIVA_API_KEY}`).toString(
+    'base64',
+  );
+  const response = await fetch(`${PAYMENTS_URL}/api/transactions?date=${day}`, {
+    headers: { Authorization: `Basic ${basic}` },
+    signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+  });
+  if (!response.ok) throw new Error(`Viva transaction list failed (HTTP ${response.status})`);
+  const body = (await response.json()) as {
+    Transactions?: {
+      TransactionId: string;
+      Amount: number;
+      StatusId: string;
+      ParentId: string | null;
+      MerchantTrns: string | null;
+      InsDate: string;
+    }[];
+  };
+  return (body.Transactions ?? []).map((t) => ({
+    transactionId: t.TransactionId,
+    amountCents: Math.round(t.Amount * 100),
+    statusId: t.StatusId,
+    parentId: t.ParentId,
+    merchantReference: t.MerchantTrns,
+    createdAt: new Date(t.InsDate),
+  }));
+}

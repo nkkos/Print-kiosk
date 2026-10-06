@@ -391,28 +391,30 @@ function formatCents(cents: number): string {
   return `${(cents / 100).toFixed(2).replace('.', ',')} €`;
 }
 
-/** Refund on print failure (docs/payments-business-requirements.md, "When
- * printing fails"): returns the money for exactly the item whose print task
- * failed — automatically, at once — and alerts staff on Telegram either
- * way. Called from updatePrintTaskStatus; a task with no payment item (a
- * portal order paid in advance) is left alone — that order stays "paid,
- * awaiting print" in My orders. Safe to call twice: the item is claimed
- * for refunding first. */
-export async function refundFailedPrintTask(
-  printTaskId: string,
-  errorReason: string | null,
-): Promise<void> {
-  const [item] = await db
-    .update(paymentItems)
-    .set({ refundedCents: sql`${paymentItems.amountCents}` })
-    .where(and(eq(paymentItems.printTaskId, printTaskId), eq(paymentItems.refundedCents, 0)))
-    .returning({
-      id: paymentItems.id,
-      paymentOrderId: paymentItems.paymentOrderId,
-      amountCents: paymentItems.amountCents,
-      description: paymentItems.description,
-    });
-  if (!item) return;
+interface ClaimedItem {
+  id: string;
+  paymentOrderId: string;
+  amountCents: number;
+  description: string;
+}
+
+const CLAIMED_ITEM_COLUMNS = {
+  id: paymentItems.id,
+  paymentOrderId: paymentItems.paymentOrderId,
+  amountCents: paymentItems.amountCents,
+  description: paymentItems.description,
+};
+
+/** Returns one item's money — the part both refund paths share: the
+ * provider call, the refund record, the payment's status and the return
+ * receipt. The item must already be claimed (its refundedCents set), so a
+ * concurrent second refund can't happen; on failure the claim is undone and
+ * the item stays refundable. */
+async function refundClaimedItem(
+  item: ClaimedItem,
+  reason: 'print-failed' | 'staff',
+  createdBy: string,
+): Promise<{ order: typeof paymentOrders.$inferSelect | undefined; outcome: RefundOutcome }> {
   const [order] = await db
     .select()
     .from(paymentOrders)
@@ -423,7 +425,8 @@ export async function refundFailedPrintTask(
       paymentOrderId: item.paymentOrderId,
       paymentItemId: item.id,
       amountCents: item.amountCents,
-      reason: 'print-failed',
+      reason,
+      createdBy,
     })
     .returning({ id: paymentRefunds.id });
 
@@ -471,9 +474,29 @@ export async function refundFailedPrintTask(
       console.error('[paymentStore] Return receipt could not be created:', refund.id, err);
     }
   } else {
-    // Not refunded after all — the item stays refundable, by staff (B7).
     await db.update(paymentItems).set({ refundedCents: 0 }).where(eq(paymentItems.id, item.id));
   }
+  return { order, outcome };
+}
+
+/** Refund on print failure (docs/payments-business-requirements.md, "When
+ * printing fails"): returns the money for exactly the item whose print task
+ * failed — automatically, at once — and alerts staff on Telegram either
+ * way. Called from updatePrintTaskStatus; a task with no payment item (a
+ * portal order paid in advance) is left alone — that order stays "paid,
+ * awaiting print" in My orders. Safe to call twice: the item is claimed
+ * for refunding first. */
+export async function refundFailedPrintTask(
+  printTaskId: string,
+  errorReason: string | null,
+): Promise<void> {
+  const [item] = await db
+    .update(paymentItems)
+    .set({ refundedCents: sql`${paymentItems.amountCents}` })
+    .where(and(eq(paymentItems.printTaskId, printTaskId), eq(paymentItems.refundedCents, 0)))
+    .returning(CLAIMED_ITEM_COLUMNS);
+  if (!item) return;
+  const { order, outcome } = await refundClaimedItem(item, 'print-failed', 'system');
 
   const where = order?.standId ? `stand ${order.standId}` : 'a kiosk stand';
   const what = `"${item.description}" failed to print on ${where} (${errorReason ?? 'unknown reason'})`;
@@ -497,6 +520,61 @@ export async function refundFailedPrintTask(
           correlationId: item.id,
         },
   );
+}
+
+export interface StaffRefundResult {
+  paymentItemId: string;
+  amountCents: number;
+  status: 'succeeded' | 'failed' | 'not-refundable';
+  reason?: string;
+}
+
+/** A refund made by staff from the admin panel (docs/payments-business-requirements.md,
+ * "Staff and admin panel") — the chosen items of one payment, each refunded
+ * in full, through the same path as the automatic one. Items already
+ * refunded (or of another payment) come back as 'not-refundable'. */
+export async function refundItemsByStaff(
+  paymentOrderId: string,
+  itemIds: string[],
+  staffId: string,
+): Promise<StaffRefundResult[]> {
+  const results: StaffRefundResult[] = [];
+  for (const itemId of itemIds) {
+    const [item] = await db
+      .update(paymentItems)
+      .set({ refundedCents: sql`${paymentItems.amountCents}` })
+      .where(
+        and(
+          eq(paymentItems.id, itemId),
+          eq(paymentItems.paymentOrderId, paymentOrderId),
+          eq(paymentItems.refundedCents, 0),
+          inArray(
+            paymentItems.paymentOrderId,
+            db
+              .select({ id: paymentOrders.id })
+              .from(paymentOrders)
+              .where(inArray(paymentOrders.status, ['paid', 'partially-refunded'])),
+          ),
+        ),
+      )
+      .returning(CLAIMED_ITEM_COLUMNS);
+    if (!item) {
+      results.push({ paymentItemId: itemId, amountCents: 0, status: 'not-refundable' });
+      continue;
+    }
+    const { outcome } = await refundClaimedItem(item, 'staff', staffId);
+    results.push(
+      outcome.state === 'succeeded'
+        ? { paymentItemId: itemId, amountCents: item.amountCents, status: 'succeeded' }
+        : {
+            paymentItemId: itemId,
+            amountCents: item.amountCents,
+            status: 'failed',
+            reason: outcome.reason,
+          },
+    );
+  }
+  return results;
 }
 
 export interface PrintTaskRefund {

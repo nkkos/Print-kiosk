@@ -41,6 +41,8 @@ import {
   listInvoicesForCompany,
 } from './companyInvoiceStore.js';
 import { sendCompanyInviteEmail } from './emailSender.js';
+import { refundItemsByStaff } from './paymentStore.js';
+import { listPaymentsForDay, reconcileDay, pavilionDay } from './paymentReconciliation.js';
 
 // Admin panel backend (docs/screens/admin-panel-wireframes.md,
 // docs/screens/admin-panel-spec.md) — a distinct router mounted under
@@ -591,5 +593,48 @@ adminRouter.post('/api/admin/company-invoices/:id/issue', requireStaffSession, a
   }
   res.json(invoice);
 });
+
+// Payments (docs/payments-business-requirements.md, "Staff and admin panel"):
+// one day's kiosk card payments, the daily reconciliation against Viva and
+// eKasa, and manual refunds — the latter senior-only (confirmed 2026-10-06:
+// a refund moves money, same bar as the destructive equipment fixes).
+const DAY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+
+function requestedDay(value: unknown): string {
+  return typeof value === 'string' && DAY_PATTERN.test(value) ? value : pavilionDay();
+}
+
+adminRouter.get('/api/admin/payments', requireStaffSession, async (req, res) => {
+  const day = requestedDay(req.query.date);
+  res.json({ day, payments: await listPaymentsForDay(day) });
+});
+
+adminRouter.get('/api/admin/payments/reconciliation', requireStaffSession, async (req, res) => {
+  res.json(await reconcileDay(requestedDay(req.query.date)));
+});
+
+adminRouter.post(
+  '/api/admin/payments/:id/refund',
+  requireStaffSession,
+  requireSeniorRole,
+  async (req, res) => {
+    const { itemIds } = (req.body ?? {}) as { itemIds?: unknown };
+    if (
+      !Array.isArray(itemIds) ||
+      itemIds.length === 0 ||
+      !itemIds.every((id) => typeof id === 'string')
+    ) {
+      res.status(400).json({ error: 'itemIds must be a non-empty list' });
+      return;
+    }
+    const staffAccount = (req as AuthenticatedStaffRequest).staffAccount!;
+    const results = await refundItemsByStaff(
+      paramString(req.params.id),
+      itemIds as string[],
+      staffAccount.id,
+    );
+    res.json({ results });
+  },
+);
 
 export { requireStaffSession, requireSeniorRole };

@@ -382,3 +382,78 @@ export async function updatePhotoDocument(
 ): Promise<PhotoDocument> {
   return request('PATCH', `/api/admin/photo-documents/${id}`, sessionToken, fields);
 }
+
+// Payments (server/paymentReconciliation.ts, docs/payments-business-requirements.md,
+// "Staff and admin panel").
+export interface AdminPayment {
+  id: string;
+  paidAt: string | null;
+  createdAt: string;
+  standId: string | null;
+  provider: string | null;
+  status: string;
+  amountCents: number;
+  refundedCents: number;
+  failureReason: string | null;
+  providerTransactionId: string | null;
+  receipt: { kind: string; status: string; delivery: string }[];
+  items: {
+    id: string;
+    description: string;
+    quantity: number;
+    amountCents: number;
+    refundedCents: number;
+  }[];
+  refunds: {
+    amountCents: number;
+    status: string;
+    reason: string;
+    createdBy: string;
+    failureReason: string | null;
+    createdAt: string;
+  }[];
+}
+
+export interface ReconciliationIssue {
+  kind: string;
+  paymentOrderId: string | null;
+  detail: string;
+}
+
+export interface Reconciliation {
+  day: string;
+  ours: { salesCents: number; refundsCents: number; count: number };
+  viva: { salesCents: number; refundsCents: number; count: number } | null;
+  receipts: { salesCents: number; returnsCents: number; count: number };
+  issues: ReconciliationIssue[];
+  vivaError: string | null;
+}
+
+export interface StaffRefundResult {
+  paymentItemId: string;
+  amountCents: number;
+  status: 'succeeded' | 'failed' | 'not-refundable';
+  reason?: string;
+}
+
+export async function listPayments(
+  sessionToken: string,
+  day: string,
+): Promise<{ day: string; payments: AdminPayment[] }> {
+  return request('GET', `/api/admin/payments?date=${day}`, sessionToken);
+}
+
+export async function getReconciliation(
+  sessionToken: string,
+  day: string,
+): Promise<Reconciliation> {
+  return request('GET', `/api/admin/payments/reconciliation?date=${day}`, sessionToken);
+}
+
+export async function refundPaymentItems(
+  sessionToken: string,
+  paymentId: string,
+  itemIds: string[],
+): Promise<{ results: StaffRefundResult[] }> {
+  return request('POST', `/api/admin/payments/${paymentId}/refund`, sessionToken, { itemIds });
+}
