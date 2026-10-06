@@ -32,8 +32,21 @@ export function OrdersPage() {
   const [paymentNotice, setPaymentNotice] = useState<string | null>(null);
 
   useEffect(() => {
-    const paymentId = new URLSearchParams(window.location.search).get('payment');
+    const params = new URLSearchParams(window.location.search);
+    const paymentId = params.get('payment');
     if (!session || !paymentId) return;
+    // The payment page reported a failed or cancelled attempt — say so at
+    // once instead of waiting on a payment that won't come.
+    const attempt = params.get('attempt');
+    if (attempt) {
+      setPaymentNotice(
+        attempt === 'cancelled'
+          ? 'The payment was cancelled. Nothing was charged — you can try again.'
+          : `The payment did not go through${params.get('event') ? ` (Viva code ${params.get('event')})` : ''}. Nothing was charged — you can try again.`,
+      );
+      window.history.replaceState(null, '', window.location.pathname);
+      return;
+    }
     setPaymentNotice('Confirming your payment…');
     waitForOnlinePayment(session.sessionToken, paymentId)
       .then((payment) => {

@@ -32,9 +32,21 @@ export function ShopApp() {
   // ?payment=<id>): wait for the server to confirm it with the provider.
   const [paymentNotice, setPaymentNotice] = useState<string | null>(null);
   useEffect(() => {
-    const paymentId = new URLSearchParams(window.location.search).get('payment');
+    const params = new URLSearchParams(window.location.search);
+    const paymentId = params.get('payment');
     if (!paymentId || !session) return;
     window.history.replaceState(null, '', window.location.pathname);
+    // A failed or cancelled attempt on the payment page — say so at once.
+    const attempt = params.get('attempt');
+    if (attempt) {
+      setPaymentNotice(
+        attempt === 'cancelled'
+          ? 'Оплата отменена, деньги не списаны. Можно попробовать ещё раз.'
+          : `Оплата не прошла${params.get('event') ? ` (код Viva ${params.get('event')})` : ''}, деньги не списаны. Можно попробовать ещё раз.`,
+      );
+      setScreen('cart');
+      return;
+    }
     setPaymentNotice('Проверяем оплату…');
     waitForOnlinePayment(session.sessionToken, paymentId)
       .then((payment) => {

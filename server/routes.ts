@@ -947,10 +947,23 @@ router.get('/payments/return', async (req, res) => {
     console.error('[payments] confirm on return failed:', err);
   }
   const view = await getOnlineCheckoutView(paymentId, null);
+  // Viva sends the customer here after a failed attempt too, with its
+  // event id (e.g. 10051 insufficient funds) — or `cancel` for the Cancel
+  // button. Passed on only to tell the customer at once; the payment's own
+  // state still comes from Viva (the order stays open for another try).
+  const eventId = typeof req.query.eventId === 'string' ? req.query.eventId.replace(/\D/g, '') : '';
+  const attempt =
+    view?.status === 'paid'
+      ? ''
+      : req.query.cancel !== undefined
+        ? '&attempt=cancelled'
+        : eventId && eventId !== '0'
+          ? `&attempt=failed&event=${eventId}`
+          : '';
   res.redirect(
     view?.returnTo === 'shop'
-      ? `${portalBaseUrl()}/shop/?payment=${paymentId}`
-      : `${portalBaseUrl()}/portal/orders.html?payment=${paymentId}`,
+      ? `${portalBaseUrl()}/shop/?payment=${paymentId}${attempt}`
+      : `${portalBaseUrl()}/portal/orders.html?payment=${paymentId}${attempt}`,
   );
 });
 
