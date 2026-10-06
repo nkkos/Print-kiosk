@@ -13,6 +13,7 @@
     "lint": "oxlint",
     "seed:staff": "tsx server/scripts/seedStaffAccount.ts",
     "set:roster": "tsx server/scripts/setRosterDay.ts",
+    "viva:devices": "tsx server/scripts/vivaDevices.ts",
     "format": "prettier --write .",
     "preview": "vite preview"
   },

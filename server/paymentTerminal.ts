@@ -1,8 +1,10 @@
+import { vivaTerminal } from './vivaTerminal.js';
+
 // The one seam to the card terminal (docs/payments-technical-requirements.md,
 // "Principles" 4) — same role printerAdapter.ts plays for the printer.
 // PAYMENT_TERMINAL=simulator (default) keeps every sale waiting until a
-// "Simulate …" outcome is posted; the Viva Cloud Terminal client (B5) will
-// implement the same interface.
+// "Simulate …" outcome is posted; PAYMENT_TERMINAL=viva uses the Viva Cloud
+// Terminal API (server/vivaTerminal.ts).
 
 export type TerminalOutcome =
   | { state: 'pending' }
@@ -100,10 +102,10 @@ export const simulatorTerminal: PaymentTerminal & {
 
 export function getPaymentTerminal(): PaymentTerminal {
   const configured = process.env.PAYMENT_TERMINAL ?? 'simulator';
+  if (configured === 'viva') return vivaTerminal;
   if (configured !== 'simulator') {
-    // The Viva client lands in B5 (docs/payments-technical-requirements.md,
-    // "Build order"); until then refuse loudly rather than fall back.
-    throw new Error(`PAYMENT_TERMINAL=${configured} is not implemented yet`);
+    // Refuse loudly rather than silently take simulated payments.
+    throw new Error(`PAYMENT_TERMINAL=${configured} is not a known terminal`);
   }
   return simulatorTerminal;
 }
