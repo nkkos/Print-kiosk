@@ -207,8 +207,29 @@ async function runStatusLoop(): Promise<void> {
         err instanceof Error ? err.message : err,
       );
     }
+    try {
+      await reportFiscalStatus();
+    } catch (err) {
+      console.error(
+        '[agent] cash register status report failed:',
+        err instanceof Error ? err.message : err,
+      );
+    }
     await new Promise((resolve) => setTimeout(resolve, PRINTER_STATUS_INTERVAL_MS));
   }
+}
+
+// The cash register's readiness, next to the printer's (server/agentRoutes.ts,
+// POST /api/agent/fiscal-status) — the stands take no payment the register
+// couldn't issue a receipt for.
+async function reportFiscalStatus(): Promise<void> {
+  let status;
+  try {
+    status = await fiscalDevice.status();
+  } catch (err) {
+    status = { ok: false, problem: err instanceof Error ? err.message : 'status-check-failed' };
+  }
+  await callCloud('/api/agent/fiscal-status', { method: 'POST', body: JSON.stringify(status) });
 }
 
 // eKasa receipts (server/fiscalReceiptStore.ts, FISCAL_REGISTER=agent):

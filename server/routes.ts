@@ -143,6 +143,7 @@ import {
   getRefundForPrintTask,
 } from './paymentStore.js';
 import { getPaymentTerminal, simulatorTerminal } from './paymentTerminal.js';
+import { paymentBlockers } from './agentRoutes.js';
 import {
   requireStand,
   requireEmailRelay,
@@ -1440,6 +1441,14 @@ router.post('/api/payments', requireStand, async (req, res) => {
     standId?: unknown;
     items?: unknown;
   };
+  // The stand's Cart already refuses while printing or receipts are
+  // impossible (GET /api/printer-status); this is the server's own check, so
+  // nobody is charged for something that can't be delivered.
+  const blockers = paymentBlockers();
+  if (blockers.agentOnline === false || blockers.problems.length > 0) {
+    res.status(409).json({ error: 'Payments are unavailable right now', ...blockers });
+    return;
+  }
   try {
     const payment = await createKioskPayment({
       sessionId: typeof sessionId === 'string' ? sessionId : null,

@@ -33,6 +33,11 @@ let agentLastSeenAt: Date | null = null;
 // and the backend runs as a single instance.
 let latestPrinterSnapshot: PrinterSnapshot | null = null;
 
+// The cash register's readiness (POST /api/agent/fiscal-status) — only
+// consulted with FISCAL_REGISTER=agent, i.e. a real register at the pavilion.
+let latestFiscalStatus: { ok: boolean; problem: string | null; checkedAt: Date } | null = null;
+const FISCAL_INCIDENT = 'pc.cash-register-unavailable';
+
 // The agent polls every 2 s and backs off to at most 30 s on errors, so
 // silence longer than this means it's down or cut off.
 const AGENT_OFFLINE_AFTER_MS = 60_000;
@@ -233,6 +238,32 @@ agentRouter.post('/api/agent/printer-status', async (req, res) => {
   res.json({ ok: true });
 });
 
+agentRouter.post('/api/agent/fiscal-status', async (req, res) => {
+  const body = (req.body ?? {}) as { ok?: unknown; problem?: unknown };
+  if (typeof body.ok !== 'boolean') {
+    res.status(400).json({ error: 'Invalid cash register status' });
+    return;
+  }
+  const problem = typeof body.problem === 'string' ? body.problem.slice(0, 200) : null;
+  latestFiscalStatus = { ok: body.ok, problem, checkedAt: new Date() };
+  if (fiscalMode() === 'agent') {
+    if (!body.ok) {
+      if (!(await hasOpenIncident(FISCAL_INCIDENT))) {
+        void reportIncident({
+          source: 'pc',
+          code: FISCAL_INCIDENT,
+          severity: 'critical',
+          message: `The cash register can't issue receipts (${problem ?? 'unknown problem'}) — the stands take no payment until it's back.`,
+          context: { problem },
+        });
+      }
+    } else {
+      await resolveOpenIncidents([FISCAL_INCIDENT], { reason: 'the cash register is ready again' });
+    }
+  }
+  res.json({ ok: true });
+});
+
 // Anything the agent notices that isn't tied to a status report — e.g. a
 // job it stopped watching without knowing whether paper came out.
 // eKasa relay (docs/payments-technical-requirements.md, "eKasa"): the
@@ -304,17 +335,46 @@ agentRouter.post('/api/agent/incident', (req, res) => {
 /** Public, for the kiosk stands: can a paid job be printed right now? In
  * direct mode (local dev) there's no agent to ask, so always yes. Only the
  * blocking problems are exposed — a stand has no use for toner levels. */
-agentRouter.get('/api/printer-status', (_req, res) => {
+/** Whether the cash register can issue receipts — true when there is no
+ * real register to wait for (FISCAL_REGISTER isn't 'agent'). A reading
+ * older than the agent-offline window counts as unavailable. */
+function cashRegisterAvailable(): boolean {
+  if (fiscalMode() !== 'agent') return true;
+  return (
+    !!latestFiscalStatus &&
+    latestFiscalStatus.ok &&
+    Date.now() - latestFiscalStatus.checkedAt.getTime() < AGENT_OFFLINE_AFTER_MS
+  );
+}
+
+/** What stops the stands taking payment right now: the agent gone quiet,
+ * a blocking printer problem, or the cash register unable to issue
+ * receipts. Shared by GET /api/printer-status (the stands' Cart) and the
+ * server's own check in POST /api/payments (server/routes.ts). */
+export function paymentBlockers(): {
+  agentOnline: boolean | null;
+  problems: (PrinterProblem | 'cash-register-unavailable')[];
+} {
   if (printExecutionMode() === 'direct') {
-    res.json({ mode: 'direct', available: true, agentOnline: null, problems: [] });
-    return;
+    return {
+      agentOnline: null,
+      problems: cashRegisterAvailable() ? [] : ['cash-register-unavailable'],
+    };
   }
   const agentOnline =
     !!agentLastSeenAt && Date.now() - agentLastSeenAt.getTime() < AGENT_OFFLINE_AFTER_MS;
-  const problems = latestPrinterSnapshot ? blockingProblems(latestPrinterSnapshot.problems) : [];
+  const problems: (PrinterProblem | 'cash-register-unavailable')[] = latestPrinterSnapshot
+    ? blockingProblems(latestPrinterSnapshot.problems)
+    : [];
+  if (!cashRegisterAvailable()) problems.push('cash-register-unavailable');
+  return { agentOnline, problems };
+}
+
+agentRouter.get('/api/printer-status', (_req, res) => {
+  const { agentOnline, problems } = paymentBlockers();
   res.json({
-    mode: 'agent',
-    available: agentOnline && problems.length === 0,
+    mode: printExecutionMode(),
+    available: agentOnline !== false && problems.length === 0,
     agentOnline,
     problems,
     checkedAt: latestPrinterSnapshot?.checkedAt ?? null,

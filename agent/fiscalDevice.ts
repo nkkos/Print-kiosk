@@ -15,6 +15,10 @@ export type FiscalOutcome = RegisterResult | { status: 'failed'; reason: string 
 export interface FiscalDevice {
   readonly name: string;
   register(job: FiscalJob): Promise<FiscalOutcome>;
+  /** Whether the register can issue a receipt right now (CHDÚ connected,
+   * receipt printer ready) — reported to the cloud, which stops the stands
+   * taking payment while it can't. `problem` names what's wrong. */
+  status(): Promise<{ ok: boolean; problem: string | null }>;
 }
 
 let receiptCounter = 0;
@@ -34,6 +38,12 @@ const simulatorDevice: FiscalDevice = {
       receiptNumber: `A${receiptCounter}`,
       cashRegisterCode: '88800000000000000',
     };
+  },
+  async status() {
+    // FISCAL_SIMULATOR_PROBLEM=<anything> plays an unavailable register, to
+    // test the stands' payment block without hardware.
+    const problem = process.env.FISCAL_SIMULATOR_PROBLEM || null;
+    return { ok: !problem, problem };
   },
 };
 
