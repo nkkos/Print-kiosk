@@ -153,7 +153,8 @@ export async function createReturnReceipt(refundId: string): Promise<void> {
     .select()
     .from(paymentOrders)
     .where(eq(paymentOrders.id, refund.paymentOrderId));
-  if (!item || !order) return;
+  // Online payments carry no eKasa receipts (business requirements, "Scope").
+  if (!item || !order || order.channel !== 'kiosk-terminal') return;
   // Delivered the way the customer chose for the sale; if they never got
   // that far (the sweep hasn't run yet), paper is the safe default.
   const delivery = order.receiptDelivery ?? 'paper';
@@ -402,6 +403,7 @@ export async function sweepReceipts(): Promise<void> {
       and(
         eq(paymentRefunds.status, 'succeeded'),
         sql`NOT EXISTS (SELECT 1 FROM fiscal_receipts r WHERE r.refund_id = ${paymentRefunds.id})`,
+        sql`EXISTS (SELECT 1 FROM payment_orders o WHERE o.id = ${paymentRefunds.paymentOrderId} AND o.channel = 'kiosk-terminal')`,
       ),
     );
   for (const refund of refundsWithoutReceipt) await createReturnReceipt(refund.id);

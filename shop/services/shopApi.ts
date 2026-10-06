@@ -30,7 +30,7 @@ export interface PrintOrder {
   fileName: string;
   quantity: number;
   unitPriceCents: number;
-  status: 'created' | 'paid' | 'issued';
+  status: 'created' | 'paid' | 'issued' | 'refunded';
 }
 
 export interface ShopOrderItem {

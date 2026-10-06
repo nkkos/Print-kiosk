@@ -15,6 +15,7 @@ interface PaymentsScreenProps {
 
 const STATUS_LABEL: Record<string, string> = {
   'awaiting-card': 'Ждёт карту',
+  'awaiting-payment': 'Ждёт оплату',
   unknown: 'Выясняется',
   paid: 'Оплачено',
   'partially-refunded': 'Частично возвращено',
@@ -28,6 +29,7 @@ const STATUS_LABEL: Record<string, string> = {
 // Same small colored labels as the other admin screens (admin.css's .sev-*).
 const STATUS_SEV: Record<string, string> = {
   'awaiting-card': 'info',
+  'awaiting-payment': 'info',
   unknown: 'warning',
   paid: 'ok',
   'partially-refunded': 'warning',
@@ -134,7 +136,9 @@ export function PaymentsScreen({ session }: PaymentsScreenProps) {
       <div className="view-header">
         <div>
           <h1 className="view-title">Оплаты</h1>
-          <p className="view-sub">Оплаты картой на стойках, сверка с Viva и чеками eKasa</p>
+          <p className="view-sub">
+            Оплаты картой на стойках и онлайн (портал, магазин), сверка с Viva и чеками eKasa
+          </p>
         </div>
         <label className="payments-day">
           День{' '}
@@ -216,7 +220,7 @@ export function PaymentsScreen({ session }: PaymentsScreenProps) {
         <thead>
           <tr>
             <th>Время</th>
-            <th>Стойка</th>
+            <th>Где</th>
             <th>Сумма</th>
             <th>Статус</th>
             <th>Чек</th>
@@ -243,7 +247,9 @@ export function PaymentsScreen({ session }: PaymentsScreenProps) {
               const rows = [
                 <tr key={payment.id} id={`payment-${payment.id}`}>
                   <td>{formatTime(payment.paidAt ?? payment.createdAt)}</td>
-                  <td>{payment.standId ?? '—'}</td>
+                  <td>
+                    {payment.channel === 'online-checkout' ? 'Онлайн' : (payment.standId ?? '—')}
+                  </td>
                   <td className="payments-amount">
                     {euro(payment.amountCents)}
                     {payment.refundedCents > 0 && (
@@ -360,8 +366,9 @@ export function PaymentsScreen({ session }: PaymentsScreenProps) {
             ) : (
               <>
                 <p className="session-warning">
-                  Деньги вернутся на карту клиента, будет выдан чек возврата. Отменить возврат
-                  нельзя.
+                  {refundTarget.channel === 'online-checkout'
+                    ? 'Деньги вернутся на карту клиента. Возвращённый заказ печати больше нельзя будет напечатать на киоске, заказ магазина закроется. Отменить возврат нельзя.'
+                    : 'Деньги вернутся на карту клиента, будет выдан чек возврата. Отменить возврат нельзя.'}
                 </p>
                 <ul className="refund-items">
                   {refundTarget.items.map((item) => (

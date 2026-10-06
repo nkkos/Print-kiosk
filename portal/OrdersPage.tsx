@@ -19,6 +19,7 @@ const STATUS_LABEL: Record<AccountOrder['status'], string> = {
   created: 'Awaiting payment',
   paid: 'Paid — awaiting fulfillment',
   issued: 'Issued',
+  refunded: 'Refunded',
 };
 
 export function OrdersPage() {

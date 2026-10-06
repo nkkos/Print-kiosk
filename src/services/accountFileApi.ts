@@ -54,7 +54,8 @@ export interface AccountOrder {
   /** 'created' (configured, not paid) | 'paid' (awaiting fulfillment) |
    * 'issued' (its print job succeeded at the kiosk) — see
    * docs/personal-account-requirements.md, "Order status lifecycle". */
-  status: 'created' | 'paid' | 'issued';
+  // 'refunded' — paid online, then refunded by staff (no longer printable).
+  status: 'created' | 'paid' | 'issued' | 'refunded';
 }
 
 async function authedRequest<T>(

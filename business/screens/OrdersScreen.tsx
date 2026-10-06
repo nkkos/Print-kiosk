@@ -9,6 +9,7 @@ const STATUS_LABEL: Record<AccountOrder['status'], string> = {
   created: 'Not billed yet',
   paid: 'Billed — awaiting print',
   issued: 'Printed',
+  refunded: 'Refunded',
 };
 
 // Every order for this account, any status — same data GET /api/accounts/orders

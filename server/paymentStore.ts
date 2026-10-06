@@ -1,8 +1,21 @@
 import { randomUUID } from 'node:crypto';
 import { and, desc, eq, inArray, isNull, sql } from 'drizzle-orm';
 import { db } from './db/client.js';
-import { paymentItems, paymentOrders, paymentRefunds, printOrders } from './db/schema.js';
-import { getPaymentTerminal, type RefundOutcome, type TerminalOutcome } from './paymentTerminal.js';
+import {
+  paymentItems,
+  paymentOrders,
+  paymentRefunds,
+  printOrders,
+  shopOrders,
+} from './db/schema.js';
+import {
+  getPaymentTerminal,
+  simulatorTerminal,
+  type PaymentTerminal,
+  type RefundOutcome,
+  type TerminalOutcome,
+} from './paymentTerminal.js';
+import { vivaTerminal } from './vivaTerminal.js';
 import { reportIncident } from './incidentStore.js';
 import {
   createReturnReceipt,
@@ -396,6 +409,8 @@ interface ClaimedItem {
   paymentOrderId: string;
   amountCents: number;
   description: string;
+  printOrderId: string | null;
+  shopOrderId: string | null;
 }
 
 const CLAIMED_ITEM_COLUMNS = {
@@ -403,7 +418,47 @@ const CLAIMED_ITEM_COLUMNS = {
   paymentOrderId: paymentItems.paymentOrderId,
   amountCents: paymentItems.amountCents,
   description: paymentItems.description,
+  printOrderId: paymentItems.printOrderId,
+  shopOrderId: paymentItems.shopOrderId,
 };
+
+/** Refunds go back through whoever took the money: a payment remembers its
+ * provider, so a simulated payment is never refunded at Viva and vice versa,
+ * whatever PAYMENT_TERMINAL says today. */
+function refundProviderFor(provider: string | null): Pick<PaymentTerminal, 'refund'> {
+  if (provider === 'viva') return vivaTerminal;
+  if (provider === 'simulator') return simulatorTerminal;
+  return getPaymentTerminal();
+}
+
+/** What an online checkout line paid for stops being deliverable once its
+ * money is back: a portal print order can no longer be printed at the
+ * kiosk, a shop order whose every line is refunded is closed. */
+async function withdrawRefundedOrder(item: ClaimedItem): Promise<void> {
+  if (item.printOrderId) {
+    await db
+      .update(printOrders)
+      .set({ status: 'refunded' })
+      .where(
+        and(
+          eq(printOrders.id, item.printOrderId),
+          inArray(printOrders.status, ['paid', 'created']),
+        ),
+      );
+  }
+  if (item.shopOrderId) {
+    const lines = await db
+      .select({ amountCents: paymentItems.amountCents, refundedCents: paymentItems.refundedCents })
+      .from(paymentItems)
+      .where(eq(paymentItems.shopOrderId, item.shopOrderId));
+    if (lines.every((line) => line.refundedCents >= line.amountCents)) {
+      await db
+        .update(shopOrders)
+        .set({ status: 'refunded' })
+        .where(eq(shopOrders.id, item.shopOrderId));
+    }
+  }
+}
 
 /** Returns one item's money — the part both refund paths share: the
  * provider call, the refund record, the payment's status and the return
@@ -435,7 +490,7 @@ async function refundClaimedItem(
     outcome = { state: 'failed', reason: 'no-transaction-id' };
   } else {
     try {
-      outcome = await getPaymentTerminal().refund({
+      outcome = await refundProviderFor(order.provider).refund({
         transactionId: order.providerTransactionId,
         amountCents: item.amountCents,
         reference: refund.id,
@@ -468,6 +523,7 @@ async function refundClaimedItem(
       .update(paymentOrders)
       .set({ status: fullyRefunded ? 'refunded' : 'partially-refunded', updatedAt: now })
       .where(eq(paymentOrders.id, item.paymentOrderId));
+    await withdrawRefundedOrder(item);
     try {
       await createReturnReceipt(refund.id);
     } catch (err) {

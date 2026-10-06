@@ -1,6 +1,7 @@
-import { and, eq, gte } from 'drizzle-orm';
+import { and, eq, gte, inArray } from 'drizzle-orm';
 import { db } from './db/client.js';
-import { accounts, paymentOrders, shopOrders } from './db/schema.js';
+import { accounts, paymentItems, paymentOrders, printOrders, shopOrders } from './db/schema.js';
+import { PRINT_VAT_RATE_PERCENT } from '../src/utils/tariff.js';
 import { CHECKOUT_TIMEOUT_SECONDS, getOnlineCheckout } from './onlineCheckout.js';
 import {
   fulfilCheckout,
@@ -46,6 +47,61 @@ function describe(priced: PricedCheckout): string {
   return parts.join(' + ').slice(0, 2048);
 }
 
+/** The paid checkout's lines as payment items — one per print order and
+ * per catalog item — so the admin panel lists them and staff can refund
+ * them line by line (server/paymentStore.ts's refundItemsByStaff). */
+async function recordCheckoutItems(
+  paymentId: string,
+  result: CheckoutResult,
+  priced: PricedCheckout,
+) {
+  const rows: (typeof paymentItems.$inferInsert)[] = [];
+  if (priced.printOrderIds.length > 0) {
+    const orders = await db
+      .select({
+        id: printOrders.id,
+        fileName: printOrders.fileName,
+        unitPriceCents: printOrders.unitPriceCents,
+      })
+      .from(printOrders)
+      .where(inArray(printOrders.id, priced.printOrderIds));
+    for (const order of orders) {
+      const quantity = priced.printOrderQuantities[order.id] ?? 1;
+      rows.push({
+        paymentOrderId: paymentId,
+        cartItemId: order.id,
+        description: `Tlač: ${order.fileName}`,
+        quantity,
+        unitPriceCents: order.unitPriceCents,
+        amountCents: order.unitPriceCents * quantity,
+        vatRatePercent: PRINT_VAT_RATE_PERCENT,
+        printConfig: '{}',
+        printOrderId: order.id,
+      });
+    }
+  }
+  for (const item of priced.shopItems) {
+    rows.push({
+      paymentOrderId: paymentId,
+      cartItemId: item.productId,
+      description: item.productName,
+      quantity: item.quantity,
+      unitPriceCents: item.unitPriceCents,
+      amountCents: item.unitPriceCents * item.quantity,
+      vatRatePercent: PRINT_VAT_RATE_PERCENT,
+      printConfig: '{}',
+      shopOrderId: result.shopOrderId,
+    });
+  }
+  if (rows.length > 0) await db.insert(paymentItems).values(rows);
+}
+
+/** Confirms a payment as fulfilled: the orders it buys, and its lines. */
+async function fulfil(paymentId: string, priced: PricedCheckout): Promise<void> {
+  const result = await fulfilCheckout(paymentId, priced);
+  await recordCheckoutItems(paymentId, result, priced);
+}
+
 /** Prices the checkout and opens the provider's payment order. Returns the
  * page to send the customer to; `checkoutUrl` is null when there's nothing
  * to pay and the checkout was fulfilled at once. */
@@ -70,7 +126,7 @@ export async function startOnlineCheckout(
     })
     .returning({ id: paymentOrders.id });
   if (priced.totalCents === 0) {
-    await fulfilCheckout(order.id, priced);
+    await fulfil(order.id, priced);
     return { paymentId: order.id, checkoutUrl: null };
   }
 
@@ -135,7 +191,7 @@ export async function confirmOnlineCheckout(paymentId: string): Promise<void> {
     .returning({ id: paymentOrders.id });
   if (settled && state.state === 'paid') {
     const { priced } = JSON.parse(order.checkoutPayload) as StoredCheckout;
-    await fulfilCheckout(paymentId, priced);
+    await fulfil(paymentId, priced);
   }
 }
 

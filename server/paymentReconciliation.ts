@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, inArray, isNotNull, like, lt } from 'drizzle-orm';
+import { and, desc, eq, gte, inArray, isNotNull, like, lt, or } from 'drizzle-orm';
 import { db } from './db/client.js';
 import {
   fiscalReceipts,
@@ -19,6 +19,12 @@ import { listVivaTransactions, type VivaTransaction } from './vivaTerminal.js';
 const TIME_ZONE = 'Europe/Bratislava';
 const PAID_STATUSES = ['paid', 'partially-refunded', 'refunded'];
 const REGISTERED = ['registered', 'registered-offline'];
+// Kiosk terminal payments, and online checkouts (only real ones carry their
+// payload — older simulated portal rows don't).
+const CARD_PAYMENTS = or(
+  eq(paymentOrders.channel, 'kiosk-terminal'),
+  isNotNull(paymentOrders.checkoutPayload),
+);
 
 /** The pavilion's calendar day as a UTC range, e.g. "2026-10-05". */
 export function dayRange(day: string): { start: Date; end: Date } {
@@ -53,6 +59,8 @@ export interface AdminPaymentRow {
   id: string;
   paidAt: string | null;
   createdAt: string;
+  /** 'kiosk-terminal' | 'online-checkout' */
+  channel: string;
   standId: string | null;
   provider: string | null;
   status: string;
@@ -86,11 +94,7 @@ export async function listPaymentsForDay(day: string): Promise<AdminPaymentRow[]
     .select()
     .from(paymentOrders)
     .where(
-      and(
-        eq(paymentOrders.channel, 'kiosk-terminal'),
-        gte(paymentOrders.createdAt, start),
-        lt(paymentOrders.createdAt, end),
-      ),
+      and(CARD_PAYMENTS, gte(paymentOrders.createdAt, start), lt(paymentOrders.createdAt, end)),
     )
     .orderBy(desc(paymentOrders.createdAt));
   if (orders.length === 0) return [];
@@ -106,6 +110,7 @@ export async function listPaymentsForDay(day: string): Promise<AdminPaymentRow[]
       id: order.id,
       paidAt: order.paidAt?.toISOString() ?? null,
       createdAt: order.createdAt.toISOString(),
+      channel: order.channel,
       standId: order.standId,
       provider: order.provider,
       status: order.status,
@@ -180,7 +185,7 @@ export async function reconcileDay(day: string): Promise<Reconciliation> {
     .from(paymentOrders)
     .where(
       and(
-        eq(paymentOrders.channel, 'kiosk-terminal'),
+        CARD_PAYMENTS,
         inArray(paymentOrders.status, PAID_STATUSES),
         gte(paymentOrders.paidAt, start),
         lt(paymentOrders.paidAt, end),
@@ -207,8 +212,23 @@ export async function reconcileDay(day: string): Promise<Reconciliation> {
       ]),
     );
 
-  // eKasa: every paid sale has a registered sale receipt, every refund a return receipt.
-  for (const order of paid) {
+  // A refund may belong to a payment from an earlier day — its channel and
+  // provider are the payment's.
+  const refundOrders = refunds.length
+    ? await db
+        .select({
+          id: paymentOrders.id,
+          provider: paymentOrders.provider,
+          channel: paymentOrders.channel,
+        })
+        .from(paymentOrders)
+        .where(inArray(paymentOrders.id, [...new Set(refunds.map((r) => r.paymentOrderId))]))
+    : [];
+  const orderOf = new Map(refundOrders.map((order) => [order.id, order]));
+
+  // eKasa (kiosk sales only — online payments carry no receipts): every paid
+  // sale has a registered sale receipt, every refund a return receipt.
+  for (const order of paid.filter((o) => o.channel === 'kiosk-terminal')) {
     const sale = receiptRows.find((r) => r.paymentOrderId === order.id && r.kind === 'sale');
     if (!sale) {
       issues.push({
@@ -224,7 +244,9 @@ export async function reconcileDay(day: string): Promise<Reconciliation> {
       });
     }
   }
-  for (const refund of refunds) {
+  for (const refund of refunds.filter(
+    (r) => orderOf.get(r.paymentOrderId)?.channel === 'kiosk-terminal',
+  )) {
     const ret = receiptRows.find((r) => r.refundId === refund.id && r.kind === 'return');
     if (!ret || !REGISTERED.includes(ret.status)) {
       issues.push({
@@ -240,14 +262,6 @@ export async function reconcileDay(day: string): Promise<Reconciliation> {
   let viva: Reconciliation['viva'] = null;
   let vivaError: string | null = null;
   const vivaPaid = paid.filter((order) => order.provider === 'viva');
-  // A refund may belong to a payment from an earlier day — its provider is
-  // the payment's.
-  const refundOrders = refunds.length
-    ? await db
-        .select({ id: paymentOrders.id, provider: paymentOrders.provider })
-        .from(paymentOrders)
-        .where(inArray(paymentOrders.id, [...new Set(refunds.map((r) => r.paymentOrderId))]))
-    : [];
   const vivaOrderIds = new Set(
     refundOrders.filter((order) => order.provider === 'viva').map((order) => order.id),
   );

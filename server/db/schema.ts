@@ -292,6 +292,13 @@ export const paymentItems = pgTable(
     printConfig: text('print_config').notNull(),
     printTaskId: uuid('print_task_id'),
     refundedCents: integer('refunded_cents').notNull().default(0),
+    // Online checkout lines (server/onlineCheckoutStore.ts) point at what they
+    // paid for instead of a print configuration (printConfig is then '{}'):
+    // a portal print order, or the shop order holding a catalog item.
+    printOrderId: uuid('print_order_id').references(() => printOrders.id, {
+      onDelete: 'set null',
+    }),
+    shopOrderId: uuid('shop_order_id').references(() => shopOrders.id, { onDelete: 'set null' }),
   },
   (table) => [index('payment_items_payment_order_id_idx').on(table.paymentOrderId)],
 );

@@ -19,11 +19,13 @@ interface OrdersScreenProps {
 const PRINT_STATUS_LABEL: Record<string, string> = {
   created: 'Не оплачен',
   paid: 'Готов к печати на киоске',
+  refunded: 'Деньги возвращены',
   issued: 'Напечатан',
 };
 
 const SHOP_STATUS_LABEL: Record<string, string> = {
   paid: 'Оплачен, готовим',
+  refunded: 'Деньги возвращены',
   preparing: 'Готовим',
   ready: 'Готов к выдаче',
   'picked-up': 'Выдан',

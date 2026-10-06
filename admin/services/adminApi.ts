@@ -387,6 +387,8 @@ export async function updatePhotoDocument(
 // "Staff and admin panel").
 export interface AdminPayment {
   id: string;
+  /** 'kiosk-terminal' | 'online-checkout' */
+  channel: string;
   paidAt: string | null;
   createdAt: string;
   standId: string | null;
