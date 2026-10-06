@@ -997,7 +997,9 @@ router.get('/api/payments/webhooks/viva', async (_req, res) => {
     res.json({ Key: await vivaWebhookKey() });
   } catch (err) {
     console.error('[payments] webhook key failed:', err);
-    res.status(503).end();
+    // The reason only ever names a missing variable or Viva's HTTP status —
+    // never a credential — and is what staff need to fix the setup.
+    res.status(503).json({ error: err instanceof Error ? err.message : 'Viva unavailable' });
   }
 });
 
