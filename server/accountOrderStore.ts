@@ -1,6 +1,6 @@
 import { and, eq } from 'drizzle-orm';
 import { db } from './db/client.js';
-import { paymentOrders, printOrders } from './db/schema.js';
+import { printOrders } from './db/schema.js';
 
 // Real, DB-backed store for Personal Account's "My orders" — Print Orders
 // created on the portal, tracked through the three-state lifecycle confirmed
@@ -9,11 +9,10 @@ import { paymentOrders, printOrders } from './db/schema.js';
 // 'issued' (its real print job succeeded at the kiosk — automatic, see
 // markOrderIssued below, called from server/printTaskStore.ts).
 //
-// "Payment" here is still simulated — same convention as the kiosk's own
-// already-mocked Payment Status, there's no real payment gateway anywhere in
-// this project yet — but is now its own step (payOrder) instead of bundled
-// into order creation, so 'created' is a real, reachable state rather than
-// skipped straight to 'paid'.
+// Paying is its own step after creation, so 'created' is a real, reachable
+// state: a real online payment (server/onlineCheckoutStore.ts, which marks
+// the order paid once the provider confirms) or company billing
+// (payOrderForCompany below).
 
 const ORDER_ROW_COLUMNS = {
   id: printOrders.id,
@@ -87,45 +86,6 @@ export async function createOrder(params: CreateOrderParams): Promise<AccountOrd
     .returning(ORDER_ROW_COLUMNS);
 
   return printOrder as AccountOrder;
-}
-
-/** Pays a 'created' order — 'created' -> 'paid'. Ownership-checked
- * (accountId must match) and idempotency-guarded (no-ops, returns null, on
- * an order that isn't 'created' — e.g. a double-submit of "Pay now"). */
-export async function payOrder(accountId: string, orderId: string): Promise<AccountOrder | null> {
-  const [order] = await db
-    .select({ unitPriceCents: printOrders.unitPriceCents, quantity: printOrders.quantity })
-    .from(printOrders)
-    .where(
-      and(
-        eq(printOrders.id, orderId),
-        eq(printOrders.accountId, accountId),
-        eq(printOrders.status, 'created'),
-      ),
-    );
-  if (!order) return null;
-
-  const [paymentOrder] = await db
-    .insert(paymentOrders)
-    .values({
-      status: 'paid',
-      amountCents: order.unitPriceCents * order.quantity,
-      paidAt: new Date(),
-    })
-    .returning({ id: paymentOrders.id });
-
-  const [updated] = await db
-    .update(printOrders)
-    .set({
-      paymentOrderId: paymentOrder.id,
-      status: 'paid',
-      // Fully paid, always — no partial-payment concept exists here.
-      paidQuantity: order.quantity,
-    })
-    .where(eq(printOrders.id, orderId))
-    .returning(ORDER_ROW_COLUMNS);
-
-  return updated as AccountOrder;
 }
 
 /** Pays a 'created' order by billing it to a company instead of a real

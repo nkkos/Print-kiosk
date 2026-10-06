@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useShopSession } from './useShopSession';
 import { useCart } from './useCart';
 import { ShopNav } from './ShopNav';
@@ -8,7 +8,7 @@ import { CartScreen } from './screens/CartScreen';
 import { CheckoutScreen } from './screens/CheckoutScreen';
 import { ConfirmationScreen } from './screens/ConfirmationScreen';
 import { OrdersScreen } from './screens/OrdersScreen';
-import type { CheckoutResult } from './services/shopApi';
+import { waitForOnlinePayment, type CheckoutResult } from './services/shopApi';
 
 export type ShopScreen = 'catalog' | 'product' | 'cart' | 'checkout' | 'confirmation' | 'orders';
 
@@ -27,6 +27,33 @@ export function ShopApp() {
     setSelectedProductId(productId);
     setScreen('product');
   }
+
+  // Back from the payment page (server/routes.ts's GET /payments/return adds
+  // ?payment=<id>): wait for the server to confirm it with the provider.
+  const [paymentNotice, setPaymentNotice] = useState<string | null>(null);
+  useEffect(() => {
+    const paymentId = new URLSearchParams(window.location.search).get('payment');
+    if (!paymentId || !session) return;
+    window.history.replaceState(null, '', window.location.pathname);
+    setPaymentNotice('Проверяем оплату…');
+    waitForOnlinePayment(session.sessionToken, paymentId)
+      .then((payment) => {
+        if (payment.status === 'paid' && payment.result) {
+          setPaymentNotice(null);
+          handleCheckoutComplete(payment.result);
+        } else {
+          setPaymentNotice(
+            payment.status === 'awaiting-payment'
+              ? 'Оплата ещё подтверждается — заказ появится в «Моих заказах», как только она пройдёт.'
+              : 'Оплата не прошла, деньги не списаны. Можно попробовать ещё раз.',
+          );
+          setScreen('cart');
+        }
+      })
+      .catch(() => setPaymentNotice(null));
+    // Runs once the session is known; the payment id is read from the URL once.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.sessionToken]);
 
   function handleCheckoutComplete(result: CheckoutResult) {
     cart.clear();
@@ -47,6 +74,11 @@ export function ShopApp() {
         }}
       />
       <div className="shop-content">
+        {paymentNotice && (
+          <p className="shop-error" id="shop-payment-notice">
+            {paymentNotice}
+          </p>
+        )}
         {screen === 'catalog' && <CatalogScreen onSelectProduct={selectProduct} />}
         {screen === 'product' && selectedProductId && (
           <ProductScreen

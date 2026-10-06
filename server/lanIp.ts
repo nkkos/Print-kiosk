@@ -59,3 +59,9 @@ export function publicBackendUrl(): string {
   if (railwayDomain) return `https://${railwayDomain}`;
   return `http://${getLanIPv4()}:${Number(process.env.PORT ?? 3001)}`;
 }
+
+/** Where the portal (and the shop/business mini-apps next to it) is served:
+ * PORTAL_URL when deployed, else this machine's LAN IP at Vite's port. */
+export function portalBaseUrl(): string {
+  return process.env.PORTAL_URL ?? `http://${getLanIPv4()}:5173`;
+}

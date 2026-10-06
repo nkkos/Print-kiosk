@@ -1,13 +1,6 @@
 import { and, eq, inArray } from 'drizzle-orm';
 import { db } from './db/client.js';
-import {
-  accounts,
-  paymentOrders,
-  printOrders,
-  products,
-  shopOrders,
-  shopOrderItems,
-} from './db/schema.js';
+import { accounts, printOrders, products, shopOrders, shopOrderItems } from './db/schema.js';
 
 // Shop checkout (docs/shop-checkout-requirements.md) — splits one payment into up to
 // two independent orders by fulfillment type: the existing printOrders row(s) for any
@@ -42,27 +35,41 @@ export class InvalidPrintOrderError extends Error {}
 export class InvalidProductError extends Error {}
 export class EmailNotVerifiedError extends Error {}
 
-/** One payment for the whole cart (docs/shop-checkout-requirements.md, "Payment") —
- * splits into a printOrders update (self-service) and/or a new shopOrders +
- * shopOrderItems row (staff-fulfilled), never a single polymorphic order row. */
-export async function checkout(params: CheckoutParams): Promise<CheckoutResult> {
+/** What one checkout buys, priced from the server's own records — the
+ * print orders' stored prices and the current catalog, never the client.
+ * Stored on the payment order until the payment is confirmed
+ * (server/onlineCheckoutStore.ts). */
+export interface PricedCheckout {
+  accountId: string;
+  printOrderIds: string[];
+  printOrderQuantities: Record<string, number>;
+  shopItems: { productId: string; productName: string; unitPriceCents: number; quantity: number }[];
+  totalCents: number;
+}
+
+/** Validates and prices a checkout (docs/shop-checkout-requirements.md,
+ * "Payment" — one payment for the whole cart). `requireVerifiedEmail` keeps
+ * the shop's rule that an unverified account can't complete checkout. */
+export async function priceCheckout(
+  params: CheckoutParams,
+  { requireVerifiedEmail }: { requireVerifiedEmail: boolean },
+): Promise<PricedCheckout> {
   if (params.printOrderIds.length === 0 && params.shopItems.length === 0) {
     throw new EmptyCheckoutError('Cart is empty');
   }
 
-  // The real enforcement point for the "Email verification gate"
-  // (docs/shop-checkout-requirements.md) — the checkout screen's polling is a UX
-  // nicety, this is what actually stops payment from an unverified account.
-  const [account] = await db
-    .select({ emailVerified: accounts.emailVerified })
-    .from(accounts)
-    .where(eq(accounts.id, params.accountId));
-  if (!account?.emailVerified) {
-    throw new EmailNotVerifiedError('Email must be verified before checkout can complete');
+  if (requireVerifiedEmail) {
+    const [account] = await db
+      .select({ emailVerified: accounts.emailVerified })
+      .from(accounts)
+      .where(eq(accounts.id, params.accountId));
+    if (!account?.emailVerified) {
+      throw new EmailNotVerifiedError('Email must be verified before checkout can complete');
+    }
   }
 
-  let printOrdersTotalCents = 0;
-  const printOrderQuantities = new Map<string, number>();
+  let totalCents = 0;
+  const printOrderQuantities: Record<string, number> = {};
   if (params.printOrderIds.length > 0) {
     const rows = await db
       .select({
@@ -83,14 +90,13 @@ export async function checkout(params: CheckoutParams): Promise<CheckoutResult> 
         'One or more print orders were not found, not owned by this account, or already paid',
       );
     }
-    printOrdersTotalCents = rows.reduce((sum, row) => sum + row.unitPriceCents * row.quantity, 0);
-    for (const row of rows) printOrderQuantities.set(row.id, row.quantity);
+    for (const row of rows) {
+      totalCents += row.unitPriceCents * row.quantity;
+      printOrderQuantities[row.id] = row.quantity;
+    }
   }
 
-  // Priced from the catalog at checkout time, never trusted from the client — unlike
-  // the still-mocked kiosk Cart, this is a real payment.
-  const shopItemRows: { productId: string; productName: string; unitPriceCents: number }[] = [];
-  let shopItemsTotalCents = 0;
+  const shopItems: PricedCheckout['shopItems'] = [];
   if (params.shopItems.length > 0) {
     const productIds = params.shopItems.map((item) => item.productId);
     const catalogRows = await db
@@ -104,71 +110,69 @@ export async function checkout(params: CheckoutParams): Promise<CheckoutResult> 
       if (!product || item.quantity < 1) {
         throw new InvalidProductError(`Invalid or inactive product: ${item.productId}`);
       }
-      shopItemsTotalCents += product.priceCents * item.quantity;
-      shopItemRows.push({
+      totalCents += product.priceCents * item.quantity;
+      shopItems.push({
         productId: product.id,
         productName: product.name,
         unitPriceCents: product.priceCents,
+        quantity: item.quantity,
       });
     }
   }
 
-  const [paymentOrder] = await db
-    .insert(paymentOrders)
-    .values({
-      accountId: params.accountId,
-      status: 'paid',
-      amountCents: printOrdersTotalCents + shopItemsTotalCents,
-      paidAt: new Date(),
-    })
-    .returning({ id: paymentOrders.id });
+  return {
+    accountId: params.accountId,
+    printOrderIds: params.printOrderIds,
+    printOrderQuantities,
+    shopItems,
+    totalCents,
+  };
+}
 
-  if (params.printOrderIds.length > 0) {
-    // paidQuantity mirrors each row's own quantity — no partial-payment concept here
-    // either, same as server/accountOrderStore.ts's payOrder — set per row since it
-    // varies per order, unlike paymentOrderId/status which are the same for all of them.
-    for (const id of params.printOrderIds) {
-      await db
-        .update(printOrders)
-        .set({
-          paymentOrderId: paymentOrder.id,
-          status: 'paid',
-          paidQuantity: printOrderQuantities.get(id),
-        })
-        .where(
-          and(
-            eq(printOrders.id, id),
-            eq(printOrders.accountId, params.accountId),
-            eq(printOrders.status, 'created'),
-          ),
-        );
-    }
+/** Carries out a paid checkout — splits it into the print orders now paid
+ * (self-service) and one new shop order (staff-fulfilled). Called once the
+ * payment is confirmed; a print order no longer 'created' (paid meanwhile
+ * some other way) is left alone. */
+export async function fulfilCheckout(
+  paymentOrderId: string,
+  priced: PricedCheckout,
+): Promise<CheckoutResult> {
+  for (const id of priced.printOrderIds) {
+    await db
+      .update(printOrders)
+      .set({
+        paymentOrderId,
+        status: 'paid',
+        paidQuantity: priced.printOrderQuantities[id],
+      })
+      .where(
+        and(
+          eq(printOrders.id, id),
+          eq(printOrders.accountId, priced.accountId),
+          eq(printOrders.status, 'created'),
+        ),
+      );
   }
 
   let shopOrderId: string | null = null;
-  if (params.shopItems.length > 0) {
+  if (priced.shopItems.length > 0) {
     const [shopOrder] = await db
       .insert(shopOrders)
-      .values({
-        accountId: params.accountId,
-        paymentOrderId: paymentOrder.id,
-        status: 'paid',
-      })
+      .values({ accountId: priced.accountId, paymentOrderId, status: 'paid' })
       .returning({ id: shopOrders.id });
     shopOrderId = shopOrder.id;
-
     await db.insert(shopOrderItems).values(
-      params.shopItems.map((item, index) => ({
+      priced.shopItems.map((item) => ({
         shopOrderId: shopOrder.id,
-        productId: shopItemRows[index].productId,
-        productName: shopItemRows[index].productName,
-        unitPriceCents: shopItemRows[index].unitPriceCents,
+        productId: item.productId,
+        productName: item.productName,
+        unitPriceCents: item.unitPriceCents,
         quantity: item.quantity,
       })),
     );
   }
 
-  return { paymentOrderId: paymentOrder.id, printOrderIds: params.printOrderIds, shopOrderId };
+  return { paymentOrderId, printOrderIds: priced.printOrderIds, shopOrderId };
 }
 
 export interface ShopOrderItemView {

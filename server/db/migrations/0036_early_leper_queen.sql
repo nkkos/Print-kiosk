@@ -1,0 +1,1 @@
+ALTER TABLE "payment_orders" ADD COLUMN "checkout_payload" text;

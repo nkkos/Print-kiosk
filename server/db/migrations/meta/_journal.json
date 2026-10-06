@@ -253,6 +253,13 @@
       "when": 1790944679624,
       "tag": "0035_damp_weapon_omega",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1791276684920,
+      "tag": "0036_early_leper_queen",
+      "breakpoints": true
     }
   ]
 }

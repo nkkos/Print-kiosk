@@ -102,10 +102,35 @@ export async function listShopOrders(sessionToken: string): Promise<ShopOrder[]>
   return request('GET', '/api/accounts/shop-orders', sessionToken);
 }
 
+/** Opens the online payment for the cart (server/onlineCheckoutStore.ts):
+ * the payment page to send the customer to, or null when nothing was due
+ * and the orders are already placed. */
 export async function checkout(
   sessionToken: string,
   printOrderIds: string[],
   shopItems: { productId: string; quantity: number }[],
-): Promise<CheckoutResult> {
+): Promise<{ paymentId: string; checkoutUrl: string | null }> {
   return request('POST', '/api/shop/checkout', sessionToken, { printOrderIds, shopItems });
+}
+
+export interface OnlinePayment {
+  id: string;
+  status: string;
+  result: CheckoutResult | null;
+}
+
+/** Polls the payment until the server has confirmed it with the provider
+ * (or about a minute has passed). */
+export async function waitForOnlinePayment(
+  sessionToken: string,
+  paymentId: string,
+): Promise<OnlinePayment> {
+  const get = () =>
+    request<OnlinePayment>('GET', `/api/online-payments/${paymentId}`, sessionToken);
+  let payment = await get();
+  for (let attempt = 0; payment.status === 'awaiting-payment' && attempt < 30; attempt++) {
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+    payment = await get();
+  }
+  return payment;
 }

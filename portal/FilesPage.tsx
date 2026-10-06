@@ -63,8 +63,8 @@ export interface ConfigureAndPayProps {
   // <Company>" instead of a real/simulated payment, server/accountOrderStore.ts's
   // payOrderForCompany) — same two-consumer-extraction rule already governing
   // this codebase, not a speculative prop.
-  // The result is ignored — the portal's payOrder returns the paid order,
-  // the business portal's company billing returns nothing.
+  // The portal's payOrder returns the payment page to go to (a real online
+  // payment); the business portal's company billing returns nothing.
   onPay?: (sessionToken: string, orderId: string) => Promise<unknown>;
   payLabel?: string;
 }
@@ -73,7 +73,7 @@ export function ConfigureAndPay({
   sessionToken,
   file,
   onPay = payOrder,
-  payLabel = 'Pay now (simulated)',
+  payLabel = 'Pay now',
 }: ConfigureAndPayProps) {
   const [paperSize, setPaperSize] = useState<CreateOrderParams['paperSize']>('A4');
   const [sides, setSides] = useState<CreateOrderParams['sides']>('single');
@@ -189,7 +189,7 @@ export function ConfigureAndPay({
       pageRange,
       pagesPerSheet: effectivePagesPerSheet,
       quantity,
-      unitPriceCents: Math.round(unitPrice * 100),
+      pageCount: pagesToPrint,
     };
   }
 
@@ -216,7 +216,13 @@ export function ConfigureAndPay({
     setError(null);
     try {
       const order = await createOrder(sessionToken, buildOrderParams());
-      await onPay(sessionToken, order.id);
+      const payment = await onPay(sessionToken, order.id);
+      const checkoutUrl = (payment as { checkoutUrl?: string | null } | undefined)?.checkoutUrl;
+      if (checkoutUrl) {
+        // Off to the payment page; it brings the customer back to My orders.
+        window.location.href = checkoutUrl;
+        return;
+      }
       setResult('paid');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Payment failed');

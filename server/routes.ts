@@ -9,7 +9,7 @@ import { writeFile, readFile, unlink } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { randomUUID } from 'node:crypto';
-import { getLanIPv4, publicBackendUrl } from './lanIp.js';
+import { portalBaseUrl, publicBackendUrl } from './lanIp.js';
 import { addFile, listFiles, uploadsDir, getUploadedFile } from './uploadStore.js';
 import { addEmail, listEmails } from './emailStore.js';
 import {
@@ -23,7 +23,7 @@ import {
   renameFolder,
   deleteFolder,
 } from './accountFileStore.js';
-import { createOrder, payOrder, payOrderForCompany, listOrders } from './accountOrderStore.js';
+import { createOrder, payOrderForCompany, listOrders } from './accountOrderStore.js';
 import { getCompanyForAccount, acceptCompanyInvite } from './companyStore.js';
 import { listInvoicesForCompany } from './companyInvoiceStore.js';
 import { listActiveProducts } from './productStore.js';
@@ -34,7 +34,6 @@ import {
 } from './photoDocumentStore.js';
 import { recordPhotoOrder, markPhotoOrdersPrinted } from './photoOrderStore.js';
 import {
-  checkout,
   listShopOrders,
   EmptyCheckoutError,
   InvalidPrintOrderError,
@@ -123,6 +122,15 @@ import {
   type PrintOptions,
 } from './printTaskStore.js';
 import { tryPrintTask } from './printOrchestrator.js';
+import {
+  startOnlineCheckout,
+  confirmOnlineCheckout,
+  findOnlinePaymentByOrderCode,
+  getOnlineCheckoutView,
+} from './onlineCheckoutStore.js';
+import { getOnlineCheckout, simulatorCheckout, vivaWebhookKey } from './onlineCheckout.js';
+import { unitPriceCentsFor } from '../src/utils/tariff.js';
+import { sheetSidesFor } from '../src/utils/nUpLayout.js';
 import {
   createKioskPayment,
   refreshPayment,
@@ -218,7 +226,7 @@ router.get('/api/config', (_req, res) => {
   // same reasoning as lanUploadUrl above: a phone scanning the kiosk's
   // "Register" QR code is a separate device, for which "localhost" would
   // resolve to the phone itself, not this machine.
-  const portalUrl = process.env.PORTAL_URL ?? `http://${getLanIPv4()}:5173`;
+  const portalUrl = portalBaseUrl();
   res.json({ lanUploadUrl, portalUrl });
 });
 
@@ -802,9 +810,9 @@ router.get('/api/account-files/:fileId/content', requireAccountAuth, async (req,
 
 // Configures a Print Order for later payment (docs/personal-account-requirements.md,
 // "Order status lifecycle") — created in the 'created' state, not paid yet.
-// The price itself is trusted from the client (src/utils/pricing.ts's
-// computeUnitPrice) rather than recomputed server-side — acceptable since no
-// real money is involved here.
+// The price is the server's own (src/utils/tariff.ts) from the pages the
+// portal counted, the same rule as the kiosk (server/paymentStore.ts) —
+// the order is paid for with real money (server/onlineCheckoutStore.ts).
 router.post('/api/accounts/orders', requireAccountAuth, async (req, res) => {
   const accountId = (req as AuthenticatedRequest).accountId!;
   const {
@@ -817,9 +825,10 @@ router.post('/api/accounts/orders', requireAccountAuth, async (req, res) => {
     scale,
     pageRange,
     quantity,
-    unitPriceCents,
+    pageCount,
     pagesPerSheet,
   } = (req.body ?? {}) as {
+    pageCount?: unknown;
     pagesPerSheet?: unknown;
     accountFileId?: unknown;
     fileName?: unknown;
@@ -830,7 +839,6 @@ router.post('/api/accounts/orders', requireAccountAuth, async (req, res) => {
     scale?: unknown;
     pageRange?: unknown;
     quantity?: unknown;
-    unitPriceCents?: unknown;
   };
   if (
     typeof accountFileId !== 'string' ||
@@ -845,11 +853,23 @@ router.post('/api/accounts/orders', requireAccountAuth, async (req, res) => {
     (pageRange !== undefined && typeof pageRange !== 'string') ||
     typeof quantity !== 'number' ||
     quantity < 1 ||
-    typeof unitPriceCents !== 'number' ||
-    unitPriceCents < 0 ||
+    !Number.isInteger(quantity) ||
+    typeof pageCount !== 'number' ||
+    !Number.isInteger(pageCount) ||
+    pageCount < 1 ||
     (pagesPerSheet !== undefined && !isPagesPerSheet(pagesPerSheet))
   ) {
     res.status(400).json({ error: 'Invalid order' });
+    return;
+  }
+  const unitPriceCents = unitPriceCentsFor(
+    sheetSidesFor(pageCount, pagesPerSheet ?? 1),
+    paperSize,
+    color,
+    sides,
+  );
+  if (unitPriceCents === null) {
+    res.status(400).json({ error: 'No price for this configuration' });
     return;
   }
   const order = await createOrder({
@@ -869,17 +889,128 @@ router.post('/api/accounts/orders', requireAccountAuth, async (req, res) => {
   res.status(201).json(order);
 });
 
-// Pays a 'created' order — 'created' -> 'paid' (docs/personal-account-requirements.md,
-// "Order status lifecycle"). Still simulated, same convention as everywhere
-// else in this project — no real payment gateway exists yet.
+// Pays a 'created' order online (docs/payments-business-requirements.md,
+// "Portal: online payments") — opens the payment page; the order becomes
+// 'paid' only once the provider confirms (server/onlineCheckoutStore.ts).
 router.post('/api/accounts/orders/:id/pay', requireAccountAuth, async (req, res) => {
   const accountId = (req as AuthenticatedRequest).accountId!;
-  const order = await payOrder(accountId, paramString(req.params.id));
-  if (!order) {
-    res.status(404).json({ error: 'Order not found, not owned by this account, or already paid' });
+  try {
+    res
+      .status(201)
+      .json(
+        await startOnlineCheckout(
+          { accountId, printOrderIds: [paramString(req.params.id)], shopItems: [] },
+          { requireVerifiedEmail: false, returnTo: 'portal' },
+        ),
+      );
+  } catch (err) {
+    if (err instanceof InvalidPrintOrderError) {
+      res
+        .status(404)
+        .json({ error: 'Order not found, not owned by this account, or already paid' });
+      return;
+    }
+    throw err;
+  }
+});
+
+// An online payment as its own account sees it — confirmed with the
+// provider first while still open. The portal/shop poll this after the
+// customer comes back from the payment page.
+router.get('/api/online-payments/:id', requireAccountAuth, async (req, res) => {
+  const view = await getOnlineCheckoutView(
+    paramString(req.params.id),
+    (req as AuthenticatedRequest).accountId!,
+  );
+  if (!view) {
+    res.status(404).json({ error: 'Payment not found' });
     return;
   }
-  res.json(order);
+  res.json(view);
+});
+
+// Where the payment page sends the customer back (the Viva payment source's
+// Success and Failure URL, or our simulator). The query string is never
+// trusted — the payment is confirmed with the provider, then the customer
+// goes on to the portal or the shop, which shows the outcome.
+router.get('/payments/return', async (req, res) => {
+  const orderCode = typeof req.query.s === 'string' && /^\d+$/.test(req.query.s) ? req.query.s : '';
+  const paymentId = orderCode ? await findOnlinePaymentByOrderCode(orderCode) : null;
+  if (!paymentId) {
+    res.redirect(`${portalBaseUrl()}/portal/orders.html`);
+    return;
+  }
+  try {
+    await confirmOnlineCheckout(paymentId);
+  } catch (err) {
+    console.error('[payments] confirm on return failed:', err);
+  }
+  const view = await getOnlineCheckoutView(paymentId, null);
+  res.redirect(
+    view?.returnTo === 'shop'
+      ? `${portalBaseUrl()}/shop/?payment=${paymentId}`
+      : `${portalBaseUrl()}/portal/orders.html?payment=${paymentId}`,
+  );
+});
+
+// The simulated payment page (ONLINE_CHECKOUT unset) — stands in for Viva
+// Smart Checkout during development.
+router.get('/payments/simulator/:orderCode', (req, res) => {
+  if (getOnlineCheckout().provider !== 'simulator') {
+    res.status(404).end();
+    return;
+  }
+  const orderCode = paramString(req.params.orderCode).replace(/\D/g, '');
+  res.type('html').send(`<!doctype html>
+<html lang="en"><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Payment simulator</title>
+<style>body{font:16px system-ui,sans-serif;background:#f2f6f5;color:#101817;display:grid;place-items:center;min-height:100vh;margin:0}
+main{background:#fff;border:1px solid #d7e0de;padding:24px;max-width:22rem;width:100%;display:grid;gap:12px}
+button{font:inherit;padding:12px;border:1px solid #b7c4c1;background:#fff;cursor:pointer}button.pay{background:#0c6e68;color:#fff;border-color:#0c6e68}</style></head>
+<body><main><h1>Simulated payment page</h1><p>Stands in for Viva Smart Checkout. Order ${orderCode}.</p>
+<form method="post"><input type="hidden" name="outcome" value="paid" /><button class="pay" id="checkout-simulator-pay" type="submit">Pay</button></form>
+<form method="post"><input type="hidden" name="outcome" value="cancelled" /><button id="checkout-simulator-cancel" type="submit">Cancel</button></form>
+</main></body></html>`);
+});
+
+router.post(
+  '/payments/simulator/:orderCode',
+  express.urlencoded({ extended: false }),
+  (req, res) => {
+    if (getOnlineCheckout().provider !== 'simulator') {
+      res.status(404).end();
+      return;
+    }
+    const orderCode = paramString(req.params.orderCode).replace(/\D/g, '');
+    const outcome = (req.body as { outcome?: unknown }).outcome === 'paid' ? 'paid' : 'cancelled';
+    simulatorCheckout.settle(orderCode, outcome);
+    res.redirect(`/payments/return?s=${orderCode}${outcome === 'cancelled' ? '&cancel=1' : ''}`);
+  },
+);
+
+// Viva webhooks ("Transaction Payment Created"; set up in the Viva dashboard
+// with this URL once deployed). GET is Viva's verification handshake; a POST
+// only names the payment — it's confirmed by asking Viva, never from the body.
+router.get('/api/payments/webhooks/viva', async (_req, res) => {
+  try {
+    res.json({ Key: await vivaWebhookKey() });
+  } catch (err) {
+    console.error('[payments] webhook key failed:', err);
+    res.status(503).end();
+  }
+});
+
+router.post('/api/payments/webhooks/viva', async (req, res) => {
+  const reference = (req.body as { EventData?: { MerchantTrns?: unknown } } | undefined)?.EventData
+    ?.MerchantTrns;
+  if (typeof reference === 'string' && /^[0-9a-f-]{36}$/i.test(reference)) {
+    try {
+      await confirmOnlineCheckout(reference);
+    } catch (err) {
+      console.error('[payments] webhook confirm failed:', err);
+    }
+  }
+  res.status(200).end();
 });
 
 // B2B company-billing portal (business/) — pays a 'created' order by
@@ -1228,8 +1359,14 @@ router.post('/api/shop/checkout', requireAccountAuth, async (req, res) => {
     return;
   }
   try {
-    const result = await checkout({ accountId, printOrderIds, shopItems });
-    res.status(201).json(result);
+    res
+      .status(201)
+      .json(
+        await startOnlineCheckout(
+          { accountId, printOrderIds, shopItems },
+          { requireVerifiedEmail: true, returnTo: 'shop' },
+        ),
+      );
   } catch (err) {
     if (err instanceof EmptyCheckoutError) {
       res.status(400).json({ error: 'Cart is empty' });
@@ -1603,7 +1740,7 @@ router.get('/scan/:id', async (req, res) => {
     res.status(404).send('Scan session not found.');
     return;
   }
-  const portalUrl = process.env.PORTAL_URL ?? `http://${getLanIPv4()}:5173`;
+  const portalUrl = portalBaseUrl();
   res.type('html').send(renderScanPhoneApp(scanSessionId, portalUrl));
 });
 

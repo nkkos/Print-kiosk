@@ -164,7 +164,9 @@ export const paymentOrders = pgTable('payment_orders', {
   // being inferred by joining through either child table. Not set for the kiosk's own
   // (still-mocked) Cart/Payment flow, which has no account requirement.
   accountId: uuid('account_id').references(() => accounts.id, { onDelete: 'set null' }),
-  // Portal/shop rows: 'ready-for-payment' | 'paid' | 'cancelled-by-client'.
+  // Online checkout rows (portal/shop): 'awaiting-payment' -> 'paid' |
+  // 'cancelled' | 'timed-out' | 'failed' (older simulated rows:
+  // 'ready-for-payment' | 'paid' | 'cancelled-by-client').
   // Kiosk terminal rows (server/paymentStore.ts): 'awaiting-card' -> 'paid' |
   // 'declined' | 'cancelled' | 'timed-out' | 'failed', 'unknown' while the
   // outcome is being recovered (docs/payments-technical-requirements.md);
@@ -187,6 +189,9 @@ export const paymentOrders = pgTable('payment_orders', {
   // (docs/payments-business-requirements.md, "Receipts").
   receiptDelivery: text('receipt_delivery'),
   receiptEmail: text('receipt_email'),
+  // Online checkout (server/onlineCheckoutStore.ts): stringified JSON of what
+  // the payment buys — fulfilled only once the provider confirms payment.
+  checkoutPayload: text('checkout_payload'),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
 

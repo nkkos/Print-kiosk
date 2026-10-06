@@ -136,7 +136,9 @@ export interface CreateOrderParams {
   pageRange?: string;
   pagesPerSheet?: PagesPerSheet;
   quantity: number;
-  unitPriceCents: number;
+  /** Pages selected for printing — the server prices the order from it
+   * (src/utils/tariff.ts). */
+  pageCount: number;
 }
 
 /** Configures an order without paying for it yet — 'created' state
@@ -152,9 +154,52 @@ export async function createOrder(
   });
 }
 
-/** Pays a 'created' order — 'created' -> 'paid'. */
-export async function payOrder(sessionToken: string, orderId: string): Promise<AccountOrder> {
+export interface OnlineCheckoutStart {
+  paymentId: string;
+  /** The payment page to send the customer to — null when nothing was due
+   * and the order is already paid. */
+  checkoutUrl: string | null;
+}
+
+/** Opens an online payment for a 'created' order
+ * (server/onlineCheckoutStore.ts) — the order becomes 'paid' once the
+ * payment provider confirms, after the customer returns. */
+export async function payOrder(
+  sessionToken: string,
+  orderId: string,
+): Promise<OnlineCheckoutStart> {
   return authedRequest(`/api/accounts/orders/${orderId}/pay`, sessionToken, { method: 'POST' });
+}
+
+export interface OnlinePayment {
+  id: string;
+  /** 'awaiting-payment' | 'paid' | 'cancelled' | 'timed-out' | 'failed' */
+  status: string;
+  amountCents: number;
+  returnTo: 'portal' | 'shop';
+  result: { paymentOrderId: string; printOrderIds: string[]; shopOrderId: string | null } | null;
+}
+
+/** An online payment's outcome — confirmed with the provider by the server. */
+export async function getOnlinePayment(
+  sessionToken: string,
+  paymentId: string,
+): Promise<OnlinePayment> {
+  return authedRequest(`/api/online-payments/${paymentId}`, sessionToken);
+}
+
+/** Polls an online payment until it leaves 'awaiting-payment' (or gives up
+ * after about a minute, leaving it to the server's own background check). */
+export async function waitForOnlinePayment(
+  sessionToken: string,
+  paymentId: string,
+): Promise<OnlinePayment> {
+  let payment = await getOnlinePayment(sessionToken, paymentId);
+  for (let attempt = 0; payment.status === 'awaiting-payment' && attempt < 30; attempt++) {
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+    payment = await getOnlinePayment(sessionToken, paymentId);
+  }
+  return payment;
 }
 
 /** Every order for the account, any status — the portal's own full "My

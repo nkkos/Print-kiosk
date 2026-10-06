@@ -5,6 +5,7 @@ import {
   getMe,
   checkout,
   type CheckoutResult,
+  waitForOnlinePayment,
 } from '../services/shopApi';
 import { loadShopSession, type ShopSession } from '../shopSession';
 
@@ -62,8 +63,15 @@ export function CheckoutScreen({
       productId,
       quantity,
     }));
-    const result = await checkout(sessionToken, printOrderIds, shopItems);
-    onComplete(result);
+    const { paymentId, checkoutUrl } = await checkout(sessionToken, printOrderIds, shopItems);
+    if (checkoutUrl) {
+      // Off to the payment page; it brings the customer back to the shop
+      // with ?payment=<id>, where ShopApp shows the outcome.
+      window.location.href = checkoutUrl;
+      return;
+    }
+    const payment = await waitForOnlinePayment(sessionToken, paymentId);
+    if (payment.result) onComplete(payment.result);
   }
 
   function waitForVerification(sessionToken: string) {

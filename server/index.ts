@@ -26,6 +26,7 @@ const { sweepOrphanedCopySessions } = await import('./copyStore.js');
 const { warmUpLibreOffice } = await import('./documentConverter.js');
 const { sweepReceipts } = await import('./fiscalReceiptStore.js');
 const { runNightlyReconciliation } = await import('./paymentReconciliation.js');
+const { sweepOnlineCheckouts } = await import('./onlineCheckoutStore.js');
 const { reportIncident } = await import('./incidentStore.js');
 
 // Dev-only backend for the QR/Email upload methods (docs/qr-upload-requirements.md,
@@ -149,6 +150,14 @@ async function main() {
       console.error('[index] Nightly reconciliation failed:', err),
     );
   setInterval(runReconciliation, 10 * 60_000);
+
+  // Online payments whose customer never came back from the payment page
+  // (server/onlineCheckoutStore.ts) — asked about every 30 s.
+  const runCheckoutSweep = () =>
+    sweepOnlineCheckouts().catch((err: unknown) =>
+      console.error('[index] Online checkout sweep failed:', err),
+    );
+  setInterval(runCheckoutSweep, 30_000);
 
   // Pays LibreOffice's cold-start cost once now instead of during a real
   // user's first .doc/.docx conversion (server/documentConverter.ts).
