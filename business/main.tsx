@@ -7,6 +7,9 @@ import { BusinessApp } from './BusinessApp';
 // separate landing page), so there's no reason to hand-roll a second
 // design system for it.
 import '../admin/admin.css';
+import { showEnvironmentBanner } from '../src/utils/environmentBanner';
+
+showEnvironmentBanner();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

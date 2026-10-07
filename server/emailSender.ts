@@ -1,5 +1,6 @@
 import { Resend } from 'resend';
 import { getLanIPv4 } from './lanIp.js';
+import { environmentPrefix } from './appEnv.js';
 
 // Sends account-lifecycle emails (verification, password reset) via Resend
 // — see README.md, "Portal," for domain-verification setup. Dev fallback:
@@ -28,7 +29,12 @@ async function sendEmail(to: string, subject: string, html: string, consoleLink:
     console.log(`[emailSender] Link: ${consoleLink}`);
     return;
   }
-  const { error } = await resend.emails.send({ from: FROM_EMAIL, to, subject, html });
+  const { error } = await resend.emails.send({
+    from: FROM_EMAIL,
+    to,
+    subject: environmentPrefix() + subject,
+    html,
+  });
   if (error) {
     throw new Error(error.message);
   }
@@ -92,7 +98,7 @@ export async function sendScanEmail(email: string, pdfBuffer: Buffer): Promise<v
   const { error } = await resend.emails.send({
     from: FROM_EMAIL,
     to: email,
-    subject: 'Your scanned document',
+    subject: environmentPrefix() + 'Your scanned document',
     html: '<p>Your scanned document is attached as a PDF.</p>',
     attachments: [{ filename: 'scan.pdf', content: pdfBuffer.toString('base64') }],
   });
@@ -117,7 +123,7 @@ export async function sendPhotoEmail(
   const { error } = await resend.emails.send({
     from: FROM_EMAIL,
     to: email,
-    subject: 'Ваше фото',
+    subject: environmentPrefix() + 'Ваше фото',
     html: '<p>Ваше фото на документы — во вложении.</p>',
     attachments: [{ filename, content: imageBuffer.toString('base64') }],
   });

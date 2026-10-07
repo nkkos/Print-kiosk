@@ -10,6 +10,7 @@ import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { randomUUID } from 'node:crypto';
 import { portalBaseUrl, publicBackendUrl } from './lanIp.js';
+import { appEnv } from './appEnv.js';
 import { addFile, listFiles, uploadsDir, getUploadedFile } from './uploadStore.js';
 import { addEmail, listEmails } from './emailStore.js';
 import {
@@ -228,7 +229,9 @@ router.get('/api/config', (_req, res) => {
   // "Register" QR code is a separate device, for which "localhost" would
   // resolve to the phone itself, not this machine.
   const portalUrl = portalBaseUrl();
-  res.json({ lanUploadUrl, portalUrl });
+  // appEnv: the screens show a "test environment" banner on staging
+  // (src/utils/environmentBanner.ts).
+  res.json({ lanUploadUrl, portalUrl, appEnv: appEnv() });
 });
 
 // The "lightweight web page (file picker / take-a-photo)" from

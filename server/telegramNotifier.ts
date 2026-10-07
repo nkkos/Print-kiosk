@@ -2,6 +2,7 @@ import { and, eq, gt } from 'drizzle-orm';
 import { db } from './db/client.js';
 import { incidents } from './db/schema.js';
 import { getCurrentOnCall } from './rosterStore.js';
+import { environmentPrefix } from './appEnv.js';
 import type { IncidentRow } from './incidentStore.js';
 
 // Real Telegram alerting (docs/equipment-monitoring-requirements.md,
@@ -86,7 +87,7 @@ export async function notifyIfNeeded(incident: IncidentRow): Promise<void> {
       : 'Дежурство не назначено на сегодня';
 
     await sendTelegramMessage(
-      `${severityEmoji(incident.severity)} ${incident.severity.toUpperCase()}: ${incident.code}\n${incident.message}\n${onCallLine}`,
+      `${environmentPrefix()}${severityEmoji(incident.severity)} ${incident.severity.toUpperCase()}: ${incident.code}\n${incident.message}\n${onCallLine}`,
     );
     await db.update(incidents).set({ notifiedAt: new Date() }).where(eq(incidents.id, incident.id));
   } catch (err) {

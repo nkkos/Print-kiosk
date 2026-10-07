@@ -49,6 +49,7 @@ This only needs to run once — the container keeps its data between `docker sta
 | `RAILWAY_PUBLIC_DOMAIN`     | backend         | unset                                                     | Set automatically by Railway once the `backend` service has a public domain — when present, `GET /api/config` returns it instead of the LAN-IP fallback.                                                                                                                    |
 | `RESEND_API_KEY`            | backend         | unset                                                     | Sends verification/password-reset emails via [Resend](https://resend.com). Unset locally logs the email link to the console instead of sending — no real account needed.                                                                                                    |
 | `RESEND_FROM_EMAIL`         | backend         | `noreply@kiosk.example`                                   | The sending address — needs Resend's domain verification (DNS records in Cloudflare) first, see "Portal" below.                                                                                                                                                             |
+| `APP_ENV`                   | backend         | unset (= development)                                     | `production` on the pavilion service, `staging` on the test copy — see "Staging environment" below.                                                                                                                                                                         |
 | `PORTAL_URL`                | backend         | `http://localhost:5173`                                   | Used to build the links inside those emails — set to the deployed Cloudflare Pages URL in production.                                                                                                                                                                       |
 | `TELEGRAM_BOT_TOKEN`        | backend         | unset                                                     | Sends `critical`/`emergency` incident alerts via Telegram (`server/telegramNotifier.ts`, see `docs/equipment-monitoring-requirements.md`). Unset locally logs the would-be message to the console instead of sending — no real bot needed for dev.                          |
 | `TELEGRAM_CHAT_ID`          | backend         | unset                                                     | The shared chat the alerts post to — see "Admin panel" below for how to obtain it.                                                                                                                                                                                          |
@@ -114,6 +115,36 @@ Then wire up real inbound email (Cloudflare dashboard):
 2. **Worker** — Workers & Pages → create a Worker → paste in `cloudflare-worker/email-relay.js`. Under the Worker's Settings → Variables, add `BACKEND_URL` set to the `backend` service's Railway public domain (e.g. `https://your-app.up.railway.app`, no trailing slash).
 3. **Routing rule** — Email Routing → Routing rules → set the catch-all address to "Send to a Worker" → select the Worker from step 2.
 4. Set the frontend's `VITE_EMAIL_DOMAIN` (in `.env`, or wherever the frontend is deployed/built) to your registered domain, so the address the Email screen shows matches what Email Routing is actually catching.
+
+## Staging environment
+
+A test copy of everything on Railway and Cloudflare, fed from the `staging` branch, where changes are checked before they reach the pavilion. Development itself stays on a developer machine (`npm run dev:all`).
+
+**Workflow:** changes go to the `staging` branch first (`git push origin <commit>:staging`, or merge into `staging`) → Railway and Cloudflare deploy the test copy → checked there → merged into `main`, which deploys production as before.
+
+**What staging changes in the app** (`server/appEnv.ts`, `APP_ENV=staging`): every screen shows a red «ТЕСТОВАЯ СРЕДА · STAGING» label in the corner (`src/utils/environmentBanner.ts`, from `GET /api/config`); Telegram alerts and e-mails start with `[STAGING]`; the backend refuses to start with `VIVA_ENV=live`, so staging can never take real money.
+
+**One-time setup — Railway** (project → environment switcher at the top → "New Environment"):
+
+1. Name it `staging`, choose **Duplicate environment** from `production`. Railway copies the three services (`backend`, Postgres, `clamav`) with their variables; the copy gets its **own empty database** (migrations run on first boot) and its own volumes.
+2. `backend` (in `staging`) → Settings → Source → **branch `staging`**. Generate a public domain under Settings → Networking.
+3. `backend` (in `staging`) → Variables:
+   - `APP_ENV=staging` (and `APP_ENV=production` on the production `backend`);
+   - `PORTAL_URL` = the Cloudflare preview address of the `staging` branch (below), e.g. `https://staging.<project>.pages.dev`;
+   - Viva: keep the **demo** credentials (`VIVA_ENV=demo`); for the return after an online payment, add a second demo payment source with the staging domain and `payments/return`, and set its code in `VIVA_CHECKOUT_SOURCE_CODE`;
+   - `PRINT_AGENT_TOKEN`: a **different** value than production, so the pavilion agent can never pick up a staging job;
+   - `CORS_ORIGINS` (once used): the staging Pages address;
+   - Telegram: same bot and chat is fine (messages carry `[STAGING]`), or a separate test chat.
+4. Click **Deploy** to apply the staged changes (Railway doesn't apply variable edits until then).
+5. Create a staff account for the staging admin panel: `npm run seed:staff` with the staging `DATABASE_URL` (Railway → Postgres in `staging` → Connect → public URL), or ask for one to be seeded.
+
+**One-time setup — Cloudflare Pages** (the existing project):
+
+1. Settings → Builds & deployments → **Preview branches**: include `staging` (all non-production branches build previews by default).
+2. Settings → Environment variables → **Preview**: `VITE_API_BASE_URL` = the staging backend's Railway domain (`https://….up.railway.app`), plus the same `VITE_*` values production has. Production keeps its own values.
+3. The `staging` branch is then served at `https://staging.<project>.pages.dev` (kiosk at `/`, portal at `/portal/`, admin at `/admin/`, shop at `/shop/`).
+
+Not duplicated: the Cloudflare e-mail Worker (inbound e-mail keeps going to production) and the pavilion print agent (staging prints only through the "Simulate …" buttons, or a test agent on a laptop with `AGENT_DRY_RUN=true` and the staging `PRINT_AGENT_TOKEN`).
 
 Currently, two official plugins are available:
 

@@ -38,6 +38,12 @@ const { reportIncident } = await import('./incidentStore.js');
 const serverDir = dirname(fileURLToPath(import.meta.url));
 
 async function main() {
+  // Before anything else: a staging service with live payment credentials
+  // doesn't start at all (server/appEnv.ts).
+  const { assertSafeEnvironment, appEnv } = await import('./appEnv.js');
+  assertSafeEnvironment();
+  console.log(`[index] Environment: ${appEnv()}`);
+
   // Idempotent — safe to run on every boot. Avoids a "forgot to run the
   // migration before deploying" failure class in a project with no CI
   // pipeline — see README.md, "Database."
