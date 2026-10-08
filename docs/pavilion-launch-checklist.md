@@ -16,9 +16,9 @@ Expected load: 1 pavilion, 2 kiosk stands, 10–15 visitors/day.
 
 - [ ] Move to the **Pro plan** (support, backups, sane limits). Budget estimate $20–40/month; ClamAV's 2–3 GB of RAM is the biggest cost.
 - [ ] Confirm all services run in an **EU region** (Settings → Region), for GDPR and latency.
-- [ ] Enable and verify **Postgres backups**; decide on backups for `print-kiosk-volume` (uploaded files).
+- [ ] Enable and verify **Postgres backups** (steps in `README.md`, "Uptime monitoring and backups"). `print-kiosk-volume` holds only customers' short-lived files (deleted within hours) — no backup needed.
 - [ ] Create a **staging environment**; production deploys only after checking on staging (today every push to `main` deploys straight to production). Code side done 2026-10-07 (`APP_ENV`, screen label, `[STAGING]` alerts/e-mails, no live Viva on staging, `staging` branch); the Railway and Cloudflare setup is in `README.md`, "Staging environment".
-- [ ] **Uptime monitoring** of the backend and the print agent's heartbeat, alerting through the existing Telegram bot. Done inside the backend: the print agent (`pc.print-agent-offline`) and the kiosk stands (`pc.dead`, `server/standMonitor.ts` — set `STAND_API_KEYS` or `MONITORED_STANDS` to switch it on). Still missing: an outside check that the backend itself is up (it can't report its own death).
+- [ ] **Uptime monitoring** of the backend and the print agent's heartbeat, alerting through the existing Telegram bot. Done inside the backend: the print agent (`pc.print-agent-offline`) and the kiosk stands (`pc.dead`, `server/standMonitor.ts` — set `STAND_API_KEYS` or `MONITORED_STANDS` to switch it on). Outside check of the backend itself: `GET /api/health` (200 only with the database answering) for UptimeRobot or similar — setup in `README.md`, "Uptime monitoring and backups"; still to be created there.
 - [ ] Install **LibreOffice** in the cloud build, so `.doc`/`.docx` conversion (preview + page count + pricing) works in the cloud — today it only works on a developer machine that has LibreOffice installed.
 
 ## Before opening — application security

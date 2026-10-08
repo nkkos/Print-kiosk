@@ -11,6 +11,8 @@ import { tmpdir } from 'node:os';
 import { randomUUID } from 'node:crypto';
 import { portalBaseUrl, publicBackendUrl } from './lanIp.js';
 import { appEnv } from './appEnv.js';
+import { sql } from 'drizzle-orm';
+import { db } from './db/client.js';
 import { recordStandHeartbeat } from './standMonitor.js';
 import { addFile, listFiles, uploadsDir, getUploadedFile } from './uploadStore.js';
 import { addEmail, listEmails } from './emailStore.js';
@@ -221,6 +223,18 @@ export const router = Router();
 // service — see docs/qr-upload-requirements.md), so a phone can reach this
 // backend from any network. Falls back to LAN-IP detection for local dev,
 // where no public domain exists.
+// For an outside uptime monitor (docs/pavilion-launch-checklist.md, "Uptime
+// monitoring") — the one failure the backend can't report itself. 200 only
+// when the process is up and the database answers; 503 otherwise.
+router.get('/api/health', async (_req, res) => {
+  try {
+    await db.execute(sql`select 1`);
+    res.json({ ok: true, environment: appEnv() });
+  } catch {
+    res.status(503).json({ ok: false, reason: 'database unreachable' });
+  }
+});
+
 router.get('/api/config', (_req, res) => {
   const lanUploadUrl = publicBackendUrl();
   // The deployed portal's real, globally-reachable URL (Cloudflare Pages —

@@ -116,6 +116,18 @@ Then wire up real inbound email (Cloudflare dashboard):
 3. **Routing rule** — Email Routing → Routing rules → set the catch-all address to "Send to a Worker" → select the Worker from step 2.
 4. Set the frontend's `VITE_EMAIL_DOMAIN` (in `.env`, or wherever the frontend is deployed/built) to your registered domain, so the address the Email screen shows matches what Email Routing is actually catching.
 
+## Uptime monitoring and backups
+
+The backend watches the print agent and the kiosk stands itself (incidents → Telegram), but it can't report its own death. Two outside safeguards, one-time setup:
+
+**Uptime check** — `GET /api/health` answers `200 {"ok":true}` only when the process is up and Postgres answers (`503` otherwise). With [UptimeRobot](https://uptimerobot.com) (free plan):
+
+1. Add New Monitor → type **HTTP(s)**, URL `https://<production backend>/api/health`, interval 5 minutes, name `Print kiosk backend`.
+2. Alert contacts → add **Telegram** (UptimeRobot's own bot: follow its link, press Start in the chat you want alerts in) and/or e-mail; attach it to the monitor.
+3. Optional: a second monitor for the stands' site (`https://<project>.pages.dev/`, keyword or HTTP check) and one for staging with a different contact, so staging outages don't page anyone at night.
+
+**Database backups** — Railway → production → **Postgres** → **Backups** tab → enable scheduled backups (daily, keep at least 7) and run one manual backup now; restoring is one click from the same tab. The `backend` service's volume (`server/uploads/`) holds only short-lived customer files (deleted within hours, see `docs/data-privacy-requirements.md`) and doesn't need backing up.
+
 ## Staging environment
 
 A test copy of everything on Railway and Cloudflare, fed from the `staging` branch, where changes are checked before they reach the pavilion. Development itself stays on a developer machine (`npm run dev:all`).
