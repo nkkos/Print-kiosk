@@ -67,7 +67,10 @@ Out of scope for this document: exact legal GDPR compliance analysis (consent wo
 
 ## Open items
 
-- Server-side "session closed" marker — needed to reject/immediately-discard late-arriving email for an already-ended session (see above); not yet designed.
+- ~~Server-side "session closed" marker~~ — done: `isSessionClosed` (`server/sessionLifecycle.ts`) makes `POST /api/email/incoming` discard late mail.
+- **Checked 2026-10-08:** session-end deletion, late-mail discard and the 4-hour sweep match this document. Gap found and fixed: imposed "pages per sheet" PDFs (`server/nUpImposer.ts`, copies of customers' documents in the OS temp dir) were never deleted — now swept on the same 4-hour rule.
+- **Still personal data kept indefinitely** (decision needed): receipt e-mail addresses (`payment_orders.receipt_email`, `fiscal_receipts.email`) and customers' document file names in payment lines and print records (`payment_items.print_config`, `print_tasks.print_options`, `print_orders.file_name`) — e.g. clear e-mails some days after the receipt is delivered and keep only the payment facts.
+- Right to erasure (account deletion) — still not implemented, see above.
 - Whether a user-facing privacy notice is needed at the kiosk itself, and its wording — a product/legal decision, not an engineering one.
 - Data residency confirmation for Railway/Cloudflare/Resend against any EU-residency requirement.
 - At-rest encryption for uploaded files on the Railway volume.

@@ -984,3 +984,9 @@ button {
   list-style: none;
   padding-left: 0;
 }
+
+.overview-subtitle {
+  margin: 28px 0 12px;
+  font-size: 1rem;
+  color: var(--ink-soft);
+}

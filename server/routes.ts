@@ -11,6 +11,7 @@ import { tmpdir } from 'node:os';
 import { randomUUID } from 'node:crypto';
 import { portalBaseUrl, publicBackendUrl } from './lanIp.js';
 import { appEnv } from './appEnv.js';
+import { recordStandHeartbeat } from './standMonitor.js';
 import { addFile, listFiles, uploadsDir, getUploadedFile } from './uploadStore.js';
 import { addEmail, listEmails } from './emailStore.js';
 import {
@@ -1448,6 +1449,21 @@ router.get('/receipts/:id', async (req, res) => {
   const verification = receipt.receiptUid ?? receipt.okp ?? '';
   const qrDataUrl = verification ? await QRCode.toDataURL(verification, { margin: 1 }) : null;
   res.type('html').send(renderReceiptPage(receipt, qrDataUrl));
+});
+
+// A stand's minutely "I'm alive" (server/standMonitor.ts) — which stand it
+// is comes from its key when stand keys are on, else from the body.
+router.post('/api/stands/heartbeat', requireStand, async (req, res) => {
+  const { standId, screen } = (req.body ?? {}) as { standId?: unknown; screen?: unknown };
+  const resolvedStandId =
+    (req as StandRequest).standId ??
+    (typeof standId === 'string' && STAND_ID_PATTERN.test(standId) ? standId : null);
+  if (!resolvedStandId) {
+    res.status(204).end();
+    return;
+  }
+  await recordStandHeartbeat(resolvedStandId, screen, req.header('User-Agent'));
+  res.status(204).end();
 });
 
 // Kiosk card payments (docs/payments-technical-requirements.md, "API").

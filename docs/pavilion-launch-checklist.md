@@ -18,7 +18,7 @@ Expected load: 1 pavilion, 2 kiosk stands, 10–15 visitors/day.
 - [ ] Confirm all services run in an **EU region** (Settings → Region), for GDPR and latency.
 - [ ] Enable and verify **Postgres backups**; decide on backups for `print-kiosk-volume` (uploaded files).
 - [ ] Create a **staging environment**; production deploys only after checking on staging (today every push to `main` deploys straight to production). Code side done 2026-10-07 (`APP_ENV`, screen label, `[STAGING]` alerts/e-mails, no live Viva on staging, `staging` branch); the Railway and Cloudflare setup is in `README.md`, "Staging environment".
-- [ ] **Uptime monitoring** of the backend and the print agent's heartbeat, alerting through the existing Telegram bot.
+- [ ] **Uptime monitoring** of the backend and the print agent's heartbeat, alerting through the existing Telegram bot. Done inside the backend: the print agent (`pc.print-agent-offline`) and the kiosk stands (`pc.dead`, `server/standMonitor.ts` — set `STAND_API_KEYS` or `MONITORED_STANDS` to switch it on). Still missing: an outside check that the backend itself is up (it can't report its own death).
 - [ ] Install **LibreOffice** in the cloud build, so `.doc`/`.docx` conversion (preview + page count + pricing) works in the cloud — today it only works on a developer machine that has LibreOffice installed.
 
 ## Before opening — application security

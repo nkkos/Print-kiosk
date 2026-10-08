@@ -459,3 +459,17 @@ export async function refundPaymentItems(
 ): Promise<{ results: StaffRefundResult[] }> {
   return request('POST', `/api/admin/payments/${paymentId}/refund`, sessionToken, { itemIds });
 }
+
+// Kiosk stands' liveness (server/standMonitor.ts).
+export interface StandStatus {
+  id: string;
+  /** Watched by the backend's watchdog (alerts when silent). */
+  monitored: boolean;
+  online: boolean;
+  lastSeenAt: string | null;
+  lastScreen: string | null;
+}
+
+export async function listStands(sessionToken: string): Promise<StandStatus[]> {
+  return request('GET', '/api/admin/stands', sessionToken);
+}

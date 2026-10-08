@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { existsSync } from 'node:fs';
-import { mkdir, readFile, stat, writeFile } from 'node:fs/promises';
+import { mkdir, readdir, readFile, stat, unlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { PDFDocument, degrees } from 'pdf-lib';
@@ -25,7 +25,9 @@ const PAPER_SIZE_MM: Record<string, { width: number; height: number }> = {
 };
 
 // Temp dir, not next to the upload: it's a derived file, cheap to rebuild,
-// and shouldn't outlive the upload's own retention sweep.
+// and mustn't outlive the upload's own retention — sweepNUpCache (run with
+// the orphaned-file sweep, server/index.ts) deletes it on the same 4-hour
+// rule (docs/data-privacy-requirements.md, "TTL safety net").
 const CACHE_DIR = join(tmpdir(), 'print-kiosk-nup');
 
 export interface ImposedPdf {
@@ -116,4 +118,24 @@ export async function imposeNUp(
   await mkdir(CACHE_DIR, { recursive: true });
   await writeFile(path, await output.save());
   return { path, orientation: layout.orientation };
+}
+
+/** Deletes imposed sheets older than `maxAgeMs` — they are copies of
+ * customers' documents. Returns how many were removed. */
+export async function sweepNUpCache(maxAgeMs: number): Promise<number> {
+  if (!existsSync(CACHE_DIR)) return 0;
+  const cutoff = Date.now() - maxAgeMs;
+  let removed = 0;
+  for (const name of await readdir(CACHE_DIR)) {
+    const path = join(CACHE_DIR, name);
+    try {
+      if ((await stat(path)).mtimeMs < cutoff) {
+        await unlink(path);
+        removed += 1;
+      }
+    } catch {
+      // Gone already, or in use — the next sweep tries again.
+    }
+  }
+  return removed;
 }

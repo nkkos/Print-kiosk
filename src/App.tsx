@@ -14,6 +14,7 @@ import { FinalisingSessionScreen } from './features/finalising-session/Finalisin
 import { EndingSessionScreen } from './features/ending-session/EndingSessionScreen';
 import { ACTIVITY_EVENTS } from './layouts/KioskScreenLayout/KioskScreenLayout';
 import { getStandId } from './utils/standId';
+import { sendStandHeartbeat } from './services/standApi';
 import { computeItemPrice } from './utils/pricing';
 import { getUploadConfig, listQrFiles } from './services/qrUploadApi';
 import { createScanSession, getScanSession } from './services/scanApi';
@@ -115,6 +116,19 @@ const PRINT_POLL_INTERVAL_MS = 1500;
 // CART_STORAGE_KEY) so it survives a reload.
 function App() {
   const [screen, setScreen] = useState<Screen>('welcome');
+
+  // Stand liveness (server/standMonitor.ts): once a minute, and whenever the
+  // screen changes, tell the backend this stand is alive and where it is. A
+  // frozen browser or a dead stand falls silent, and the backend alerts.
+  // Browsers without ?stand= (development) don't report.
+  useEffect(() => {
+    const standId = getStandId();
+    if (!standId) return;
+    const beat = () => void sendStandHeartbeat(standId, screen).catch(() => {});
+    beat();
+    const id = setInterval(beat, 60_000);
+    return () => clearInterval(id);
+  }, [screen]);
   const [session, setSession] = useState<KioskSession | null>(() => {
     const storedId = localStorage.getItem(SESSION_ID_STORAGE_KEY);
     // accountId is deliberately not persisted/restored here — only sessionId

@@ -42,6 +42,7 @@ import {
 } from './companyInvoiceStore.js';
 import { sendCompanyInviteEmail } from './emailSender.js';
 import { refundItemsByStaff } from './paymentStore.js';
+import { listStandStatus } from './standMonitor.js';
 import { listPaymentsForDay, reconcileDay, pavilionDay } from './paymentReconciliation.js';
 
 // Admin panel backend (docs/screens/admin-panel-wireframes.md,
@@ -592,6 +593,11 @@ adminRouter.post('/api/admin/company-invoices/:id/issue', requireStaffSession, a
     return;
   }
   res.json(invoice);
+});
+
+// Kiosk stands' liveness (server/standMonitor.ts) — the Overview's stands row.
+adminRouter.get('/api/admin/stands', requireStaffSession, async (_req, res) => {
+  res.json(await listStandStatus());
 });
 
 // Payments (docs/payments-business-requirements.md, "Staff and admin panel"):

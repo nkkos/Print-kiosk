@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { listIncidents, type Incident } from '../services/adminApi';
+import { listIncidents, listStands, type Incident, type StandStatus } from '../services/adminApi';
 import type { AdminSession } from '../adminSession';
 
 interface OverviewScreenProps {
@@ -48,10 +48,19 @@ function formatIncidentTime(iso: string): string {
 export function OverviewScreen({ session, onSelectSource }: OverviewScreenProps) {
   const [incidents, setIncidents] = useState<Incident[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [stands, setStands] = useState<StandStatus[]>([]);
 
   useEffect(() => {
     let cancelled = false;
     function poll() {
+      listStands(session.sessionToken)
+        .then((rows) => {
+          if (!cancelled) setStands(rows);
+        })
+        .catch(() => {
+          // The stands row just keeps its last reading — the incident feed
+          // above already reports a stand that's gone quiet.
+        });
       listIncidents(session.sessionToken, { openOnly: true, limit: 200 })
         .then((rows) => {
           if (!cancelled) {
@@ -145,6 +154,37 @@ export function OverviewScreen({ session, onSelectSource }: OverviewScreenProps)
           );
         })}
       </div>
+
+      {stands.length > 0 && (
+        <>
+          <h2 className="overview-subtitle">Стойки</h2>
+          <div className="equipment-grid" id="stands-grid">
+            {stands.map((stand) => {
+              const sev = stand.online ? 'ok' : stand.monitored ? 'emergency' : 'neutral';
+              return (
+                <div
+                  className="equip-card"
+                  id={`stand-card-${stand.id}`}
+                  data-sev={sev}
+                  key={stand.id}
+                  style={{ cursor: 'default' }}
+                >
+                  <div className="equip-card-top">
+                    <span className="equip-name">Стойка {stand.id}</span>
+                    <SevChip severity={sev} label={stand.online ? 'На связи' : 'Нет связи'} />
+                  </div>
+                  <div className="equip-metric">
+                    {stand.lastSeenAt
+                      ? `${stand.lastScreen ? `экран ${stand.lastScreen} · ` : ''}отметка ${formatIncidentTime(stand.lastSeenAt)}`
+                      : 'ещё не выходила на связь'}
+                    {!stand.monitored && ' · не отслеживается'}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </>
+      )}
     </section>
   );
 }

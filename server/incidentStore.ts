@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray, isNull } from 'drizzle-orm';
+import { and, desc, eq, inArray, isNull, like } from 'drizzle-orm';
 import { db } from './db/client.js';
 import { incidents } from './db/schema.js';
 import { notifyIfNeeded } from './telegramNotifier.js';
@@ -109,6 +109,54 @@ export async function resolveOpenIncidents(
       .where(and(inArray(incidents.code, codes), isNull(incidents.resolvedAt)));
   } catch (err) {
     console.error('[incidentStore] Failed to auto-resolve incidents:', codes, err);
+  }
+}
+
+/** Like hasOpenIncident, for incidents about one specific thing — e.g. one
+ * stand's pc.dead — told apart by a key/value in their context. */
+export async function hasOpenIncidentFor(
+  code: string,
+  key: string,
+  value: string,
+): Promise<boolean> {
+  const [row] = await db
+    .select({ id: incidents.id })
+    .from(incidents)
+    .where(
+      and(
+        eq(incidents.code, code),
+        isNull(incidents.resolvedAt),
+        like(incidents.context, `%"${key}":"${value}"%`),
+      ),
+    )
+    .limit(1);
+  return !!row;
+}
+
+/** Like resolveOpenIncidents, for one specific thing's incidents only. */
+export async function resolveOpenIncidentsFor(
+  code: string,
+  key: string,
+  value: string,
+  autoRemediation: Record<string, unknown>,
+): Promise<void> {
+  try {
+    await db
+      .update(incidents)
+      .set({
+        resolvedAt: new Date(),
+        resolvedBy: 'auto',
+        autoRemediation: JSON.stringify(autoRemediation),
+      })
+      .where(
+        and(
+          eq(incidents.code, code),
+          isNull(incidents.resolvedAt),
+          like(incidents.context, `%"${key}":"${value}"%`),
+        ),
+      );
+  } catch (err) {
+    console.error('[incidentStore] Failed to auto-resolve incidents:', code, value, err);
   }
 }
 

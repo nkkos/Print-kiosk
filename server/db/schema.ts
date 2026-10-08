@@ -895,3 +895,17 @@ export const photoOrders = pgTable(
   },
   (table) => [index('photo_orders_session_id_idx').on(table.sessionId)],
 );
+
+// Kiosk stands' liveness (docs/equipment-monitoring-requirements.md,
+// "Detecting total failure"): each stand's browser reports in every minute
+// (POST /api/stands/heartbeat); the backend's watchdog (server/standMonitor.ts)
+// raises pc.dead for a stand that has gone quiet. One row per stand id.
+export const stands = pgTable('stands', {
+  id: text('id').primaryKey(),
+  lastSeenAt: timestamp('last_seen_at', { withTimezone: true }).notNull(),
+  // The kiosk screen it was on — a stand stuck on one screen for hours is
+  // worth a look even while it's alive.
+  lastScreen: text('last_screen'),
+  userAgent: text('user_agent'),
+  firstSeenAt: timestamp('first_seen_at', { withTimezone: true }).notNull().defaultNow(),
+});

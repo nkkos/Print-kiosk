@@ -45,6 +45,12 @@ function parseStandKeys(): Map<string, string> | null {
   return keys.size > 0 ? keys : null;
 }
 
+/** The stand ids that have a key — the stands the pavilion actually has
+ * (also what server/standMonitor.ts watches by default). */
+export function configuredStandIds(): string[] {
+  return [...(parseStandKeys()?.keys() ?? [])];
+}
+
 export interface StandRequest extends Request {
   /** The stand the verified key belongs to — undefined while stand keys
    * aren't configured. */

@@ -27,6 +27,8 @@ const { warmUpLibreOffice } = await import('./documentConverter.js');
 const { sweepReceipts } = await import('./fiscalReceiptStore.js');
 const { runNightlyReconciliation } = await import('./paymentReconciliation.js');
 const { sweepOnlineCheckouts } = await import('./onlineCheckoutStore.js');
+const { startStandWatchdog } = await import('./standMonitor.js');
+const { sweepNUpCache } = await import('./nUpImposer.js');
 const { reportIncident } = await import('./incidentStore.js');
 
 // Dev-only backend for the QR/Email upload methods (docs/qr-upload-requirements.md,
@@ -59,6 +61,7 @@ async function main() {
   app.use(adminRouter);
   app.use(agentRouter);
   startAgentWatchdog();
+  startStandWatchdog();
 
   // Catch-all safety net (docs/equipment-monitoring-requirements.md's own
   // "Notes for implementation" open item): Express 5 auto-forwards a
@@ -93,9 +96,10 @@ async function main() {
   // signal that never reached the backend — a single persistent process, so
   // a plain interval is enough; no separate scheduler/service needed.
   const runSweep = () =>
-    sweepExpiredFiles(ORPHAN_FILE_TTL_MS)
-      .then((count) => {
+    Promise.all([sweepExpiredFiles(ORPHAN_FILE_TTL_MS), sweepNUpCache(ORPHAN_FILE_TTL_MS)])
+      .then(([count, sheets]) => {
         if (count > 0) console.log(`[index] Orphaned-file sweep deleted ${count} file(s)`);
+        if (sheets > 0) console.log(`[index] Removed ${sheets} imposed sheet(s) from the cache`);
       })
       .catch((err: unknown) => console.error('[index] Orphaned-file sweep failed:', err));
   void runSweep();
