@@ -132,7 +132,7 @@ A test copy of everything on Railway and Cloudflare, fed from the `staging` bran
    - `APP_ENV=staging` (and `APP_ENV=production` on the production `backend`);
    - `PORTAL_URL` = the Cloudflare preview address of the `staging` branch (below), e.g. `https://staging.<project>.pages.dev`;
    - Viva: keep the **demo** credentials (`VIVA_ENV=demo`); for the return after an online payment, add a second demo payment source with the staging domain and `payments/return`, and set its code in `VIVA_CHECKOUT_SOURCE_CODE`;
-   - `PRINT_AGENT_TOKEN`: a **different** value than production, so the pavilion agent can never pick up a staging job;
+   - `PRINT_AGENT_TOKEN`: leave it **unset** — then no agent can connect to staging at all (agent routes answer 503) and printing is tested with the "Simulate …" buttons; set it, to a value different from production's, only to test a laptop agent against staging;
    - `CORS_ORIGINS` (once used): the staging Pages address;
    - Telegram: same bot and chat is fine (messages carry `[STAGING]`), or a separate test chat.
 4. Click **Deploy** to apply the staged changes (Railway doesn't apply variable edits until then).
