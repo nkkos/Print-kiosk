@@ -11,8 +11,9 @@ import { configuredStandIds } from './security.js';
 // closing it by itself when the stand calls in again. Network loss at the
 // stand looks the same from here, which is fine: both need a person.
 //
-// Watched stands: MONITORED_STANDS="A,B" if set, else the stands that have a
-// key (STAND_API_KEYS). Neither set — a developer machine — watches nothing.
+// Watched stands: MONITORED_STANDS="A,B" if set ("none" = off), else the
+// stands that have a key (STAND_API_KEYS). Neither set — a developer
+// machine — watches nothing.
 
 const STAND_DEAD_INCIDENT = 'pc.dead';
 const WATCHDOG_INTERVAL_MS = 30_000;
@@ -21,6 +22,9 @@ export const STAND_SILENT_AFTER_MS = 3 * 60_000;
 const SCREEN_PATTERN = /^[a-z0-9-]{1,40}$/;
 
 export function monitoredStandIds(): string[] {
+  // 'none' switches the watchdog off while keys exist but the stands don't
+  // yet (before the pavilion opens) — otherwise every keyed stand pages.
+  if (process.env.MONITORED_STANDS?.trim() === 'none') return [];
   const explicit = (process.env.MONITORED_STANDS ?? '')
     .split(',')
     .map((id) => id.trim())
