@@ -236,7 +236,7 @@ export interface PrinterSnapshotAdmin {
 }
 
 export interface PrinterStatusAdmin {
-  mode: 'direct' | 'agent';
+  mode: 'direct' | 'agent' | 'simulated';
   agentOnline: boolean | null;
   agentLastSeenAt: string | null;
   printer: PrinterSnapshotAdmin | null;

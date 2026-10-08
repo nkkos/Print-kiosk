@@ -142,6 +142,7 @@ A test copy of everything on Railway and Cloudflare, fed from the `staging` bran
 2. `backend` (in `staging`) → Settings → Source → **branch `staging`**. Generate a public domain under Settings → Networking.
 3. `backend` (in `staging`) → Variables:
    - `APP_ENV=staging` (and `APP_ENV=production` on the production `backend`);
+   - `PRINT_EXECUTION=simulated` — a cloud server has no printer: jobs take a bin and wait for the Print Status "Simulate …" buttons instead of failing at once (`direct`, the default, is only for a machine with a printer attached; `agent` once a print agent serves this environment);
    - `PORTAL_URL` = the Cloudflare preview address of the `staging` branch (below), e.g. `https://staging.<project>.pages.dev`;
    - Viva: keep the **demo** credentials (`VIVA_ENV=demo`); for the return after an online payment, add a second demo payment source with the staging domain and `payments/return`, and set its code in `VIVA_CHECKOUT_SOURCE_CODE`;
    - `PRINT_AGENT_TOKEN`: leave it **unset** — then no agent can connect to staging at all (agent routes answer 503) and printing is tested with the "Simulate …" buttons; set it, to a value different from production's, only to test a laptop agent against staging;
@@ -156,7 +157,7 @@ A test copy of everything on Railway and Cloudflare, fed from the `staging` bran
 2. Settings → Environment variables → **Preview**: `VITE_API_BASE_URL` = the staging backend's Railway domain (`https://….up.railway.app`), plus the same `VITE_*` values production has. Production keeps its own values.
 3. The `staging` branch is then served at `https://staging.<project>.pages.dev` (kiosk at `/`, portal at `/portal/`, admin at `/admin/`, shop at `/shop/`).
 
-Not duplicated: the Cloudflare e-mail Worker (inbound e-mail keeps going to production) and the pavilion print agent (staging prints only through the "Simulate …" buttons, or a test agent on a laptop with `AGENT_DRY_RUN=true` and the staging `PRINT_AGENT_TOKEN`).
+Not duplicated: the Cloudflare e-mail Worker (inbound e-mail keeps going to production) and the pavilion print agent (staging prints only through the "Simulate …" buttons with `PRINT_EXECUTION=simulated`, or a test agent on a laptop with `PRINT_EXECUTION=agent`, `AGENT_DRY_RUN=true` and a staging `PRINT_AGENT_TOKEN`).
 
 Currently, two official plugins are available:
 

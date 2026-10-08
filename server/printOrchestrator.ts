@@ -27,16 +27,21 @@ import {
 // be re-invoked later, on a completely different HTTP request, once a
 // pickup bin frees up — see tryPrintTask's own comment.
 
-export type PrintExecutionMode = 'direct' | 'agent';
+export type PrintExecutionMode = 'direct' | 'agent' | 'simulated';
 
 /** Where jobs actually get printed (docs/pavilion-launch-checklist.md,
  * "Target architecture"). 'direct' — this backend prints to a printer
  * attached to its own machine (local development, the original setup).
  * 'agent' — the cloud deployment: this backend only reserves the bin and
  * leaves the task for the pavilion's print agent (agent/, via
- * server/agentRoutes.ts), since a cloud server has no printer. */
+ * server/agentRoutes.ts), since a cloud server has no printer.
+ * 'simulated' — a cloud deployment without a printer or an agent (staging,
+ * demos): the task takes its bin and waits as 'printing' for the Print
+ * Status "Simulate …" buttons, instead of failing on a printer that isn't
+ * there (README.md, "Staging environment"). */
 export function printExecutionMode(): PrintExecutionMode {
-  return process.env.PRINT_EXECUTION === 'agent' ? 'agent' : 'direct';
+  const mode = process.env.PRINT_EXECUTION;
+  return mode === 'agent' || mode === 'simulated' ? mode : 'direct';
 }
 
 /** Attempts to actually print `taskId` — reserves a pickup bin first
@@ -74,6 +79,13 @@ export async function tryPrintTask(
   // Agent mode: the task now waits, 'queued' with its bin, until the
   // pavilion agent claims it (server/agentRoutes.ts).
   if (printExecutionMode() === 'agent') return getPrintTask(taskId);
+
+  // Simulated: nothing to submit — the job "prints" until a Simulate button
+  // settles it.
+  if (printExecutionMode() === 'simulated') {
+    await updatePrintTaskStatus(taskId, 'printing', undefined, 'simulated');
+    return getPrintTask(taskId);
+  }
 
   // Undefined (no per-bin queues configured) → the Windows default printer.
   const printerName = printerNameForBin(bin);

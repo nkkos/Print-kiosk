@@ -46,7 +46,7 @@ const AGENT_OFFLINE_AFTER_MS = 60_000;
  * server/adminRoutes.ts) — the full latest snapshot, warnings and supply
  * levels included, unlike the stands' yes/no GET /api/printer-status. */
 export function getPrinterStatusForStaff(): {
-  mode: 'direct' | 'agent';
+  mode: 'direct' | 'agent' | 'simulated';
   agentOnline: boolean | null;
   agentLastSeenAt: string | null;
   printer: PrinterSnapshot | null;
@@ -55,7 +55,7 @@ export function getPrinterStatusForStaff(): {
   return {
     mode,
     agentOnline:
-      mode === 'direct'
+      mode !== 'agent'
         ? null
         : !!agentLastSeenAt && Date.now() - agentLastSeenAt.getTime() < AGENT_OFFLINE_AFTER_MS,
     agentLastSeenAt: agentLastSeenAt?.toISOString() ?? null,
@@ -355,7 +355,7 @@ export function paymentBlockers(): {
   agentOnline: boolean | null;
   problems: (PrinterProblem | 'cash-register-unavailable')[];
 } {
-  if (printExecutionMode() === 'direct') {
+  if (printExecutionMode() !== 'agent') {
     return {
       agentOnline: null,
       problems: cashRegisterAvailable() ? [] : ['cash-register-unavailable'],
