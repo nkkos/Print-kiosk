@@ -11,6 +11,7 @@ export type TerminalOutcome =
   | { state: 'paid'; transactionId: string }
   | { state: 'declined'; reason: string }
   | { state: 'cancelled'; reason: string }
+  | { state: 'timed-out'; reason: string }
   | { state: 'failed'; reason: string };
 
 export interface StartSaleInput {

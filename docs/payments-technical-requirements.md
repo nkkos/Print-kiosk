@@ -16,7 +16,7 @@ Business rules: `docs/payments-business-requirements.md`. Hardware and vendor ba
 
 - `channel`: `'kiosk-terminal' | 'online-checkout'`; `standId`; `provider` (`'simulator' | 'viva'`).
 - `status`: `created → awaiting-card → paid | declined | cancelled | timed-out | failed`, then `partially-refunded | refunded`. `unknown` while the outcome is being recovered after a lost connection.
-- `providerSessionId` (Viva Cloud Terminal session / Smart Checkout order code), `providerTransactionId`, `cardMasked`, `failureReason`, `expiresAt` (created + 90 s), `paidAt`.
+- `providerSessionId` (Viva Cloud Terminal session / Smart Checkout order code), `providerTransactionId`, `cardMasked`, `failureReason`, `expiresAt` (created + 60 s — the CM30P's own card wait, see the business requirements), `paidAt`.
 - `receiptDelivery`: `'qr' | 'email' | 'paper'`, `receiptEmail`.
 
 `payment_items` (new) — the priced snapshot of each Cart item at payment time:

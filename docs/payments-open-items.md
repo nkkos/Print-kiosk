@@ -2,6 +2,16 @@
 
 Status 2026-10-06. Everything that can be built without hardware is done (B1–B7, see `docs/payments-technical-requirements.md`). What remains depends on answers from Viva, the NineDigit service partner and the Financial Administration, and on testing with the real devices.
 
+## Tested on the real CM30P, live account (2026-10-08)
+
+Terminal 16804263, run locally (`VIVA_ENV=live`, `PAYMENT_TERMINAL=viva`), six real payments, all refunded:
+
+- **Contactless sale 0.30 €** — paid; **refund through the Payment API without the card succeeded** (sale shows as voided, status X, refund −0.30 €), also with the terminal's own Refund button PIN-locked.
+- **Chip sale 0.30 € and 10.20 €** — card read by chip (`panEntryMode 05`), both `CHIP – NO CVM`: the terminal didn't ask for a PIN even at 10.20 € (unattended terminals' no-PIN limit — asked Viva). Both refunded.
+- **Cancel from the stand** — aborted after 11 s, Viva confirmed. When the card had already been tapped (6 s in), the abort lost (`abortSuccess: false`) and the payment was correctly kept as paid — so nothing may lie next to the terminal in the stand.
+- **Timeout** — the terminal itself stops waiting after ~60–67 s (Viva error 1003); the stand's window is now 60 s and 1003 shows as "time ran out".
+- **Viva's own slip** — the terminal offers the card slip by SMS or e-mail for a few seconds after paying; both arrive (not for a sale voided right away). Proposal: hide that screen in the pavilion, the customer gets our eKasa receipt on the stand (asked Viva how).
+
 ## Already settled on the Viva demo (no need to ask)
 
 - Cloud Terminal API: sale, session polling and abort work against the Viva Terminal DEMO app (2026-10-06).
@@ -27,7 +37,9 @@ Written for: Viva merchant support / account manager.
 > 6. **Network** — Ethernet / Wi-Fi / 4G: which outbound hosts and ports must our firewall allow? Our pavilion is on a 4G/5G router.
 > 7. **Customer experience** — idle screen branding, Slovak and English display languages, PIN entry and contactless limits on the CM30P.
 > 8. **Card slip** — the CM30P has no printer; can the cardholder slip be sent by e-mail/SMS, or skipped? We issue the Slovak eKasa fiscal receipts ourselves.
-> 9. **Commercial** — delivery time to Slovakia, monthly fees for the device or the unattended launcher, warranty and replacement.
+>    8a. **PIN limit and slip screen** — on our CM30P chip payments up to at least 10.20 € went through without a PIN (`CHIP – NO CVM`). Above what amount does it ask for a PIN? And can the post-payment slip screen (SMS / e-mail) be switched off — `showReceipt: false` in the sale request didn't hide it?
+> 9. **Launcher settings** — on our CM30P the documented gesture (10 taps bottom-left, PIN `112`) doesn't open the launcher settings. How do staff reach them for maintenance (e.g. changing Wi-Fi), and how do we change that PIN, since `112` is published in your public documentation? What do the RESET and SERVICE buttons on the back do?
+> 10. **Commercial** — delivery time to Slovakia, monthly fees for the device or the unattended launcher, warranty and replacement.
 >
 > Thank you,
 > [name, phone]
@@ -66,18 +78,35 @@ Written for: Finančná správa SR (addition to the vending-machine exemption qu
 
 > **Doplňujúca otázka:** Zákazníci si môžu tlač objednať a zaplatiť aj vopred online (platobná brána, platba kartou cez internet) a dokument si potom len vytlačia v kiosku. Je takáto online platba tržbou podľa zákona č. 384/2025 Z. z., pri ktorej treba vyhotoviť pokladničný doklad v eKasa, alebo postačuje faktúra / potvrdenie o platbe?
 
+## Setting up a CM30P for the kiosk
+
+Without this the terminal's home screen lets anyone type an amount, open transactions or refund to their own card.
+
+1. **Viva.com Terminal app** — More → PIN protected settings → Enable PIN Protection (own PIN, kept in the password manager):
+   - protect **Settings, Transactions, Refunds, Preauth, Capture preauth, MOTO, Deeplink actions**;
+   - **Disable manual amount entry** — on: payments only start from our backend (Cloud Terminal API);
+   - **Kiosk mode** — on: the app fills the screen, More is PIN-locked (leave: tap More 3× → PIN);
+   - **Force card presentment for refunds** — **off**: the automatic refund after a failed print must work without the card.
+2. **Ciontek CM30 Launcher** (before mounting in the stand) — tap 10× bottom-left, PIN `112` → Autorun Application = Viva.com Terminal, Application Filter = Viva only, mode **Fully Unattended** → Enter Launch Mode. Hides Android navigation and starts Viva after a power cut.
+
+Source: developer.viva.com — Unattended Solutions → Ciontek CM30 Launcher; Tutorials → Tap on Phone → PIN Protection, Kiosk Mode.
+
+**Checked on the real CM30P (2026-10-08):** the Viva Launcher ships installed as an app; opening it once made it the controlling launcher. After a power cut the launcher shows for ~10 s and then starts the Viva.com Terminal app by itself; the Android navigation buttons are gone and the notification shade doesn't open. That is the state needed in the stand. The documented settings gesture (10 taps bottom-left, PIN `112`) did not open anything on this unit — asked Viva (question 9).
+
+**Mounting notes (CM30P back panel):** power **24 V ⎓ 1 A** through the 6-pin connector (the stand needs a 24 V supply); **LAN** port — wire it to the pavilion switch rather than relying on Wi-Fi; RS232-A/B, USB-host, USB-C; three **SMA** antenna sockets for external 4G/Wi-Fi antennas if the stand is metal; **RESET** and **SERVICE** buttons on the back — don't press without Viva's instructions (RESET may wipe the activation).
+
 ## Hardware acceptance — payments and receipts
 
 Run once the CM30P terminals and the fiscalised NineDigit register are installed (`PAYMENT_TERMINAL=viva`, `FISCAL_REGISTER=agent` on Railway, `FISCAL_DEVICE=ninedigit` on the agent).
 
 | #    | Scenario                                    | Expected                                                                                 |
 | ---- | ------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| PAY1 | Pay a cart by contactless card on stand A   | Terminal of stand A shows the amount; paid within the 90 s window; receipt choice screen |
+| PAY1 | Pay a cart by contactless card on stand A   | Terminal of stand A shows the amount; paid within the 60 s window; receipt choice screen |
 | PAY2 | Same on stand B                             | Only stand B's terminal reacts (`VIVA_TERMINAL_IDS`)                                     |
 | PAY3 | Card that needs PIN / chip                  | PIN entered on the CM30P, payment completes                                              |
 | PAY4 | Declined card                               | "Declined, nothing charged", Try again works                                             |
 | PAY5 | Cancel on the stand before the card         | Terminal stops waiting; nothing charged                                                  |
-| PAY6 | Wait out the 90 s                           | "Time ran out", terminal returns to idle                                                 |
+| PAY6 | Wait out the 60 s                           | "Time ran out", terminal returns to idle                                                 |
 | PAY7 | Unplug the terminal's network mid-payment   | No double charge; outcome resolved or alerted                                            |
 | REC1 | Receipt by QR                               | QR on Print Status opens the eKasa receipt (real UID, verifiable in "Over doklad")       |
 | REC2 | Receipt by e-mail                           | E-mail arrives with the receipt link                                                     |

@@ -96,8 +96,9 @@ function failedOutcome(eventId: number | undefined, message: string | undefined)
   const reason = `viva-${eventId ?? 'unknown'}${message ? `: ${message}` : ''}`;
   switch (eventId) {
     case 1000: // canceled by user
-    case 1003: // terminal timed out
       return { state: 'cancelled', reason };
+    case 1003: // the terminal stopped waiting for the card (~60 s, its own limit)
+      return { state: 'timed-out', reason };
     case 1004: // terminal declined
     case 1006: // declined by server
     case 1007: // declined by card

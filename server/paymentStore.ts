@@ -57,7 +57,7 @@ export function minimumChargeItem(
 
 /** How long the customer has to pay on the terminal (business requirements,
  * "Kiosk: the customer's journey"). */
-export const PAYMENT_WINDOW_MS = 90_000;
+export const PAYMENT_WINDOW_MS = 60_000;
 
 const OPEN_STATUSES = ['awaiting-card', 'unknown'];
 
@@ -269,7 +269,7 @@ export async function createKioskPayment(input: {
 
 /** Moves an open payment to its final state — a no-op once it's settled, so
  * a webhook and a poll arriving together can't both apply. */
-async function settle(id: string, outcome: TerminalOutcome | { state: 'timed-out' }) {
+async function settle(id: string, outcome: TerminalOutcome) {
   if (outcome.state === 'pending') return;
   const now = new Date();
   await db
@@ -291,7 +291,7 @@ async function settle(id: string, outcome: TerminalOutcome | { state: 'timed-out
     .where(and(eq(paymentOrders.id, id), inArray(paymentOrders.status, OPEN_STATUSES)));
 }
 
-/** Brings an open payment up to date with the terminal (and the 90-second
+/** Brings an open payment up to date with the terminal (and the 60-second
  * window), then returns it. Called by the stand's polling. */
 export async function refreshPayment(id: string): Promise<PaymentView | null> {
   const [order] = await db.select().from(paymentOrders).where(eq(paymentOrders.id, id));
@@ -301,7 +301,12 @@ export async function refreshPayment(id: string): Promise<PaymentView | null> {
     let outcome = await terminal.getOutcome(order.providerSessionId);
     if (outcome.state === 'pending' && order.expiresAt && order.expiresAt.getTime() < Date.now()) {
       outcome = await terminal.abort(order.providerSessionId);
-      await settle(id, outcome.state === 'cancelled' ? { state: 'timed-out' } : outcome);
+      await settle(
+        id,
+        outcome.state === 'cancelled'
+          ? { state: 'timed-out', reason: 'payment-window-expired' }
+          : outcome,
+      );
     } else {
       await settle(id, outcome);
     }

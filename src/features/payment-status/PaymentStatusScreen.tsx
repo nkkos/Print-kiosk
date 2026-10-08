@@ -28,7 +28,7 @@ import styles from './PaymentStatusScreen.module.css';
 //
 // The server prices the selection and starts the sale on this stand's
 // terminal (src/services/paymentApi.ts); this screen shows the server's
-// total, counts down the 90-second window and polls for the outcome.
+// total, counts down the 60-second window and polls for the outcome.
 // Declined / cancelled on the terminal / timed out / failed: nothing was
 // charged, "Try again" starts a new payment for the same items. Paid: the
 // customer picks how to get the receipt (QR code is the default after 30 s,

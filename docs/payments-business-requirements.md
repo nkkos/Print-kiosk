@@ -24,7 +24,7 @@ Scan stays free — no payment step (`docs/scan-upload-requirements.md`).
 
 1. The customer selects documents in the Cart and presses "Proceed to payment".
 2. The Payment screen shows the list and the total and asks to **tap or insert the card on the terminal**. The terminal shows the same amount.
-3. The customer has **90 seconds** to pay. They can cancel on the screen at any time before the card is accepted.
+3. The customer has **60 seconds** to pay (changed from 90 on 2026-10-08: the CM30P itself stops waiting for the card after about a minute and the API can't extend it, so the stand's countdown follows the terminal). They can cancel on the screen at any time before the card is accepted.
 4. **Declined, timed out or cancelled on the terminal:** the screen explains what happened and offers **"Try again"** or **"Cancel"**. Nothing is charged; the Cart stays as it was.
 5. **Paid:** the customer chooses how to get the receipt (see below), and printing starts.
 6. While a payment is in progress, End Session and the inactivity timeout are blocked (already the rule — `docs/domain/kiosk-session.md`).
