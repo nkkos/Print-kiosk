@@ -61,7 +61,9 @@ async function recordCheckoutItems(
     const orders = await db
       .select({
         id: printOrders.id,
-        fileName: printOrders.fileName,
+        paperSize: printOrders.paperSize,
+        color: printOrders.color,
+        sides: printOrders.sides,
         unitPriceCents: printOrders.unitPriceCents,
       })
       .from(printOrders)
@@ -71,7 +73,9 @@ async function recordCheckoutItems(
       rows.push({
         paymentOrderId: paymentId,
         cartItemId: order.id,
-        description: `Tlač: ${order.fileName}`,
+        // The print settings, never the file name — personal data the
+        // payment record doesn't need (server/dataRetention.ts).
+        description: `Tlač ${order.paperSize} ${order.color === 'color' ? 'farebne' : 'ČB'} ${order.sides === 'double' ? 'obojstranne' : 'jednostranne'}`,
         quantity,
         unitPriceCents: order.unitPriceCents,
         amountCents: order.unitPriceCents * quantity,

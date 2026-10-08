@@ -241,7 +241,9 @@ export async function createKioskPayment(input: {
       unitPriceCents,
       amountCents: unitPriceCents * chargedQuantity,
       vatRatePercent: PRINT_VAT_RATE_PERCENT,
-      printConfig: JSON.stringify(item),
+      // Everything needed to print the item — but not the customer's file
+      // name, which a payment record doesn't need (server/dataRetention.ts).
+      printConfig: JSON.stringify({ ...item, fileName: undefined }),
     })),
   );
   if (topUpCents > 0) {

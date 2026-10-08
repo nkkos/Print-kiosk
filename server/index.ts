@@ -29,6 +29,7 @@ const { runNightlyReconciliation } = await import('./paymentReconciliation.js');
 const { sweepOnlineCheckouts } = await import('./onlineCheckoutStore.js');
 const { startStandWatchdog } = await import('./standMonitor.js');
 const { sweepNUpCache } = await import('./nUpImposer.js');
+const { erasePersonalDataPastRetention } = await import('./dataRetention.js');
 const { reportIncident } = await import('./incidentStore.js');
 
 // Dev-only backend for the QR/Email upload methods (docs/qr-upload-requirements.md,
@@ -104,6 +105,17 @@ async function main() {
       .catch((err: unknown) => console.error('[index] Orphaned-file sweep failed:', err));
   void runSweep();
   setInterval(runSweep, 30 * 60 * 1000);
+
+  // Personal data past its retention (server/dataRetention.ts): receipt
+  // e-mails and finished portal orders' file names after 30 days.
+  const runRetention = () =>
+    erasePersonalDataPastRetention()
+      .then((count) => {
+        if (count > 0) console.log(`[index] Erased personal data from ${count} record(s)`);
+      })
+      .catch((err: unknown) => console.error('[index] Personal-data retention failed:', err));
+  void runRetention();
+  setInterval(runRetention, 30 * 60 * 1000);
 
   // Personal Account files' own retention sweep (docs/personal-account-requirements.md,
   // "Open items"; server/accountFileLimits.ts) — separate window/config from
