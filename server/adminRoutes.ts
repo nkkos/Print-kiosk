@@ -42,7 +42,7 @@ import {
 } from './companyInvoiceStore.js';
 import { sendCompanyInviteEmail } from './emailSender.js';
 import { refundItemsByStaff } from './paymentStore.js';
-import { listStandStatus } from './standMonitor.js';
+import { listStandStatus, requestStandReload } from './standMonitor.js';
 import { listPaymentsForDay, reconcileDay, pavilionDay } from './paymentReconciliation.js';
 
 // Admin panel backend (docs/screens/admin-panel-wireframes.md,
@@ -598,6 +598,26 @@ adminRouter.post('/api/admin/company-invoices/:id/issue', requireStaffSession, a
 // Kiosk stands' liveness (server/standMonitor.ts) — the Overview's stands row.
 adminRouter.get('/api/admin/stands', requireStaffSession, async (_req, res) => {
   res.json(await listStandStatus());
+});
+
+// Reload a stand's kiosk page from afar — the first remedy for a stand that
+// shows something odd but is still calling in (a fully frozen browser stops
+// calling in, so it can't hear this; that needs someone on site). The stand
+// picks the request up on its next minutely heartbeat. Without `force` it
+// waits until no customer is using it — open to any staff; `force` cuts a
+// customer's session short, so senior-only, like the other disruptive fixes.
+adminRouter.post('/api/admin/stands/:id/reload', requireStaffSession, async (req, res) => {
+  const force = (req.body as { force?: unknown } | undefined)?.force === true;
+  if (force && (req as AuthenticatedStaffRequest).staffAccount?.role !== 'senior') {
+    res.status(403).json({ error: 'Requires the senior role' });
+    return;
+  }
+  const found = await requestStandReload(paramString(req.params.id), force);
+  if (!found) {
+    res.status(404).json({ error: 'This stand has never reported in' });
+    return;
+  }
+  res.json({ ok: true });
 });
 
 // Payments (docs/payments-business-requirements.md, "Staff and admin panel"):

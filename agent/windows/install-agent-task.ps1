@@ -14,6 +14,26 @@ $ErrorActionPreference = 'Stop'
 $taskName = 'PrintKioskAgent'
 $runner = (Resolve-Path (Join-Path $PSScriptRoot 'run-agent.ps1')).Path
 
+# SYSTEM sees only the machine-wide PATH: a Node.js installed for one user
+# (nvm, a per-user installer) would leave the task restarting a missing
+# node.exe forever, so refuse up front.
+$machinePath = [Environment]::GetEnvironmentVariable('Path', 'Machine') -split ';'
+$systemNode = @($machinePath | Where-Object { $_ } | ForEach-Object { Join-Path $_ 'node.exe' }) +
+  (Join-Path $env:ProgramFiles 'nodejs\node.exe') | Where-Object { Test-Path $_ } | Select-Object -First 1
+if (-not $systemNode) {
+  throw 'node.exe is not on the machine-wide PATH - install Node.js with the official installer (for all users), then run this again.'
+}
+
+# The mini-PC must never sleep, and Windows Update must not restart it in
+# the middle of the day (the agent comes back by itself after a restart, but
+# a job being printed would be cut off).
+powercfg /change standby-timeout-ac 0 | Out-Null
+powercfg /hibernate off | Out-Null
+$uxSettings = 'HKLM:\SOFTWARE\Microsoft\WindowsUpdate\UX\Settings'
+if (-not (Test-Path $uxSettings)) { New-Item -Path $uxSettings -Force | Out-Null }
+New-ItemProperty -Path $uxSettings -Name 'ActiveHoursStart' -Value 6 -PropertyType DWord -Force | Out-Null
+New-ItemProperty -Path $uxSettings -Name 'ActiveHoursEnd' -Value 23 -PropertyType DWord -Force | Out-Null
+
 $action = New-ScheduledTaskAction -Execute 'powershell.exe' `
   -Argument "-NoProfile -NonInteractive -ExecutionPolicy Bypass -WindowStyle Hidden -File `"$runner`""
 $trigger = New-ScheduledTaskTrigger -AtStartup
@@ -29,4 +49,4 @@ $settings = New-ScheduledTaskSettingsSet `
 Register-ScheduledTask -TaskName $taskName -Action $action -Trigger $trigger `
   -Principal $principal -Settings $settings -Force | Out-Null
 Start-ScheduledTask -TaskName $taskName
-Write-Host "Registered and started '$taskName'. Log: $(Join-Path (Resolve-Path "$PSScriptRoot\..\..") 'logs\agent.log')"
+Write-Host "Registered and started '$taskName' (Node: $systemNode). Log: $(Join-Path (Resolve-Path "$PSScriptRoot\..\..") 'logs\agent.log')"

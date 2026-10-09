@@ -908,4 +908,9 @@ export const stands = pgTable('stands', {
   lastScreen: text('last_screen'),
   userAgent: text('user_agent'),
   firstSeenAt: timestamp('first_seen_at', { withTimezone: true }).notNull().defaultNow(),
+  // A reload staff asked for from the admin panel, still to be carried out —
+  // the stand learns about it from its next heartbeat. `reloadForce` false =
+  // wait until no customer is using the stand.
+  reloadRequestedAt: timestamp('reload_requested_at', { withTimezone: true }),
+  reloadForce: boolean('reload_force').notNull().default(false),
 });

@@ -1468,7 +1468,11 @@ router.get('/receipts/:id', async (req, res) => {
 // A stand's minutely "I'm alive" (server/standMonitor.ts) — which stand it
 // is comes from its key when stand keys are on, else from the body.
 router.post('/api/stands/heartbeat', requireStand, async (req, res) => {
-  const { standId, screen } = (req.body ?? {}) as { standId?: unknown; screen?: unknown };
+  const { standId, screen, handledReload } = (req.body ?? {}) as {
+    standId?: unknown;
+    screen?: unknown;
+    handledReload?: unknown;
+  };
   const resolvedStandId =
     (req as StandRequest).standId ??
     (typeof standId === 'string' && STAND_ID_PATTERN.test(standId) ? standId : null);
@@ -1476,8 +1480,15 @@ router.post('/api/stands/heartbeat', requireStand, async (req, res) => {
     res.status(204).end();
     return;
   }
-  await recordStandHeartbeat(resolvedStandId, screen, req.header('User-Agent'));
-  res.status(204).end();
+  // A reload staff asked for rides back on the answer (admin Overview).
+  const reload = await recordStandHeartbeat(
+    resolvedStandId,
+    screen,
+    req.header('User-Agent'),
+    handledReload,
+  );
+  if (reload) res.json({ reload });
+  else res.status(204).end();
 });
 
 // Kiosk card payments (docs/payments-technical-requirements.md, "API").

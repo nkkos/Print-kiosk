@@ -101,6 +101,18 @@ After submitting, the agent follows the job (`agent/jobTracker.ts`) — first in
 
 Without hardware: `AGENT_DRY_RUN=true` skips the actual print, and `PRINTER_STATUS_SIMULATOR_FILE` points at a JSON file (`{"state":"idle","problems":[]}`; e.g. `"problems":["jammed"]`) that is re-read on every poll — edit it to simulate printer states. `AGENT_PROBLEM_GRACE_MS` (default 60000) sets how long a problem must last before a job is failed.
 
+## Kiosk stand PC
+
+A stand runs none of this repository's code: it is a Windows PC (Windows 11 Pro recommended — some of the settings below are policies Home ignores) that signs in by itself and shows the kiosk site full screen in Chrome. Install Google Chrome, copy the `stand\windows` folder to the PC, and run once in an elevated PowerShell:
+
+```
+powershell -ExecutionPolicy Bypass -File setup-stand.ps1 -StandId A -StandKey <key from .env.security>
+```
+
+It creates a standard local user `kiosk` with automatic sign-in, registers a `PrintKioskStand` task that runs `run-stand.ps1` at that sign-in (Chrome in kiosk mode on `…/?stand=A&key=…`, reopened within seconds if it closes or crashes, no "restore pages" prompt after a power cut), locks Chrome down for a public screen (no saved passwords or autofill, no translate, sign-in, printing or dev tools), turns off Windows edge swipes, sleep and restarts for updates while the kiosk is signed in, opens the touch keyboard when a text field is tapped, and reboots the PC every night (`-NightlyRebootAt`, default 04:30). `-KioskUrl` points it elsewhere (e.g. the staging site). Staff leave kiosk mode with a keyboard: Ctrl+Alt+Del → Switch user → an administrator account. `uninstall-stand.ps1` removes the startup and the automatic sign-in. Log: `C:\Users\kiosk\AppData\Local\PrintKioskStand\stand.log`.
+
+A stand that shows something odd but still reports in can be reloaded from the admin panel (Overview → Стойки → «Перезагрузить страницу»): the stand picks the request up from its next minutely heartbeat and reloads once nobody is using it (Welcome screen, empty Cart); «Сразу» (senior staff) reloads it even mid-session. A fully frozen page stops reporting in (`pc.dead`) and can't hear the request — that needs the nightly reboot or someone on site.
+
 ## Deploying to Railway
 
 Three Railway services, in one project:

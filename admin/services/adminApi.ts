@@ -468,8 +468,22 @@ export interface StandStatus {
   online: boolean;
   lastSeenAt: string | null;
   lastScreen: string | null;
+  /** A reload asked for here that the stand hasn't carried out yet. */
+  reloadPending: { requestedAt: string; force: boolean } | null;
 }
 
 export async function listStands(sessionToken: string): Promise<StandStatus[]> {
   return request('GET', '/api/admin/stands', sessionToken);
+}
+
+/** Reloads the stand's kiosk page on its next heartbeat (within a minute) —
+ * once nobody is using it, or straight away with `force` (senior only). */
+export async function reloadStand(
+  sessionToken: string,
+  standId: string,
+  force: boolean,
+): Promise<void> {
+  await request('POST', `/api/admin/stands/${encodeURIComponent(standId)}/reload`, sessionToken, {
+    force,
+  });
 }

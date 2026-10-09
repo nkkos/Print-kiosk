@@ -1,5 +1,11 @@
 import { useEffect, useState } from 'react';
-import { listIncidents, listStands, type Incident, type StandStatus } from '../services/adminApi';
+import {
+  listIncidents,
+  listStands,
+  reloadStand,
+  type Incident,
+  type StandStatus,
+} from '../services/adminApi';
 import type { AdminSession } from '../adminSession';
 
 interface OverviewScreenProps {
@@ -49,6 +55,25 @@ export function OverviewScreen({ session, onSelectSource }: OverviewScreenProps)
   const [incidents, setIncidents] = useState<Incident[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [stands, setStands] = useState<StandStatus[]>([]);
+  // Forced reload waits for this confirmation — it cuts a customer short.
+  const [forceReloadStandId, setForceReloadStandId] = useState<string | null>(null);
+  const [reloadingStandId, setReloadingStandId] = useState<string | null>(null);
+  const [reloadError, setReloadError] = useState<string | null>(null);
+  const isSenior = session.role === 'senior';
+
+  async function requestReload(standId: string, force: boolean) {
+    setReloadingStandId(standId);
+    setReloadError(null);
+    try {
+      await reloadStand(session.sessionToken, standId, force);
+      setStands(await listStands(session.sessionToken));
+      setForceReloadStandId(null);
+    } catch (err) {
+      setReloadError(err instanceof Error ? err.message : 'Не удалось запросить перезагрузку');
+    } finally {
+      setReloadingStandId(null);
+    }
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -179,11 +204,81 @@ export function OverviewScreen({ session, onSelectSource }: OverviewScreenProps)
                       : 'ещё не выходила на связь'}
                     {!stand.monitored && ' · не отслеживается'}
                   </div>
+                  {stand.reloadPending ? (
+                    <div className="equip-metric" id={`stand-reload-pending-${stand.id}`}>
+                      Перезагрузка запрошена в {formatIncidentTime(stand.reloadPending.requestedAt)}
+                      {stand.reloadPending.force
+                        ? ' — сразу, при следующей отметке'
+                        : ' — когда стойка освободится'}
+                    </div>
+                  ) : (
+                    stand.lastSeenAt && (
+                      <div className="modal-actions">
+                        <button
+                          type="button"
+                          className="btn"
+                          id={`stand-reload-${stand.id}`}
+                          onClick={() => void requestReload(stand.id, false)}
+                          disabled={reloadingStandId === stand.id}
+                        >
+                          Перезагрузить страницу
+                        </button>
+                        {isSenior && (
+                          <button
+                            type="button"
+                            className="btn"
+                            id={`stand-reload-force-${stand.id}`}
+                            onClick={() => setForceReloadStandId(stand.id)}
+                            disabled={reloadingStandId === stand.id}
+                          >
+                            Сразу
+                          </button>
+                        )}
+                      </div>
+                    )
+                  )}
                 </div>
               );
             })}
           </div>
+          {reloadError && (
+            <p className="session-warning" id="stand-reload-error">
+              {reloadError}
+            </p>
+          )}
         </>
+      )}
+
+      {forceReloadStandId && (
+        <div className="modal-overlay">
+          <div className="modal-card" id="stand-reload-force-modal" role="dialog" aria-modal>
+            <h2>Перезагрузить стойку {forceReloadStandId} сразу?</h2>
+            <p className="session-warning">
+              Если сейчас стойкой пользуется клиент, его экран сбросится на начальный. Корзина
+              сохранится, оплаченные задания продолжат печататься.
+            </p>
+            <div className="modal-actions">
+              <button
+                type="button"
+                className="btn"
+                id="stand-reload-force-cancel"
+                onClick={() => setForceReloadStandId(null)}
+                disabled={reloadingStandId !== null}
+              >
+                Отмена
+              </button>
+              <button
+                type="button"
+                className="btn btn-primary"
+                id="stand-reload-force-submit"
+                onClick={() => void requestReload(forceReloadStandId, true)}
+                disabled={reloadingStandId !== null}
+              >
+                {reloadingStandId ? 'Выполняется…' : 'Перезагрузить'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </section>
   );
