@@ -12,6 +12,23 @@ Expected load: 1 pavilion, 2 kiosk stands, 10–15 visitors/day.
 - **Printer**: Brother HL-L9430CDN + MX-4000 (4 × 100-sheet mailbox bins) + LT-330CL lower tray, on the pavilion LAN.
 - Local development keeps a "direct" mode where the backend prints to the local default printer itself (the current behavior).
 
+## Before opening — pavilion network and power
+
+Confirmed with the product owner on 2026-10-09. Every device in the pavilion reaches the internet through one router, so the router, its SIM cards, the switch and the power supply are the pavilion's single points of failure: any of them down stops everything (stands, payments, printing). The mini-PC, the printer or one stand failing only stops part of the service. The diagram is published as the «Схема павильона» artifact.
+
+- [ ] **Measure the mobile signal** inside the pavilion (where the router will stand) and outside, for each candidate operator (Orange, Telekom, O2, 4ka), before buying the router, the SIM cards and the antenna. Targets for LTE: RSRP better than −100 dBm, SINR above 5 dB; if inside is clearly worse than outside, plan an external antenna.
+- [ ] **Router**: Teltonika with **two SIM slots and automatic failover**. The two SIM cards come from **different operators**, so one operator's outage doesn't stop the pavilion.
+- [ ] **External antenna** if the signal measurement calls for it.
+- [ ] **Fixed line** as the main channel, with mobile as the backup, if the building offers one.
+- [ ] **Teltonika RMS** (remote management) set up, so the router can be checked, rebooted and reconfigured without a site visit; **ping reboot** turned on (the router restarts itself after N minutes without internet).
+- [ ] **Spare router** with the same configuration exported and loaded, kept ready to swap in.
+- [ ] **PoE switch** (managed, VLAN-capable). Every wired device runs through it, so it is as critical as the router; consider a spare.
+- [ ] **Three separate networks (VLANs)**: kiosk and payments (stands, Viva terminals, mini-PC, printer, cash register); security (cameras, NVR, lock, sensors); guests (Wi-Fi with limits, internet only, no access to the others).
+- [ ] **No inbound ports**: every device connects out by itself (stands, print agent, Viva terminals), so no port forwarding and no public IP are needed.
+- [ ] **UPS** on the router, the switch, the mini-PC and the Viva terminals. The printer may stay off it: a print that fails on a power cut is refunded by the normal print-failure path.
+- [ ] **Printer on the LAN** (static IP), not USB, so the agent can read paper, toner and jam status over SNMP.
+- [ ] **Connection-loss test** on the two-PC setup (old PC as a stand, laptop as the agent): pull the stand's cable, including in the middle of a payment. Check that the stand shows "no connection", that `pc.dead` reaches Telegram after 3 minutes and closes itself on reconnect, and that the nightly Viva reconciliation flags a payment interrupted by the outage.
+
 ## Before opening — infrastructure (Railway)
 
 - [ ] Move to the **Pro plan** (support, backups, sane limits). Budget estimate $20–40/month; ClamAV's 2–3 GB of RAM is the biggest cost.
@@ -55,7 +72,7 @@ The backend was deliberately built without hardening for the prototype (see `CLA
 - [ ] Tune the agent's timings on real hardware (`agent/jobTracker.ts`: grace period, idle readings, 10-minute watch limit) — in particular that a sleeping printer reports "idle" and that a finished job is detected.
 - [ ] Set `VITE_HIDE_PRINT_SIMULATE=true` in the Cloudflare Pages build, so customers never see the "Simulate …" buttons (real outcomes come from the agent).
 - [ ] Set `PRINT_EXECUTION=agent` and `PRINT_AGENT_TOKEN` on Railway, the same token in the agent's `.env`; register the agent's startup task (`agent\windows\install-agent-task.ps1`, elevated) and confirm it survives a reboot and a killed `node.exe`.
-- [ ] Open each stand's kiosk browser with `?stand=A` / `?stand=B`; check the stand shows up in the admin Print Queue.
+- [ ] Set up each stand PC with `stand\windows\setup-stand.ps1 -StandId A|B -StandKey …` (`README.md`, "Kiosk stand PC"); confirm it signs in and opens the kiosk by itself after a reboot and a power cut, reopens Chrome when it's closed, and shows up in the admin Print Queue and Overview → Стойки. Then on the real touch screen: no edge swipe, pinch zoom or swipe-back gets out of the kiosk; the touch keyboard opens in the e-mail and login fields; Windows 11's three- and four-finger touch gestures are off (Settings → Bluetooth & devices → Touch); the admin «Перезагрузить страницу» reloads the stand.
 - [ ] Check on a real stand that the cart refuses payment while the printer is unavailable (agent stopped, door open) and unlocks by itself once it's back.
 - [x] Admin Print Queue shows the printer's live state from the agent (state, blocking problems and warnings, toner/drum levels, when the agent last called in).
 - [ ] Review incident noise: one jam currently yields a device incident (`printer.jammed`), a task incident (`printer.paper-jam`) and, if the job had reached the printer, `printer.job-interrupted` — decide which should reach Telegram.
