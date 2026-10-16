@@ -14,6 +14,7 @@ const SOURCE_NAMES: Record<string, string> = {
   network: 'Сеть',
   backend: 'Бэкенд',
   'payment-terminal': 'Платёжный терминал',
+  security: 'Безопасность',
 };
 
 const SOURCES = Object.keys(SOURCE_NAMES);

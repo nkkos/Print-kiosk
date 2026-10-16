@@ -487,3 +487,63 @@ export async function reloadStand(
     force,
   });
 }
+
+// The pavilion entrance door (server/pavilionDoor.ts) — the Overview's door
+// block. Commands are senior only.
+export interface DoorStatus {
+  timeZone: string;
+  openingHours: { opensAt: string; closesAt: string };
+  plannedMode: 'open' | 'closed';
+  plannedReason: 'schedule' | 'closure' | 'override';
+  override: { mode: 'open' | 'closed'; until: string } | null;
+  visitPending: boolean;
+  reading: {
+    lock: string | null;
+    door: string | null;
+    lockReachable: boolean | null;
+    batteryCritical: boolean | null;
+    appliedMode: string | null;
+    reportedAt: string | null;
+    stale: boolean;
+  };
+  closures: { id: string; startsAt: string; endsAt: string | null; reason: string }[];
+  events: {
+    id: string;
+    kind: string;
+    detail: string | null;
+    staffEmail: string | null;
+    at: string;
+  }[];
+}
+
+export async function getDoorStatus(sessionToken: string): Promise<DoorStatus> {
+  return request('GET', '/api/admin/door', sessionToken);
+}
+
+/** 'visit' = unlocked once, locks again behind the visitor; 'reopened' = an
+ * earlier "Close now" cancelled; 'already-open' = nothing to do. */
+export async function openDoor(
+  sessionToken: string,
+): Promise<{ result: 'visit' | 'reopened' | 'already-open' }> {
+  return request('POST', '/api/admin/door/open', sessionToken, {});
+}
+
+export async function closeDoor(sessionToken: string): Promise<{ until: string | null }> {
+  return request('POST', '/api/admin/door/close', sessionToken, {});
+}
+
+export async function addDoorClosure(
+  sessionToken: string,
+  closure: { startsAt: string; endsAt: string | null; reason: string },
+): Promise<{ id: string }> {
+  return request('POST', '/api/admin/door/closures', sessionToken, closure);
+}
+
+export async function cancelDoorClosure(sessionToken: string, id: string): Promise<void> {
+  await request(
+    'POST',
+    `/api/admin/door/closures/${encodeURIComponent(id)}/cancel`,
+    sessionToken,
+    {},
+  );
+}

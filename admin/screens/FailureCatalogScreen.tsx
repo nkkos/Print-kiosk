@@ -7,6 +7,7 @@ const SOURCE_NAMES: Record<string, string> = {
   network: 'Сеть',
   backend: 'Бэкенд',
   'payment-terminal': 'Платёжный терминал',
+  security: 'Безопасность',
 };
 
 const SOURCE_ORDER = Object.keys(SOURCE_NAMES);
@@ -349,6 +350,43 @@ const CATALOG: Record<string, CatalogEntry[]> = {
       autoFix: 'TBD — терминал самостоятельно блокируется',
       monitoring: 'не реализовано',
       message: 'Физическая попытка вскрытия — не рядовой сбой',
+    },
+  ],
+  security: [
+    {
+      code: 'security.door-forced',
+      severity: 'emergency',
+      autoFix: 'нет — нужен человек на месте',
+      monitoring: 'реализовано (не проверено вживую)',
+      message: 'Входную дверь открыли, когда замок был заперт, — взлом',
+    },
+    {
+      code: 'security.lock-failed',
+      severity: 'critical',
+      autoFix: 'агент повторяет команду раз в минуту',
+      monitoring: 'реализовано (не проверено вживую)',
+      message: 'Павильон не удалось запереть или отпереть',
+    },
+    {
+      code: 'security.door-held-open',
+      severity: 'critical',
+      autoFix: 'нет — закрывается сам, когда дверь закрыли',
+      monitoring: 'реализовано (не проверено вживую)',
+      message: 'Входная дверь открыта больше 2 минут, когда павильон закрыт',
+    },
+    {
+      code: 'security.lock-unreachable',
+      severity: 'critical',
+      autoFix: 'нет — закрывается сам, когда замок снова отвечает',
+      monitoring: 'реализовано (не проверено вживую)',
+      message: 'Агент не получает ответа от замка',
+    },
+    {
+      code: 'security.lock-battery-low',
+      severity: 'warning',
+      autoFix: 'нет — заменить или зарядить аккумулятор замка',
+      monitoring: 'реализовано (не проверено вживую)',
+      message: 'Аккумулятор замка почти разряжен',
     },
   ],
 };

@@ -19,6 +19,7 @@ import {
   type IncidentSeverity,
 } from './incidentStore.js';
 import { blockingProblems, type PrinterProblem, type PrinterSnapshot } from './printerStatus.js';
+import { getAgentDoorInstructions, parseDoorReport, recordDoorReport } from './pavilionDoor.js';
 
 // The cloud side of the pavilion print agent (agent/, docs/pavilion-launch-checklist.md,
 // "Target architecture"). The agent runs on the pavilion mini-PC next to the
@@ -303,6 +304,23 @@ agentRouter.post('/api/agent/fiscal-jobs/:id/result', async (req, res) => {
     res.status(400).json({ error: 'Invalid fiscal result' });
     return;
   }
+  res.json({ ok: true });
+});
+
+// The entrance door (server/pavilionDoor.ts, agent/doorController.ts): the
+// agent pulls the plan and any visit staff asked for, drives the lock
+// locally, and reports the lock's state and what it did.
+agentRouter.get('/api/agent/door', async (_req, res) => {
+  res.json(await getAgentDoorInstructions());
+});
+
+agentRouter.post('/api/agent/door-report', async (req, res) => {
+  const report = parseDoorReport(req.body);
+  if (!report) {
+    res.status(400).json({ error: 'Invalid door report' });
+    return;
+  }
+  await recordDoorReport(report);
   res.json({ ok: true });
 });
 

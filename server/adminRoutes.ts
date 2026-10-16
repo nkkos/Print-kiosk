@@ -44,6 +44,13 @@ import { sendCompanyInviteEmail } from './emailSender.js';
 import { refundItemsByStaff } from './paymentStore.js';
 import { listStandStatus, requestStandReload } from './standMonitor.js';
 import { listPaymentsForDay, reconcileDay, pavilionDay } from './paymentReconciliation.js';
+import {
+  addDoorClosure,
+  cancelDoorClosure,
+  getDoorStatusForStaff,
+  requestDoorClose,
+  requestDoorOpen,
+} from './pavilionDoor.js';
 
 // Admin panel backend (docs/screens/admin-panel-wireframes.md,
 // docs/screens/admin-panel-spec.md) — a distinct router mounted under
@@ -141,6 +148,7 @@ const INCIDENT_SOURCES: IncidentSource[] = [
   'network',
   'backend',
   'payment-terminal',
+  'security',
 ];
 const INCIDENT_SEVERITIES: IncidentSeverity[] = ['info', 'warning', 'critical', 'emergency'];
 
@@ -619,6 +627,76 @@ adminRouter.post('/api/admin/stands/:id/reload', requireStaffSession, async (req
   }
   res.json({ ok: true });
 });
+
+// The pavilion entrance door (docs/pavilion-security-requirements.md, section 1;
+// server/pavilionDoor.ts). Anyone on staff sees it; the commands are senior
+// only (confirmed 2026-10-16). The operator opens the door for themselves
+// from a phone, standing in front of it.
+adminRouter.get('/api/admin/door', requireStaffSession, async (_req, res) => {
+  res.json(await getDoorStatusForStaff());
+});
+
+adminRouter.post(
+  '/api/admin/door/open',
+  requireStaffSession,
+  requireSeniorRole,
+  async (req, res) => {
+    const staffAccount = (req as AuthenticatedStaffRequest).staffAccount!;
+    res.json({ result: await requestDoorOpen(staffAccount.id) });
+  },
+);
+
+adminRouter.post(
+  '/api/admin/door/close',
+  requireStaffSession,
+  requireSeniorRole,
+  async (req, res) => {
+    const staffAccount = (req as AuthenticatedStaffRequest).staffAccount!;
+    res.json(await requestDoorClose(staffAccount.id));
+  },
+);
+
+adminRouter.post(
+  '/api/admin/door/closures',
+  requireStaffSession,
+  requireSeniorRole,
+  async (req, res) => {
+    const { startsAt, endsAt, reason } = (req.body ?? {}) as Record<string, unknown>;
+    const start = typeof startsAt === 'string' ? new Date(startsAt) : null;
+    const end = typeof endsAt === 'string' && endsAt ? new Date(endsAt) : null;
+    if (
+      !start ||
+      Number.isNaN(start.getTime()) ||
+      (end && (Number.isNaN(end.getTime()) || end <= start)) ||
+      typeof reason !== 'string' ||
+      !reason.trim()
+    ) {
+      res.status(400).json({ error: 'A start, an optional later end and a reason are required' });
+      return;
+    }
+    const staffAccount = (req as AuthenticatedStaffRequest).staffAccount!;
+    const id = await addDoorClosure(
+      { startsAt: start, endsAt: end, reason: reason.trim().slice(0, 200) },
+      staffAccount.id,
+    );
+    res.json({ id });
+  },
+);
+
+adminRouter.post(
+  '/api/admin/door/closures/:id/cancel',
+  requireStaffSession,
+  requireSeniorRole,
+  async (req, res) => {
+    const staffAccount = (req as AuthenticatedStaffRequest).staffAccount!;
+    const found = await cancelDoorClosure(paramString(req.params.id), staffAccount.id);
+    if (!found) {
+      res.status(404).json({ error: 'No such closure in force' });
+      return;
+    }
+    res.json({ ok: true });
+  },
+);
 
 // Payments (docs/payments-business-requirements.md, "Staff and admin panel"):
 // one day's kiosk card payments, the daily reconciliation against Viva and

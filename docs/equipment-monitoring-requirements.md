@@ -228,7 +228,7 @@ Deliberately **not** covered in this document, tracked as separate future topics
 - Managed relay/smart-plug hardware selection for the PC power-cycle — confirmed as planned, but no specific product chosen yet.
 - Whether "Telegram only, no SMS/call" escalation remains sufficient once the team or pavilion count grows — explicitly accepted as a known gap for now (see Methodology, "Notification & escalation").
 - A dedicated synthetic touch-input self-test for the display section — currently just inherits the PC's app-level health-check, which may not actually catch `display.touch-unresponsive` reliably.
-- Door lock scenarios, camera/CCTV hazard detection, and the remote customer intercom — separate documents, not started.
+- Door lock scenarios, camera/CCTV hazard detection, and the remote customer intercom — separate documents. Door lock, video and security sensors: `docs/pavilion-security-requirements.md` (business requirements, 2026-10-16); the intercom is not started.
 - **New (2026-08-21):** granting the kiosk backend process whatever elevated privilege it needs to actually restart the Spooler service — confirmed missing today, blocks the `queue-stuck` auto-remediation step entirely until addressed at deploy time.
 - **New (2026-08-21):** a startup-time sanity check that warns if the configured/default printer sits on an interactive port (`PORTPROMPT:` or similar) — proposed after `printer.interactive-port` was found, not yet implemented.
 - **New (2026-08-21):** B3's spooler-backup and concurrent-submission tests (items 9–10) — designed but not yet actually run, unlike the rest of the B-section list.

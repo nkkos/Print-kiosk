@@ -7,6 +7,7 @@ import {
   type StandStatus,
 } from '../services/adminApi';
 import type { AdminSession } from '../adminSession';
+import { DoorPanel } from './DoorPanel';
 
 interface OverviewScreenProps {
   session: AdminSession;
@@ -20,6 +21,7 @@ const SOURCE_NAMES: Record<string, string> = {
   network: 'Сеть',
   backend: 'Бэкенд',
   'payment-terminal': 'Платёжный терминал',
+  security: 'Безопасность',
 };
 
 const SOURCES = Object.keys(SOURCE_NAMES);
@@ -126,6 +128,8 @@ export function OverviewScreen({ session, onSelectSource }: OverviewScreenProps)
       </div>
 
       {error && <p className="login-error">{error}</p>}
+
+      <DoorPanel session={session} />
 
       {sortedIncidents.length > 0 && (
         <div className="incident-feed" id="incident-feed">

@@ -50,6 +50,13 @@ The backend was deliberately built without hardening for the prototype (see `CLA
 - [ ] Phone-side capability links (QR upload page, scan/copy pages, scan download links) are still "whoever has the link": a bystander who photographs the QR on screen can upload into that session (not read it). Decide whether that needs a separate short-lived upload token.
 - [x] Rate limits per client IP on phone/public uploads (120 per 10 min) and on routes that send e-mail (10 per 15 min); security headers (helmet, no CSP because the phone pages use inline scripts). The backend now trusts Railway's proxy hop, so limits — including the existing login limit — are per client, not one bucket for everybody.
 
+## Before opening — entrance door
+
+- [ ] Nuki Smart Lock Pro (4th gen) on the entrance cylinder, owner's consent for it; the cylinder has an emergency function (key works from outside with the Nuki inside), the door has a closer (`docs/pavilion-security-requirements.md`, section 1).
+- [ ] Mosquitto on the mini-PC; the Nuki's MQTT API pointed at it; Nuki auto-lock **off**; `DOOR_LOCK=nuki-mqtt`, `NUKI_DEVICE_ID` on the agent. Check the topic values in `agent/doorLock.ts` against the real lock (checked only against Nuki's documentation so far).
+- [ ] Test on site: 7:00 unlock and 22:00 lock (or shift the clock with a closure), "Открыть" from a phone, inside exit relocks, door opened while locked raises `security.door-forced`.
+- [ ] Spare key with the senior operator.
+
 ## Before opening — payments and receipts
 
 - [ ] Real Viva terminals connected (`PAYMENT_TERMINAL=viva`, B5) — until then the kiosk takes simulated payments only.

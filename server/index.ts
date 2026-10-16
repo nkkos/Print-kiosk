@@ -107,7 +107,8 @@ async function main() {
   setInterval(runSweep, 30 * 60 * 1000);
 
   // Personal data past its retention (server/dataRetention.ts): receipt
-  // e-mails and finished portal orders' file names after 30 days.
+  // e-mails and finished portal orders' file names after 30 days, the door
+  // journal after 12 months.
   const runRetention = () =>
     erasePersonalDataPastRetention()
       .then((count) => {

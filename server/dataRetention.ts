@@ -1,13 +1,15 @@
 import { and, inArray, isNotNull, lt, ne, sql } from 'drizzle-orm';
 import { db } from './db/client.js';
 import { fiscalReceipts, paymentOrders, printOrders } from './db/schema.js';
+import { deleteDoorEventsPastRetention } from './pavilionDoor.js';
 
 // Personal data kept only as long as it's needed (docs/data-privacy-requirements.md,
 // decided 2026-10-08): a customer's e-mail for the receipt is erased 30 days
 // after the payment, and a done (printed or refunded) portal order's file
 // name 30 days after the order was placed — what stays is the financial fact: amounts,
 // print settings, dates. Payment lines never store file names at all
-// (server/paymentStore.ts, server/onlineCheckoutStore.ts). Runs with the
+// (server/paymentStore.ts, server/onlineCheckoutStore.ts). The door journal
+// (who opened the pavilion when) goes after 12 months. Runs with the
 // orphaned-file sweep (server/index.ts).
 
 export const PERSONAL_DATA_RETENTION_DAYS = 30;
@@ -41,5 +43,6 @@ export async function erasePersonalDataPastRetention(): Promise<number> {
       ),
     )
     .returning({ id: printOrders.id });
-  return payments.length + receipts.length + orders.length;
+  const doorEvents = await deleteDoorEventsPastRetention();
+  return payments.length + receipts.length + orders.length + doorEvents;
 }

@@ -20,6 +20,7 @@ const SOURCE_NAMES: Record<string, string> = {
   network: 'Сеть',
   backend: 'Бэкенд',
   'payment-terminal': 'Платёжный терминал',
+  security: 'Безопасность',
 };
 
 const SEVERITY_LABEL: Record<string, string> = {
@@ -41,6 +42,7 @@ const NOFIX_NOTICES: Record<string, string> = {
     'Большинство сбоев принтера (замятие бумаги, отсутствие бумаги/картриджа) требуют физического вмешательства — удалённого исправления нет.',
   network: 'Сетевые сбои нельзя устранить удалённо из этой панели.',
   'payment-terminal': 'Интеграция с платёжным терминалом ещё не подключена — фиксов пока нет.',
+  security: 'Дверью управляют кнопки «Открыть» и «Закрыть» в блоке «Дверь павильона» на обзоре.',
 };
 
 // Restart-cascade fix buttons exist in the spec for pc/display, but per

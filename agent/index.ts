@@ -14,6 +14,8 @@ import { createPrinterStatusSource } from './printerStatusSource.js';
 import { waitForJobOutcome } from './jobTracker.js';
 import { createFiscalDevice } from './fiscalDevice.js';
 import type { FiscalJob } from '../server/fiscalReceiptStore.js';
+import { createDoorLock } from './doorLock.js';
+import { runDoorController } from './doorController.js';
 
 // Pavilion print agent (docs/pavilion-launch-checklist.md, "Target
 // architecture"). Runs on the pavilion mini-PC that the Brother printer is
@@ -37,6 +39,8 @@ import type { FiscalJob } from '../server/fiscalReceiptStore.js';
 //   PRINTER_SNMP_HOST / PRINTER_SNMP_COMMUNITY / PRINTER_STATUS_SIMULATOR_FILE
 //                          see agent/printerStatusSource.ts
 //   FISCAL_DEVICE          eKasa register — see agent/fiscalDevice.ts
+//   DOOR_LOCK              entrance lock — see agent/doorLock.ts and
+//                          agent/doorController.ts (default none)
 //   AGENT_POLL_INTERVAL_MS optional, default 2000
 //   AGENT_DRY_RUN=true     do everything except send the job to a printer —
 //                          with PRINTER_STATUS_SIMULATOR_FILE this runs the
@@ -298,4 +302,12 @@ console.log(
         : 'none (spooler only)'
   }`,
 );
-await Promise.all([runStatusLoop(), run(), runFiscalLoop()]);
+// The entrance door (agent/doorController.ts) — its own loop, like the
+// receipts, so a print job being followed never delays a door command.
+const doorLock = createDoorLock();
+await Promise.all([
+  runStatusLoop(),
+  run(),
+  runFiscalLoop(),
+  ...(doorLock ? [runDoorController(doorLock, callCloud)] : []),
+]);

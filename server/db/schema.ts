@@ -559,7 +559,7 @@ export const incidents = pgTable(
   'incidents',
   {
     id: uuid('id').primaryKey().defaultRandom(),
-    // 'pc' | 'printer' | 'display' | 'network' | 'backend' | 'payment-terminal'
+    // 'pc' | 'printer' | 'display' | 'network' | 'backend' | 'payment-terminal' | 'security'
     source: text('source').notNull(),
     // namespaced by source, e.g. 'printer.paper-jam'
     code: text('code').notNull(),
@@ -914,3 +914,59 @@ export const stands = pgTable('stands', {
   reloadRequestedAt: timestamp('reload_requested_at', { withTimezone: true }),
   reloadForce: boolean('reload_force').notNull().default(false),
 });
+
+// The pavilion's entrance door (docs/pavilion-security-requirements.md,
+// section 1; server/pavilionDoor.ts). One row, id 'main': what staff asked
+// for that the plan alone doesn't say, plus the latest reading the print
+// agent sent from the lock (agent/doorController.ts).
+export const pavilionDoor = pgTable('pavilion_door', {
+  id: text('id').primaryKey(),
+  // "Close now" during opening hours: closed until overrideUntil.
+  overrideMode: text('override_mode'),
+  overrideUntil: timestamp('override_until', { withTimezone: true }),
+  // "Open now" outside opening hours: one visit — the agent unlocks once and
+  // locks again after the door has been opened and shut. Cleared when the
+  // agent echoes the request back as handled, like a stand reload.
+  visitRequestedAt: timestamp('visit_requested_at', { withTimezone: true }),
+  // 'locked' | 'unlocked' | 'moving' | 'unknown'
+  lockState: text('lock_state'),
+  // 'closed' | 'open' | 'unknown'
+  doorState: text('door_state'),
+  lockReachable: boolean('lock_reachable'),
+  batteryCritical: boolean('battery_critical'),
+  // The mode the agent was applying when it reported.
+  appliedMode: text('applied_mode'),
+  reportedAt: timestamp('reported_at', { withTimezone: true }),
+});
+
+// "Closed from … to …" set by staff (repairs, holidays, an incident).
+// Cancelled rows stay for the journal's sake.
+export const doorClosures = pgTable('door_closures', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  startsAt: timestamp('starts_at', { withTimezone: true }).notNull(),
+  // null = until cancelled
+  endsAt: timestamp('ends_at', { withTimezone: true }),
+  reason: text('reason').notNull(),
+  createdBy: uuid('created_by').references(() => staffAccounts.id, { onDelete: 'set null' }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  cancelledAt: timestamp('cancelled_at', { withTimezone: true }),
+  cancelledBy: uuid('cancelled_by').references(() => staffAccounts.id, { onDelete: 'set null' }),
+});
+
+// The door journal: every opening, locking, staff command and closure edit
+// (docs/pavilion-security-requirements.md, "Journal"). Kept 12 months
+// (server/dataRetention.ts).
+export const doorEvents = pgTable(
+  'door_events',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    // e.g. 'unlocked', 'locked', 'inside-exit', 'door-forced', 'admin-open'
+    kind: text('kind').notNull(),
+    detail: text('detail'),
+    staffAccountId: uuid('staff_account_id').references(() => staffAccounts.id, {
+      onDelete: 'set null',
+    }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index('door_events_created_at_idx').on(table.createdAt)],
+);

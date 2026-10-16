@@ -10,7 +10,7 @@ import { notifyIfNeeded } from './telegramNotifier.js';
 // Equipment detail history, and Incident log (docs/screens/admin-panel-spec.md).
 
 export type IncidentSource =
-  'pc' | 'printer' | 'display' | 'network' | 'backend' | 'payment-terminal';
+  'pc' | 'printer' | 'display' | 'network' | 'backend' | 'payment-terminal' | 'security';
 export type IncidentSeverity = 'info' | 'warning' | 'critical' | 'emergency';
 
 export interface IncidentRow {
