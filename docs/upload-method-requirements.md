@@ -23,7 +23,40 @@ Six methods, all shown on this screen:
 3. **Telegram** — the user sends the document via a Telegram bot. Bot connection and file-receipt behavior are not yet defined.
 4. **Personal account** — the user may keep prepared documents/folders in a personal account and manage their deletion. Authentication and storage rules are not yet defined.
 5. **Web page** — the user accesses an internet page and obtains a document from it. URL entry, browsing restrictions, downloads, and security rules are not yet defined.
-6. **USB drive** — must remain visible; the product owner currently considers it undesirable but has not rejected it. Hardware availability, file-system access, and security rules are not yet defined.
+6. **USB drive** — must remain visible. Approach agreed with the product owner on 2026-10-15; development is scheduled after the pavilion opens. See "USB drive: agreed approach" below.
+
+## USB drive: agreed approach
+
+Agreed with the product owner on 2026-10-15. Development comes after the pavilion opens. The pavilion wall reserves room for it now.
+
+**Not on the stand PC.** The USB port is not wired to the stand's mini-PC, for four reasons:
+
+- A device can pretend to be a keyboard ("BadUSB") and type its way out of kiosk mode. USB input devices can't be blocked outright, because the monitor's touch panel is one.
+- A "USB killer" device can destroy the PC.
+- A browser can only read a drive through the Windows file dialog, which is itself a way out of kiosk mode.
+- The stand's key lives on that PC.
+
+**A separate reader per stand** (e.g. a Raspberry Pi running Linux) sits between a vandal-resistant panel-mount USB socket in the facade and the cloud. It connects through a galvanic USB isolator and sits in its own VLAN, with network access to the upload API only. It holds its own narrowly scoped key, which can only add files to the current session of its own stand.
+
+**Customer flow**
+
+1. The customer picks "USB drive". The stand opens a USB request for its session, on the model of scan sessions. The reader reads a drive only while such a request is open.
+2. The reader mounts the drive read-only (`ro,noexec,nosuid,nodev`). Supported file systems: FAT32, exFAT and NTFS; anything else gets "drive format not supported".
+3. The reader sends only the list of allowed file types to the cloud: PDF, DOC/DOCX, JPG, PNG, HEIC, at most 200 entries, name and size only.
+4. The stand shows that list, on the model of the email file list. Only the file the customer picks is uploaded. From there it follows the QR/email pipeline: format/size validation, ClamAV, conversion, print configuration, payment.
+5. The listing is deleted when the session ends. "Take your USB drive" reminders appear before payment and at the end of the session.
+
+**Operations.** Forgotten drives go into a locked box. Staff don't open them and keep them for 30 days.
+
+**Constraint.** USB files reach the cloud over the pavilion's own uplink. QR uploads go over the customer's phone instead. With the weak mobile signal measured on site (2026-10-15), upload takes about 10–40 s per 5 MB. A fixed line or an outdoor antenna makes this method much better.
+
+**Hardware per stand (≈ 150–190 €):** Raspberry Pi, USB isolator, panel-mount USB-A socket with a cover (plus USB-C), one switch port and one UPS socket.
+
+**Code (≈ 1–2 weeks):**
+
+- the reader service;
+- cloud USB-request and listing endpoints, and the reader key;
+- the stand's "USB drive" screen and the take-your-drive reminder.
 
 ## Temporary display scope
 

@@ -26,6 +26,7 @@ Confirmed with the product owner on 2026-10-09. Every device in the pavilion rea
 - [ ] **Three separate networks (VLANs)**: kiosk and payments (stands, Viva terminals, mini-PC, printer, cash register); security (cameras, NVR, lock, sensors); guests (Wi-Fi with limits, internet only, no access to the others).
 - [ ] **No inbound ports**: every device connects out by itself (stands, print agent, Viva terminals), so no port forwarding and no public IP are needed.
 - [ ] **UPS** on the router, the switch, the mini-PC and the Viva terminals. The printer may stay off it: a print that fails on a power cut is refunded by the normal print-failure path.
+- [ ] **Reserve room for the future USB-drive upload** (`docs/upload-method-requirements.md`, "USB drive: agreed approach"). In the facade, below each stand screen at about 1.0–1.1 m, cut an opening for a panel-mount USB socket and close it with a blank plate. Inside, leave space for a small reader box next to the stand PC, plus one switch port and one UPS socket per stand.
 - [ ] **Printer on the LAN** (static IP), not USB, so the agent can read paper, toner and jam status over SNMP.
 - [ ] **Connection-loss test** on the two-PC setup (old PC as a stand, laptop as the agent): pull the stand's cable, including in the middle of a payment. Check that the stand shows "no connection", that `pc.dead` reaches Telegram after 3 minutes and closes itself on reconnect, and that the nightly Viva reconciliation flags a payment interrupted by the outage.
 
