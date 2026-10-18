@@ -12,6 +12,7 @@ import { useTranslation, LANGUAGE_NAMES } from '../../i18n';
 import type { Language } from '../../i18n';
 import type { EndSessionReason, PrintOrder } from '../../types/kiosk';
 import { isPrinterAvailable } from '../../services/printerStatusApi';
+import { usePavilionHours, formatPavilionTime } from './usePavilionHours';
 import styles from './KioskScreenLayout.module.css';
 
 // Automatic timeout (docs/domain/kiosk-session.md, "Automatic timeout"):
@@ -160,6 +161,17 @@ export function KioskScreenLayout({
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [isLanguageOpen, setIsLanguageOpen] = useState(false);
   const registerQrImageUrl = useRegisterQrImageUrl();
+  const pavilionHours = usePavilionHours();
+  const pavilionHoursMessage =
+    pavilionHours.kind === 'closing-soon'
+      ? t.pavilionHours.closingSoon(formatPavilionTime(pavilionHours.closesAt))
+      : pavilionHours.kind === 'no-new-orders'
+        ? t.pavilionHours.noNewOrders(formatPavilionTime(pavilionHours.closesAt))
+        : pavilionHours.kind === 'closed'
+          ? pavilionHours.opensAt
+            ? t.pavilionHours.closedUntil(formatPavilionTime(pavilionHours.opensAt))
+            : t.pavilionHours.closed
+          : null;
 
   // Shows immediately when connection is lost, then keeps reappearing every
   // 30s regardless of dismissal, for as long as it stays lost.
@@ -288,6 +300,20 @@ export function KioskScreenLayout({
           )}
         </div>
       </header>
+
+      {/* Opening hours (docs/pavilion-security-requirements.md, "Closing
+          sequence") — a strip, not a popup: it must stay readable while the
+          customer keeps working. */}
+      {pavilionHoursMessage && (
+        <div
+          id="pavilion-hours-banner"
+          className={styles.hoursBanner}
+          data-kind={pavilionHours.kind}
+          role="status"
+        >
+          {pavilionHoursMessage}
+        </div>
+      )}
 
       {(onBack || onHome) && (
         <div className={styles.navRow}>

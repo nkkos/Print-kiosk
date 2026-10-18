@@ -662,8 +662,15 @@ adminRouter.post(
   requireSeniorRole,
   async (req, res) => {
     const { startsAt, endsAt, reason } = (req.body ?? {}) as Record<string, unknown>;
-    const start = typeof startsAt === 'string' ? new Date(startsAt) : null;
-    const end = typeof endsAt === 'string' && endsAt ? new Date(endsAt) : null;
+    // Whole minutes, like the opening hours — the plan is evaluated per
+    // minute (server/doorSchedule.ts), so seconds would only blur the edges.
+    const toMinute = (value: string) => {
+      const date = new Date(value);
+      date.setSeconds(0, 0);
+      return date;
+    };
+    const start = typeof startsAt === 'string' ? toMinute(startsAt) : null;
+    const end = typeof endsAt === 'string' && endsAt ? toMinute(endsAt) : null;
     if (
       !start ||
       Number.isNaN(start.getTime()) ||

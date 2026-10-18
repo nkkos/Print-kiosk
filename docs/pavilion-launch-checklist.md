@@ -56,6 +56,8 @@ The backend was deliberately built without hardening for the prototype (see `CLA
 - [ ] Mosquitto on the mini-PC; the Nuki's MQTT API pointed at it; Nuki auto-lock **off**; `DOOR_LOCK=nuki-mqtt`, `NUKI_DEVICE_ID` on the agent. Check the topic values in `agent/doorLock.ts` against the real lock (checked only against Nuki's documentation so far).
 - [ ] Test on site: 7:00 unlock and 22:00 lock (or shift the clock with a closure), "Открыть" from a phone, inside exit relocks, door opened while locked raises `security.door-forced`.
 - [ ] Spare key with the senior operator.
+- [ ] `PAVILION_HOURS_ENFORCED=true` on production once the pavilion opens — the stands then warn before 22:00 and stop new orders at 21:55.
+- [ ] Phone alerts: Twilio account and sender number, voice + SMS geo permission for Slovakia; `URGENT_ALERT_PHONES`, `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM_NUMBER` on production; one test call (check the Russian voice reads the message).
 
 ## Before opening — payments and receipts
 

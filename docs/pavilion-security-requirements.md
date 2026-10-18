@@ -344,14 +344,18 @@ Not taken, and why:
 - Incidents: `security.door-forced` (emergency, each time), `security.lock-failed`, `security.door-held-open`, `security.lock-unreachable` (critical), `security.lock-battery-low` (warning); all but the first close by themselves.
 - Known limitation: relocking is done by the agent (Nuki can't switch its own auto-lock by schedule). If the mini-PC or the agent is down, the door keeps its last state — after an inside exit at night it stays unlocked until the agent is back. The existing `pc.print-agent-offline` incident reports that; staff then use the key.
 
-**Not built yet:** presence check before locking (section 2), closing announcements and the stands' closing banner, morning self-test, cameras, alarm sensors.
+**Stands and opening hours — built (2026-10-18):** with `PAVILION_HOURS_ENFORCED=true` the stands read `GET /api/pavilion-hours` (`server/pavilionDoor.ts`) and show a strip on every screen (`pavilion-hours-banner`, `src/layouts/KioskScreenLayout/usePavilionHours.ts`): 10 minutes before closing "closes at 22:00, please finish"; 5 minutes before "no new orders" and the Welcome service cards turn unavailable (orders in progress and paid jobs carry on); while closed "opens again at 7:00" (or "temporarily closed" during an open-ended closure). Staff's closures and "Закрыть" show up within about 30 seconds. The closure's reason is never shown to customers — it is staff text.
+
+**Phone call + SMS for the worst incidents — built (2026-10-18):** `server/urgentCaller.ts` calls and texts `URGENT_ALERT_PHONES` through Twilio for `security.smoke`, `security.heat`, `security.door-forced` and `security.glass-break` (at most once per 5 minutes per code), next to the usual Telegram message. Needs a Twilio account and number before it does anything; until then it logs the would-be call.
+
+**Not built yet:** presence check before locking (section 2), closing announcements over the speaker, morning self-test, cameras, alarm sensors.
 
 ## Open items
 
 - **Lock** — Nuki Smart Lock Pro chosen; still to check: the cylinder has an emergency function (else replace it), the door has a closer, and the fire-safety specialist accepts a turn knob as the inside exit.
 - **Owner consent** for hardware on the entrance door.
 - **Fire-safety specialist** — does the unit need a certified fire alarm (EPS) or other fire equipment; approve the automatic actions on smoke or heat.
-- **Who responds at night** — confirmed for now: only the product owner, via Telegram; a security company with call-out (central monitoring station, PCO) may be added later. Risk: a Telegram message does not wake anyone at night. Proposed: a phone call or SMS fallback for `security.smoke`, `security.heat`, `security.door-forced` and `security.glass-break`, revisiting the "Telegram only" decision in `docs/equipment-monitoring-requirements.md` for these codes.
+- **Who responds at night** — confirmed for now: only the product owner; a security company with call-out (central monitoring station, PCO) may be added later. A Telegram message does not wake anyone, so `security.smoke`, `security.heat`, `security.door-forced` and `security.glass-break` also phone and text (built 2026-10-18, see Implementation status) — still to do: a Twilio account, a sender number, voice and SMS permission for Slovakia, one test call.
 - **Insurance** — mandatory (confirmed), insurer and its requirements not known yet. Insurers often require a certified alarm (EN 50131 grade 2) with a monitoring-station link. Proposed: buy the intrusion and smoke sensors (contacts, motion, glass-break, smoke, siren) as one grade-2-certified alarm system that can later connect to a PCO, so a later insurer or security company does not force replacing it; ask the insurer before buying. That system must also let our backend receive its events (API, relay output or integration) — check when choosing.
 - **Video retention** — 72 hours proposed from the EDPB guidelines; confirm nothing stricter in current ÚOOÚ guidance.
 - **Timings and thresholds** — closing sequence, 15-minute presence wait, temperature and humidity limits are proposals; tune after the first weeks.

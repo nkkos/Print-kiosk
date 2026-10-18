@@ -83,6 +83,16 @@ export const en = {
     registerQrImageAlt: 'QR code to register for an account',
     preparingQrCode: 'Preparing QR code...',
   },
+  // Opening hours on the stands (docs/pavilion-security-requirements.md,
+  // "Closing sequence").
+  pavilionHours: {
+    closingSoon: (time: string) =>
+      `The pavilion closes at ${time}. Please finish your order in the next few minutes.`,
+    noNewOrders: (time: string) =>
+      `The pavilion closes at ${time}. New orders are no longer accepted.`,
+    closedUntil: (opensAt: string) => `The pavilion is closed. It opens again at ${opensAt}.`,
+    closed: 'The pavilion is temporarily closed.',
+  },
   welcome: {
     print: 'Print',
     scan: 'Scan',

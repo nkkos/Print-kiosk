@@ -43,6 +43,7 @@ Spacing principles: To be defined.
 - **Logged in:** A Kiosk Session is active, associated with an account via `btn-account` (see `docs/domain/kiosk-session.md`, Trigger B). `end-session` is shown. Exact visual change to `btn-account` when logged in is not confirmed — To be defined.
 - **Logged out, no session:** Default state. All functions remain usable anonymously. `end-session` is hidden.
 - **Anonymous session active:** A Kiosk Session exists (created via `service-print`, Trigger A) but no account is associated, and the user has returned to this screen (e.g., via Back from Upload Method Selection) without ending it. `end-session` is shown, identical in behavior to the logged-in case.
+- **Closing soon / closed (pavilion opening hours):** with opening hours enforced, `pavilion-hours-banner` (a strip in the shared layout, every screen) warns 10 minutes before closing; from 5 minutes before closing and while the pavilion is closed, `service-print`, `service-scan` and `service-copy` are `unavailable` and the strip says why and when it opens again. Orders already in progress continue. See `docs/pavilion-security-requirements.md`, "Closing sequence".
 - **Idle (display power-saving):** Entered after a period with no input and no active Kiosk Session. The screen enters a low-power state (no backlight). Unrelated to session state.
 - **Waking from idle:** Triggered by touch input, mouse movement, or a keyboard press. The screen returns to its normal visual state.
 

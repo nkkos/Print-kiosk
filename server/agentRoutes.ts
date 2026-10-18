@@ -19,7 +19,12 @@ import {
   type IncidentSeverity,
 } from './incidentStore.js';
 import { blockingProblems, type PrinterProblem, type PrinterSnapshot } from './printerStatus.js';
-import { getAgentDoorInstructions, parseDoorReport, recordDoorReport } from './pavilionDoor.js';
+import {
+  getAgentDoorInstructions,
+  getPavilionHoursForStands,
+  parseDoorReport,
+  recordDoorReport,
+} from './pavilionDoor.js';
 
 // The cloud side of the pavilion print agent (agent/, docs/pavilion-launch-checklist.md,
 // "Target architecture"). The agent runs on the pavilion mini-PC next to the
@@ -387,6 +392,13 @@ export function paymentBlockers(): {
   if (!cashRegisterAvailable()) problems.push('cash-register-unavailable');
   return { agentOnline, problems };
 }
+
+/** Public, for the kiosk stands: is the pavilion open, and when does that
+ * change — they warn before closing and stop starting new orders just
+ * before (server/pavilionDoor.ts). `enforced: false` = ignore hours. */
+agentRouter.get('/api/pavilion-hours', async (_req, res) => {
+  res.json(await getPavilionHoursForStands());
+});
 
 agentRouter.get('/api/printer-status', (_req, res) => {
   const { agentOnline, problems } = paymentBlockers();

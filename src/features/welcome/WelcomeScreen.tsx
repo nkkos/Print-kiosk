@@ -7,6 +7,7 @@ import { Notification } from '../../components/Notification/Notification';
 import { useTranslation } from '../../i18n';
 import type { Language } from '../../i18n';
 import type { EndSessionReason, PrintOrder } from '../../types/kiosk';
+import { usePavilionHours } from '../../layouts/KioskScreenLayout/usePavilionHours';
 import styles from './WelcomeScreen.module.css';
 
 // Placeholder composition only — see docs/screens/welcome-screen-spec.md,
@@ -97,6 +98,11 @@ export function WelcomeScreen({
   // service availability".
   const [isHardwareUnavailable, setIsHardwareUnavailable] = useState(false);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
+  // Shortly before closing and while closed, no new order starts here
+  // (docs/pavilion-security-requirements.md, "Closing sequence"); the
+  // layout's banner says why.
+  const pavilionHours = usePavilionHours();
+  const ordersClosed = pavilionHours.kind === 'no-new-orders' || pavilionHours.kind === 'closed';
 
   function handleSimulateHardwareUnavailable() {
     setIsHardwareUnavailable(true);
@@ -126,19 +132,19 @@ export function WelcomeScreen({
         <ServiceCard
           serviceId="print"
           title={t.welcome.print}
-          status={isHardwareUnavailable ? 'unavailable' : 'available'}
+          status={isHardwareUnavailable || ordersClosed ? 'unavailable' : 'available'}
           onActivate={onPrintActivate}
         />
         <ServiceCard
           serviceId="scan"
           title={t.welcome.scan}
-          status="available"
+          status={ordersClosed ? 'unavailable' : 'available'}
           onActivate={onScanActivate}
         />
         <ServiceCard
           serviceId="copy"
           title={t.welcome.copy}
-          status="available"
+          status={ordersClosed ? 'unavailable' : 'available'}
           onActivate={onCopyActivate}
         />
       </div>

@@ -48,7 +48,7 @@ A dead process can't log its own death. Two complementary detection paths are ne
 - If unacknowledged past a threshold (not yet numerically fixed — see Open items), the alert additionally posts to a shared ops group chat visible to the whole team, so a backup person can pick it up — still Telegram, no SMS/call fallback.
 - `warning`-level events are batched into a daily digest posted to the shared group chat, not sent to individuals in real time.
 - **Deduplication:** repeated occurrences of the same `correlationId` don't re-notify on every retry — only on first occurrence, on severity escalation, or after a cooldown window if still unresolved.
-- **Known risk, accepted for now:** since there's no SMS/call fallback, an `emergency` alert that nobody sees on Telegram in time has no other path to a human. Worth revisiting once the team/pavilion count grows — see Open items.
+- **Known risk, accepted for now:** since there's no SMS/call fallback, an `emergency` alert that nobody sees on Telegram in time has no other path to a human. Worth revisiting once the team/pavilion count grows — see Open items. **Exception (2026-10-18):** the pavilion's physical emergencies — smoke, a fast heat rise, a forced door, broken glass — also phone and text the people in `URGENT_ALERT_PHONES` (`server/urgentCaller.ts`, `docs/pavilion-security-requirements.md`); every other incident stays Telegram-only.
 
 **Implemented and verified live (2026-08-21), with two deliberate simplifications from the design above** (`server/telegramNotifier.ts`):
 

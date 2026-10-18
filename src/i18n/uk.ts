@@ -80,6 +80,14 @@ export const uk: Translations = {
     registerQrImageAlt: 'QR-код для реєстрації акаунта',
     preparingQrCode: 'Підготовка QR-коду...',
   },
+  pavilionHours: {
+    closingSoon: (time: string) =>
+      `Павільйон зачиняється о ${time}. Будь ласка, завершіть замовлення найближчими хвилинами.`,
+    noNewOrders: (time: string) =>
+      `Павільйон зачиняється о ${time}. Нові замовлення більше не приймаються.`,
+    closedUntil: (opensAt: string) => `Павільйон зачинено. Відкриється о ${opensAt}.`,
+    closed: 'Павільйон тимчасово зачинено.',
+  },
   welcome: {
     print: 'Друк',
     scan: 'Сканування',

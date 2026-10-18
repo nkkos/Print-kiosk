@@ -69,6 +69,8 @@ async function doorRow() {
 
 async function recordEvent(kind: string, detail: string | null, staffAccountId?: string | null) {
   await db.insert(doorEvents).values({ kind, detail, staffAccountId: staffAccountId ?? null });
+  // A staff command or closure changes the plan the stands show.
+  if (staffAccountId) forgetPavilionHours();
 }
 
 /** Closures still ahead or running, plus the override if it hasn't run out. */
@@ -386,6 +388,52 @@ export async function getDoorStatusForStaff(): Promise<DoorStatusForStaff> {
     closures: plan.closures,
     events: events.map((event) => ({ ...event, at: event.at.toISOString() })),
   };
+}
+
+// --- Opening hours on the stands ---------------------------------------------
+// The stands warn before closing and stop starting new orders shortly before
+// (docs/pavilion-security-requirements.md, "Closing sequence"). Off unless
+// PAVILION_HOURS_ENFORCED=true, so a developer's machine or staging isn't
+// "closed" at night.
+
+export type PavilionHoursForStands =
+  | { enforced: false }
+  | {
+      enforced: true;
+      mode: DoorMode;
+      /** When the mode next changes — closing time while open, opening time
+       * while closed; null if not within a week. */
+      changesAt: string | null;
+      /** Set while a closure staff added is in force. */
+      closureReason: string | null;
+      serverTime: string;
+    };
+
+let hoursCache: { at: number; value: PavilionHoursForStands } | null = null;
+const HOURS_CACHE_MS = 15_000;
+
+export async function getPavilionHoursForStands(): Promise<PavilionHoursForStands> {
+  if (process.env.PAVILION_HOURS_ENFORCED !== 'true') return { enforced: false };
+  // Every stand asks every 30 s and the answer costs a week-long search —
+  // share it for a few seconds.
+  if (hoursCache && Date.now() - hoursCache.at < HOURS_CACHE_MS) return hoursCache.value;
+  const plan = await getDoorPlan();
+  const now = new Date();
+  const current = planMode(now, plan);
+  const value: PavilionHoursForStands = {
+    enforced: true,
+    mode: current.mode,
+    changesAt: nextPlanChange(now, plan, { includeOverride: true })?.toISOString() ?? null,
+    closureReason: current.closure?.reason ?? null,
+    serverTime: now.toISOString(),
+  };
+  hoursCache = { at: Date.now(), value };
+  return value;
+}
+
+/** Staff changed the plan — the stands should see it on their next poll. */
+function forgetPavilionHours() {
+  hoursCache = null;
 }
 
 export const DOOR_EVENT_RETENTION_DAYS = 365;

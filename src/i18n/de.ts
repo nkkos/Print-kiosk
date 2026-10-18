@@ -83,6 +83,15 @@ export const de: Translations = {
     registerQrImageAlt: 'QR-Code zur Kontoregistrierung',
     preparingQrCode: 'QR-Code wird vorbereitet...',
   },
+  pavilionHours: {
+    closingSoon: (time: string) =>
+      `Der Pavillon schließt um ${time}. Bitte schließen Sie Ihre Bestellung in den nächsten Minuten ab.`,
+    noNewOrders: (time: string) =>
+      `Der Pavillon schließt um ${time}. Neue Bestellungen werden nicht mehr angenommen.`,
+    closedUntil: (opensAt: string) =>
+      `Der Pavillon ist geschlossen. Wir öffnen wieder um ${opensAt}.`,
+    closed: 'Der Pavillon ist vorübergehend geschlossen.',
+  },
   welcome: {
     print: 'Drucken',
     scan: 'Scannen',

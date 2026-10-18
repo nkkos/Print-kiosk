@@ -80,6 +80,13 @@ export const sk: Translations = {
     registerQrImageAlt: 'QR kód na registráciu účtu',
     preparingQrCode: 'Príprava QR kódu...',
   },
+  pavilionHours: {
+    closingSoon: (time: string) =>
+      `Pavilón sa zatvára o ${time}. Dokončite, prosím, objednávku v najbližších minútach.`,
+    noNewOrders: (time: string) => `Pavilón sa zatvára o ${time}. Nové objednávky už neprijímame.`,
+    closedUntil: (opensAt: string) => `Pavilón je zatvorený. Opäť otvárame o ${opensAt}.`,
+    closed: 'Pavilón je dočasne zatvorený.',
+  },
   welcome: {
     print: 'Tlač',
     scan: 'Skenovanie',

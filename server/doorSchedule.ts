@@ -83,16 +83,23 @@ export function planMode(
   return { mode: scheduledMode(at), reason: 'schedule', closure: null };
 }
 
-/** The next moment the plan (without any override) switches mode, searched
- * minute by minute up to a week ahead — opening hours and closures both
- * fall on whole minutes. Null when nothing changes within a week (e.g. an
- * open-ended closure). */
-export function nextPlanChange(from: Date, plan: DoorPlan): Date | null {
+/** The next moment the door's mode switches, searched minute by minute up
+ * to a week ahead — opening hours, closures and overrides all fall on whole
+ * minutes. By default the plan as staff set it up (no override), which is
+ * what "Close now" lasts until; `includeOverride` gives what the door will
+ * actually do, for the stands. Null when nothing changes within a week
+ * (e.g. an open-ended closure). */
+export function nextPlanChange(
+  from: Date,
+  plan: DoorPlan,
+  options: { includeOverride?: boolean } = {},
+): Date | null {
+  const ignoreOverride = !options.includeOverride;
   const start = Math.floor(from.getTime() / 60_000) * 60_000;
-  const current = planMode(from, plan, { ignoreOverride: true }).mode;
+  const current = planMode(from, plan, { ignoreOverride }).mode;
   for (let step = 1; step <= 7 * 24 * 60; step++) {
     const at = new Date(start + step * 60_000);
-    if (planMode(at, plan, { ignoreOverride: true }).mode !== current) return at;
+    if (planMode(at, plan, { ignoreOverride }).mode !== current) return at;
   }
   return null;
 }

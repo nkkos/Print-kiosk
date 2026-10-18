@@ -46,3 +46,18 @@
   padding-top: var(--space-m);
   border-top: 1px solid var(--color-border);
 }
+
+/* Opening-hours strip (usePavilionHours.ts). */
+.hoursBanner {
+  padding: var(--space-m);
+  border: 1px solid var(--color-warning);
+  border-radius: var(--radius-medium);
+  background: var(--color-warning-soft);
+  color: var(--color-ink);
+  font-weight: 600;
+}
+
+.hoursBanner[data-kind='closed'] {
+  border-color: var(--color-border-strong);
+  background: var(--color-surface-sunken);
+}

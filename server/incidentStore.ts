@@ -2,6 +2,7 @@ import { and, desc, eq, inArray, isNull, like } from 'drizzle-orm';
 import { db } from './db/client.js';
 import { incidents } from './db/schema.js';
 import { notifyIfNeeded } from './telegramNotifier.js';
+import { callIfUrgent } from './urgentCaller.js';
 
 // Central incident log (docs/equipment-monitoring-requirements.md) — every
 // equipment/service failure is recorded here in one shared shape, called
@@ -53,6 +54,8 @@ export async function reportIncident(input: ReportIncidentInput): Promise<Incide
       })
       .returning();
     void notifyIfNeeded(row as IncidentRow);
+    // Smoke, a forced door and the like also phone (server/urgentCaller.ts).
+    void callIfUrgent(row as IncidentRow);
     return row as IncidentRow;
   } catch (err) {
     console.error('[incidentStore] Failed to report incident:', input.code, err);
