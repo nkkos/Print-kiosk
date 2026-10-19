@@ -1,5 +1,5 @@
 import type { EndSessionReason } from '../types/kiosk';
-import { standHeaders } from './standAuth';
+import { noteStandResponse, standHeaders } from './standAuth';
 
 // Talks to the kiosk_sessions lifecycle backend (server/sessionLifecycle.ts,
 // docs/data-privacy-requirements.md). Callers treat any failure (network,
@@ -16,12 +16,15 @@ export async function startSession(
   accountId: string | null,
   startedVia: string,
 ): Promise<void> {
-  await fetch(`${API_BASE_URL}/api/sessions/${sessionId}/start`, {
+  const response = await fetch(`${API_BASE_URL}/api/sessions/${sessionId}/start`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...standHeaders() },
     body: JSON.stringify({ accountId, startedVia }),
     signal: AbortSignal.timeout(5000),
   });
+  // The first stand-only call of every session — the earliest moment a
+  // stand without a valid key finds out.
+  await noteStandResponse(response);
 }
 
 // Bumps last_activity_at — called on a mid-session login (to also record the

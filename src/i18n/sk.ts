@@ -87,6 +87,12 @@ export const sk: Translations = {
     closedUntil: (opensAt: string) => `Pavilón je zatvorený. Opäť otvárame o ${opensAt}.`,
     closed: 'Pavilón je dočasne zatvorený.',
   },
+  standUnavailable: {
+    title: 'Tento kiosk je dočasne nedostupný',
+    message: 'Použite, prosím, iný kiosk alebo kontaktujte operátora.',
+    staffHint:
+      'Personál: tento prehliadač nemá platný kľúč stojana — raz otvorte nastavovací odkaz stojana.',
+  },
   welcome: {
     print: 'Tlač',
     scan: 'Skenovanie',

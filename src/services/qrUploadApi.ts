@@ -1,5 +1,5 @@
 import type { ReceivedFile } from '../types/kiosk';
-import { standHeaders } from './standAuth';
+import { noteStandResponse, standHeaders } from './standAuth';
 
 // Talks to the dev-only QR upload backend (server/) — see
 // docs/qr-upload-requirements.md. VITE_API_BASE_URL lets this point
@@ -15,5 +15,9 @@ export async function listQrFiles(sessionId: string): Promise<ReceivedFile[]> {
   const response = await fetch(`${API_BASE_URL}/api/qr-sessions/${sessionId}/files`, {
     headers: standHeaders(),
   });
+  if (!response.ok) {
+    await noteStandResponse(response);
+    throw new Error(`Listing QR files failed: HTTP ${response.status}`);
+  }
   return response.json();
 }

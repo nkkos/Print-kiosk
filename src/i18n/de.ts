@@ -92,6 +92,12 @@ export const de: Translations = {
       `Der Pavillon ist geschlossen. Wir öffnen wieder um ${opensAt}.`,
     closed: 'Der Pavillon ist vorübergehend geschlossen.',
   },
+  standUnavailable: {
+    title: 'Dieser Kiosk ist vorübergehend nicht verfügbar',
+    message: 'Bitte nutzen Sie einen anderen Kiosk oder wenden Sie sich an einen Mitarbeiter.',
+    staffHint:
+      'Personal: Dieser Browser hat keinen gültigen Terminalschlüssel — den Einrichtungslink des Terminals einmal öffnen.',
+  },
   welcome: {
     print: 'Drucken',
     scan: 'Scannen',

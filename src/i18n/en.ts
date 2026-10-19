@@ -93,6 +93,11 @@ export const en = {
     closedUntil: (opensAt: string) => `The pavilion is closed. It opens again at ${opensAt}.`,
     closed: 'The pavilion is temporarily closed.',
   },
+  standUnavailable: {
+    title: 'This kiosk is temporarily unavailable',
+    message: 'Please use another kiosk or contact an operator.',
+    staffHint: "Staff: this browser has no valid stand key — open the stand's setup link once.",
+  },
   welcome: {
     print: 'Print',
     scan: 'Scan',

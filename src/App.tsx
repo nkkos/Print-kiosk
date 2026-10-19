@@ -12,6 +12,7 @@ import { PaymentStatusScreen } from './features/payment-status/PaymentStatusScre
 import { PrintStatusScreen } from './features/print-status/PrintStatusScreen';
 import { FinalisingSessionScreen } from './features/finalising-session/FinalisingSessionScreen';
 import { EndingSessionScreen } from './features/ending-session/EndingSessionScreen';
+import { StandUnavailableScreen } from './features/stand-unavailable/StandUnavailableScreen';
 import { ACTIVITY_EVENTS } from './layouts/KioskScreenLayout/KioskScreenLayout';
 import { getStandId } from './utils/standId';
 import { sendStandHeartbeat, reloadForStaff } from './services/standApi';
@@ -32,6 +33,7 @@ import {
 } from './services/printApi';
 import type { PrintTask } from './services/printApi';
 import { startSession, touchSessionActivity, endSession } from './services/sessionApi';
+import { isStandRejected, onStandRejected } from './services/standAuth';
 import { LanguageProvider } from './i18n';
 import type { Language } from './i18n';
 import type {
@@ -116,6 +118,11 @@ const PRINT_POLL_INTERVAL_MS = 1500;
 // CART_STORAGE_KEY) so it survives a reload.
 function App() {
   const [screen, setScreen] = useState<Screen>('welcome');
+  // The backend doesn't know this browser as a stand (src/services/standAuth.ts)
+  // — every stand-only call would fail, so the whole kiosk shows one
+  // "temporarily unavailable" screen instead.
+  const [standRejected, setStandRejected] = useState(isStandRejected);
+  useEffect(() => onStandRejected(() => setStandRejected(true)), []);
 
   const [session, setSession] = useState<KioskSession | null>(() => {
     const storedId = localStorage.getItem(SESSION_ID_STORAGE_KEY);
@@ -340,9 +347,11 @@ function App() {
     let cancelled = false;
     function poll() {
       if (!session) return;
-      listQrFiles(session.id).then((files) => {
-        if (!cancelled) setQrFiles(files);
-      });
+      listQrFiles(session.id)
+        .then((files) => {
+          if (!cancelled) setQrFiles(files);
+        })
+        .catch(() => {});
     }
     poll();
     const intervalId = setInterval(poll, QR_POLL_INTERVAL_MS);
@@ -394,11 +403,13 @@ function App() {
         // Copy's finished PDF is added via the same uploadStore.ts addFile
         // call QR upload uses, under the same sessionKey (the Kiosk Session
         // id) — so it shows up in the same list QR upload already polls.
-        listQrFiles(session.id).then((files) => {
-          if (cancelled) return;
-          const resultFile = files.find((file) => file.id === data.resultFileId);
-          setCopyResultFileStatus(resultFile?.status ?? null);
-        });
+        listQrFiles(session.id)
+          .then((files) => {
+            if (cancelled) return;
+            const resultFile = files.find((file) => file.id === data.resultFileId);
+            setCopyResultFileStatus(resultFile?.status ?? null);
+          })
+          .catch(() => {});
       });
     }
     poll();
@@ -931,6 +942,14 @@ function App() {
   const cardMarkerMethods = new Set(usedMethods);
   if (qrFiles.length > 0) cardMarkerMethods.add('upload-method-qr');
   if (emailMessages.length > 0) cardMarkerMethods.add('upload-method-email');
+
+  if (standRejected) {
+    return (
+      <LanguageProvider language={language}>
+        <StandUnavailableScreen />
+      </LanguageProvider>
+    );
+  }
 
   if (screen === 'upload-method-selection') {
     return (

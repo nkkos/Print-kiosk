@@ -1,5 +1,5 @@
 import type { ReceivedEmail } from '../types/kiosk';
-import { standHeaders } from './standAuth';
+import { noteStandResponse, standHeaders } from './standAuth';
 
 // Talks to the dev-only Email upload backend (server/) — see
 // docs/email-upload-requirements.md. Mirrors qrUploadApi.ts.
@@ -9,5 +9,9 @@ export async function listEmailMessages(prefix: string): Promise<ReceivedEmail[]
   const response = await fetch(`${API_BASE_URL}/api/email-sessions/${prefix}/messages`, {
     headers: standHeaders(),
   });
+  if (!response.ok) {
+    await noteStandResponse(response);
+    throw new Error(`Listing e-mails failed: HTTP ${response.status}`);
+  }
   return response.json();
 }
