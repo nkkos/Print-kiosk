@@ -9,6 +9,54 @@
   box-shadow: var(--elevation-raised);
 }
 
+/* onToggle — the whole row is the tick box. */
+.selectable {
+  width: 100%;
+  min-height: 5.5rem;
+  color: var(--color-ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.selectable[data-selected] {
+  border-color: var(--color-accent);
+  background: var(--color-accent-soft);
+}
+
+.selectable:disabled {
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.selectable:focus-visible {
+  outline: 3px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.check {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  box-sizing: border-box;
+  border: 2px solid var(--color-border-strong);
+  border-radius: var(--radius-small);
+  background: var(--color-surface);
+  color: var(--color-on-accent);
+}
+
+.selectable[data-selected] .check {
+  border-color: var(--color-accent);
+  background: var(--color-accent);
+}
+
+.selectable:disabled .check {
+  background: var(--color-disabled-bg);
+}
+
 .fileIcon {
   display: inline-flex;
   flex: none;

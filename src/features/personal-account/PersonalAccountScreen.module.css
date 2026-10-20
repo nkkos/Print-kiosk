@@ -1,30 +1,114 @@
-/* TODO: exact colors/typography values pending Design System sign-off
-   (docs/design/design-system.md). */
+/* Files from an account (2026-10 screen pack): tabs at the top, a heading
+   that says what to do, tickable file rows, and one action bar — how many
+   are picked and "Set up printing". */
 
-.body {
-  flex: 1;
+.top {
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
   gap: var(--space-l);
   width: 100%;
-  max-width: 30rem;
-  margin-inline: auto;
+  max-width: 100rem;
+  margin: 0 auto;
 }
 
 .tabs {
-  display: flex;
-  gap: var(--space-m);
+  display: inline-flex;
+  gap: var(--space-xs);
+  padding: var(--space-xs);
+  border-radius: var(--radius-medium);
+  background: var(--color-surface-sunken);
 }
 
-.activeTab {
-  font-weight: bold;
+.tab {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-s);
+  min-height: 3.5rem;
+  padding: 0 var(--space-l);
+  border: none;
+  border-radius: calc(var(--radius-medium) - 4px);
+  background: transparent;
+  color: var(--color-ink-soft);
+  font: var(--font-body);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.tab[aria-selected='true'] {
+  background: var(--color-surface);
+  color: var(--color-ink);
+  box-shadow: var(--elevation-raised);
+}
+
+.count {
+  min-width: 1.6rem;
+  height: 1.6rem;
+  padding: 0 0.35rem;
+  box-sizing: border-box;
+  border-radius: var(--radius-pill);
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+  font: var(--font-caption);
+  font-weight: 800;
+  line-height: 1.6rem;
+  text-align: center;
+}
+
+.intro {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-s);
+  text-align: center;
+}
+
+.title {
+  font: var(--font-h1);
+  letter-spacing: -0.02em;
+}
+
+.subtitle {
+  margin: 0;
+  font: var(--font-lead);
+  color: var(--color-ink-soft);
 }
 
 .filesTab,
 .ordersTab {
+  flex: 1;
   display: flex;
   flex-direction: column;
   gap: var(--space-m);
+  width: 100%;
+  max-width: 100rem;
+  margin: 0 auto;
+}
+
+.folderList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-s);
+}
+
+.folder {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-s);
+  min-height: 3.5rem;
+  padding: 0 var(--space-l);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font: var(--font-body);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.folder svg,
+.folderName svg {
+  color: var(--color-accent);
 }
 
 .folderHeader {
@@ -34,33 +118,91 @@
 }
 
 .folderName {
-  margin: 0;
-}
-
-.folderList {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-s);
-}
-
-.fileList {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-s);
-}
-
-.fileRow {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: var(--space-s);
+  font: var(--font-h3);
 }
 
+.fileList,
 .orderList {
   display: flex;
   flex-direction: column;
   gap: var(--space-s);
+  max-height: 30rem;
+  overflow-y: auto;
 }
 
 .empty {
-  margin: 0;
+  margin: var(--space-l) 0;
+  font: var(--font-body);
+  color: var(--color-ink-soft);
+  text-align: center;
+}
+
+.actionBar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-l);
+  margin-top: auto;
+}
+
+.selectedCount {
+  font: var(--font-h3);
+}
+
+.order {
+  display: flex;
+  align-items: center;
+  gap: var(--space-m);
+  padding: var(--space-m) var(--space-l);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-large);
+  background: var(--color-surface);
+  box-shadow: var(--elevation-raised);
+}
+
+.orderIcon {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 3.75rem;
+  height: 3.75rem;
+  border-radius: var(--radius-medium);
+  background: var(--color-surface-sunken);
+  color: var(--color-ink-soft);
+}
+
+.orderText {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--space-xs);
+  min-width: 0;
+}
+
+.orderName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font: var(--font-h3);
+}
+
+.orderMeta {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-s);
+  font: var(--font-body);
+  color: var(--color-ink-soft);
+}
+
+.paid {
+  padding: 0.15rem var(--space-s);
+  border-radius: var(--radius-pill);
+  background: var(--color-success-soft);
+  color: var(--color-success);
+  font: var(--font-caption);
+  font-weight: 700;
 }
