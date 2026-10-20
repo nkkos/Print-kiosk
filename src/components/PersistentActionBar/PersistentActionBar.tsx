@@ -1,81 +1,87 @@
-import { useTranslation } from '../../i18n';
+import { useContext } from 'react';
+import {
+  ChevronDown,
+  CircleHelp,
+  CircleUserRound,
+  Globe,
+  ReceiptText,
+  ShoppingCart,
+} from 'lucide-react';
+import { LANGUAGE_NAMES, useTranslation } from '../../i18n';
+import { LanguageContext } from '../../i18n/context';
 import styles from './PersistentActionBar.module.css';
 
-// See docs/design/component-library.md, Section 9, and the approved
-// Welcome Screen wireframe (Concept A, refined per docs/domain/kiosk-session.md):
-// left group is reference/support actions, right group is user-specific
-// actions (Account, Cart, Language). Plain text labels stand in for
-// IconButton until an icon set is approved (Section 7).
-//
-// `btn-cart`, `btn-account`, and `language-switch` are wired to real actions
-// (opens the Cart popup / Login panel / language picker — docs/screens/welcome-screen-spec.md,
-// "btn-cart"/"btn-account"; docs/personal-account-requirements.md;
-// docs/i18n-requirements.md). Help/Tariffs/Call operator have no confirmed
-// destination yet, so they stay plain text.
+// The always-there footer (docs/screens/welcome-screen-spec.md). Icon +
+// label on every item, so a first-time customer reads it at a glance.
+// btn-call-operator is left out until it has something to do — the
+// remote intercom isn't built (docs/design/kiosk-redesign-plan.md).
 interface PersistentActionBarProps {
   onCartActivate?: () => void;
-  /** Shows a marker on btn-cart when the Cart has at least one item — same
-   * star-marker pattern as the "used method" marker on Upload Method
-   * Selection's cards (docs/upload-method-requirements.md). */
-  cartHasItems?: boolean;
+  /** Items in the Cart — shown as a count on btn-cart. */
+  cartCount?: number;
   onAccountActivate?: () => void;
-  /** Shows the same star marker on btn-account when logged into an account
-   * (docs/personal-account-requirements.md). */
+  /** Logged into an account (docs/personal-account-requirements.md). */
   accountLoggedIn?: boolean;
   onLanguageActivate?: () => void;
+  onHelpActivate?: () => void;
+  onTariffsActivate?: () => void;
 }
+
+const ICON = { size: 30, strokeWidth: 1.75 } as const;
 
 export function PersistentActionBar({
   onCartActivate,
-  cartHasItems = false,
+  cartCount = 0,
   onAccountActivate,
   accountLoggedIn = false,
   onLanguageActivate,
+  onHelpActivate,
+  onTariffsActivate,
 }: PersistentActionBarProps) {
   const t = useTranslation();
+  const language = useContext(LanguageContext);
   return (
-    <div className={styles.root}>
+    <nav className={styles.root}>
       <div className={styles.group}>
-        <span className={styles.item}>{t.footer.callOperator}</span>
-        <span className={styles.item}>{t.footer.help}</span>
-        <span className={styles.item}>{t.footer.tariffs}</span>
+        <button type="button" id="btn-help" className={styles.item} onClick={onHelpActivate}>
+          <CircleHelp {...ICON} aria-hidden="true" />
+          {t.footer.help}
+        </button>
+        <button type="button" id="btn-tariffs" className={styles.item} onClick={onTariffsActivate}>
+          <ReceiptText {...ICON} aria-hidden="true" />
+          {t.footer.tariffs}
+        </button>
       </div>
       <div className={styles.group}>
         <button
           type="button"
           id="btn-account"
-          className={`${styles.item} ${styles.plainButton}`}
+          className={styles.item}
+          data-active={accountLoggedIn || undefined}
           onClick={onAccountActivate}
         >
+          <CircleUserRound {...ICON} aria-hidden="true" />
           {t.footer.account}
-          {accountLoggedIn && (
-            <span className={styles.marker} aria-hidden="true">
-              ★
-            </span>
-          )}
         </button>
-        <button
-          type="button"
-          id="btn-cart"
-          className={`${styles.item} ${styles.plainButton}`}
-          onClick={onCartActivate}
-        >
+        <button type="button" id="btn-cart" className={styles.item} onClick={onCartActivate}>
+          <span className={styles.iconWrap}>
+            <ShoppingCart {...ICON} aria-hidden="true" />
+            {cartCount > 0 && <span className={styles.count}>{cartCount}</span>}
+          </span>
           {t.footer.cart}
-          {cartHasItems && (
-            <span className={styles.marker} aria-hidden="true">
-              ★
-            </span>
-          )}
         </button>
         <button
           type="button"
           id="language-switch"
-          className={`${styles.item} ${styles.plainButton}`}
+          className={styles.item}
           onClick={onLanguageActivate}
+          aria-label={t.footer.language}
         >
-          {t.footer.language}
+          <Globe {...ICON} aria-hidden="true" />
+          {LANGUAGE_NAMES[language]}
+          <ChevronDown size={22} strokeWidth={2} aria-hidden="true" />
         </button>
       </div>
-    </div>
+    </nav>
   );
 }

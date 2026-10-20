@@ -7,28 +7,73 @@
   flex-direction: column;
   min-height: 100vh;
   box-sizing: border-box;
-  padding: var(--space-l);
+  padding: var(--space-l) var(--space-xl) var(--space-m);
   gap: var(--space-l);
 }
 
 .header {
   display: flex;
-  flex-direction: row;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
+  gap: var(--space-l);
 }
 
 .headerActions {
   display: flex;
-  flex-direction: row;
-  align-items: flex-start;
+  align-items: center;
+  gap: var(--space-l);
+}
+
+/* "Your data is protected" — a calm reassurance, not a control. */
+.trustBadge {
+  display: inline-flex;
+  align-items: center;
   gap: var(--space-s);
+  padding: var(--space-s) var(--space-m);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-medium);
+  background: var(--color-surface);
+  font: var(--font-caption);
+  font-weight: 600;
+  color: var(--color-ink);
+}
+
+.trustBadge svg {
+  color: var(--color-accent);
+}
+
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-s);
+  font: var(--font-body);
+  font-weight: 600;
+}
+
+.statusDot {
+  width: 0.85rem;
+  height: 0.85rem;
+  border-radius: var(--radius-pill);
+  background: var(--color-success);
+  box-shadow: 0 0 0 4px var(--color-success-soft);
+}
+
+.status[data-state='offline'] .statusDot {
+  background: var(--color-warning);
+  box-shadow: 0 0 0 4px var(--color-warning-soft);
 }
 
 .navRow {
   display: flex;
-  justify-content: flex-start;
+  align-items: center;
   gap: var(--space-s);
+  margin-bottom: calc(var(--space-l) * -1);
+}
+
+.navDivider {
+  width: 1.5px;
+  height: 2rem;
+  background: var(--color-border-strong);
 }
 
 .content {
@@ -43,8 +88,8 @@
 
 .footer {
   display: flex;
-  padding-top: var(--space-m);
-  border-top: 1px solid var(--color-border);
+  padding-top: var(--space-s);
+  border-top: 1.5px solid var(--color-border);
 }
 
 /* Opening-hours strip (usePavilionHours.ts). */

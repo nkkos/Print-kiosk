@@ -1,20 +1,35 @@
-/* TODO: exact colors/typography/safe-margin values pending Design System
-   sign-off (docs/design/design-system.md). Layout structure below follows
-   the approved wireframe (Concept A, refined): centered equal-size service
-   cards. Header/footer/root shell now live in KioskScreenLayout. */
+/* Approved wireframe (Concept A, refined) restyled after the 2026-10 screen
+   pack: a question as the headline, a line of reassurance under it, and
+   three equal service cards. */
+
+.intro {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-s);
+  text-align: center;
+  /* Intro + cards sit in the middle of the free height. */
+  margin-top: auto;
+}
+
+.title {
+  font: var(--font-display);
+  letter-spacing: -0.02em;
+}
+
+.subtitle {
+  margin: 0;
+  font: var(--font-lead);
+  color: var(--color-ink-soft);
+}
 
 .services {
-  flex: 1;
   display: flex;
-  flex-direction: row;
-  flex-wrap: nowrap;
-  align-items: center;
+  align-items: stretch;
   justify-content: center;
   gap: var(--space-l);
-  /* TODO: max-width is a least-opinionated placeholder pending an approved
-     value — keeps the three equal-size cards from stretching edge-to-edge
-     on the wide reference display. */
   width: 100%;
-  max-width: 60rem;
-  margin-inline: auto;
+  max-width: 72rem;
+  margin: var(--space-xl) auto auto;
+  padding-bottom: var(--space-l);
 }

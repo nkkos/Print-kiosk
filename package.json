@@ -34,6 +34,7 @@
     "heic-convert": "^2.1.0",
     "helmet": "^8.3.0",
     "libreoffice-convert": "^1.8.2",
+    "lucide-react": "1.52.0",
     "mailparser": "^3.9.14",
     "mqtt": "^5.16.1",
     "multer": "^2.2.0",

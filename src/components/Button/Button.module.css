@@ -1,27 +1,22 @@
-/* No variant prop yet (docs/design/design-system.md, Section 9) — every
-   Button today gets this one treatment, styled as the "Secondary" variant
-   (`button-secondary-*` tokens) since that reads correctly across its
-   actual current uses (footer/back/cancel/add-to-cart alike). Primary
-   emphasis today comes from ServiceCard/OptionCard's own bolder styling,
-   not from Button — revisit once a real Primary use case is confirmed. */
+/* docs/design/design-system.md, Section 9. Every variant is at least one
+   touch target tall — the stand is used with fingers, not a mouse. */
 
 .root {
-  padding: var(--space-s) var(--space-l);
-  border: 1.5px solid var(--button-secondary-border);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-s);
+  min-height: var(--touch-target);
+  padding: 0 var(--space-l);
+  border: 1.5px solid transparent;
   border-radius: var(--radius-medium);
-  background: var(--color-surface);
-  color: var(--button-secondary-text);
   font: var(--font-button);
   cursor: pointer;
   transition:
     background-color var(--motion-duration-fast) var(--motion-easing),
     border-color var(--motion-duration-fast) var(--motion-easing),
+    color var(--motion-duration-fast) var(--motion-easing),
     transform var(--motion-duration-fast) var(--motion-easing);
-}
-
-.root:hover:not(:disabled) {
-  background: var(--button-secondary-bg-hover);
-  border-color: var(--color-ink-soft);
 }
 
 .root:active:not(:disabled) {
@@ -29,8 +24,42 @@
 }
 
 .root:focus-visible {
-  outline: 2px solid var(--color-accent);
-  outline-offset: 2px;
+  outline: 3px solid var(--color-accent);
+  outline-offset: 3px;
+}
+
+.icon {
+  display: inline-flex;
+}
+
+.primary {
+  background: var(--button-primary-bg);
+  color: var(--button-primary-text);
+}
+
+.primary:hover:not(:disabled) {
+  background: var(--button-primary-bg-hover);
+}
+
+.secondary {
+  border-color: var(--button-secondary-border);
+  background: var(--color-surface);
+  color: var(--color-ink);
+}
+
+.secondary:hover:not(:disabled) {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+.ghost {
+  padding: 0 var(--space-s);
+  background: transparent;
+  color: var(--color-ink);
+}
+
+.ghost:hover:not(:disabled) {
+  color: var(--color-accent);
 }
 
 .root:disabled {
@@ -38,4 +67,9 @@
   background: var(--button-disabled-bg);
   color: var(--button-disabled-text);
   cursor: not-allowed;
+}
+
+.ghost:disabled {
+  border-color: transparent;
+  background: transparent;
 }

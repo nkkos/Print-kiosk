@@ -38,6 +38,9 @@ export const de: Translations = {
     language: 'Sprache',
   },
   kioskLayout: {
+    dataProtected: 'Ihre Daten sind geschützt',
+    statusReady: 'Bereit',
+    statusOffline: 'Keine Verbindung',
     endSession: 'Beenden und Daten löschen',
     endSessionConfirmMessage: 'Diese Sitzung beenden und alle Ihre Daten löschen?',
     connectionLostTitle: 'Verbindung unterbrochen',
@@ -99,6 +102,12 @@ export const de: Translations = {
       'Personal: Dieser Browser hat keinen gültigen Terminalschlüssel — den Einrichtungslink des Terminals einmal öffnen.',
   },
   welcome: {
+    title: 'Was möchten Sie tun?',
+    subtitle: 'Wählen Sie einen Dienst – wir begleiten Sie bei jedem Schritt',
+    printHint: 'Eine Datei vom Handy, per E-Mail oder aus dem Konto',
+    copyHint: 'Dokument mit dem Handy fotografieren – wir drucken die Kopie',
+    scanHint: 'Ein Dokument als PDF direkt aufs Handy',
+    free: 'Kostenlos',
     print: 'Drucken',
     scan: 'Scannen',
     copy: 'Kopieren',

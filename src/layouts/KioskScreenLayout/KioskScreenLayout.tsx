@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
+import { ArrowLeft, House, LogOut, ShieldCheck } from 'lucide-react';
 import { BrandMark } from '../../components/BrandMark/BrandMark';
+import { DevOnly } from '../../components/DevOnly/DevOnly';
 import { Button } from '../../components/Button/Button';
 import { PersistentActionBar } from '../../components/PersistentActionBar/PersistentActionBar';
 import { Modal } from '../../components/Modal/Modal';
@@ -278,23 +280,39 @@ export function KioskScreenLayout({
       <header className={styles.header}>
         <BrandMark />
         <div className={styles.headerActions}>
-          {isConnectionLost ? (
-            <Button
-              id="simulate-connection-restored"
-              label="Simulate connection restored"
-              onClick={onSimulateConnectionRestored}
-            />
-          ) : (
-            <Button
-              id="simulate-connection-lost"
-              label="Simulate connection lost"
-              onClick={onSimulateConnectionLost}
-            />
-          )}
+          <DevOnly>
+            {isConnectionLost ? (
+              <Button
+                id="simulate-connection-restored"
+                label="Simulate connection restored"
+                onClick={onSimulateConnectionRestored}
+              />
+            ) : (
+              <Button
+                id="simulate-connection-lost"
+                label="Simulate connection lost"
+                onClick={onSimulateConnectionLost}
+              />
+            )}
+          </DevOnly>
+          <span className={styles.trustBadge} id="header-data-protected">
+            <ShieldCheck size={26} strokeWidth={2} aria-hidden="true" />
+            {t.kioskLayout.dataProtected}
+          </span>
+          <span
+            className={styles.status}
+            id="header-kiosk-status"
+            data-state={isConnectionLost ? 'offline' : 'ready'}
+            role="status"
+          >
+            <span className={styles.statusDot} aria-hidden="true" />
+            {isConnectionLost ? t.kioskLayout.statusOffline : t.kioskLayout.statusReady}
+          </span>
           {sessionActive && (
             <Button
               id="end-session"
               label={t.kioskLayout.endSession}
+              icon={<LogOut size={24} strokeWidth={2} />}
               onClick={handleEndSessionClick}
             />
           )}
@@ -317,8 +335,25 @@ export function KioskScreenLayout({
 
       {(onBack || onHome) && (
         <div className={styles.navRow}>
-          {onBack && <Button id="navigation-back" label={t.common.back} onClick={onBack} />}
-          {onHome && <Button id="navigation-home" label={t.common.home} onClick={onHome} />}
+          {onBack && (
+            <Button
+              id="navigation-back"
+              variant="ghost"
+              label={t.common.back}
+              icon={<ArrowLeft size={28} strokeWidth={2} />}
+              onClick={onBack}
+            />
+          )}
+          {onBack && onHome && <span className={styles.navDivider} aria-hidden="true" />}
+          {onHome && (
+            <Button
+              id="navigation-home"
+              variant="ghost"
+              label={t.common.home}
+              icon={<House size={28} strokeWidth={2} />}
+              onClick={onHome}
+            />
+          )}
         </div>
       )}
 
@@ -408,7 +443,7 @@ export function KioskScreenLayout({
       <footer className={styles.footer}>
         <PersistentActionBar
           onCartActivate={handleCartActivate}
-          cartHasItems={cartItems.length > 0}
+          cartCount={cartItems.length}
           onAccountActivate={handleAccountActivate}
           accountLoggedIn={accountId !== null}
           onLanguageActivate={() => setIsLanguageOpen(true)}

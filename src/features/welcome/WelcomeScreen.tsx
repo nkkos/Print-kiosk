@@ -1,9 +1,11 @@
 import { useState } from 'react';
+import { Copy, FileScan, Printer } from 'lucide-react';
 import { KioskScreenLayout } from '../../layouts/KioskScreenLayout/KioskScreenLayout';
 import { ServiceCard } from '../../components/ServiceCard/ServiceCard';
 import { Button } from '../../components/Button/Button';
 import { Modal } from '../../components/Modal/Modal';
 import { Notification } from '../../components/Notification/Notification';
+import { DevOnly } from '../../components/DevOnly/DevOnly';
 import { useTranslation } from '../../i18n';
 import type { Language } from '../../i18n';
 import type { EndSessionReason, PrintOrder } from '../../types/kiosk';
@@ -128,40 +130,57 @@ export function WelcomeScreen({
       onGoToPaidOrders={onGoToPaidOrders}
       onLanguageChange={onLanguageChange}
     >
+      <div className={styles.intro}>
+        <h1 className={styles.title}>{t.welcome.title}</h1>
+        <p className={styles.subtitle}>{t.welcome.subtitle}</p>
+      </div>
+
+      {/* Print / Copy / Scan, in the order a walk-in customer most often
+          wants them (docs/design/kiosk-redesign-plan.md). */}
       <div className={styles.services}>
         <ServiceCard
           serviceId="print"
           title={t.welcome.print}
+          hint={t.welcome.printHint}
+          icon={<Printer size={64} strokeWidth={1.5} />}
           status={isHardwareUnavailable || ordersClosed ? 'unavailable' : 'available'}
           onActivate={onPrintActivate}
         />
         <ServiceCard
-          serviceId="scan"
-          title={t.welcome.scan}
-          status={ordersClosed ? 'unavailable' : 'available'}
-          onActivate={onScanActivate}
-        />
-        <ServiceCard
           serviceId="copy"
           title={t.welcome.copy}
+          hint={t.welcome.copyHint}
+          icon={<Copy size={64} strokeWidth={1.5} />}
           status={ordersClosed ? 'unavailable' : 'available'}
           onActivate={onCopyActivate}
         />
+        <ServiceCard
+          serviceId="scan"
+          title={t.welcome.scan}
+          hint={t.welcome.scanHint}
+          icon={<FileScan size={64} strokeWidth={1.5} />}
+          // Scan costs nothing (docs: pricing — only Print and Copy are paid).
+          tag={t.welcome.free}
+          status={ordersClosed ? 'unavailable' : 'available'}
+          onActivate={onScanActivate}
+        />
       </div>
 
-      {isHardwareUnavailable ? (
-        <Button
-          id="simulate-hardware-restored"
-          label="Simulate hardware restored"
-          onClick={() => setIsHardwareUnavailable(false)}
-        />
-      ) : (
-        <Button
-          id="simulate-hardware-unavailable"
-          label="Simulate hardware unavailable"
-          onClick={handleSimulateHardwareUnavailable}
-        />
-      )}
+      <DevOnly>
+        {isHardwareUnavailable ? (
+          <Button
+            id="simulate-hardware-restored"
+            label="Simulate hardware restored"
+            onClick={() => setIsHardwareUnavailable(false)}
+          />
+        ) : (
+          <Button
+            id="simulate-hardware-unavailable"
+            label="Simulate hardware unavailable"
+            onClick={handleSimulateHardwareUnavailable}
+          />
+        )}
+      </DevOnly>
 
       {isNotificationOpen && (
         <Modal onClose={() => setIsNotificationOpen(false)}>

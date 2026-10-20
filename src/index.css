@@ -10,7 +10,11 @@
 
 body {
   margin: 0;
-  background: var(--color-background);
+  background-color: var(--color-background);
+  background-image:
+    linear-gradient(var(--color-grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--color-grid-line) 1px, transparent 1px);
+  background-size: 64px 64px;
   color: var(--color-ink);
   font: var(--font-body);
   -webkit-font-smoothing: antialiased;

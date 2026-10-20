@@ -1,8 +1,22 @@
-/* Styled as a wordmark so the placeholder text (BrandMark.tsx) reads as
-   intentional branding rather than debug output — still a placeholder
-   pending a real logo asset/product name (see that component's own TODO). */
 .root {
-  font: var(--font-h2);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-m);
+}
+
+.logo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.25rem;
+  height: 3.25rem;
+  border-radius: var(--radius-medium);
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+}
+
+.name {
+  font: var(--font-h3);
   font-weight: 800;
   letter-spacing: -0.02em;
   color: var(--color-ink);

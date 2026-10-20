@@ -37,6 +37,9 @@ export const sk: Translations = {
     language: 'Jazyk',
   },
   kioskLayout: {
+    dataProtected: 'Vaše údaje sú chránené',
+    statusReady: 'Pripravené',
+    statusOffline: 'Bez pripojenia',
     endSession: 'Ukončiť a vymazať údaje',
     endSessionConfirmMessage: 'Ukončiť túto reláciu a vymazať všetky vaše údaje?',
     connectionLostTitle: 'Spojenie prerušené',
@@ -94,6 +97,12 @@ export const sk: Translations = {
       'Personál: tento prehliadač nemá platný kľúč stojana — raz otvorte nastavovací odkaz stojana.',
   },
   welcome: {
+    title: 'Čo chcete urobiť?',
+    subtitle: 'Vyberte službu — každým krokom vás prevedieme',
+    printHint: 'Súbor z telefónu, e-mailu alebo účtu',
+    copyHint: 'Odfoťte dokument telefónom — vytlačíme kópiu',
+    scanHint: 'Dokument ako PDF priamo do telefónu',
+    free: 'Zadarmo',
     print: 'Tlač',
     scan: 'Skenovanie',
     copy: 'Kopírovanie',

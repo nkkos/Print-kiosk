@@ -40,6 +40,9 @@ export const en = {
     language: 'Language',
   },
   kioskLayout: {
+    dataProtected: 'Your data is protected',
+    statusReady: 'Ready',
+    statusOffline: 'No connection',
     endSession: 'Finish and clear data',
     endSessionConfirmMessage: 'End this session and clear all your data?',
     connectionLostTitle: 'Connection lost',
@@ -99,6 +102,12 @@ export const en = {
     staffHint: "Staff: this browser has no valid stand key — open the stand's setup link once.",
   },
   welcome: {
+    title: 'What would you like to do?',
+    subtitle: "Choose a service — we'll guide you through every step",
+    printHint: 'A file from your phone, e-mail or account',
+    copyHint: 'Photograph a document with your phone — we print the copy',
+    scanHint: 'A document as a PDF, straight to your phone',
+    free: 'Free',
     print: 'Print',
     scan: 'Scan',
     copy: 'Copy',

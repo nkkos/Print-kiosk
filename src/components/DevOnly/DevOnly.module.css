@@ -1,0 +1,29 @@
+.root {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-s);
+  padding: var(--space-xs) var(--space-s);
+  border: 1.5px dashed var(--color-border-strong);
+  border-radius: var(--radius-small);
+  opacity: 0.55;
+}
+
+.root:hover {
+  opacity: 1;
+}
+
+.label {
+  font: var(--font-caption);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-ink-soft);
+}
+
+/* Shrinks whatever Buttons sit inside — scaffolding stays small. */
+.root :global(button) {
+  min-height: 2.25rem;
+  padding: 0 var(--space-s);
+  font: var(--font-caption);
+}
