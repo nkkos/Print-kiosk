@@ -1,3 +1,5 @@
+import { phoneLanguage } from './phonePageKit.js';
+import { renderUploadPhonePage } from './uploadPhonePage.js';
 import express, { Router } from 'express';
 import type { Request, Response, NextFunction } from 'express';
 import multer from 'multer';
@@ -207,9 +209,9 @@ function handleFileUpload(req: Request, res: Response, next: NextFunction) {
   const sessionId = paramString(req.params.sessionId);
   upload.array('files')(req, res, (err: unknown) => {
     if (err instanceof multer.MulterError && err.code === 'LIMIT_FILE_SIZE') {
-      res.redirect(303, `/upload/${sessionId}?error=size`);
+      res.redirect(303, `/upload/${sessionId}?error=size&lang=${phoneLanguage(req)}`);
     } else if (err instanceof InvalidFileFormatError) {
-      res.redirect(303, `/upload/${sessionId}?error=format`);
+      res.redirect(303, `/upload/${sessionId}?error=format&lang=${phoneLanguage(req)}`);
     } else if (err) {
       next(err);
     } else {
@@ -255,42 +257,20 @@ router.get('/api/config', (_req, res) => {
 // docs/qr-upload-requirements.md — served directly by this backend (not the
 // Vite frontend) so the phone's upload never needs CORS: it's a plain HTML
 // form posting back to this same origin.
+// The phone page the kiosk's QR code opens (server/uploadPhonePage.ts), in
+// the kiosk's language (`?lang=`, server/phonePageKit.ts).
 router.get('/upload/:sessionId', (req, res) => {
-  const sessionId = paramString(req.params.sessionId);
-  const uploaded = req.query.uploaded === '1';
   const error = req.query.error;
-  const errorMessage =
-    error === 'size'
-      ? `File is too large — maximum size is ${MAX_FILE_SIZE_MB} MB. Please try a smaller file.`
-      : error === 'format'
-        ? `Unsupported file format. Accepted: ${ACCEPTED_EXTENSIONS.join(', ')}.`
-        : null;
-  res.type('html').send(`<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Upload to kiosk</title>
-  <style>
-    body { font-family: sans-serif; max-width: 28rem; margin: 2rem auto; padding: 0 1rem; }
-    button, input[type="file"] { font-size: 1.1rem; padding: 0.75rem; width: 100%; }
-    p.success { color: #146c2e; }
-    p.error { color: #b3261e; }
-    p.hint { color: #555; font-size: 0.9rem; }
-  </style>
-</head>
-<body>
-  <h1>Upload your file(s)</h1>
-  <p class="hint">Accepted: ${ACCEPTED_EXTENSIONS.join(', ')} — up to ${MAX_FILE_SIZE_MB} MB each.</p>
-  ${uploaded ? '<p class="success">Uploaded! You can add more, or go back to the kiosk.</p>' : ''}
-  ${errorMessage ? `<p class="error">${errorMessage}</p>` : ''}
-  <form method="post" action="/api/qr-sessions/${sessionId}/files" enctype="multipart/form-data">
-    <input type="file" name="files" multiple required />
-    <br /><br />
-    <button type="submit">Upload</button>
-  </form>
-</body>
-</html>`);
+  res.type('html').send(
+    renderUploadPhonePage({
+      sessionId: paramString(req.params.sessionId),
+      language: phoneLanguage(req),
+      uploaded: req.query.uploaded === '1',
+      error: error === 'size' || error === 'format' ? error : null,
+      acceptedExtensions: ACCEPTED_EXTENSIONS,
+      maxFileSizeMb: MAX_FILE_SIZE_MB,
+    }),
+  );
 });
 
 router.post(
@@ -301,7 +281,7 @@ router.post(
     const sessionId = paramString(req.params.sessionId);
     const files = Array.isArray(req.files) ? req.files : [];
     await Promise.all(files.map((file) => addFile(sessionId, file.originalname, file.path)));
-    res.redirect(303, `/upload/${sessionId}?uploaded=1`);
+    res.redirect(303, `/upload/${sessionId}?uploaded=1&lang=${phoneLanguage(req)}`);
   },
 );
 
@@ -1811,7 +1791,7 @@ router.get('/scan/:id', async (req, res) => {
     return;
   }
   const portalUrl = portalBaseUrl();
-  res.type('html').send(renderScanPhoneApp(scanSessionId, portalUrl));
+  res.type('html').send(renderScanPhoneApp(scanSessionId, portalUrl, phoneLanguage(req)));
 });
 
 // Separate multer instance from the others above — destination is
@@ -2112,7 +2092,7 @@ router.get('/copy/:id', async (req, res) => {
     res.status(404).send('Copy session not found.');
     return;
   }
-  res.type('html').send(renderCopyPhoneApp(copySessionId));
+  res.type('html').send(renderCopyPhoneApp(copySessionId, phoneLanguage(req)));
 });
 
 // Separate multer instances, mirroring the scan ones above exactly (own

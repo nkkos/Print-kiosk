@@ -1,13 +1,15 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useContext, useEffect, useState, type ReactNode } from 'react';
 import QRCode from 'qrcode';
 import { ShieldCheck } from 'lucide-react';
 import { DevOnly } from '../DevOnly/DevOnly';
+import { LanguageContext } from '../../i18n/context';
 import styles from './QrCard.module.css';
 
 // The QR code a phone scans to carry on there — QR upload, scan and copy
 // (2026-10 redesign): the code, what to do with it, that it's only good for
 // this session, and a live status line underneath (`children`). Extracted
-// once the third screen needed it.
+// once the third screen needed it. The code carries the kiosk's language
+// (`?lang=`), so the phone page opens in it (server/phonePageKit.ts).
 interface QrCardProps {
   id?: string;
   /** The phone-facing URL to encode — null while it's still being prepared. */
@@ -19,8 +21,18 @@ interface QrCardProps {
   children?: ReactNode;
 }
 
-export function QrCard({ id, url, alt, preparingLabel, caption, note, children }: QrCardProps) {
+export function QrCard({
+  id,
+  url: baseUrl,
+  alt,
+  preparingLabel,
+  caption,
+  note,
+  children,
+}: QrCardProps) {
+  const language = useContext(LanguageContext);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const url = baseUrl ? `${baseUrl}${baseUrl.includes('?') ? '&' : '?'}lang=${language}` : null;
 
   useEffect(() => {
     if (!url) return;

@@ -3,111 +3,82 @@
 // a terminal "done" screen) as one plain HTML/CSS/vanilla-JS page, same
 // architecture as server/scanPhoneApp.ts (served directly by this backend,
 // no bundler, no framework — see that file's own header comment for the
-// full reasoning, unchanged here). P2's corner-adjust canvas logic below is
-// deliberately near-identical to scanPhoneApp.ts's — same interaction, same
-// server-side detection endpoint shape — just re-hosted under Copy's own
-// element ids and session routes per docs/screens/copy-spec.md's "Reuse
-// decision" (ids stay traceable to exactly one flow even where the
-// underlying behavior is shared).
+// full reasoning; look and languages from server/phonePageKit.ts). P2's
+// corner-adjust canvas logic below is deliberately near-identical to
+// scanPhoneApp.ts's — same interaction, same server-side detection endpoint
+// shape — just re-hosted under Copy's own element ids and session routes per
+// docs/screens/copy-spec.md's "Reuse decision" (ids stay traceable to
+// exactly one flow even where the underlying behavior is shared).
 //
 // What's different from Scan: no delivery step (P4/P5) — "Finish" combines
 // the pages straight into a real uploaded file and shows a plain "go back
 // to the kiosk" message; no login anywhere, since Copy's output never
 // leaves the Kiosk Session.
 
-export function renderCopyPhoneApp(copySessionId: string): string {
-  return `<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Copy a document</title>
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&display=swap" />
-<style>
-  :root {
-    --space-s: 8px; --space-m: 16px; --space-l: 32px;
-    --radius-small: 6px; --radius-medium: 12px; --radius-large: 24px;
-    --color-background: #f2f6f5; --color-surface: #ffffff;
-    --color-surface-sunken: #e8eeec; --color-border: #d7e0de;
-    --color-border-strong: #b7c4c1; --color-ink: #101817; --color-ink-soft: #56635f;
-    --color-accent: #0c6e68; --color-accent-strong: #094f4b; --color-accent-soft: #dcefec;
-    --color-danger: #b3261e;
-    --font-family-base: 'Manrope', system-ui, sans-serif;
-  }
-  * { box-sizing: border-box; }
-  /* See server/scanPhoneApp.ts's own comment here — the [hidden] attribute
-     needs !important to actually win over the later button { display }
-     rule below, confirmed live on that page. */
-  [hidden] { display: none !important; }
-  body {
-    margin: 0; font-family: var(--font-family-base); background: var(--color-background);
-    color: var(--color-ink); padding: var(--space-m);
-  }
-  h1 { font: 700 1.5rem/1.3 var(--font-family-base); margin: 0 0 var(--space-s); }
-  p { font: 500 1rem/1.5 var(--font-family-base); color: var(--color-ink-soft); }
-  .screen { max-width: 480px; margin: 0 auto; }
-  button, .button-like {
-    display: inline-flex; align-items: center; justify-content: center;
-    font: 600 1rem/1.2 var(--font-family-base); border-radius: var(--radius-medium);
-    padding: 14px 20px; border: none; cursor: pointer; width: 100%; margin-top: var(--space-s);
-  }
-  .primary { background: var(--color-accent); color: #fff; }
-  .primary:disabled { background: var(--color-border); color: var(--color-ink-soft); cursor: not-allowed; }
-  .secondary { background: var(--color-surface); color: var(--color-ink); border: 1px solid var(--color-border-strong); }
-  .actions { display: flex; gap: var(--space-s); margin-top: var(--space-m); }
-  .actions > * { margin-top: 0; }
-  .canvas-wrap { width: 100%; touch-action: none; border-radius: var(--radius-medium); overflow: hidden; background: #000; }
-  #adjust-canvas { display: block; width: 100%; touch-action: none; }
-  #copy-page-preview { width: 100%; border-radius: var(--radius-medium); border: 1px solid var(--color-border); }
-  .thumb-strip { display: flex; gap: var(--space-s); overflow-x: auto; margin-top: var(--space-s); }
-  .thumb-strip img { height: 64px; border-radius: var(--radius-small); border: 1px solid var(--color-border); }
-  .error { color: var(--color-danger); font-weight: 600; }
-  .card { background: var(--color-surface); border-radius: var(--radius-large); padding: var(--space-l) var(--space-m); text-align: center; }
-</style>
-</head>
-<body>
+import { icon } from './phoneIcons.js';
+import {
+  escapeHtml as esc,
+  format,
+  FORMAT_SCRIPT,
+  phoneHead,
+  PHONE_STRINGS,
+  type PhoneLanguage,
+} from './phonePageKit.js';
+
+const TOTAL = 3;
+
+export function renderCopyPhoneApp(copySessionId: string, language: PhoneLanguage): string {
+  const s = PHONE_STRINGS[language];
+  return `${phoneHead(language, s.copyTitle, STYLES)}
 <main id="app">
   <section id="screen-start" class="screen">
-    <div class="card">
-      <h1>Copy a document</h1>
-      <p>To print a copy, first scan the document with your phone.</p>
-      <label class="button-like primary" id="copy-take-photo" for="photo-input">Take photo</label>
+    <div class="card center">
+      <span class="step">${esc(format(s.stepOf, { step: 1, total: TOTAL }))}</span>
+      <span class="badge">${icon('copy', 34)}</span>
+      <h1>${esc(s.copyTitle)}</h1>
+      <p>${esc(s.copyStart)}</p>
+      <label class="button-like primary" id="copy-take-photo" for="photo-input">${icon('camera', 24)}${esc(s.takePhoto)}</label>
       <input type="file" accept="image/*" capture="environment" id="photo-input" hidden />
+      <p class="hint">${esc(s.photoTip)}</p>
     </div>
   </section>
 
   <section id="screen-adjust" class="screen" hidden>
-    <h1>Adjust corners</h1>
-    <p id="adjust-hint">Drag the corners to match the edges of the page.</p>
-    <p id="adjust-detecting" hidden>Detecting document edges…</p>
-    <p id="adjust-detect-status" class="error" hidden></p>
+    <span class="step">${esc(format(s.stepOf, { step: 2, total: TOTAL }))}</span>
+    <h1>${esc(s.adjustTitle)}</h1>
+    <p id="adjust-hint">${esc(s.adjustHint)}</p>
+    <p id="adjust-detecting" hidden>${esc(s.detecting)}</p>
+    <p id="adjust-detect-status" class="notice info" hidden></p>
     <div class="canvas-wrap" id="canvas-wrap" hidden><canvas id="adjust-canvas"></canvas></div>
     <div class="actions">
-      <button id="copy-retake" class="secondary">Retake</button>
-      <button id="copy-confirm-corners" class="primary" disabled>Confirm</button>
+      <button id="copy-retake" class="secondary">${esc(s.retake)}</button>
+      <button id="copy-confirm-corners" class="primary" disabled>${esc(s.confirm)}</button>
     </div>
   </section>
 
   <section id="screen-preview" class="screen" hidden>
-    <h1>Page <span id="preview-page-number"></span></h1>
-    <img id="copy-page-preview" alt="Processed page preview" />
+    <span class="step">${esc(format(s.stepOf, { step: 3, total: TOTAL }))}</span>
+    <h1 id="preview-title"></h1>
+    <img id="copy-page-preview" class="page-preview" alt="" />
     <div id="thumb-strip" class="thumb-strip"></div>
     <div class="actions">
-      <button id="copy-add-page" class="secondary">Add another page</button>
-      <button id="copy-finish" class="primary">Finish</button>
+      <button id="copy-add-page" class="secondary">${esc(s.addPage)}</button>
+      <button id="copy-finish" class="primary">${esc(s.finish)}</button>
     </div>
   </section>
 
   <section id="screen-done" class="screen" hidden>
-    <div class="card">
-      <h1>All set</h1>
-      <p id="copy-done-message">Your document is ready. You can put your phone away — go back to the kiosk to choose your print settings.</p>
+    <div class="card center">
+      <span class="badge success">${icon('circleCheck', 36)}</span>
+      <h1>${esc(s.copyDoneTitle)}</h1>
+      <p id="copy-done-message">${esc(s.copyDoneText)}</p>
     </div>
   </section>
 </main>
 <script>
 (function () {
+  var S = ${JSON.stringify(s)};
+  ${FORMAT_SCRIPT}
   var copySessionId = ${JSON.stringify(copySessionId)};
 
   var currentPhoto = null;
@@ -185,11 +156,11 @@ export function renderCopyPhoneApp(copySessionId: string): string {
         return res.json();
       })
       .then(function (data) {
-        if (!data.corners) showDetectStatus('Auto-detect found no document — using default corners.');
+        if (!data.corners) showDetectStatus(S.detectNone);
         return data.corners ? toCornersObject(data.corners) : null;
       })
       .catch(function (err) {
-        showDetectStatus('Auto-detect request failed (' + err.message + ') — using default corners.');
+        console.warn('detect-corners failed', err); showDetectStatus(S.detectNone);
         return null;
       });
 
@@ -221,11 +192,11 @@ export function renderCopyPhoneApp(copySessionId: string): string {
     ctx.moveTo(pts[0].x, pts[0].y);
     for (var i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
     ctx.closePath();
-    ctx.fillStyle = 'rgba(16,24,23,0.45)';
+    ctx.fillStyle = 'rgba(13,26,69,0.45)';
     ctx.fill('evenodd');
     ctx.restore();
-    ctx.strokeStyle = '#0c6e68';
-    ctx.lineWidth = 2;
+    ctx.strokeStyle = '#1257ff';
+    ctx.lineWidth = 3;
     ctx.beginPath();
     ctx.moveTo(pts[0].x, pts[0].y);
     for (var j = 1; j < pts.length; j++) ctx.lineTo(pts[j].x, pts[j].y);
@@ -233,8 +204,8 @@ export function renderCopyPhoneApp(copySessionId: string): string {
     ctx.stroke();
     pts.forEach(function (p) {
       ctx.beginPath();
-      ctx.arc(p.x, p.y, 10, 0, Math.PI * 2);
-      ctx.fillStyle = '#0c6e68';
+      ctx.arc(p.x, p.y, 13, 0, Math.PI * 2);
+      ctx.fillStyle = '#1257ff';
       ctx.fill();
       ctx.strokeStyle = '#fff';
       ctx.lineWidth = 2;
@@ -281,7 +252,7 @@ export function renderCopyPhoneApp(copySessionId: string): string {
   document.getElementById('copy-confirm-corners').addEventListener('click', function () {
     var btn = document.getElementById('copy-confirm-corners');
     btn.disabled = true;
-    btn.textContent = 'Processing…';
+    btn.textContent = S.processing;
     var formData = new FormData();
     formData.append('photo', currentPhoto);
     formData.append('corners', JSON.stringify([currentCorners.tl, currentCorners.tr, currentCorners.br, currentCorners.bl]));
@@ -289,8 +260,8 @@ export function renderCopyPhoneApp(copySessionId: string): string {
       .then(function (res) { if (!res.ok) throw new Error('upload failed'); return res.json(); })
       .then(function (page) { return waitForPageReady(page.id); })
       .then(openPreviewScreen)
-      .catch(function () { alert('Something went wrong processing this page. Please try again.'); })
-      .finally(function () { btn.disabled = false; btn.textContent = 'Confirm'; });
+      .catch(function () { alert(S.processFailed); })
+      .finally(function () { btn.disabled = false; btn.textContent = S.confirm; });
   });
 
   function waitForPageReady(pageId) {
@@ -312,7 +283,7 @@ export function renderCopyPhoneApp(copySessionId: string): string {
 
   function openPreviewScreen() {
     var last = pages[pages.length - 1];
-    document.getElementById('preview-page-number').textContent = last.pageNumber;
+    document.getElementById('preview-title').textContent = fmt(S.pageTitle, { number: last.pageNumber });
     document.getElementById('copy-page-preview').src = '/api/copy-sessions/' + copySessionId + '/pages/' + last.id + '/content';
     var strip = document.getElementById('thumb-strip');
     strip.innerHTML = '';
@@ -335,14 +306,14 @@ export function renderCopyPhoneApp(copySessionId: string): string {
   document.getElementById('copy-finish').addEventListener('click', function () {
     var btn = document.getElementById('copy-finish');
     btn.disabled = true;
-    btn.textContent = 'Finishing…';
+    btn.textContent = S.finishing;
     fetch('/api/copy-sessions/' + copySessionId + '/finish', { method: 'POST' })
       .then(function (res) { if (!res.ok) throw new Error('finish failed'); })
       .then(function () { show('screen-done'); })
       .catch(function () {
-        alert('Something went wrong finishing this document. Please try again.');
+        alert(S.copyFinishFailed);
         btn.disabled = false;
-        btn.textContent = 'Finish';
+        btn.textContent = S.finish;
       });
   });
 
@@ -365,3 +336,11 @@ export function renderCopyPhoneApp(copySessionId: string): string {
 </body>
 </html>`;
 }
+
+const STYLES = `
+  .canvas-wrap { width: 100%; touch-action: none; border-radius: var(--radius-large); overflow: hidden; background: #0d1a45; }
+  #adjust-canvas { display: block; width: 100%; touch-action: none; }
+  .page-preview { width: 100%; border-radius: var(--radius-large); border: 1.5px solid var(--color-border); background: #fff; }
+  .thumb-strip { display: flex; gap: var(--space-s); overflow-x: auto; }
+  .thumb-strip img { height: 72px; border-radius: var(--radius-small); border: 1.5px solid var(--color-border); }
+`;

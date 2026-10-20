@@ -1,148 +1,113 @@
 // Phone-Camera Scan's phone-facing flow (docs/scan-upload-requirements.md,
 // docs/screens/scan-spec.md, "Phone-facing flow") — five screens (P1-P5) as
 // one plain HTML/CSS/vanilla-JS page, served directly by this backend (same
-// reasoning as server/routes.ts's existing `/upload/:sessionId` QR-upload
-// page: the phone's request never needs CORS if it's same-origin). Not a
-// bundled TypeScript app and not the kiosk's React SPA/component library
-// (docs/screens/scan-spec.md, "Design system reuse") — it draws from the
-// same token *values* (colors/radius/type below are copied from
-// src/styles/tokens.css, not imported — this page is intentionally outside
-// that build) rather than being a sixth consumer of it.
+// reasoning as the `/upload/:sessionId` QR-upload page: the phone's request
+// never needs CORS if it's same-origin). Not a bundled TypeScript app and
+// not the kiosk's React SPA — the look and the five languages come from
+// server/phonePageKit.ts (2026-10 redesign, batch 8), shared with QR upload
+// and Copy.
 //
 // State (current photo, corners, captured pages, login) lives entirely in
 // this page's own JS variables — there is nothing else to share it with, so
 // no framework/store is warranted (same "extract only once two consumers
 // exist" reasoning CLAUDE.md documents for the kiosk app itself).
 
-export function renderScanPhoneApp(scanSessionId: string, portalUrl: string): string {
-  return `<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Scan a document</title>
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&display=swap" />
-<style>
-  :root {
-    --space-s: 8px; --space-m: 16px; --space-l: 32px;
-    --radius-small: 6px; --radius-medium: 12px; --radius-large: 24px;
-    --color-background: #f2f6f5; --color-surface: #ffffff;
-    --color-surface-sunken: #e8eeec; --color-border: #d7e0de;
-    --color-border-strong: #b7c4c1; --color-ink: #101817; --color-ink-soft: #56635f;
-    --color-accent: #0c6e68; --color-accent-strong: #094f4b; --color-accent-soft: #dcefec;
-    --color-danger: #b3261e;
-    --font-family-base: 'Manrope', system-ui, sans-serif;
-  }
-  * { box-sizing: border-box; }
-  /* The [hidden] attribute's UA-stylesheet display:none is low-specificity
-     and gets silently overridden by any later same-specificity type
-     selector (button { display: inline-flex } below, in particular) —
-     confirmed live: #reset-submit stayed visible after being hidden by JS.
-     !important pins "hidden means hidden" regardless of what else targets
-     the element. */
-  [hidden] { display: none !important; }
-  body {
-    margin: 0; font-family: var(--font-family-base); background: var(--color-background);
-    color: var(--color-ink); padding: var(--space-m);
-  }
-  h1 { font: 700 1.5rem/1.3 var(--font-family-base); margin: 0 0 var(--space-s); }
-  p { font: 500 1rem/1.5 var(--font-family-base); color: var(--color-ink-soft); }
-  .screen { max-width: 480px; margin: 0 auto; }
-  button, .button-like {
-    display: inline-flex; align-items: center; justify-content: center;
-    font: 600 1rem/1.2 var(--font-family-base); border-radius: var(--radius-medium);
-    padding: 14px 20px; border: none; cursor: pointer; width: 100%; margin-top: var(--space-s);
-  }
-  .primary { background: var(--color-accent); color: #fff; }
-  .primary:disabled { background: var(--color-border); color: var(--color-ink-soft); cursor: not-allowed; }
-  .secondary { background: var(--color-surface); color: var(--color-ink); border: 1px solid var(--color-border-strong); }
-  .actions { display: flex; gap: var(--space-s); margin-top: var(--space-m); }
-  .actions > * { margin-top: 0; }
-  .canvas-wrap { width: 100%; touch-action: none; border-radius: var(--radius-medium); overflow: hidden; background: #000; }
-  #adjust-canvas { display: block; width: 100%; touch-action: none; }
-  #scan-page-preview { width: 100%; border-radius: var(--radius-medium); border: 1px solid var(--color-border); }
-  .thumb-strip { display: flex; gap: var(--space-s); overflow-x: auto; margin-top: var(--space-s); }
-  .thumb-strip img { height: 64px; border-radius: var(--radius-small); border: 1px solid var(--color-border); }
-  label.checkbox-row { display: flex; align-items: center; gap: var(--space-s); font: 500 1rem var(--font-family-base); margin-top: var(--space-m); }
-  input[type="email"], input[type="password"], input[type="text"] {
-    width: 100%; padding: 12px; border-radius: var(--radius-small); border: 1px solid var(--color-border-strong);
-    font: 500 1rem var(--font-family-base); margin-top: var(--space-s);
-  }
-  #account-login { background: var(--color-surface); border-radius: var(--radius-medium); padding: var(--space-m); margin-top: var(--space-s); }
-  .error { color: var(--color-danger); font-weight: 600; }
-  .card { background: var(--color-surface); border-radius: var(--radius-large); padding: var(--space-l) var(--space-m); text-align: center; }
-</style>
-</head>
-<body>
+import { icon } from './phoneIcons.js';
+import {
+  escapeHtml as esc,
+  format,
+  FORMAT_SCRIPT,
+  phoneHead,
+  PHONE_STRINGS,
+  type PhoneLanguage,
+} from './phonePageKit.js';
+
+const TOTAL = 4;
+
+export function renderScanPhoneApp(
+  scanSessionId: string,
+  portalUrl: string,
+  language: PhoneLanguage,
+): string {
+  const s = PHONE_STRINGS[language];
+  return `${phoneHead(language, s.scanTitle, STYLES)}
 <main id="app">
   <section id="screen-start" class="screen">
-    <div class="card">
-      <h1>Scan a document</h1>
-      <p>Take a clear, well-lit photo of one page of your document.</p>
-      <label class="button-like primary" id="scan-take-photo" for="photo-input">Take photo</label>
+    <div class="card center">
+      <span class="step">${esc(format(s.stepOf, { step: 1, total: TOTAL }))}</span>
+      <span class="badge">${icon('scanLine', 34)}</span>
+      <h1>${esc(s.scanTitle)}</h1>
+      <p>${esc(s.scanStart)}</p>
+      <label class="button-like primary" id="scan-take-photo" for="photo-input">${icon('camera', 24)}${esc(s.takePhoto)}</label>
       <input type="file" accept="image/*" capture="environment" id="photo-input" hidden />
+      <p class="hint">${esc(s.photoTip)}</p>
     </div>
   </section>
 
   <section id="screen-adjust" class="screen" hidden>
-    <h1>Adjust corners</h1>
-    <p id="adjust-hint">Drag the corners to match the edges of the page.</p>
-    <p id="adjust-detecting" hidden>Detecting document edges…</p>
-    <p id="adjust-detect-status" class="error" hidden></p>
+    <span class="step">${esc(format(s.stepOf, { step: 2, total: TOTAL }))}</span>
+    <h1>${esc(s.adjustTitle)}</h1>
+    <p id="adjust-hint">${esc(s.adjustHint)}</p>
+    <p id="adjust-detecting" hidden>${esc(s.detecting)}</p>
+    <p id="adjust-detect-status" class="notice info" hidden></p>
     <div class="canvas-wrap" id="canvas-wrap" hidden><canvas id="adjust-canvas"></canvas></div>
     <div class="actions">
-      <button id="scan-retake" class="secondary">Retake</button>
-      <button id="scan-confirm-corners" class="primary" disabled>Confirm</button>
+      <button id="scan-retake" class="secondary">${esc(s.retake)}</button>
+      <button id="scan-confirm-corners" class="primary" disabled>${esc(s.confirm)}</button>
     </div>
   </section>
 
   <section id="screen-preview" class="screen" hidden>
-    <h1>Page <span id="preview-page-number"></span></h1>
-    <img id="scan-page-preview" alt="Processed page preview" />
+    <span class="step">${esc(format(s.stepOf, { step: 3, total: TOTAL }))}</span>
+    <h1 id="preview-title"></h1>
+    <img id="scan-page-preview" class="page-preview" alt="" />
     <div id="thumb-strip" class="thumb-strip"></div>
     <div class="actions">
-      <button id="scan-add-page" class="secondary">Add another page</button>
-      <button id="scan-finish" class="primary">Finish</button>
+      <button id="scan-add-page" class="secondary">${esc(s.addPage)}</button>
+      <button id="scan-finish" class="primary">${esc(s.finish)}</button>
     </div>
   </section>
 
   <section id="screen-deliver" class="screen" hidden>
-    <h1>Get your document</h1>
-    <label class="checkbox-row"><input type="checkbox" id="scan-deliver-email" /> Email it to me</label>
-    <input type="email" id="scan-email-input" placeholder="you@example.com" hidden />
-    <label class="checkbox-row"><input type="checkbox" id="scan-deliver-link" /> Give me a download link</label>
-    <label class="checkbox-row"><input type="checkbox" id="scan-deliver-account" /> Save to my Personal Account</label>
-    <div id="account-login" hidden>
-      <div id="login-form">
-        <p style="margin-top:0">Log in to save this scan to your account.</p>
-        <input type="email" id="login-email" placeholder="Email" />
-        <input type="password" id="login-password" placeholder="Password" />
-        <p class="error" id="login-error" hidden>Incorrect email or password.</p>
-        <button id="login-submit" class="secondary">Log in</button>
-        <p><a id="login-forgot-password" href="#">Forgot password?</a></p>
-        <p>No account? <a id="login-register-link" href="#" target="_blank" rel="noopener">Register on the portal</a>, then come back here.</p>
+    <span class="step">${esc(format(s.stepOf, { step: 4, total: TOTAL }))}</span>
+    <h1>${esc(s.deliverTitle)}</h1>
+    <label class="option"><input type="checkbox" id="scan-deliver-email" /><span class="option-icon">${icon('mail', 26)}</span><span>${esc(s.deliverEmail)}</span></label>
+    <input type="email" id="scan-email-input" placeholder="${esc(s.emailPlaceholder)}" autocomplete="email" hidden />
+    <label class="option"><input type="checkbox" id="scan-deliver-link" /><span class="option-icon">${icon('link2', 26)}</span><span>${esc(s.deliverLink)}</span></label>
+    <label class="option"><input type="checkbox" id="scan-deliver-account" /><span class="option-icon">${icon('circleUserRound', 26)}</span><span>${esc(s.deliverAccount)}</span></label>
+    <div id="account-login" class="card" hidden>
+      <div id="login-form" class="stack">
+        <p>${esc(s.loginIntro)}</p>
+        <input type="email" id="login-email" placeholder="${esc(s.email)}" autocomplete="email" />
+        <input type="password" id="login-password" placeholder="${esc(s.password)}" autocomplete="current-password" />
+        <p class="error" id="login-error" hidden>${esc(s.loginError)}</p>
+        <button id="login-submit" class="secondary">${esc(s.logIn)}</button>
+        <p><a id="login-forgot-password" href="#">${esc(s.forgotPassword)}</a></p>
+        <p>${esc(s.noAccount)} <a id="login-register-link" href="#" target="_blank" rel="noopener">${esc(s.register)}</a>${esc(s.registerAfter)}</p>
       </div>
-      <div id="login-forgot-panel" hidden>
-        <p style="margin-top:0">Enter your email and we'll send reset instructions.</p>
-        <input type="email" id="reset-email" placeholder="Email" />
-        <button id="reset-submit" class="secondary">Send reset instructions</button>
-        <p id="reset-sent" hidden>If an account with that email exists, reset instructions were sent.</p>
-        <p><a id="login-back-to-login" href="#">Back to log in</a></p>
+      <div id="login-forgot-panel" class="stack" hidden>
+        <p>${esc(s.resetIntro)}</p>
+        <input type="email" id="reset-email" placeholder="${esc(s.email)}" autocomplete="email" />
+        <button id="reset-submit" class="secondary">${esc(s.sendReset)}</button>
+        <p id="reset-sent" hidden>${esc(s.resetSent)}</p>
+        <p><a id="login-back-to-login" href="#">${esc(s.backToLogin)}</a></p>
       </div>
     </div>
-    <button id="scan-deliver-done" class="primary" disabled>Finish</button>
+    <button id="scan-deliver-done" class="primary" disabled>${esc(s.send)}</button>
   </section>
 
   <section id="screen-done" class="screen" hidden>
-    <div class="card">
-      <h1>Done!</h1>
-      <div id="scan-done-summary"></div>
+    <div class="card center">
+      <span class="badge success">${icon('circleCheck', 36)}</span>
+      <h1>${esc(s.doneTitle)}</h1>
+      <div id="scan-done-summary" class="stack"></div>
     </div>
   </section>
 </main>
 <script>
 (function () {
+  var S = ${JSON.stringify(s)};
+  ${FORMAT_SCRIPT}
   var scanSessionId = ${JSON.stringify(scanSessionId)};
   var portalUrl = ${JSON.stringify(portalUrl)};
   // returnTo (portal/RegisterPage.tsx) — so registering doesn't strand the
@@ -246,11 +211,11 @@ export function renderScanPhoneApp(scanSessionId: string, portalUrl: string): st
         return res.json();
       })
       .then(function (data) {
-        if (!data.corners) showDetectStatus('Auto-detect found no document — using default corners.');
+        if (!data.corners) showDetectStatus(S.detectNone);
         return data.corners ? toCornersObject(data.corners) : null;
       })
       .catch(function (err) {
-        showDetectStatus('Auto-detect request failed (' + err.message + ') — using default corners.');
+        console.warn('detect-corners failed', err); showDetectStatus(S.detectNone);
         return null;
       });
 
@@ -282,11 +247,11 @@ export function renderScanPhoneApp(scanSessionId: string, portalUrl: string): st
     ctx.moveTo(pts[0].x, pts[0].y);
     for (var i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
     ctx.closePath();
-    ctx.fillStyle = 'rgba(16,24,23,0.45)';
+    ctx.fillStyle = 'rgba(13,26,69,0.45)';
     ctx.fill('evenodd');
     ctx.restore();
-    ctx.strokeStyle = '#0c6e68';
-    ctx.lineWidth = 2;
+    ctx.strokeStyle = '#1257ff';
+    ctx.lineWidth = 3;
     ctx.beginPath();
     ctx.moveTo(pts[0].x, pts[0].y);
     for (var j = 1; j < pts.length; j++) ctx.lineTo(pts[j].x, pts[j].y);
@@ -294,8 +259,8 @@ export function renderScanPhoneApp(scanSessionId: string, portalUrl: string): st
     ctx.stroke();
     pts.forEach(function (p) {
       ctx.beginPath();
-      ctx.arc(p.x, p.y, 10, 0, Math.PI * 2);
-      ctx.fillStyle = '#0c6e68';
+      ctx.arc(p.x, p.y, 13, 0, Math.PI * 2);
+      ctx.fillStyle = '#1257ff';
       ctx.fill();
       ctx.strokeStyle = '#fff';
       ctx.lineWidth = 2;
@@ -342,7 +307,7 @@ export function renderScanPhoneApp(scanSessionId: string, portalUrl: string): st
   document.getElementById('scan-confirm-corners').addEventListener('click', function () {
     var btn = document.getElementById('scan-confirm-corners');
     btn.disabled = true;
-    btn.textContent = 'Processing…';
+    btn.textContent = S.processing;
     var formData = new FormData();
     formData.append('photo', currentPhoto);
     formData.append('corners', JSON.stringify([currentCorners.tl, currentCorners.tr, currentCorners.br, currentCorners.bl]));
@@ -350,8 +315,8 @@ export function renderScanPhoneApp(scanSessionId: string, portalUrl: string): st
       .then(function (res) { if (!res.ok) throw new Error('upload failed'); return res.json(); })
       .then(function (page) { return waitForPageReady(page.id); })
       .then(openPreviewScreen)
-      .catch(function () { alert('Something went wrong processing this page. Please try again.'); })
-      .finally(function () { btn.disabled = false; btn.textContent = 'Confirm'; });
+      .catch(function () { alert(S.processFailed); })
+      .finally(function () { btn.disabled = false; btn.textContent = S.confirm; });
   });
 
   function waitForPageReady(pageId) {
@@ -373,7 +338,7 @@ export function renderScanPhoneApp(scanSessionId: string, portalUrl: string): st
 
   function openPreviewScreen() {
     var last = pages[pages.length - 1];
-    document.getElementById('preview-page-number').textContent = last.pageNumber;
+    document.getElementById('preview-title').textContent = fmt(S.pageTitle, { number: last.pageNumber });
     document.getElementById('scan-page-preview').src = '/api/scan-sessions/' + scanSessionId + '/pages/' + last.id + '/content';
     var strip = document.getElementById('thumb-strip');
     strip.innerHTML = '';
@@ -472,7 +437,7 @@ export function renderScanPhoneApp(scanSessionId: string, portalUrl: string): st
 
   doneButton.addEventListener('click', function () {
     doneButton.disabled = true;
-    doneButton.textContent = 'Finishing…';
+    doneButton.textContent = S.sending;
     var methods = [];
     if (emailCheckbox.checked) methods.push('email');
     if (linkCheckbox.checked) methods.push('link');
@@ -487,20 +452,30 @@ export function renderScanPhoneApp(scanSessionId: string, portalUrl: string): st
       .then(function (res) { if (!res.ok) throw new Error('delivery failed'); })
       .then(function () { openDoneScreen(methods); })
       .catch(function () {
-        alert('Delivery failed. Please try again.');
+        alert(S.deliverFailed);
         doneButton.disabled = false;
-        doneButton.textContent = 'Finish';
+        doneButton.textContent = S.send;
       });
   });
 
   function openDoneScreen(methods) {
-    var lines = [];
-    if (methods.indexOf('email') !== -1) lines.push('<p>Sent to your email.</p>');
-    if (methods.indexOf('link') !== -1) {
-      lines.push('<p><a href="/api/scan-sessions/' + scanSessionId + '/download">Download your document</a></p>');
+    var summary = document.getElementById('scan-done-summary');
+    summary.innerHTML = '';
+    function line(text) {
+      var p = document.createElement('p');
+      p.textContent = text;
+      summary.appendChild(p);
     }
-    if (methods.indexOf('account') !== -1) lines.push('<p>Saved to your Personal Account.</p>');
-    document.getElementById('scan-done-summary').innerHTML = lines.join('');
+    if (methods.indexOf('email') !== -1) line(S.doneEmail);
+    if (methods.indexOf('link') !== -1) {
+      var a = document.createElement('a');
+      a.className = 'button-like primary';
+      a.href = '/api/scan-sessions/' + scanSessionId + '/download';
+      a.textContent = S.doneDownload;
+      summary.appendChild(a);
+      line(S.doneLinkNote);
+    }
+    if (methods.indexOf('account') !== -1) line(S.doneAccount);
     show('screen-done');
   }
 
@@ -530,3 +505,19 @@ export function renderScanPhoneApp(scanSessionId: string, portalUrl: string): st
 </body>
 </html>`;
 }
+
+const STYLES = `
+  .canvas-wrap { width: 100%; touch-action: none; border-radius: var(--radius-large); overflow: hidden; background: #0d1a45; }
+  #adjust-canvas { display: block; width: 100%; touch-action: none; }
+  .page-preview { width: 100%; border-radius: var(--radius-large); border: 1.5px solid var(--color-border); background: #fff; }
+  .thumb-strip { display: flex; gap: var(--space-s); overflow-x: auto; }
+  .thumb-strip img { height: 72px; border-radius: var(--radius-small); border: 1.5px solid var(--color-border); }
+
+  .stack { display: flex; flex-direction: column; gap: var(--space-s); }
+  .option { display: flex; align-items: center; gap: var(--space-m); min-height: 64px; padding: 0 var(--space-m);
+    border: 1.5px solid var(--color-border-strong); border-radius: var(--radius-medium); background: var(--color-surface);
+    font: 700 1.05rem/1.3 var(--font); cursor: pointer; }
+  .option input { width: 22px; height: 22px; accent-color: var(--color-accent); flex: none; }
+  .option-icon { display: inline-flex; color: var(--color-accent); }
+  .option:has(input:checked) { border-color: var(--color-accent); background: var(--color-accent-soft); }
+`;

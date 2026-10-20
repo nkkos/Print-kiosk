@@ -22,7 +22,7 @@ Releases: the `redesign` branch goes to staging after each batch (seen on the st
 5. **Scan and Copy.**
 6. **Popups** — help, tariffs, language, "how your data is protected", end session, inactivity warning, empty cart.
 7. **System states** — no connection, stand unavailable, file error, closing-soon strip, pavilion closed; **an on-screen keyboard inside the app** (decided 2026-10-20) — the stand has no physical keyboard, and the Windows touch keyboard in Chrome kiosk mode appears unreliably, covers half the screen and may offer a way out of the kiosk. Built 2026-10-20: `src/components/OnScreenKeyboard/`, docked at the bottom while a text field has focus (the Windows keyboard is suppressed with `inputmode="none"`), Latin letters with "@ . .sk .com" keys for e-mail fields, "Next" moves to the next field in the same popup or screen. The closed / closing-soon pavilion is a calm card on Welcome in place of the services (the strip stays on every other screen).
-8. **Phone pages** — QR upload, scan, copy on the customer's phone.
+8. **Phone pages** — QR upload, scan, copy on the customer's phone. Built 2026-10-20: one look and five languages for all three (`server/phonePageKit.ts`, icons in `server/phoneIcons.ts`); the kiosk's QR code carries its language (`?lang=`, `src/components/QrCard/`), the phone's own language is the fallback, then English.
 9. Texts in all five languages; Slovak checked by a native speaker.
 
 The photo kiosk is a separate, later piece of work.
@@ -73,3 +73,4 @@ Defaults used until decided: working name, operator hidden, line icons only, ste
 | End session confirm + inactivity warning          | Approved (2026-10-20) |
 | System states (closed, connection, stand, ending) | Approved (2026-10-20) |
 | On-screen keyboard                                | Approved (2026-10-20) |
+| Phone pages: QR upload, scan, copy                | Approved (2026-10-20) |
