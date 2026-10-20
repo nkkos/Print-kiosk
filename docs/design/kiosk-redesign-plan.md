@@ -59,3 +59,4 @@ Defaults used until decided: working name, popups as confirmed, operator hidden,
 | Welcome                 | Approved (2026-10-20) |
 | Upload method selection | Approved (2026-10-20) |
 | QR upload               | Approved (2026-10-20) |
+| E-mail address + list   | Approved (2026-10-20) |

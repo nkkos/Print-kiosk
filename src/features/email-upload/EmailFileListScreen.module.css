@@ -1,38 +1,173 @@
-/* TODO: exact colors/typography values pending Design System sign-off
-   (docs/design/design-system.md). */
+/* E-mails on the left, the open e-mail's attachments on the right — no
+   popup needed (2026-10 screen pack). */
 
-.body {
-  flex: 1;
+.intro {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: var(--space-m);
-}
-
-.instruction {
-  margin: 0;
+  gap: var(--space-s);
   text-align: center;
 }
 
-.list {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-s);
+.title {
+  font: var(--font-h1);
+  letter-spacing: -0.02em;
+}
+
+.subtitle {
+  margin: 0;
+  font: var(--font-lead);
+  color: var(--color-ink-soft);
+}
+
+.body {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 1.7fr;
+  gap: var(--space-l);
+  align-items: start;
   width: 100%;
-  max-width: 24rem;
+  max-width: 100rem;
+  margin: 0 auto;
 }
 
-.emailSubject {
-  margin: 0;
-}
-
-.emailBody {
-  margin: 0;
-}
-
+.messages,
 .attachments {
   display: flex;
   flex-direction: column;
+  gap: var(--space-m);
+  padding: var(--space-l);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-large);
+  background: var(--color-surface);
+  box-shadow: var(--elevation-raised);
+}
+
+.panelTitle {
+  font: var(--font-h3);
+  overflow-wrap: anywhere;
+}
+
+.message {
+  display: flex;
+  align-items: center;
+  gap: var(--space-m);
+  min-height: var(--touch-target);
+  padding: var(--space-m);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-medium);
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.message svg {
+  flex: none;
+  color: var(--color-ink-soft);
+}
+
+.message[data-selected] {
+  border-color: var(--color-accent);
+  background: var(--color-accent-soft);
+}
+
+.message[data-selected] svg {
+  color: var(--color-accent);
+}
+
+.messageText {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.messageSubject {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font: var(--font-body);
+  font-weight: 700;
+}
+
+.messageCount {
+  font: var(--font-caption);
+  color: var(--color-ink-soft);
+}
+
+.attachmentList {
+  display: flex;
+  flex-direction: column;
   gap: var(--space-s);
+  max-height: 24rem;
+  overflow-y: auto;
+}
+
+.attachments > button {
+  align-self: flex-end;
+}
+
+.empty {
+  margin: 0;
+  font: var(--font-body);
+  color: var(--color-ink-soft);
+}
+
+.waitingCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-m);
+  width: 100%;
+  max-width: 48rem;
+  margin: auto;
+  padding: var(--space-xl) var(--space-l);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-large);
+  background: var(--color-surface);
+  box-shadow: var(--elevation-raised);
+  text-align: center;
+}
+
+.waitingCard > svg {
+  color: var(--color-accent);
+}
+
+.waitingTitle {
+  margin: 0;
+  font: var(--font-h2);
+}
+
+.waitingHint {
+  margin: 0;
+  font: var(--font-body);
+  color: var(--color-ink-soft);
+}
+
+.address {
+  margin: 0;
+  padding: var(--space-m) var(--space-l);
+  border-radius: var(--radius-medium);
+  background: var(--color-accent-soft);
+  font: var(--font-h3);
+  color: var(--color-accent);
+  overflow-wrap: anywhere;
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spin {
+    animation: none;
+  }
 }

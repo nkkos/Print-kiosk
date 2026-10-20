@@ -7,6 +7,7 @@ import { FileRow } from '../../components/FileRow/FileRow';
 import { StepList } from '../../components/StepList/StepList';
 import { DevOnly } from '../../components/DevOnly/DevOnly';
 import { acceptedFormatsLabel, MAX_FILE_SIZE_MB } from '../../utils/fileLimits';
+import { fileStatusLabel } from '../../utils/fileStatusLabel';
 import { useTranslation } from '../../i18n';
 import type { Language } from '../../i18n';
 import type { EndSessionReason, PrintOrder, ReceivedFile } from '../../types/kiosk';
@@ -157,19 +158,10 @@ export function QrUploadScreen({
               <h2 className={styles.filesTitle}>{t.qrUpload.filesTitle}</h2>
               <div className={styles.list}>
                 {files.map((file) => {
-                  // 'rejected' (docs/domain/kiosk-session.md, "File scanning
-                  // status") stays visible rather than disappearing, so the
-                  // user isn't left wondering whether their upload got stuck.
-                  const statusLabel =
-                    file.status === 'ready'
-                      ? t.common.fileReady
-                      : file.status === 'rejected'
-                        ? t.common.blockedVirusScan
-                        : file.status === 'scan-unavailable'
-                          ? t.common.scanUnavailable
-                          : file.status === 'converting'
-                            ? t.common.preparingForPrint
-                            : t.common.scanningForViruses;
+                  // A rejected file (docs/domain/kiosk-session.md, "File scanning
+                  // status") stays visible with its reason, so nobody wonders
+                  // whether their upload got stuck.
+                  const statusLabel = fileStatusLabel(file.status, t.common);
                   return (
                     <FileRow
                       key={file.id}

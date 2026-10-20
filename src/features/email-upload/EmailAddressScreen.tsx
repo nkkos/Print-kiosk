@@ -1,5 +1,8 @@
 import { KioskScreenLayout } from '../../layouts/KioskScreenLayout/KioskScreenLayout';
+import { ArrowRight, Mail, MailOpen, Paperclip, Send, ShieldCheck } from 'lucide-react';
 import { Button } from '../../components/Button/Button';
+import { StepList } from '../../components/StepList/StepList';
+import { acceptedFormatsLabel, MAX_FILE_SIZE_MB } from '../../utils/fileLimits';
 import { useTranslation } from '../../i18n';
 import type { Language } from '../../i18n';
 import type { EndSessionReason, PrintOrder } from '../../types/kiosk';
@@ -80,11 +83,59 @@ export function EmailAddressScreen({
       onGoToPaidOrders={onGoToPaidOrders}
       onLanguageChange={onLanguageChange}
     >
+      <div className={styles.intro}>
+        <h1 className={styles.title}>{t.emailAddress.title}</h1>
+        <p className={styles.subtitle}>{t.emailAddress.subtitle}</p>
+      </div>
+
       <div className={styles.body}>
-        <p className={styles.instruction}>{t.emailAddress.instruction}</p>
-        <p className={styles.address}>{emailAddress}</p>
-        <p className={styles.formats}>{t.emailAddress.acceptedFormats}</p>
-        <Button id="email-address-next" label={t.emailAddress.next} onClick={onNext} />
+        <StepList
+          id="email-steps"
+          steps={[
+            {
+              icon: <MailOpen size={48} strokeWidth={1.5} />,
+              title: t.emailAddress.step1Title,
+              text: t.emailAddress.step1Text,
+            },
+            {
+              icon: <Paperclip size={48} strokeWidth={1.5} />,
+              title: t.emailAddress.step2Title,
+              text: t.emailAddress.step2Text,
+            },
+            {
+              icon: <Send size={48} strokeWidth={1.5} />,
+              title: t.emailAddress.step3Title,
+              text: t.emailAddress.step3Text,
+            },
+          ]}
+        />
+
+        <aside className={styles.addressCard}>
+          <p className={styles.sendTo}>
+            <Mail size={30} strokeWidth={1.75} aria-hidden="true" />
+            {t.emailAddress.sendTo}
+          </p>
+          {/* The one thing to copy — big, unbroken, in its own box. */}
+          <p className={styles.address} id="email-address-value">
+            {emailAddress}
+          </p>
+          <p className={styles.sessionOnly}>
+            <ShieldCheck size={24} strokeWidth={2} aria-hidden="true" />
+            {t.emailAddress.sessionOnly}
+          </p>
+          <p className={styles.formats}>
+            {t.uploadMethodSelection.formatsHint(acceptedFormatsLabel(), MAX_FILE_SIZE_MB)}
+          </p>
+          {/* "Next" (docs/email-upload-requirements.md, step 3): pressed once
+              the e-mail is sent; the next screen waits for it. */}
+          <Button
+            id="email-address-next"
+            variant="primary"
+            label={t.emailAddress.sent}
+            trailingIcon={<ArrowRight size={26} strokeWidth={2.25} />}
+            onClick={onNext}
+          />
+        </aside>
       </div>
     </KioskScreenLayout>
   );

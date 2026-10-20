@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { KioskScreenLayout } from '../../layouts/KioskScreenLayout/KioskScreenLayout';
-import { OptionCard } from '../../components/OptionCard/OptionCard';
-import { Modal } from '../../components/Modal/Modal';
+import { ChevronRight, LoaderCircle, Mail, Settings2 } from 'lucide-react';
 import { Button } from '../../components/Button/Button';
+import { FileRow } from '../../components/FileRow/FileRow';
+import { fileStatusLabel } from '../../utils/fileStatusLabel';
 import { useTranslation } from '../../i18n';
 import type { Language } from '../../i18n';
 import type { EndSessionReason, PrintOrder, ReceivedEmail } from '../../types/kiosk';
@@ -33,6 +34,8 @@ interface EmailFileListScreenProps {
   /** Received emails, each attachment carrying its own scanning status
    * (docs/domain/kiosk-session.md, "File scanning status"). */
   emails: ReceivedEmail[];
+  /** The session's address — repeated while nothing has arrived yet. */
+  emailAddress: string;
   /** Current Cart contents, shown in the btn-cart popup. */
   cartItems: PrintOrder[];
   /** Adjusts a Cart item's quantity (docs/cart-requirements.md). */
@@ -65,6 +68,7 @@ export function EmailFileListScreen({
   onHome,
   onEndSession,
   emails,
+  emailAddress,
   cartItems,
   onQuantityChange,
   onRemoveItem,
@@ -83,7 +87,9 @@ export function EmailFileListScreen({
 }: EmailFileListScreenProps) {
   const t = useTranslation();
   const [openEmailId, setOpenEmailId] = useState<string | null>(null);
-  const openEmail = emails.find((email) => email.id === openEmailId) ?? null;
+  // The newest e-mail is open until the customer picks another — the
+  // attachments are what they came for.
+  const openEmail = emails.find((email) => email.id === openEmailId) ?? emails[0] ?? null;
   const hasReadyAttachments = emails.some((email) =>
     email.attachments.some((attachment) => attachment.status === 'ready'),
   );
@@ -109,63 +115,80 @@ export function EmailFileListScreen({
       onGoToPaidOrders={onGoToPaidOrders}
       onLanguageChange={onLanguageChange}
     >
-      <div className={styles.body}>
-        <p className={styles.instruction}>{t.emailFileList.instruction}</p>
-        <div className={styles.list}>
-          {emails.map((email) => (
-            <OptionCard
-              key={email.id}
-              id={`email-item-${email.id}`}
-              title={email.subject}
-              description={t.emailFileList.attachmentCount(email.attachments.length)}
-              onActivate={() => setOpenEmailId(email.id)}
-            />
-          ))}
-        </div>
-
-        <Button
-          id="email-configure-all"
-          label={t.common.configureAllFiles}
-          onClick={onConfigureAllFiles}
-          disabled={!hasReadyAttachments}
-        />
+      <div className={styles.intro}>
+        <h1 className={styles.title}>{t.emailFileList.title}</h1>
+        <p className={styles.subtitle}>{t.emailFileList.subtitle}</p>
       </div>
 
-      {openEmail && (
-        <Modal onClose={() => setOpenEmailId(null)}>
-          <h2 className={styles.emailSubject}>{openEmail.subject}</h2>
-          <p className={styles.emailBody}>{openEmail.bodyPreview}</p>
-          <div className={styles.attachments}>
-            {openEmail.attachments.map((attachment) => {
-              const isReady = attachment.status === 'ready';
-              // 'rejected' (docs/domain/kiosk-session.md, "File scanning
-              // status") stays visible rather than disappearing, so the
-              // user isn't left wondering whether their attachment got stuck.
-              const description =
-                attachment.status === 'ready'
-                  ? t.common.tapToConfigurePrinting
-                  : attachment.status === 'rejected'
-                    ? t.common.blockedVirusScan
-                    : attachment.status === 'scan-unavailable'
-                      ? t.common.scanUnavailable
-                      : attachment.status === 'converting'
-                        ? t.common.preparingForPrint
-                        : t.common.scanningForViruses;
-              return (
-                <OptionCard
+      {emails.length === 0 ? (
+        // Nothing yet: say we're waiting, and where to send it, in case the
+        // customer pressed "sent" before actually sending.
+        <div className={styles.waitingCard} id="email-waiting" role="status">
+          <LoaderCircle className={styles.spin} size={56} strokeWidth={1.75} aria-hidden="true" />
+          <p className={styles.waitingTitle}>{t.emailFileList.waiting}</p>
+          <p className={styles.waitingHint}>{t.emailFileList.waitingHint}</p>
+          <p className={styles.address}>{emailAddress}</p>
+        </div>
+      ) : (
+        <div className={styles.body}>
+          {/* Grouped by e-mail (docs/email-upload-requirements.md): subject and
+              text help tell files apart; each attachment is still its own
+              print order. */}
+          <section className={styles.messages}>
+            <h2 className={styles.panelTitle}>{t.emailFileList.messagesTitle}</h2>
+            {emails.map((email) => (
+              <button
+                type="button"
+                key={email.id}
+                id={`email-item-${email.id}`}
+                className={styles.message}
+                data-selected={email.id === openEmail?.id || undefined}
+                onClick={() => setOpenEmailId(email.id)}
+              >
+                <Mail size={30} strokeWidth={1.75} aria-hidden="true" />
+                <span className={styles.messageText}>
+                  <span className={styles.messageSubject}>
+                    {email.subject || t.emailFileList.noSubject}
+                  </span>
+                  <span className={styles.messageCount}>
+                    {t.emailFileList.attachmentCount(email.attachments.length)}
+                  </span>
+                </span>
+                <ChevronRight size={28} strokeWidth={2} aria-hidden="true" />
+              </button>
+            ))}
+          </section>
+
+          <section className={styles.attachments}>
+            <h2 className={styles.panelTitle}>
+              {openEmail ? openEmail.subject || t.emailFileList.noSubject : ''}
+            </h2>
+            {openEmail && openEmail.attachments.length === 0 && (
+              <p className={styles.empty}>{t.emailFileList.noAttachments}</p>
+            )}
+            <div className={styles.attachmentList}>
+              {openEmail?.attachments.map((attachment) => (
+                <FileRow
                   key={attachment.id}
                   id={`email-attachment-${attachment.id}`}
-                  title={attachment.fileName}
-                  description={description}
-                  onActivate={
-                    isReady ? () => onFileSelect(attachment.id, attachment.fileName) : undefined
-                  }
-                  disabled={!isReady}
+                  fileName={attachment.fileName}
+                  status={attachment.status}
+                  statusLabel={fileStatusLabel(attachment.status, t.common)}
+                  onConfigure={() => onFileSelect(attachment.id, attachment.fileName)}
+                  configureLabel={t.common.configure}
                 />
-              );
-            })}
-          </div>
-        </Modal>
+              ))}
+            </div>
+            <Button
+              id="email-configure-all"
+              variant="primary"
+              icon={<Settings2 size={26} strokeWidth={2} />}
+              label={t.common.configureAllFiles}
+              onClick={onConfigureAllFiles}
+              disabled={!hasReadyAttachments}
+            />
+          </section>
+        </div>
       )}
     </KioskScreenLayout>
   );

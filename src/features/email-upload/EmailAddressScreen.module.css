@@ -1,25 +1,91 @@
-/* TODO: exact colors/typography values pending Design System sign-off
-   (docs/design/design-system.md). */
+/* Steps on the left, the address on the right (2026-10 screen pack). */
 
-.body {
-  flex: 1;
+.intro {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: var(--space-m);
+  gap: var(--space-s);
   text-align: center;
 }
 
-.instruction {
+.title {
+  font: var(--font-h1);
+  letter-spacing: -0.02em;
+}
+
+.subtitle {
   margin: 0;
+  font: var(--font-lead);
+  color: var(--color-ink-soft);
+}
+
+.body {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: var(--space-xl);
+  align-items: center;
+  width: 100%;
+  max-width: 100rem;
+  margin: 0 auto;
+}
+
+.addressCard {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-m);
+  padding: var(--space-xl) var(--space-l);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-large);
+  background: var(--color-surface);
+  box-shadow: var(--elevation-raised);
+}
+
+.sendTo {
+  display: flex;
+  align-items: center;
+  gap: var(--space-m);
+  margin: 0;
+  font: var(--font-h3);
+}
+
+.sendTo svg {
+  color: var(--color-accent);
 }
 
 .address {
   margin: 0;
-  font-weight: bold;
+  padding: var(--space-l) var(--space-m);
+  border-radius: var(--radius-medium);
+  background: var(--color-accent-soft);
+  font: var(--font-h2);
+  color: var(--color-accent);
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+.sessionOnly {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-s);
+  margin: 0;
+  font: var(--font-body);
+  color: var(--color-ink-soft);
+}
+
+.sessionOnly svg {
+  color: var(--color-accent);
 }
 
 .formats {
   margin: 0;
+  font: var(--font-caption);
+  color: var(--color-ink-soft);
+  text-align: center;
+}
+
+.addressCard > button {
+  margin-top: var(--space-s);
 }

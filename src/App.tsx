@@ -83,6 +83,12 @@ function sleep(ms: number): Promise<void> {
 // is not persisted, so a reload always lands back on Welcome, just with the
 // session and cart intact.
 const SESSION_ID_STORAGE_KEY = 'print-kiosk.sessionId';
+
+/** The session's own inbound address (docs/email-upload-requirements.md) —
+ * shown on the address screen and again while the file list waits. */
+function sessionEmailAddress(sessionId: string): string {
+  return `upload-${sessionId.slice(0, 8)}@${import.meta.env.VITE_EMAIL_DOMAIN ?? 'kiosk.example'}`;
+}
 const CART_STORAGE_KEY = 'print-kiosk.cart';
 
 // Real QR upload backend (server/, dev-only — see
@@ -992,7 +998,7 @@ function App() {
     return (
       <LanguageProvider language={language}>
         <EmailAddressScreen
-          emailAddress={`upload-${session.id.slice(0, 8)}@${import.meta.env.VITE_EMAIL_DOMAIN ?? 'kiosk.example'}`}
+          emailAddress={sessionEmailAddress(session.id)}
           onNext={() => {
             setHasReceivedEmail(true);
             goToEmailFileList(false);
@@ -1028,6 +1034,7 @@ function App() {
           }
           onConfigureAllFiles={handleConfigureAllEmailAttachments}
           emails={emailMessages}
+          emailAddress={session ? sessionEmailAddress(session.id) : ''}
           onBack={() => setScreen('email-address')}
           onHome={() => setScreen('welcome')}
           onEndSession={handleEndSession}
