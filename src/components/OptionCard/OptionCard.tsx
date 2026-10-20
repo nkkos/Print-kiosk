@@ -1,3 +1,5 @@
+import type { ReactNode } from 'react';
+import { ArrowRight } from 'lucide-react';
 import styles from './OptionCard.module.css';
 
 // See docs/design/component-library.md, Section 17.
@@ -16,7 +18,13 @@ interface OptionCardProps {
   used?: boolean;
   /** Not yet selectable — e.g. a received file still being antivirus-scanned
    * (docs/domain/kiosk-session.md, "File scanning status"). */
-  disabled?: boolean;
+  disabled?: boolean; /** `large`: a big tappable card with an icon and an arrow, like Welcome's
+   * ServiceCards — for a screen whose whole job is one choice (Upload
+   * Method Selection). Default: the compact list card. */
+  size?: 'default' | 'large';
+  icon?: ReactNode;
+  /** Text for the "used" marker on large cards (the compact one keeps ★). */
+  usedLabel?: string;
 }
 
 export function OptionCard({
@@ -26,7 +34,33 @@ export function OptionCard({
   onActivate,
   used = false,
   disabled = false,
+  size = 'default',
+  icon,
+  usedLabel,
 }: OptionCardProps) {
+  if (size === 'large') {
+    return (
+      <button
+        type="button"
+        id={id}
+        className={`${styles.root} ${styles.large}`}
+        onClick={onActivate}
+        disabled={disabled}
+      >
+        {used && usedLabel && <span className={styles.usedTag}>{usedLabel}</span>}
+        {icon && (
+          <span className={styles.icon} aria-hidden="true">
+            {icon}
+          </span>
+        )}
+        <span className={styles.largeTitle}>{title}</span>
+        <span className={styles.largeDescription}>{description}</span>
+        <span className={styles.arrow} aria-hidden="true">
+          <ArrowRight size={32} strokeWidth={2.25} />
+        </span>
+      </button>
+    );
+  }
   return (
     <button type="button" id={id} className={styles.root} onClick={onActivate} disabled={disabled}>
       {used && (

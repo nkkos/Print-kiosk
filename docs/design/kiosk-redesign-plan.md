@@ -54,6 +54,7 @@ Defaults used until decided: working name, popups as confirmed, operator hidden,
 
 ## Status
 
-| Screen  | Status                |
-| ------- | --------------------- |
-| Welcome | Approved (2026-10-20) |
+| Screen                  | Status                |
+| ----------------------- | --------------------- |
+| Welcome                 | Approved (2026-10-20) |
+| Upload method selection | Approved (2026-10-20) |

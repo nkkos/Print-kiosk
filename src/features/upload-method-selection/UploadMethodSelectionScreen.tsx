@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { FileText, FolderOpen, Mail, QrCode } from 'lucide-react';
+import { acceptedFormatsLabel, MAX_FILE_SIZE_MB } from '../../utils/fileLimits';
 import { KioskScreenLayout } from '../../layouts/KioskScreenLayout/KioskScreenLayout';
 import { OptionCard } from '../../components/OptionCard/OptionCard';
 import { Modal } from '../../components/Modal/Modal';
@@ -153,33 +155,45 @@ export function UploadMethodSelectionScreen({
       onGoToPaidOrders={onGoToPaidOrders}
       onLanguageChange={onLanguageChange}
     >
-      <p className={styles.instruction}>{t.uploadMethodSelection.instruction}</p>
+      <div className={styles.intro}>
+        <h1 className={styles.title}>{t.uploadMethodSelection.title}</h1>
+        <p className={styles.subtitle}>{t.uploadMethodSelection.subtitle}</p>
+      </div>
 
       <div className={styles.grid}>
         <OptionCard
           id="upload-method-qr"
-          title={t.uploadMethodSelection.qrTitle}
-          description={t.uploadMethodSelection.qrDescription}
+          size="large"
+          icon={<QrCode size={64} strokeWidth={1.5} />}
+          title={t.uploadMethodSelection.qrHeading}
+          description={t.uploadMethodSelection.qrHint}
           onActivate={onQrActivate}
           used={usedMethods.has('upload-method-qr')}
+          usedLabel={t.uploadMethodSelection.usedTag}
         />
         <OptionCard
           id="upload-method-email"
-          title={t.uploadMethodSelection.emailTitle}
-          description={t.uploadMethodSelection.emailDescription}
+          size="large"
+          icon={<Mail size={64} strokeWidth={1.5} />}
+          title={t.uploadMethodSelection.emailHeading}
+          description={t.uploadMethodSelection.emailHint}
           onActivate={onEmailActivate}
           used={usedMethods.has('upload-method-email')}
+          usedLabel={t.uploadMethodSelection.usedTag}
         />
         <OptionCard
           id="upload-method-account"
-          title={t.uploadMethodSelection.accountTitle}
-          description={t.uploadMethodSelection.accountDescription}
+          size="large"
+          icon={<FolderOpen size={64} strokeWidth={1.5} />}
+          title={t.uploadMethodSelection.accountHeading}
+          description={t.uploadMethodSelection.accountHint}
           onActivate={handleAccountCardActivate}
           // Unlike every other method, "used" alone isn't enough here: once
           // logged out, those files are no longer reachable from this
           // screen, so the marker should not keep pointing at them
           // (docs/personal-account-requirements.md, "Kiosk-side login").
           used={usedMethods.has('upload-method-account') && accountId !== null}
+          usedLabel={t.uploadMethodSelection.usedTag}
         />
         {SHOW_UNBUILT_METHODS && (
           <>
@@ -207,6 +221,13 @@ export function UploadMethodSelectionScreen({
           </>
         )}
       </div>
+
+      {/* What will be accepted, before anyone tries (docs/domain/kiosk-session.md,
+          "File format and size limits"). */}
+      <p className={styles.formats} id="upload-formats-hint">
+        <FileText size={26} strokeWidth={1.75} aria-hidden="true" />
+        {t.uploadMethodSelection.formatsHint(acceptedFormatsLabel(), MAX_FILE_SIZE_MB)}
+      </p>
 
       {isAccountLoginOpen && (
         <Modal onClose={() => setIsAccountLoginOpen(false)}>

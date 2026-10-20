@@ -2,13 +2,15 @@
 // docs/domain/kiosk-session.md, "File format and size limits". QR is the
 // only method with a real backend so far, so this is enforced here only.
 
-export const ACCEPTED_EXTENSIONS = ['.pdf', '.doc', '.docx', '.jpg', '.jpeg', '.png', '.heic'];
+// The list itself lives with the kiosk, which shows it to customers.
+import { ACCEPTED_EXTENSIONS, MAX_FILE_SIZE_MB } from '../src/utils/fileLimits.js';
+
+export { ACCEPTED_EXTENSIONS, MAX_FILE_SIZE_MB };
 // Subset of ACCEPTED_EXTENSIONS that pdf-to-printer (SumatraPDF-based,
 // server/printerAdapter.ts) can actually print directly — .doc/.docx/.heic
 // fall back to the placeholder document instead (no document-conversion
 // pipeline; see docs/domain/kiosk-session.md, "Related entities").
 export const PRINTABLE_EXTENSIONS = ['.pdf', '.jpg', '.jpeg', '.png'];
-export const MAX_FILE_SIZE_MB = 20;
 export const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
 
 export function hasAcceptedExtension(fileName: string): boolean {

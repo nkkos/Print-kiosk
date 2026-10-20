@@ -58,3 +58,66 @@
   font: var(--font-caption);
   color: var(--color-ink-soft);
 }
+
+/* size="large" — same anatomy as Welcome's ServiceCard. */
+.large {
+  justify-content: flex-start;
+  gap: var(--space-m);
+  min-height: 26rem;
+  padding: var(--space-xl) var(--space-l) var(--space-l);
+  border-width: 1.5px;
+  text-align: center;
+}
+
+.large:hover:not(:disabled),
+.large:active:not(:disabled) {
+  transform: none;
+  box-shadow:
+    0 0 0 4px var(--color-accent-soft),
+    var(--elevation-raised);
+}
+
+.icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 7.5rem;
+  height: 7.5rem;
+  border-radius: var(--radius-large);
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+}
+
+.largeTitle {
+  font: var(--font-h2);
+}
+
+.largeDescription {
+  max-width: 18rem;
+  font: var(--font-body);
+  color: var(--color-ink-soft);
+}
+
+.arrow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--touch-target);
+  height: var(--touch-target);
+  margin-top: auto;
+  border-radius: var(--radius-pill);
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+}
+
+.usedTag {
+  position: absolute;
+  top: var(--space-m);
+  right: var(--space-m);
+  padding: var(--space-xs) var(--space-m);
+  border-radius: var(--radius-pill);
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+  font: var(--font-caption);
+  font-weight: 700;
+}

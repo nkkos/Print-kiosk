@@ -1,24 +1,43 @@
-/* TODO: exact colors/typography/safe-margin values pending Design System
-   sign-off (docs/design/design-system.md). Layout follows the approved
-   wireframe (Concept A): centered instructional text and a 3x2 grid of
-   equal-size option cards. Header/footer/root shell and the Back/Home row
-   now live in KioskScreenLayout. */
+/* Approved wireframe (Concept A) restyled after the 2026-10 screen pack:
+   the question as the headline, three equal method cards like Welcome's,
+   and the accepted formats underneath. */
 
-.instruction {
+.intro {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-s);
   text-align: center;
+  margin-top: auto;
+}
+
+.title {
+  font: var(--font-display);
+  letter-spacing: -0.02em;
+}
+
+.subtitle {
   margin: 0;
+  font: var(--font-lead);
+  color: var(--color-ink-soft);
 }
 
 .grid {
-  flex: 1;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: var(--space-l);
-  align-content: center;
-  /* TODO: max-width is a least-opinionated placeholder pending an approved
-     value — keeps the grid from stretching edge-to-edge on the wide
-     reference display. */
   width: 100%;
-  max-width: 60rem;
-  margin-inline: auto;
+  max-width: 72rem;
+  margin: var(--space-xl) auto 0;
+}
+
+.formats {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-s);
+  margin: var(--space-l) 0 auto;
+  padding-bottom: var(--space-l);
+  font: var(--font-body);
+  color: var(--color-ink-soft);
 }
