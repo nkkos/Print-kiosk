@@ -1,11 +1,9 @@
-import { useEffect, useState } from 'react';
-import QRCode from 'qrcode';
 import { KioskScreenLayout } from '../../layouts/KioskScreenLayout/KioskScreenLayout';
-import { Camera, Link2, LoaderCircle, Settings2, ShieldCheck, Upload } from 'lucide-react';
+import { Camera, Link2, LoaderCircle, Settings2, Upload } from 'lucide-react';
 import { Button } from '../../components/Button/Button';
 import { FileRow } from '../../components/FileRow/FileRow';
 import { StepList } from '../../components/StepList/StepList';
-import { DevOnly } from '../../components/DevOnly/DevOnly';
+import { QrCard } from '../../components/QrCard/QrCard';
 import { acceptedFormatsLabel, MAX_FILE_SIZE_MB } from '../../utils/fileLimits';
 import { fileStatusLabel } from '../../utils/fileStatusLabel';
 import { useTranslation } from '../../i18n';
@@ -79,18 +77,6 @@ export function QrUploadScreen({
 }: QrUploadScreenProps) {
   const t = useTranslation();
   const hasReadyFiles = files.some((file) => file.status === 'ready');
-  const [qrImageUrl, setQrImageUrl] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!qrUploadUrl) return;
-    let cancelled = false;
-    QRCode.toDataURL(qrUploadUrl).then((dataUrl) => {
-      if (!cancelled) setQrImageUrl(dataUrl);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [qrUploadUrl]);
 
   return (
     <KioskScreenLayout
@@ -179,19 +165,14 @@ export function QrUploadScreen({
           )}
         </div>
 
-        <aside className={styles.qrCard}>
-          <div className={styles.qrBox}>
-            {qrImageUrl ? (
-              <img src={qrImageUrl} alt={t.qrUpload.qrImageAlt} />
-            ) : (
-              <span className={styles.preparing}>{t.qrUpload.preparingQrCode}</span>
-            )}
-          </div>
-          <p className={styles.qrCaption}>{t.qrUpload.qrCaption}</p>
-          <p className={styles.sessionOnly}>
-            <ShieldCheck size={24} strokeWidth={2} aria-hidden="true" />
-            {t.qrUpload.sessionOnly}
-          </p>
+        <QrCard
+          id="qr-code"
+          url={qrUploadUrl}
+          alt={t.qrUpload.qrImageAlt}
+          preparingLabel={t.qrUpload.preparingQrCode}
+          caption={t.qrUpload.qrCaption}
+          note={t.qrUpload.sessionOnly}
+        >
           {files.length === 0 ? (
             <p className={styles.waiting} id="qr-waiting" role="status">
               <LoaderCircle className={styles.spin} size={28} aria-hidden="true" />
@@ -200,16 +181,7 @@ export function QrUploadScreen({
           ) : (
             <p className={styles.addMore}>{t.qrUpload.addMore}</p>
           )}
-          {/* Opens the same-session URL without a QR scanner — handy while
-              debugging network reachability (docs/qr-upload-requirements.md). */}
-          {qrUploadUrl && (
-            <DevOnly>
-              <a href={qrUploadUrl} target="_blank" rel="noreferrer">
-                upload link
-              </a>
-            </DevOnly>
-          )}
-        </aside>
+        </QrCard>
       </div>
     </KioskScreenLayout>
   );

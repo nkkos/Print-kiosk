@@ -1,4 +1,4 @@
-import { dirname, join, relative } from 'node:path';
+import { basename, dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { eq } from 'drizzle-orm';
 import { db } from './db/client.js';
@@ -49,17 +49,34 @@ export async function addFile(
   return { id: row.id, fileName: row.fileName, status: 'scanning' };
 }
 
-export async function listFiles(sessionKey: string): Promise<UploadedFile[]> {
+/** Where a session's file came from — Copy and "print this scan" put their
+ * PDFs among the session's uploads too (server/copyStore.ts,
+ * server/scanStore.ts), named `copy-…`/`scan-…` on disk; anything else was
+ * uploaded by the customer. Lets the QR upload list show only the latter. */
+function originOf(storagePath: string): 'upload' | 'copy' | 'scan' {
+  const name = basename(storagePath);
+  if (name.startsWith('copy-')) return 'copy';
+  if (name.startsWith('scan-')) return 'scan';
+  return 'upload';
+}
+
+export async function listFiles(
+  sessionKey: string,
+): Promise<(UploadedFile & { origin: 'upload' | 'copy' | 'scan' })[]> {
   const rows = await db
     .select({
       id: uploadedFiles.id,
       fileName: uploadedFiles.fileName,
       status: uploadedFiles.status,
+      storagePath: uploadedFiles.storagePath,
     })
     .from(uploadedFiles)
     .where(eq(uploadedFiles.sessionKey, sessionKey))
     .orderBy(uploadedFiles.createdAt);
-  return rows as UploadedFile[];
+  return rows.map(({ storagePath, ...file }) => ({
+    ...(file as UploadedFile),
+    origin: originOf(storagePath),
+  }));
 }
 
 // Resolves a real uploaded file's absolute path for printing

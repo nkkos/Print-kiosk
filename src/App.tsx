@@ -19,7 +19,7 @@ import { getStandId } from './utils/standId';
 import { sendStandHeartbeat, reloadForStaff } from './services/standApi';
 import { computeItemPrice } from './utils/pricing';
 import { getUploadConfig, listQrFiles } from './services/qrUploadApi';
-import { createScanSession, getScanSession } from './services/scanApi';
+import { createScanSession, getScanSession, printScan } from './services/scanApi';
 import type { ScanSession } from './services/scanApi';
 import { createCopySession, getCopySession } from './services/copyApi';
 import type { CopySession } from './services/copyApi';
@@ -35,7 +35,7 @@ import {
 import type { PrintTask } from './services/printApi';
 import { startSession, touchSessionActivity, endSession } from './services/sessionApi';
 import { isStandRejected, onStandRejected } from './services/standAuth';
-import { LanguageProvider } from './i18n';
+import { LanguageProvider, TRANSLATIONS } from './i18n';
 import type { Language } from './i18n';
 import type {
   EndSessionReason,
@@ -239,6 +239,22 @@ function App() {
   const [copyResultFileStatus, setCopyResultFileStatus] = useState<ReceivedFile['status'] | null>(
     null,
   );
+  // The copy result already taken to print settings on its own — a finished
+  // copy goes straight there once printable (product owner, 2026-10-20), but
+  // only once, so Back from the settings doesn't bounce the customer again.
+  const [autoConfiguredCopyFileId, setAutoConfiguredCopyFileId] = useState<string | null>(null);
+  // Copies made this Kiosk Session — names each one "Copy 1.pdf", "Copy
+  // 2.pdf", … in the Cart, so two copies can be told apart.
+  const [copyCount, setCopyCount] = useState(0);
+  // "Print this scan" (docs/scan-upload-requirements.md, "Printing a scan"):
+  // the uploaded copy of the delivered scan and its pipeline status, while
+  // it's being prepared — print settings open once it's 'ready'.
+  const [scanPrintFile, setScanPrintFile] = useState<{
+    scanSessionId: string;
+    fileId: string | null;
+    fileName: string;
+    status: ReceivedFile['status'] | null;
+  } | null>(null);
   // Whether the user has gone through the address/instruction screen at
   // least once this session (docs/email-upload-requirements.md) — not
   // whether mail has actually arrived (see emailMessages for that, which
@@ -345,7 +361,10 @@ function App() {
       if (!session) return;
       listQrFiles(session.id)
         .then((files) => {
-          if (!cancelled) setQrFiles(files);
+          // Copies and printed scans live among the session's files too, but
+          // they're not something the customer uploaded here.
+          if (!cancelled)
+            setQrFiles(files.filter((file) => (file.origin ?? 'upload') === 'upload'));
         })
         .catch(() => {});
     }
@@ -370,6 +389,20 @@ function App() {
       getScanSession(scanSessionId).then((data) => {
         if (!cancelled) setScanSession(data);
       });
+      if (session && scanPrintFile?.fileId) {
+        const { fileId } = scanPrintFile;
+        listQrFiles(session.id)
+          .then((files) => {
+            if (cancelled) return;
+            const file = files.find((candidate) => candidate.id === fileId);
+            setScanPrintFile((current) =>
+              current && current.fileId === fileId
+                ? { ...current, status: file?.status ?? null }
+                : current,
+            );
+          })
+          .catch(() => {});
+      }
     }
     poll();
     const intervalId = setInterval(poll, QR_POLL_INTERVAL_MS);
@@ -377,7 +410,24 @@ function App() {
       cancelled = true;
       clearInterval(intervalId);
     };
-  }, [screen, scanSessionId]);
+  }, [screen, scanSessionId, session, scanPrintFile?.fileId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // The scan's print copy is ready → print settings, once.
+  useEffect(() => {
+    if (screen !== 'scan' || !scanPrintFile?.fileId || scanPrintFile.status !== 'ready') return;
+    const { fileId, fileName } = scanPrintFile;
+    setScanPrintFile(null);
+    selectFileForConfiguration(fileId, fileName, 'upload-method-scan');
+  }, [screen, scanPrintFile]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // A finished, printable copy → print settings, once per copy.
+  useEffect(() => {
+    const fileId = copySession?.resultFileId;
+    if (screen !== 'copy' || !fileId || copyResultFileStatus !== 'ready') return;
+    if (autoConfiguredCopyFileId === fileId) return;
+    setAutoConfiguredCopyFileId(fileId);
+    handleCopyConfigurePrinting();
+  }, [screen, copySession?.resultFileId, copyResultFileStatus]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Polls the current copy attempt's state while the Copy screen is open —
   // pages/result-file live server-side (server/copyStore.ts), same 3s
@@ -698,7 +748,29 @@ function App() {
     // scan-restart (docs/screens/scan-spec.md) — ends the previous phone-side
     // attempt (simply abandoned, nothing to explicitly close server-side)
     // and starts a fresh one under the same Kiosk Session.
+    setScanPrintFile(null);
     if (session) startScanSession(session.id);
+  }
+
+  function handlePrintScan() {
+    if (!scanSessionId || scanPrintFile) return;
+    const id = scanSessionId;
+    setScanPrintFile({
+      scanSessionId: id,
+      fileId: null,
+      fileName: TRANSLATIONS[language].scan.documentName,
+      status: null,
+    });
+    printScan(id)
+      .then(({ fileId }) =>
+        setScanPrintFile((current) =>
+          current?.scanSessionId === id ? { ...current, fileId, status: 'scanning' } : current,
+        ),
+      )
+      .catch((err: unknown) => {
+        console.error('[App] printScan request failed:', err);
+        setScanPrintFile(null);
+      });
   }
 
   // Creates a fresh copy attempt under the given Kiosk Session id
@@ -710,6 +782,7 @@ function App() {
         setCopySessionId(id);
         setCopySession(null);
         setCopyResultFileStatus(null);
+        setCopyCount((current) => current + 1);
         return getUploadConfig().then(({ lanUploadUrl }) => {
           setCopyQrUrl(`${lanUploadUrl}/copy/${id}`);
         });
@@ -755,7 +828,7 @@ function App() {
     if (!copySession?.resultFileId || copyResultFileStatus !== 'ready') return;
     selectFileForConfiguration(
       copySession.resultFileId,
-      'Copied document.pdf',
+      TRANSLATIONS[language].copy.documentName(copyCount),
       'upload-method-copy',
     );
   }
@@ -840,6 +913,9 @@ function App() {
         setHasReceivedEmail(false);
         setUsedMethods(new Set());
         setHasPendingPaidOrders(false);
+        setCopyCount(0);
+        setAutoConfiguredCopyFileId(null);
+        setScanPrintFile(null);
         setLanguage('en');
         setScreen('welcome');
       });
@@ -875,10 +951,16 @@ function App() {
     // just added; its Back and "Add another file" return to the screen the
     // file came from, so another file from the same source is one tap away
     // (Cart's confirmed purpose, docs/domain/kiosk-session.md).
+    // A copy that's in the order makes room for the next one: Copy's
+    // "another document" is this (product owner, 2026-10-20).
+    if (selectedFile.sourceMethod === 'upload-method-copy' && session) {
+      startCopySession(session.id);
+    }
     const sourceScreen: Record<string, Screen> = {
       'upload-method-qr': 'qr-upload',
       'upload-method-account': 'personal-account',
       'upload-method-copy': 'copy',
+      'upload-method-scan': 'scan',
     };
     openOrderReview({
       screen: sourceScreen[selectedFile.sourceMethod] ?? 'email-file-list',
@@ -1110,6 +1192,8 @@ function App() {
           scanQrUrl={scanQrUrl}
           scanSession={scanSession}
           onRestart={handleScanRestart}
+          onPrintScan={handlePrintScan}
+          isPreparingPrint={scanPrintFile !== null}
           onBack={() => setScreen('welcome')}
           onHome={() => setScreen('welcome')}
           onEndSession={handleEndSession}
@@ -1215,6 +1299,8 @@ function App() {
               goToPersonalAccount('files');
             } else if (selectedFile.sourceMethod === 'upload-method-copy') {
               goToCopy();
+            } else if (selectedFile.sourceMethod === 'upload-method-scan') {
+              setScreen('scan');
             } else {
               setScreen('email-file-list');
             }

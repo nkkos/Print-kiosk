@@ -1,11 +1,13 @@
-import { readFile, writeFile, unlink, rm } from 'node:fs/promises';
+import { copyFile, mkdir, readFile, writeFile, unlink, rm } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { randomUUID } from 'node:crypto';
 import { eq, and, asc, lt } from 'drizzle-orm';
 import { PDFDocument } from 'pdf-lib';
 import { db } from './db/client.js';
 import { scanSessions, scanPages } from './db/schema.js';
 import { warpAndCleanPage, InvalidCornersError, type Corners } from './scanProcessor.js';
+import { addFile as addUploadedFile, uploadsDir } from './uploadStore.js';
 import { reportIncident } from './incidentStore.js';
 
 // Phone-Camera Scan (docs/scan-upload-requirements.md, docs/screens/scan-spec.md)
@@ -210,6 +212,31 @@ export async function markDelivered(
       deliveredAt: new Date(),
     })
     .where(eq(scanSessions.id, scanSessionId));
+}
+
+/** "Print this scan" (2026-10-20, docs/scan-upload-requirements.md,
+ * "Printing a scan"): hands a copy of the delivered PDF to the Kiosk
+ * Session's uploaded files — the same thing Copy's finishCopySession does —
+ * so it goes through the usual print path and is paid as printing. A copy,
+ * not the file itself, since the scan tree has its own 24h sweep. Null when
+ * the scan hasn't been delivered (no finished PDF yet). */
+export async function addScanForPrinting(
+  scanSessionId: string,
+): Promise<{ fileId: string } | null> {
+  const [row] = await db
+    .select({ sessionId: scanSessions.sessionId, deliveredAt: scanSessions.deliveredAt })
+    .from(scanSessions)
+    .where(eq(scanSessions.id, scanSessionId));
+  if (!row?.deliveredAt) return null;
+  const dir = join(uploadsDir, row.sessionId);
+  await mkdir(dir, { recursive: true });
+  // The "scan-" prefix marks the file's origin (uploadStore.ts, listFiles).
+  const target = join(dir, `scan-${randomUUID()}.pdf`);
+  await copyFile(finalPdfPath(scanSessionId), target);
+  // Named like Copy's result (copyStore.ts) — it's shown in the Cart.
+  const fileName = `Scan ${new Date().toISOString().slice(0, 10)}.pdf`;
+  const uploaded = await addUploadedFile(row.sessionId, fileName, target);
+  return { fileId: uploaded.id };
 }
 
 export async function getScanSession(id: string): Promise<ScanSessionRow | null> {

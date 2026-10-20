@@ -1,54 +1,126 @@
-.body {
-  flex: 1;
-  display: flex;
-  flex-direction: row;
-  gap: var(--space-l);
-}
+/* Same two-sided layout as QR upload (2026-10 screen pack): steps or the
+   live status on the left, the QR code on the right — like Scan. */
 
-.qrHalf {
-  flex: 1;
+.intro {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: var(--space-m);
+  gap: var(--space-s);
   text-align: center;
 }
 
-.qrBox {
+.title {
   display: flex;
   align-items: center;
-  justify-content: center;
-  width: 12rem;
-  height: 12rem;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-medium);
-  background: var(--color-surface);
-  box-shadow: var(--elevation-raised);
-}
-
-.qrBox img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-}
-
-.qrHint {
+  gap: var(--space-m);
   margin: 0;
-  max-width: 20rem;
+  font: var(--font-h1);
+  letter-spacing: -0.02em;
+}
+
+.subtitle {
+  margin: 0;
+  font: var(--font-lead);
   color: var(--color-ink-soft);
 }
 
-.statusHalf {
+.body {
   flex: 1;
+  display: grid;
+  grid-template-columns: 1.45fr 1fr;
+  gap: var(--space-xl);
+  align-items: center;
+  width: 100%;
+  max-width: 100rem;
+  margin: 0 auto;
+}
+
+.main {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-m);
+}
+
+.statusCard {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
   gap: var(--space-m);
+  padding: var(--space-xl) var(--space-l);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-large);
+  background: var(--color-surface);
+  box-shadow: var(--elevation-raised);
   text-align: center;
 }
 
-.statusMessage {
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 9rem;
+  height: 9rem;
+  border-radius: var(--radius-pill);
+}
+
+.badgeAccent {
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+}
+
+.badgeWarning {
+  background: var(--color-warning-soft);
+  color: var(--color-warning);
+}
+
+.badgeSuccess {
+  background: var(--color-success-soft);
+  color: var(--color-success);
+}
+
+.statusTitle {
   margin: 0;
+  font: var(--font-h2);
+  font-variant-numeric: tabular-nums;
+}
+
+.statusText {
+  max-width: 34rem;
+  margin: 0;
+  font: var(--font-lead);
+  color: var(--color-ink-soft);
+  text-wrap: balance;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-m);
+}
+
+.waiting {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-s);
+  margin: 0;
+  font: var(--font-body);
+  font-weight: 600;
+  color: var(--color-accent);
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spin {
+    animation: none;
+  }
 }

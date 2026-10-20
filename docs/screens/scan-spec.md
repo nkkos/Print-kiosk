@@ -14,12 +14,13 @@ Reuses `QrUploadScreen`'s approved two-half layout unchanged in structure (`docs
 
 ### Interactive elements
 
-| Identifier     | Purpose                                                | Default state                      | Enabled/disabled                    | Action after click / Navigation                                                     |
-| -------------- | ------------------------------------------------------ | ---------------------------------- | ----------------------------------- | ----------------------------------------------------------------------------------- |
-| `service-scan` | Entry point from Welcome Screen                        | Currently `coming-soon`            | Becomes `available` once this ships | Creates/reuses a Kiosk Session (Trigger A, same as `service-print`), navigates here |
-| `scan-qr-code` | QR image encoding the phone-facing flow's start URL    | Visible once the session has an id | Not interactive                     | None — scanned by the phone's own camera app, not tapped on the kiosk               |
-| `scan-status`  | The right-half status area (see "Screen states" below) | Shows "Waiting" state              | Not interactive                     | None                                                                                |
-| `scan-restart` | Starts a fresh scan after a completed delivery         | Hidden except in "Delivered" state | Enabled when shown                  | Returns to "Waiting" state with a newly generated QR code                           |
+| Identifier     | Purpose                                                | Default state                      | Enabled/disabled                    | Action after click / Navigation                                                                                             |
+| -------------- | ------------------------------------------------------ | ---------------------------------- | ----------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `service-scan` | Entry point from Welcome Screen                        | Currently `coming-soon`            | Becomes `available` once this ships | Creates/reuses a Kiosk Session (Trigger A, same as `service-print`), navigates here                                         |
+| `scan-qr-code` | QR image encoding the phone-facing flow's start URL    | Visible once the session has an id | Not interactive                     | None — scanned by the phone's own camera app, not tapped on the kiosk                                                       |
+| `scan-status`  | The right-half status area (see "Screen states" below) | Shows "Waiting" state              | Not interactive                     | None                                                                                                                        |
+| `scan-restart` | Starts a fresh scan after a completed delivery         | Hidden except in "Delivered" state | Enabled when shown                  | Returns to "Waiting" state with a newly generated QR code                                                                   |
+| `scan-print`   | "Need a paper copy?" — prints the delivered scan       | Hidden except in "Delivered" state | Disabled while the copy is prepared | Opens Print Order Configuration with the scan (added 2026-10-20, see `docs/scan-upload-requirements.md`, "Printing a scan") |
 
 `navigation-back`, `navigation-home`, `end-session`, and the footer/Cart/Account/Language controls are the same shared elements every screen already has (`docs/design/design-system.md`, Section 2) — not re-specified here.
 

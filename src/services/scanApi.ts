@@ -29,6 +29,17 @@ export async function createScanSession(sessionId: string): Promise<{ id: string
   return response.json();
 }
 
+/** "Print this scan" — a copy of the delivered PDF joins the Kiosk
+ * Session's files (server/scanStore.ts, addScanForPrinting). */
+export async function printScan(id: string): Promise<{ fileId: string }> {
+  const response = await fetch(`${API_BASE_URL}/api/scan-sessions/${id}/print`, {
+    method: 'POST',
+    headers: standHeaders(),
+  });
+  if (!response.ok) throw new Error(`Print scan failed: HTTP ${response.status}`);
+  return response.json();
+}
+
 export async function getScanSession(id: string): Promise<ScanSession> {
   const response = await fetch(`${API_BASE_URL}/api/scan-sessions/${id}`, {
     headers: standHeaders(),

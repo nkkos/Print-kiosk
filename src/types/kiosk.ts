@@ -124,6 +124,9 @@ export interface ReceivedFile {
   id: string;
   fileName: string;
   status: 'scanning' | 'converting' | 'ready' | 'rejected' | 'scan-unavailable';
+  /** Who put it there (server/uploadStore.ts, listFiles) — the customer, or
+   * Copy / "print this scan", whose PDFs join the session's files too. */
+  origin?: 'upload' | 'copy' | 'scan';
 }
 
 /**

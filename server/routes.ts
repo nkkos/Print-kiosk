@@ -77,6 +77,7 @@ import {
   addPage,
   listPages,
   getProcessedPagePath,
+  addScanForPrinting,
   getScanSession,
   scansDir,
   combineToPdf,
@@ -2063,6 +2064,18 @@ router.get('/api/scan-sessions/:id/download', (req, res) => {
     return;
   }
   res.download(path, 'scan.pdf');
+});
+
+// "Print this scan" on the kiosk's Scan screen (docs/scan-upload-requirements.md,
+// "Printing a scan") — a copy of the delivered PDF joins the session's
+// files, then follows the normal print path (configure, pay, print).
+router.post('/api/scan-sessions/:id/print', requireStand, async (req, res) => {
+  const result = await addScanForPrinting(paramString(req.params.id));
+  if (!result) {
+    res.status(409).json({ error: 'The scan has not been delivered yet' });
+    return;
+  }
+  res.json(result);
 });
 
 // Copy (docs/copy-upload-requirements.md, docs/screens/copy-spec.md) —

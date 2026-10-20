@@ -1,0 +1,55 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-m);
+  padding: var(--space-xl) var(--space-l);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-large);
+  background: var(--color-surface);
+  box-shadow: var(--elevation-raised);
+  text-align: center;
+}
+
+.qrBox {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20rem;
+  height: 20rem;
+  padding: var(--space-m);
+  box-sizing: border-box;
+  border: 3px solid var(--color-accent);
+  border-radius: var(--radius-large);
+  background: var(--color-surface);
+}
+
+.qrBox img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  image-rendering: pixelated;
+}
+
+.preparing {
+  font: var(--font-body);
+  color: var(--color-ink-soft);
+}
+
+.caption {
+  margin: 0;
+  font: var(--font-h3);
+}
+
+.note {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-s);
+  margin: 0;
+  font: var(--font-body);
+  color: var(--color-ink-soft);
+}
+
+.note svg {
+  color: var(--color-accent);
+}

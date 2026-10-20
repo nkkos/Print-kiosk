@@ -19,8 +19,8 @@ Reuses Scan's own kiosk-screen layout unchanged in structure (`docs/screens/scan
 | `service-copy`            | Entry point from Welcome Screen                           | Currently `coming-soon`            | Becomes `available` once this ships | Creates/reuses a Kiosk Session (Trigger A, same as `service-print`/`service-scan`), navigates here                                         |
 | `copy-qr-code`            | QR image encoding the phone-facing flow's start URL       | Visible once the session has an id | Not interactive                     | None — scanned by the phone's own camera app                                                                                               |
 | `copy-status`             | The right-half status area (see "Screen states" below)    | Shows "Waiting" state              | Not interactive                     | None                                                                                                                                       |
-| `copy-configure-printing` | Opens Print Order Configuration for the captured document | Hidden except in "Ready" state     | Enabled when shown                  | Navigates to Print Order Configuration, pre-loaded with the real captured document                                                         |
-| `copy-another-document`   | Starts a second, independent capture                      | Hidden except in "Ready" state     | Enabled when shown                  | Returns `copy-status` to "Waiting" with a newly generated QR code (ends the previous phone-side capture, same mechanism as `scan-restart`) |
+| `copy-configure-printing` | Opens Print Order Configuration for the captured document | Hidden except in "Ready" state     | Enabled once the file is printable  | Navigates to Print Order Configuration, pre-loaded with the real captured document — also happens by itself once, see "Navigation"         |
+| `copy-another-document`   | Starts a second, independent capture                      | Shown only for a blocked copy      | Enabled when shown                  | Returns `copy-status` to "Waiting" with a newly generated QR code (ends the previous phone-side capture, same mechanism as `scan-restart`) |
 
 `navigation-back`, `navigation-home`, `end-session`, and the footer/Cart/Account/Language controls are the same shared elements every screen already has — not re-specified here.
 
@@ -28,14 +28,16 @@ Reuses Scan's own kiosk-screen layout unchanged in structure (`docs/screens/scan
 
 1. **Waiting** (default) — `copy-status` shows the idle message; no page count yet.
 2. **In progress** — at least one page has been captured on the phone; `copy-status` shows a live page count. Updated via the same 3s polling mechanism Scan already uses.
-3. **Ready** — the phone side reached "Finish"; `copy-status` shows the captured document as one item (page count included) with `copy-configure-printing` and `copy-another-document` both visible.
+3. **Ready** — the phone side reached "Finish"; `copy-status` shows the captured document (page count included) with `copy-configure-printing`. A copy the virus check blocked shows `copy-another-document` instead.
 
 ### Navigation
 
 - `service-copy` → this screen.
 - Leaving and returning preserves the same QR code and current state, same persistence rule already confirmed for Scan/QR upload — a capture in progress on the phone isn't lost by navigating away from this screen on the kiosk.
-- `copy-configure-printing` → Print Order Configuration (real navigation, leaves this screen). Returning here afterward (via Back) still shows the same "Ready" state for the same document — tapping it again just re-opens configuration for the same real file, same as reopening any other already-uploaded file.
-- `copy-another-document` → back to "Waiting" state, new QR code.
+- **Revised 2026-10-20 (product owner):** a finished copy goes **straight to Print Order Configuration** by itself, once it's printable — so a copy can't be left behind unnoticed (previously "Copy another document" before configuring made the first copy disappear from this screen). Once it's added to the order, a new capture starts by itself: returning here ("Add another file" on the order review screen) shows "Waiting" with a new QR code — that _is_ "copy another document". Each copy is named "Copy 1.pdf", "Copy 2.pdf", … in the screen's language.
+- `copy-configure-printing` → Print Order Configuration. Returning here via Back (without adding to the order) shows the same "Ready" state; tapping it re-opens configuration for the same file.
+- `copy-another-document` (blocked copy only) → back to "Waiting" state, new QR code.
+- Copies don't appear in QR upload's received-files list, although they're stored among the session's files (`server/uploadStore.ts`, `origin`).
 
 ---
 

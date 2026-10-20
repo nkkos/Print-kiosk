@@ -67,3 +67,5 @@ Defaults used until decided: working name, operator hidden, line icons only, ste
 | Payment + receipt choice           | Approved (2026-10-20) |
 | Printing / pick-up / refund        | Approved (2026-10-20) |
 | Thank you (finalising session)     | Approved (2026-10-20) |
+| Scan (+ "print the scan")          | Approved (2026-10-20) |
+| Copy (straight to print settings)  | Approved (2026-10-20) |

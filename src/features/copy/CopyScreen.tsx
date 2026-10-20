@@ -1,7 +1,16 @@
-import { useEffect, useState } from 'react';
-import QRCode from 'qrcode';
+import {
+  Camera,
+  CircleCheck,
+  Images,
+  LoaderCircle,
+  RotateCcw,
+  Settings2,
+  ShieldAlert,
+} from 'lucide-react';
 import { KioskScreenLayout } from '../../layouts/KioskScreenLayout/KioskScreenLayout';
 import { Button } from '../../components/Button/Button';
+import { QrCard } from '../../components/QrCard/QrCard';
+import { StepList } from '../../components/StepList/StepList';
 import { useTranslation } from '../../i18n';
 import type { Language } from '../../i18n';
 import type { EndSessionReason, PrintOrder, ReceivedFile } from '../../types/kiosk';
@@ -9,9 +18,12 @@ import type { CopySession } from '../../services/copyApi';
 import styles from './CopyScreen.module.css';
 
 // Copy screen — see docs/copy-upload-requirements.md, docs/screens/copy-spec.md.
-// Reuses Scan's own kiosk-screen layout unchanged in structure, but the
-// right half ends in a "Ready" state offering configure-printing/another-
-// document instead of a delivery confirmation — nothing is ever delivered
+// Same layout as Scan (2026-10 redesign): what to do on the left, the QR code
+// on the right. A finished copy goes straight to print settings (App.tsx;
+// product owner, 2026-10-20), and once it's in the order the next capture
+// starts by itself — so "Ready" here only shows after Back from the settings,
+// with configure-printing; another-document is left for a blocked copy. No
+// delivery confirmation — nothing is ever delivered
 // from this screen itself, the captured document just becomes a normal
 // uploaded file (server/copyStore.ts) handed to Print Order Configuration.
 interface CopyScreenProps {
@@ -70,18 +82,6 @@ export function CopyScreen({
   onLanguageChange,
 }: CopyScreenProps) {
   const t = useTranslation();
-  const [qrImageUrl, setQrImageUrl] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!copyQrUrl) return;
-    let cancelled = false;
-    QRCode.toDataURL(copyQrUrl).then((dataUrl) => {
-      if (!cancelled) setQrImageUrl(dataUrl);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [copyQrUrl]);
 
   const hasResultFile = copySession?.resultFileId != null;
   // Reuses the exact same per-status wording QR upload's own received-files
@@ -97,13 +97,7 @@ export function CopyScreen({
         : resultFileStatus === 'converting'
           ? t.common.preparingForPrint
           : t.common.scanningForViruses;
-  const statusMessage = hasResultFile
-    ? isPrintable
-      ? t.copy.readyMessage(copySession?.resultPageCount ?? 0)
-      : resultStatusMessage
-    : inProgressPageCount > 0
-      ? t.copy.pageCountMessage(inProgressPageCount)
-      : t.copy.waitingMessage;
+  const isBlocked = resultFileStatus === 'rejected' || resultFileStatus === 'scan-unavailable';
 
   return (
     <KioskScreenLayout
@@ -123,41 +117,113 @@ export function CopyScreen({
       onGoToPaidOrders={onGoToPaidOrders}
       onLanguageChange={onLanguageChange}
     >
+      <div className={styles.intro}>
+        <h1 className={styles.title}>{t.copy.title}</h1>
+        <p className={styles.subtitle}>{t.copy.subtitle}</p>
+      </div>
+
       <div className={styles.body}>
-        <div className={styles.qrHalf}>
-          <div className={styles.qrBox} id="copy-qr-code">
-            {qrImageUrl ? <img src={qrImageUrl} alt={t.copy.qrImageAlt} /> : t.copy.preparingQrCode}
-          </div>
-          <p className={styles.qrHint}>{t.copy.qrHint}</p>
-          {/* Dev-only convenience, same as ScanScreen's own — not part of
-              the confirmed screen design. */}
-          {copyQrUrl && (
-            <p className={styles.qrHint}>
-              <a href={copyQrUrl} target="_blank" rel="noreferrer">
-                {copyQrUrl}
-              </a>
-            </p>
+        <div className={styles.main} id="copy-status">
+          {hasResultFile ? (
+            <div className={styles.statusCard}>
+              {isPrintable ? (
+                <>
+                  <span className={`${styles.badge} ${styles.badgeSuccess}`} aria-hidden="true">
+                    <CircleCheck size={72} strokeWidth={1.5} />
+                  </span>
+                  <h2 className={styles.statusTitle} role="status">
+                    {t.copy.readyMessage(copySession?.resultPageCount ?? 0)}
+                  </h2>
+                </>
+              ) : isBlocked ? (
+                <>
+                  <span className={`${styles.badge} ${styles.badgeWarning}`} aria-hidden="true">
+                    <ShieldAlert size={72} strokeWidth={1.5} />
+                  </span>
+                  <h2 className={styles.statusTitle} role="status">
+                    {resultStatusMessage}
+                  </h2>
+                </>
+              ) : (
+                <>
+                  <span className={`${styles.badge} ${styles.badgeAccent}`} aria-hidden="true">
+                    <LoaderCircle className={styles.spin} size={72} strokeWidth={1.5} />
+                  </span>
+                  <h2 className={styles.statusTitle}>{t.copy.preparingTitle}</h2>
+                  <p className={styles.statusText} role="status">
+                    {resultStatusMessage}
+                  </p>
+                </>
+              )}
+              <div className={styles.actions}>
+                {isBlocked ? (
+                  <Button
+                    id="copy-another-document"
+                    icon={<RotateCcw size={24} />}
+                    label={t.copy.anotherDocument}
+                    onClick={onAnotherDocument}
+                  />
+                ) : (
+                  <Button
+                    id="copy-configure-printing"
+                    variant="primary"
+                    icon={<Settings2 size={24} />}
+                    label={t.copy.configurePrinting}
+                    onClick={onConfigurePrinting}
+                    disabled={!isPrintable}
+                  />
+                )}
+              </div>
+            </div>
+          ) : inProgressPageCount > 0 ? (
+            <div className={styles.statusCard}>
+              <span className={`${styles.badge} ${styles.badgeAccent}`} aria-hidden="true">
+                <Images size={72} strokeWidth={1.5} />
+              </span>
+              <h2 className={styles.statusTitle} role="status">
+                {t.copy.pageCountMessage(inProgressPageCount)}
+              </h2>
+              <p className={styles.statusText}>{t.copy.progressHint}</p>
+            </div>
+          ) : (
+            <StepList
+              id="copy-steps"
+              steps={[
+                {
+                  icon: <Camera size={48} strokeWidth={1.5} />,
+                  title: t.qrUpload.step1Title,
+                  text: t.qrUpload.step1Text,
+                },
+                {
+                  icon: <Images size={48} strokeWidth={1.5} />,
+                  title: t.copy.step2Title,
+                  text: t.copy.step2Text,
+                },
+                {
+                  icon: <Settings2 size={48} strokeWidth={1.5} />,
+                  title: t.copy.step3Title,
+                  text: t.copy.step3Text,
+                },
+              ]}
+            />
           )}
         </div>
 
-        <div className={styles.statusHalf} id="copy-status">
-          <p className={styles.statusMessage}>{statusMessage}</p>
-          {hasResultFile && (
-            <>
-              <Button
-                id="copy-configure-printing"
-                label={t.copy.configurePrinting}
-                onClick={onConfigurePrinting}
-                disabled={!isPrintable}
-              />
-              <Button
-                id="copy-another-document"
-                label={t.copy.anotherDocument}
-                onClick={onAnotherDocument}
-              />
-            </>
+        <QrCard
+          id="copy-qr-code"
+          url={copyQrUrl}
+          alt={t.copy.qrImageAlt}
+          preparingLabel={t.copy.preparingQrCode}
+          caption={t.qrUpload.qrCaption}
+          note={t.qrUpload.sessionOnly}
+        >
+          {!hasResultFile && inProgressPageCount === 0 && (
+            <p className={styles.waiting} role="status">
+              <LoaderCircle className={styles.spin} size={28} aria-hidden="true" />
+              {t.copy.waitingShort}
+            </p>
           )}
-        </div>
+        </QrCard>
       </div>
     </KioskScreenLayout>
   );
