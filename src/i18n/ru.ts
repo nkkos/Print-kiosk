@@ -4,6 +4,12 @@ import type { Translations } from './en';
 // not yet reviewed by a native speaker).
 export const ru: Translations = {
   common: {
+    keyboardNext: 'Далее',
+    keyboardDone: 'Готово',
+    keyboardSpace: 'Пробел',
+    keyboardBackspace: 'Стереть',
+    keyboardShift: 'Заглавные буквы',
+    keyboardHide: 'Скрыть клавиатуру',
     stepFiles: 'Файлы',
     stepSettings: 'Настройки',
     stepReview: 'Проверка',
@@ -145,6 +151,10 @@ export const ru: Translations = {
     preparingQrCode: 'Подготовка QR-кода...',
   },
   pavilionHours: {
+    closedTitle: 'Павильон закрыт',
+    opensAt: (time: string) => `Откроемся в ${time}`,
+    closedSoon: 'Скоро снова откроемся',
+    noNewOrdersTitle: 'Скоро закрываемся',
     closingSoon: (time: string) =>
       `Павильон закрывается в ${time}. Пожалуйста, завершите заказ в ближайшие минуты.`,
     noNewOrders: (time: string) =>
@@ -393,6 +403,7 @@ export const ru: Translations = {
     message: 'Ваши документы напечатаны.',
   },
   endingSession: {
-    message: 'Завершение сессии...',
+    message: 'Удаляем ваши данные…',
+    hint: 'Это займёт пару секунд',
   },
 };

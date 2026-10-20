@@ -19,7 +19,8 @@ export function Modal({ onClose, size = 'default', children }: ModalProps) {
   const t = useTranslation();
   return (
     <div className={styles.overlay}>
-      <div className={styles.content} data-size={size}>
+      {/* data-osk-scope: the on-screen keyboard's "Next" stays inside the popup. */}
+      <div className={styles.content} data-size={size} data-osk-scope>
         <button
           type="button"
           id="modal-close"

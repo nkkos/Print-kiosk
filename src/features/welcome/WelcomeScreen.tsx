@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Copy, FileScan, Printer } from 'lucide-react';
+import { Clock, Copy, FileScan, Moon, Printer } from 'lucide-react';
 import { KioskScreenLayout } from '../../layouts/KioskScreenLayout/KioskScreenLayout';
 import { ServiceCard } from '../../components/ServiceCard/ServiceCard';
 import { Button } from '../../components/Button/Button';
@@ -9,7 +9,10 @@ import { DevOnly } from '../../components/DevOnly/DevOnly';
 import { useTranslation } from '../../i18n';
 import type { Language } from '../../i18n';
 import type { EndSessionReason, PrintOrder } from '../../types/kiosk';
-import { usePavilionHours } from '../../layouts/KioskScreenLayout/usePavilionHours';
+import {
+  formatPavilionTime,
+  usePavilionHours,
+} from '../../layouts/KioskScreenLayout/usePavilionHours';
 import styles from './WelcomeScreen.module.css';
 
 // Placeholder composition only — see docs/screens/welcome-screen-spec.md,
@@ -121,42 +124,76 @@ export function WelcomeScreen({
       onDismissPaidOrdersPrompt={onDismissPaidOrdersPrompt}
       onGoToPaidOrders={onGoToPaidOrders}
       onLanguageChange={onLanguageChange}
+      hoursBannerHidden={ordersClosed}
     >
-      <div className={styles.intro}>
-        <h1 className={styles.title}>{t.welcome.title}</h1>
-        <p className={styles.subtitle}>{t.welcome.subtitle}</p>
-      </div>
+      {!ordersClosed && (
+        <div className={styles.intro}>
+          <h1 className={styles.title}>{t.welcome.title}</h1>
+          <p className={styles.subtitle}>{t.welcome.subtitle}</p>
+        </div>
+      )}
 
-      {/* Print / Copy / Scan, in the order a walk-in customer most often
-          wants them (docs/design/kiosk-redesign-plan.md). */}
-      <div className={styles.services}>
-        <ServiceCard
-          serviceId="print"
-          title={t.welcome.print}
-          hint={t.welcome.printHint}
-          icon={<Printer size={64} strokeWidth={1.5} />}
-          status={isHardwareUnavailable || ordersClosed ? 'unavailable' : 'available'}
-          onActivate={onPrintActivate}
-        />
-        <ServiceCard
-          serviceId="copy"
-          title={t.welcome.copy}
-          hint={t.welcome.copyHint}
-          icon={<Copy size={64} strokeWidth={1.5} />}
-          status={ordersClosed ? 'unavailable' : 'available'}
-          onActivate={onCopyActivate}
-        />
-        <ServiceCard
-          serviceId="scan"
-          title={t.welcome.scan}
-          hint={t.welcome.scanHint}
-          icon={<FileScan size={64} strokeWidth={1.5} />}
-          // Scan costs nothing (docs: pricing — only Print and Copy are paid).
-          tag={t.welcome.free}
-          status={ordersClosed ? 'unavailable' : 'available'}
-          onActivate={onScanActivate}
-        />
-      </div>
+      {/* Closed, or about to close (docs/pavilion-security-requirements.md,
+          "Closing sequence"): one calm message in place of the services,
+          instead of three greyed-out cards and a strip saying why. */}
+      {ordersClosed ? (
+        <div className={styles.closed} id="pavilion-closed" role="status">
+          <span className={styles.closedBadge} aria-hidden="true">
+            {pavilionHours.kind === 'closed' ? (
+              <Moon size={72} strokeWidth={1.5} />
+            ) : (
+              <Clock size={72} strokeWidth={1.5} />
+            )}
+          </span>
+          <h2 className={styles.closedTitle}>
+            {pavilionHours.kind === 'closed'
+              ? t.pavilionHours.closedTitle
+              : t.pavilionHours.noNewOrdersTitle}
+          </h2>
+          <p className={styles.closedText}>
+            {pavilionHours.kind === 'closed'
+              ? pavilionHours.opensAt
+                ? t.pavilionHours.opensAt(formatPavilionTime(pavilionHours.opensAt))
+                : t.pavilionHours.closedSoon
+              : pavilionHours.kind === 'no-new-orders'
+                ? t.pavilionHours.noNewOrders(formatPavilionTime(pavilionHours.closesAt))
+                : null}
+          </p>
+        </div>
+      ) : (
+        <>
+          {/* Print / Copy / Scan, in the order a walk-in customer most often
+            wants them (docs/design/kiosk-redesign-plan.md). */}
+          <div className={styles.services}>
+            <ServiceCard
+              serviceId="print"
+              title={t.welcome.print}
+              hint={t.welcome.printHint}
+              icon={<Printer size={64} strokeWidth={1.5} />}
+              status={isHardwareUnavailable || ordersClosed ? 'unavailable' : 'available'}
+              onActivate={onPrintActivate}
+            />
+            <ServiceCard
+              serviceId="copy"
+              title={t.welcome.copy}
+              hint={t.welcome.copyHint}
+              icon={<Copy size={64} strokeWidth={1.5} />}
+              status={ordersClosed ? 'unavailable' : 'available'}
+              onActivate={onCopyActivate}
+            />
+            <ServiceCard
+              serviceId="scan"
+              title={t.welcome.scan}
+              hint={t.welcome.scanHint}
+              icon={<FileScan size={64} strokeWidth={1.5} />}
+              // Scan costs nothing (docs: pricing — only Print and Copy are paid).
+              tag={t.welcome.free}
+              status={ordersClosed ? 'unavailable' : 'available'}
+              onActivate={onScanActivate}
+            />
+          </div>
+        </>
+      )}
 
       <DevOnly>
         {isHardwareUnavailable ? (

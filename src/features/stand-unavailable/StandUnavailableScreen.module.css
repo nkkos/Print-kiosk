@@ -1,24 +1,10 @@
-/* TODO: exact colors/typography values pending Design System sign-off
-   (docs/design/design-system.md). */
-
-.root {
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-m);
-  padding: var(--space-l);
-  text-align: center;
-}
-
-.title,
-.message {
-  margin: 0;
-}
-
+/* The line for staff — quiet, so a customer reads the sentence above it. */
 .staffHint {
-  margin: 0;
+  max-width: 40rem;
+  margin: var(--space-l) 0 0;
+  padding: var(--space-s) var(--space-m);
+  border: 1px dashed var(--color-border-strong);
+  border-radius: var(--radius-medium);
+  font: var(--font-caption);
   color: var(--color-ink-soft);
-  font-size: 0.85em;
 }

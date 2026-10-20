@@ -11,6 +11,12 @@
   gap: var(--space-l);
 }
 
+/* Room for the on-screen keyboard, so the field being typed into isn't
+   hidden behind it (src/components/OnScreenKeyboard/). */
+.root[data-keyboard] {
+  padding-bottom: calc(var(--osk-height) + var(--space-m));
+}
+
 .header {
   display: flex;
   align-items: center;
@@ -122,12 +128,20 @@
 
 /* Opening-hours strip (usePavilionHours.ts). */
 .hoursBanner {
-  padding: var(--space-m);
-  border: 1px solid var(--color-warning);
+  display: flex;
+  align-items: center;
+  gap: var(--space-m);
+  padding: var(--space-m) var(--space-l);
   border-radius: var(--radius-medium);
   background: var(--color-warning-soft);
   color: var(--color-ink);
-  font-weight: 600;
+  font: var(--font-body);
+  font-weight: 700;
+}
+
+.hoursBanner svg {
+  flex: none;
+  color: var(--color-warning);
 }
 
 .hoursBanner[data-kind='closed'] {

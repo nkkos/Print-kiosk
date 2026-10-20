@@ -1,3 +1,5 @@
+import { MonitorX } from 'lucide-react';
+import { SystemScreen } from '../../components/SystemScreen/SystemScreen';
 import { useTranslation } from '../../i18n';
 import styles from './StandUnavailableScreen.module.css';
 
@@ -9,10 +11,14 @@ import styles from './StandUnavailableScreen.module.css';
 export function StandUnavailableScreen() {
   const t = useTranslation();
   return (
-    <div className={styles.root} id="stand-unavailable">
-      <h1 className={styles.title}>{t.standUnavailable.title}</h1>
-      <p className={styles.message}>{t.standUnavailable.message}</p>
+    <SystemScreen
+      id="stand-unavailable"
+      tone="warning"
+      icon={<MonitorX size={80} strokeWidth={1.5} />}
+      title={t.standUnavailable.title}
+      text={t.standUnavailable.message}
+    >
       <p className={styles.staffHint}>{t.standUnavailable.staffHint}</p>
-    </div>
+    </SystemScreen>
   );
 }

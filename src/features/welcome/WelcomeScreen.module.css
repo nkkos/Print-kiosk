@@ -23,6 +23,45 @@
   color: var(--color-ink-soft);
 }
 
+.closed {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-m);
+  width: 100%;
+  max-width: 56rem;
+  margin: auto;
+  padding: var(--space-xl);
+  box-sizing: border-box;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-large);
+  background: var(--color-surface);
+  box-shadow: var(--elevation-raised);
+  text-align: center;
+}
+
+.closedBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 10rem;
+  height: 10rem;
+  border-radius: var(--radius-pill);
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+}
+
+.closedTitle {
+  margin: 0;
+  font: var(--font-h1);
+}
+
+.closedText {
+  margin: 0;
+  font: var(--font-lead);
+  color: var(--color-ink-soft);
+}
+
 .services {
   display: flex;
   align-items: stretch;

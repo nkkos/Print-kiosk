@@ -75,6 +75,9 @@
   /* Touch targets — every tappable thing is at least this tall. */
   --touch-target: 4rem;
 
+  /* The on-screen keyboard's height (src/components/OnScreenKeyboard/). */
+  --osk-height: 24rem;
+
   /* Buttons (Section 9) — color assignments for the confirmed semantic
      variants. The shared `Button` component itself doesn't take a variant
      prop yet (no confirmed use case needs it — see its own TODO comment),

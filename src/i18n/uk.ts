@@ -4,6 +4,12 @@ import type { Translations } from './en';
 // not yet reviewed by a native speaker).
 export const uk: Translations = {
   common: {
+    keyboardNext: 'Далі',
+    keyboardDone: 'Готово',
+    keyboardSpace: 'Пробіл',
+    keyboardBackspace: 'Стерти',
+    keyboardShift: 'Великі літери',
+    keyboardHide: 'Сховати клавіатуру',
     stepFiles: 'Файли',
     stepSettings: 'Налаштування',
     stepReview: 'Перевірка',
@@ -146,6 +152,10 @@ export const uk: Translations = {
     preparingQrCode: 'Підготовка QR-коду...',
   },
   pavilionHours: {
+    closedTitle: 'Павільйон зачинено',
+    opensAt: (time: string) => `Відчинимося о ${time}`,
+    closedSoon: 'Скоро знову відчинимося',
+    noNewOrdersTitle: 'Скоро зачиняємося',
     closingSoon: (time: string) =>
       `Павільйон зачиняється о ${time}. Будь ласка, завершіть замовлення найближчими хвилинами.`,
     noNewOrders: (time: string) =>
@@ -394,6 +404,7 @@ export const uk: Translations = {
     message: 'Ваші документи надруковано.',
   },
   endingSession: {
-    message: 'Завершення сесії...',
+    message: 'Видаляємо ваші дані…',
+    hint: 'Це займе кілька секунд',
   },
 };

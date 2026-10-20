@@ -4,6 +4,12 @@ import type { Translations } from './en';
 // not yet reviewed by a native speaker).
 export const de: Translations = {
   common: {
+    keyboardNext: 'Weiter',
+    keyboardDone: 'Fertig',
+    keyboardSpace: 'Leerzeichen',
+    keyboardBackspace: 'Löschen',
+    keyboardShift: 'Großbuchstaben',
+    keyboardHide: 'Tastatur ausblenden',
     stepFiles: 'Dateien',
     stepSettings: 'Einstellungen',
     stepReview: 'Prüfen',
@@ -151,6 +157,10 @@ export const de: Translations = {
     preparingQrCode: 'QR-Code wird vorbereitet...',
   },
   pavilionHours: {
+    closedTitle: 'Der Pavillon ist geschlossen',
+    opensAt: (time: string) => `Wir öffnen um ${time}`,
+    closedSoon: 'Wir öffnen bald wieder',
+    noNewOrdersTitle: 'Wir schließen gleich',
     closingSoon: (time: string) =>
       `Der Pavillon schließt um ${time}. Bitte schließen Sie Ihre Bestellung in den nächsten Minuten ab.`,
     noNewOrders: (time: string) =>
@@ -402,6 +412,7 @@ export const de: Translations = {
     message: 'Ihre Dokumente wurden gedruckt.',
   },
   endingSession: {
-    message: 'Sitzung wird beendet...',
+    message: 'Ihre Daten werden gelöscht…',
+    hint: 'Das dauert nur ein paar Sekunden',
   },
 };

@@ -1,0 +1,55 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  box-sizing: border-box;
+  padding: var(--space-l) var(--space-xl);
+}
+
+.brand {
+  display: flex;
+}
+
+.body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-m);
+  padding-bottom: 6rem;
+  text-align: center;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 11rem;
+  height: 11rem;
+  margin-bottom: var(--space-s);
+  border-radius: var(--radius-pill);
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+}
+
+.badge[data-tone='warning'] {
+  background: var(--color-warning-soft);
+  color: var(--color-warning);
+}
+
+.title {
+  max-width: 50rem;
+  margin: 0;
+  font: var(--font-display);
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+
+.text {
+  max-width: 44rem;
+  margin: 0;
+  font: var(--font-lead);
+  color: var(--color-ink-soft);
+  text-wrap: balance;
+}

@@ -4,6 +4,12 @@ import type { Translations } from './en';
 // not yet reviewed by a native speaker).
 export const sk: Translations = {
   common: {
+    keyboardNext: 'Ďalej',
+    keyboardDone: 'Hotovo',
+    keyboardSpace: 'Medzera',
+    keyboardBackspace: 'Zmazať',
+    keyboardShift: 'Veľké písmená',
+    keyboardHide: 'Skryť klávesnicu',
     stepFiles: 'Súbory',
     stepSettings: 'Nastavenia',
     stepReview: 'Kontrola',
@@ -145,6 +151,10 @@ export const sk: Translations = {
     preparingQrCode: 'Príprava QR kódu...',
   },
   pavilionHours: {
+    closedTitle: 'Pavilón je zatvorený',
+    opensAt: (time: string) => `Otvárame o ${time}`,
+    closedSoon: 'Čoskoro opäť otvoríme',
+    noNewOrdersTitle: 'Čoskoro zatvárame',
     closingSoon: (time: string) =>
       `Pavilón sa zatvára o ${time}. Dokončite, prosím, objednávku v najbližších minútach.`,
     noNewOrders: (time: string) => `Pavilón sa zatvára o ${time}. Nové objednávky už neprijímame.`,
@@ -393,6 +403,7 @@ export const sk: Translations = {
     message: 'Vaše dokumenty boli vytlačené.',
   },
   endingSession: {
-    message: 'Ukončuje sa relácia...',
+    message: 'Mažeme vaše údaje…',
+    hint: 'Potrvá to pár sekúnd',
   },
 };

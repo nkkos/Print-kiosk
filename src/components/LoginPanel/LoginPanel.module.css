@@ -66,6 +66,12 @@
   font: var(--font-body);
 }
 
+/* The field's own frame shows focus (:focus-within above) — beats the
+   global input focus ring in index.css. */
+.field input[type]:focus-visible {
+  outline: none;
+}
+
 .field input::placeholder {
   color: var(--color-ink-soft);
 }

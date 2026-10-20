@@ -7,6 +7,12 @@
 // object access (`t.welcome.print`, not `t('welcome.print')`).
 export const en = {
   common: {
+    keyboardNext: 'Next',
+    keyboardDone: 'Done',
+    keyboardSpace: 'Space',
+    keyboardBackspace: 'Delete',
+    keyboardShift: 'Capital letters',
+    keyboardHide: 'Hide keyboard',
     stepFiles: 'Files',
     stepSettings: 'Settings',
     stepReview: 'Review',
@@ -150,6 +156,10 @@ export const en = {
   // Opening hours on the stands (docs/pavilion-security-requirements.md,
   // "Closing sequence").
   pavilionHours: {
+    closedTitle: 'The pavilion is closed',
+    opensAt: (time: string) => `We open at ${time}`,
+    closedSoon: 'We will open again soon',
+    noNewOrdersTitle: 'Closing soon',
     closingSoon: (time: string) =>
       `The pavilion closes at ${time}. Please finish your order in the next few minutes.`,
     noNewOrders: (time: string) =>
@@ -396,7 +406,8 @@ export const en = {
     message: 'Your documents have been printed.',
   },
   endingSession: {
-    message: 'Ending session...',
+    message: 'Deleting your data…',
+    hint: 'This takes a couple of seconds',
   },
 };
 

@@ -1,6 +1,6 @@
-import { useContext, useEffect, useState } from 'react';
+import { useCallback, useContext, useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
-import { ArrowLeft, House, LogOut, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, Clock, House, LogOut, ShieldCheck, WifiOff } from 'lucide-react';
 import { LanguageContext } from '../../i18n/context';
 import { HelpPanel, LanguagePanel, PrivacyPanel, TariffsPanel } from './InfoPanels';
 import { BrandMark } from '../../components/BrandMark/BrandMark';
@@ -9,6 +9,7 @@ import { Button } from '../../components/Button/Button';
 import { PersistentActionBar } from '../../components/PersistentActionBar/PersistentActionBar';
 import { Modal } from '../../components/Modal/Modal';
 import { Notification } from '../../components/Notification/Notification';
+import { OnScreenKeyboard } from '../../components/OnScreenKeyboard/OnScreenKeyboard';
 import { LoginPanel } from '../../components/LoginPanel/LoginPanel';
 import { useRegisterQrImageUrl } from '../../components/LoginPanel/useRegisterQrImageUrl';
 import { useTranslation } from '../../i18n';
@@ -106,6 +107,8 @@ interface KioskScreenLayoutProps {
    * shared shell. Ownership of the current language stays in App.tsx (reset
    * every session, same as accountId); this is just the write side. */
   onLanguageChange: (language: Language) => void;
+  /** The screen says it itself, bigger — Welcome while closed (batch 7). */
+  hoursBannerHidden?: boolean;
   children: ReactNode;
 }
 
@@ -127,6 +130,7 @@ export function KioskScreenLayout({
   onDismissPaidOrdersPrompt,
   onGoToPaidOrders,
   onLanguageChange,
+  hoursBannerHidden = false,
   children,
 }: KioskScreenLayoutProps) {
   const t = useTranslation();
@@ -141,6 +145,8 @@ export function KioskScreenLayout({
   const language = useContext(LanguageContext);
   // When the inactivity warning will end the session — drives its countdown.
   const [idleEndsAt, setIdleEndsAt] = useState<number | null>(null);
+  const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
+  const handleKeyboardVisible = useCallback((open: boolean) => setIsKeyboardOpen(open), []);
   const [now, setNow] = useState(() => Date.now());
   const registerQrImageUrl = useRegisterQrImageUrl();
   const pavilionHours = usePavilionHours();
@@ -263,7 +269,7 @@ export function KioskScreenLayout({
   }
 
   return (
-    <div className={styles.root}>
+    <div className={styles.root} data-keyboard={isKeyboardOpen || undefined}>
       <header className={styles.header}>
         <BrandMark />
         <div className={styles.headerActions}>
@@ -316,13 +322,14 @@ export function KioskScreenLayout({
       {/* Opening hours (docs/pavilion-security-requirements.md, "Closing
           sequence") — a strip, not a popup: it must stay readable while the
           customer keeps working. */}
-      {pavilionHoursMessage && (
+      {pavilionHoursMessage && !hoursBannerHidden && (
         <div
           id="pavilion-hours-banner"
           className={styles.hoursBanner}
           data-kind={pavilionHours.kind}
           role="status"
         >
+          <Clock size={28} strokeWidth={2} aria-hidden="true" />
           {pavilionHoursMessage}
         </div>
       )}
@@ -381,9 +388,11 @@ export function KioskScreenLayout({
         {isConnectionNotificationVisible && (
           <Modal onClose={() => setIsConnectionNotificationVisible(false)}>
             <Notification
+              id="connection-lost"
               title={t.kioskLayout.connectionLostTitle}
               message={t.kioskLayout.connectionLostMessage}
               variant="warning"
+              badge={<WifiOff size={52} strokeWidth={1.75} />}
             />
           </Modal>
         )}
@@ -462,6 +471,8 @@ export function KioskScreenLayout({
           </Modal>
         )}
       </main>
+
+      <OnScreenKeyboard onVisibleChange={handleKeyboardVisible} />
 
       <footer className={styles.footer}>
         <PersistentActionBar
