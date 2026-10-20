@@ -107,6 +107,7 @@ import {
   MAX_FILE_SIZE_MB,
   hasAcceptedExtension,
   decodeOriginalName,
+  diskFileName,
 } from './fileValidation.js';
 import {
   ACCOUNT_FILE_ACCEPTED_EXTENSIONS,
@@ -181,14 +182,14 @@ const upload = multer({
       callback(null, sessionDir);
     },
     filename: (_req, file, callback) => {
-      callback(null, `${randomUUID()}-${file.originalname}`);
+      callback(null, diskFileName(file.originalname));
     },
   }),
   limits: { fileSize: MAX_FILE_SIZE_BYTES },
   fileFilter: (_req, file, callback) => {
-    // Fixed up front, once — every later use of file.originalname (disk
-    // filename below, the name stored/displayed via addFile) reads from
-    // this same mutated object, so it only needs doing here.
+    // Fixed up front, once — every later use of file.originalname (the name
+    // stored/displayed via addFile) reads from this same mutated object, so
+    // it only needs doing here. It never reaches the disk path (diskFileName).
     file.originalname = decodeOriginalName(file.originalname);
     if (hasAcceptedExtension(file.originalname)) {
       callback(null, true);
@@ -417,7 +418,7 @@ router.post(
     for (const attachment of parsed.attachments) {
       const fileName = decodeOriginalName(attachment.filename ?? 'attachment');
       if (!hasAcceptedExtension(fileName) || attachment.size > MAX_FILE_SIZE_BYTES) continue;
-      const filePath = join(sessionDir, `${randomUUID()}-${fileName}`);
+      const filePath = join(sessionDir, diskFileName(fileName));
       await writeFile(filePath, attachment.content);
       attachments.push({ fileName, filePath });
     }
@@ -715,7 +716,7 @@ const accountUpload = multer({
       callback(null, dir);
     },
     filename: (_req, file, callback) => {
-      callback(null, `${randomUUID()}-${file.originalname}`);
+      callback(null, diskFileName(file.originalname));
     },
   }),
   limits: { fileSize: MAX_FILE_SIZE_BYTES },
