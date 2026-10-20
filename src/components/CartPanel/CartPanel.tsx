@@ -11,15 +11,12 @@ import styles from './CartPanel.module.css';
 // Cart") and docs/cart-requirements.md (quantity, selection, removal): the
 // orders on the left, the total and what to do next on the right. Shown on
 // the order review screen since the 2026-10 redesign (it used to be a
-// popup). Interactive controls (tick, quantity stepper, remove, "Proceed to
-// payment") only appear when their corresponding callback is supplied —
-// omit all three for a read-only summary (used by Payment Status, which
-// shows an already-committed batch that should not be re-editable there).
+// popup).
 interface CartPanelProps {
   items: PrintOrder[];
-  onQuantityChange?: (id: string, quantity: number) => void;
-  onRemove?: (id: string) => void;
-  onProceedToPayment?: (selectedItems: PrintOrder[]) => void;
+  onQuantityChange: (id: string, quantity: number) => void;
+  onRemove: (id: string) => void;
+  onProceedToPayment: (selectedItems: PrintOrder[]) => void;
   // The printer can't print right now (the order review screen checks) —
   // payment is refused rather than taking money for a job that can't come out.
   printerUnavailable?: boolean;
@@ -60,8 +57,7 @@ export function CartPanel({
     return <p className={styles.empty}>{t.cart.empty}</p>;
   }
 
-  const isSelectable = Boolean(onProceedToPayment);
-  const relevantItems = isSelectable ? items.filter((item) => selectedIds.has(item.id)) : items;
+  const relevantItems = items.filter((item) => selectedIds.has(item.id));
   const total = relevantItems.reduce((sum, item) => sum + computeItemPrice(item), 0);
 
   function toggleSelected(id: string) {
@@ -80,22 +76,20 @@ export function CartPanel({
     <div className={styles.root}>
       <ul className={styles.list}>
         {items.map((item) => {
-          const selected = !isSelectable || selectedIds.has(item.id);
+          const selected = selectedIds.has(item.id);
           return (
             <li key={item.id} className={styles.item} data-selected={selected || undefined}>
-              {isSelectable && (
-                <label className={styles.tick}>
-                  <input
-                    type="checkbox"
-                    id={`cart-item-${item.id}-select`}
-                    checked={selected}
-                    onChange={() => toggleSelected(item.id)}
-                  />
-                  <span className={styles.tickBox} aria-hidden="true">
-                    {selected && <Check size={24} strokeWidth={3} />}
-                  </span>
-                </label>
-              )}
+              <label className={styles.tick}>
+                <input
+                  type="checkbox"
+                  id={`cart-item-${item.id}-select`}
+                  checked={selected}
+                  onChange={() => toggleSelected(item.id)}
+                />
+                <span className={styles.tickBox} aria-hidden="true">
+                  {selected && <Check size={24} strokeWidth={3} />}
+                </span>
+              </label>
               <span className={styles.fileIcon} aria-hidden="true">
                 <FileText size={28} />
               </span>
@@ -118,55 +112,47 @@ export function CartPanel({
                 </span>
               </div>
 
-              {onQuantityChange ? (
-                <div className={styles.stepper} aria-label={t.cart.copies}>
-                  <button
-                    type="button"
-                    id={`cart-item-${item.id}-quantity-decrement`}
-                    className={styles.stepperButton}
-                    onClick={() => onQuantityChange(item.id, item.quantity - 1)}
-                    disabled={item.quantity <= 1}
-                    aria-label="−"
-                  >
-                    <Minus size={22} />
-                  </button>
-                  <span className={styles.stepperValue}>{item.quantity}</span>
-                  <button
-                    type="button"
-                    id={`cart-item-${item.id}-quantity-increment`}
-                    className={styles.stepperButton}
-                    onClick={() => onQuantityChange(item.id, item.quantity + 1)}
-                    aria-label="+"
-                  >
-                    <Plus size={22} />
-                  </button>
-                </div>
-              ) : (
-                <span className={styles.qty}>{t.cart.qty(item.quantity)}</span>
-              )}
+              <div className={styles.stepper} aria-label={t.cart.copies}>
+                <button
+                  type="button"
+                  id={`cart-item-${item.id}-quantity-decrement`}
+                  className={styles.stepperButton}
+                  onClick={() => onQuantityChange(item.id, item.quantity - 1)}
+                  disabled={item.quantity <= 1}
+                  aria-label="−"
+                >
+                  <Minus size={22} />
+                </button>
+                <span className={styles.stepperValue}>{item.quantity}</span>
+                <button
+                  type="button"
+                  id={`cart-item-${item.id}-quantity-increment`}
+                  className={styles.stepperButton}
+                  onClick={() => onQuantityChange(item.id, item.quantity + 1)}
+                  aria-label="+"
+                >
+                  <Plus size={22} />
+                </button>
+              </div>
 
               <span className={styles.price}>{formatEuro(computeItemPrice(item))}</span>
 
-              {onRemove && (
-                <button
-                  type="button"
-                  id={`cart-item-${item.id}-remove`}
-                  className={styles.remove}
-                  onClick={() => onRemove(item.id)}
-                  aria-label={t.cart.remove}
-                >
-                  <Trash2 size={26} />
-                </button>
-              )}
+              <button
+                type="button"
+                id={`cart-item-${item.id}-remove`}
+                className={styles.remove}
+                onClick={() => onRemove(item.id)}
+                aria-label={t.cart.remove}
+              >
+                <Trash2 size={26} />
+              </button>
             </li>
           );
         })}
       </ul>
 
       <aside className={styles.summary}>
-        {isSelectable && (
-          <span className={styles.toPrint}>{t.cart.toPrint(relevantItems.length)}</span>
-        )}
+        <span className={styles.toPrint}>{t.cart.toPrint(relevantItems.length)}</span>
         <span className={styles.total}>
           {t.cart.totalLabel}{' '}
           <span className={styles.totalAmount} id="cart-total">
@@ -182,7 +168,7 @@ export function CartPanel({
           </p>
         )}
 
-        {onProceedToPayment && relevantItems.length > 0 && (
+        {relevantItems.length > 0 && (
           <>
             {printerUnavailable && (
               <p className={styles.unavailable} role="status">

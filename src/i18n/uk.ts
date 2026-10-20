@@ -276,9 +276,13 @@ export const uk: Translations = {
     pagesPerSheetLegend: 'Сторінок на аркуші',
   },
   paymentStatus: {
+    title: 'Оплата',
+    orderTitle: 'Ваше замовлення',
+    amountLabel: 'До сплати',
+    paidHint: 'Друк почнеться одразу після вибору',
+    receiptDefault: 'Якщо не вибрати за 30 с — QR-код на екрані',
     starting: 'Готуємо оплату…',
     tapCard: 'Прикладіть або вставте картку в термінал',
-    toPay: (amount: string) => `До сплати: ${amount}`,
     secondsLeft: (seconds: number) => `Залишилось: ${seconds} с`,
     declined: 'Картку відхилено. Гроші не списано.',
     cancelled: 'Оплату скасовано на терміналі. Гроші не списано.',
@@ -299,6 +303,10 @@ export const uk: Translations = {
     cancelConfirmMessage: 'Ви впевнені, що хочете скасувати це замовлення?',
   },
   printStatus: {
+    title: 'Друк',
+    binLabel: 'Комірка',
+    receiptTitle: 'Чек',
+    printingBinHint: (bin: number) => `Документи з’являться в комірці №${bin}`,
     printingMessage: 'Друк документа(ів)...',
     succeededMessage: 'Документ(и) успішно надруковано.',
     waitingForBinMessage: 'Усі комірки видачі зараз зайняті — зачекайте, будь ласка.',
@@ -326,7 +334,10 @@ export const uk: Translations = {
     receiptPaper: 'Заберіть чек із принтера чеків.',
   },
   finalisingSession: {
-    message: 'Ваші документи надруковано. Дякуємо!',
+    title: 'Дякуємо!',
+    hint: 'Коли закінчите, завершіть сеанс — ваші файли видаляться одразу.',
+    somethingElse: 'Зробити ще щось',
+    message: 'Ваші документи надруковано.',
   },
   endingSession: {
     message: 'Завершення сесії...',

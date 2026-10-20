@@ -278,9 +278,13 @@ export const en = {
     pagesPerSheetLegend: 'Pages per sheet',
   },
   paymentStatus: {
+    title: 'Payment',
+    orderTitle: 'Your order',
+    amountLabel: 'To pay',
+    paidHint: 'Printing starts as soon as you choose',
+    receiptDefault: 'No choice in 30 s — a QR code on the screen',
     starting: 'Preparing the payment…',
     tapCard: 'Tap or insert your card on the terminal',
-    toPay: (amount: string) => `To pay: ${amount}`,
     secondsLeft: (seconds: number) => `Time left: ${seconds} s`,
     declined: 'The card was declined. Nothing was charged.',
     cancelled: 'The payment was cancelled on the terminal. Nothing was charged.',
@@ -301,6 +305,10 @@ export const en = {
     cancelConfirmMessage: 'Are you sure you want to cancel this order?',
   },
   printStatus: {
+    title: 'Printing',
+    binLabel: 'Bin',
+    receiptTitle: 'Receipt',
+    printingBinHint: (bin: number) => `Your documents will come out in bin ${bin}`,
     printingMessage: 'Printing your document(s)...',
     succeededMessage: 'Your document(s) printed successfully.',
     waitingForBinMessage:
@@ -328,7 +336,10 @@ export const en = {
     receiptPaper: 'Take your receipt from the receipt printer.',
   },
   finalisingSession: {
-    message: 'Your documents have been printed. Thank you!',
+    title: 'Thank you!',
+    hint: 'Finish the session when you are done — your files are deleted straight away.',
+    somethingElse: 'Do something else',
+    message: 'Your documents have been printed.',
   },
   endingSession: {
     message: 'Ending session...',

@@ -1,33 +1,277 @@
-/* TODO: exact colors/typography values pending Design System sign-off
-   (docs/design/design-system.md). */
+/* Printing (2026-10 screen pack): the title with the order steps, one big
+   card saying what's happening, the receipt beside it. */
 
-.body {
+.top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-l);
+  width: 100%;
+  max-width: 100rem;
+  margin: 0 auto var(--space-s);
+}
+
+.title {
+  margin: 0;
+  font: var(--font-h1);
+  letter-spacing: -0.02em;
+}
+
+.columns,
+.single {
   flex: 1;
+  display: grid;
+  gap: var(--space-l);
+  width: 100%;
+  max-width: 100rem;
+  min-height: 0;
+  margin: 0 auto;
+}
+
+.columns {
+  grid-template-columns: minmax(0, 8fr) minmax(0, 4fr);
+}
+
+.stage,
+.receiptCard {
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-large);
+  background: var(--color-surface);
+  box-shadow: var(--elevation-raised);
+}
+
+.stage {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: var(--space-l);
+  gap: var(--space-m);
+  padding: var(--space-l);
   text-align: center;
 }
 
-.message {
-  margin: 0;
+.badge {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 10rem;
+  height: 10rem;
+  overflow: hidden;
+  border-radius: var(--radius-pill);
 }
 
+.badgeAccent {
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+}
+
+.badgeSuccess {
+  background: var(--color-success-soft);
+  color: var(--color-success);
+}
+
+.badgeWarning {
+  background: var(--color-warning-soft);
+  color: var(--color-warning);
+}
+
+/* A sheet sliding out of the printer icon, over and over. */
+.sheet {
+  position: absolute;
+  top: 58%;
+  left: 50%;
+  width: 2.6rem;
+  height: 0.9rem;
+  border: 2px solid var(--color-accent);
+  border-top: none;
+  border-radius: 0 0 3px 3px;
+  background: var(--color-surface);
+  transform: translateX(-50%);
+  animation: sheet 1.8s var(--motion-easing) infinite;
+}
+
+@keyframes sheet {
+  0% {
+    height: 0;
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+  100% {
+    height: 1.6rem;
+    opacity: 1;
+  }
+}
+
+.progress {
+  position: relative;
+  width: 24rem;
+  height: 0.5rem;
+  overflow: hidden;
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-sunken);
+}
+
+.progressBar {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 35%;
+  border-radius: inherit;
+  background: var(--color-accent);
+  animation: progress 1.6s var(--motion-easing) infinite;
+}
+
+@keyframes progress {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(300%);
+  }
+}
+
+.spin {
+  flex: none;
+  animation: spin 1.2s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sheet,
+  .progressBar,
+  .spin {
+    animation: none;
+  }
+}
+
+/* The pick-up bin — the one thing the customer must remember. */
+.bin {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 12rem;
+  padding: var(--space-m) var(--space-xl);
+  border-radius: var(--radius-large);
+  background: var(--color-success-soft);
+  color: var(--color-success);
+}
+
+.binLabel {
+  font: var(--font-h3);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.binNumber {
+  font: var(--font-display);
+  font-size: 7rem;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.message {
+  max-width: 40rem;
+  margin: 0;
+  font: var(--font-h2);
+  text-wrap: balance;
+}
+
+.lead {
+  max-width: 40rem;
+  margin: 0;
+  font: var(--font-lead);
+  color: var(--color-ink-soft);
+  text-wrap: balance;
+}
+
+.note {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-s);
+  max-width: 40rem;
+  margin: 0;
+  padding: var(--space-m) var(--space-l);
+  border-radius: var(--radius-medium);
+  background: var(--color-surface-sunken);
+  font: var(--font-body);
+  text-align: left;
+}
+
+.noteSuccess {
+  background: var(--color-success-soft);
+  color: var(--color-success);
+}
+
+.noteWarning {
+  background: var(--color-warning-soft);
+  color: var(--color-warning);
+}
+
+.simulate {
+  position: absolute;
+  bottom: var(--space-m);
+  left: 50%;
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: var(--space-xs) var(--space-s);
+  border: 1.5px dashed var(--color-border-strong);
+  border-radius: var(--radius-medium);
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+
+.simulateLabel {
+  font: var(--font-caption);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-ink-soft);
+}
+
+.receiptCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-m);
+  padding: var(--space-l);
+  text-align: center;
+}
+
+.receiptTitle {
+  margin: 0;
+  font: var(--font-h3);
+}
+
+/* ReceiptPanel.tsx */
 .receipt {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--space-s);
+  gap: var(--space-m);
 }
 
 .receipt img {
-  width: 10rem;
-  height: 10rem;
+  width: 14rem;
+  height: 14rem;
+  border-radius: var(--radius-medium);
 }
 
 .receiptNote {
+  max-width: 24rem;
+  margin: 0;
+  font: var(--font-body);
   color: var(--color-ink-soft);
   text-align: center;
+  text-wrap: balance;
 }

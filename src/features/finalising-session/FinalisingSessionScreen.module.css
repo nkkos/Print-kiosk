@@ -1,5 +1,4 @@
-/* TODO: exact colors/typography values pending Design System sign-off
-   (docs/design/design-system.md). */
+/* Thank you (2026-10 screen pack): one calm message, two ways on. */
 
 .body {
   flex: 1;
@@ -7,9 +6,45 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: var(--space-m);
   text-align: center;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 10rem;
+  height: 10rem;
+  border-radius: var(--radius-pill);
+  background: var(--color-success-soft);
+  color: var(--color-success);
+}
+
+.title {
+  margin: 0;
+  font: var(--font-display);
+  letter-spacing: -0.02em;
 }
 
 .message {
   margin: 0;
+  font: var(--font-lead);
+  color: var(--color-ink-soft);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-m);
+  margin-top: var(--space-m);
+}
+
+.hint {
+  max-width: 36rem;
+  margin: 0;
+  font: var(--font-caption);
+  color: var(--color-ink-soft);
+  text-wrap: balance;
 }

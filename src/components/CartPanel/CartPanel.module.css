@@ -1,5 +1,5 @@
 /* The orders on the left, the total and next step on the right; in a
-   narrow container (Payment Status) the two stack instead. */
+   narrow container the two stack instead. */
 
 .empty {
   color: var(--color-ink-soft);
@@ -162,12 +162,6 @@
   font: var(--font-h3);
   text-align: center;
   font-variant-numeric: tabular-nums;
-}
-
-.qty {
-  flex: none;
-  font: var(--font-body);
-  color: var(--color-ink-soft);
 }
 
 .price {

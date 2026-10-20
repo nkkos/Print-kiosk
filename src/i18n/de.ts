@@ -281,9 +281,13 @@ export const de: Translations = {
     pagesPerSheetLegend: 'Seiten pro Blatt',
   },
   paymentStatus: {
+    title: 'Zahlung',
+    orderTitle: 'Ihre Bestellung',
+    amountLabel: 'Zu zahlen',
+    paidHint: 'Der Druck beginnt, sobald Sie gewählt haben',
+    receiptDefault: 'Ohne Auswahl in 30 s — ein QR-Code auf dem Bildschirm',
     starting: 'Zahlung wird vorbereitet…',
     tapCard: 'Bitte Karte am Terminal auflegen oder einstecken',
-    toPay: (amount: string) => `Zu zahlen: ${amount}`,
     secondsLeft: (seconds: number) => `Verbleibend: ${seconds} s`,
     declined: 'Die Karte wurde abgelehnt. Es wurde nichts abgebucht.',
     cancelled: 'Die Zahlung wurde am Terminal abgebrochen. Es wurde nichts abgebucht.',
@@ -304,6 +308,10 @@ export const de: Translations = {
     cancelConfirmMessage: 'Möchten Sie diese Bestellung wirklich stornieren?',
   },
   printStatus: {
+    title: 'Druck',
+    binLabel: 'Fach',
+    receiptTitle: 'Beleg',
+    printingBinHint: (bin: number) => `Ihre Dokumente kommen in Fach ${bin}`,
     printingMessage: 'Ihre Dokument(e) werden gedruckt...',
     succeededMessage: 'Ihre Dokument(e) wurden erfolgreich gedruckt.',
     waitingForBinMessage: 'Alle Abholfächer sind derzeit belegt — bitte warten Sie kurz.',
@@ -332,7 +340,10 @@ export const de: Translations = {
     receiptPaper: 'Bitte entnehmen Sie Ihren Beleg dem Belegdrucker.',
   },
   finalisingSession: {
-    message: 'Ihre Dokumente wurden gedruckt. Vielen Dank!',
+    title: 'Vielen Dank!',
+    hint: 'Beenden Sie die Sitzung, wenn Sie fertig sind — Ihre Dateien werden sofort gelöscht.',
+    somethingElse: 'Noch etwas erledigen',
+    message: 'Ihre Dokumente wurden gedruckt.',
   },
   endingSession: {
     message: 'Sitzung wird beendet...',

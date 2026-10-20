@@ -64,3 +64,6 @@ Defaults used until decided: working name, operator hidden, line icons only, ste
 | Files from the account             | Approved (2026-10-20) |
 | Print settings + preview           | Approved (2026-10-20) |
 | Order review (replaces Cart popup) | Approved (2026-10-20) |
+| Payment + receipt choice           | Approved (2026-10-20) |
+| Printing / pick-up / refund        | Approved (2026-10-20) |
+| Thank you (finalising session)     | Approved (2026-10-20) |

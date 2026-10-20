@@ -1,63 +1,383 @@
-/* TODO: exact colors/typography values pending Design System sign-off
-   (docs/design/design-system.md). */
+/* Payment (2026-10 screen pack): the title with the order steps, one big
+   "what to do now" card on the left, the order and the amount on the right. */
 
-.body {
+.top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-l);
+  width: 100%;
+  max-width: 100rem;
+  margin: 0 auto var(--space-s);
+}
+
+.title {
+  margin: 0;
+  font: var(--font-h1);
+  letter-spacing: -0.02em;
+}
+
+.columns {
   flex: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+  gap: var(--space-l);
+  width: 100%;
+  max-width: 100rem;
+  min-height: 0;
+  margin: 0 auto;
+}
+
+.stage,
+.order {
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-large);
+  background: var(--color-surface);
+  box-shadow: var(--elevation-raised);
+}
+
+.stage {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: var(--space-l);
-  width: 100%;
-  /* Wide enough for the order list (CartPanel); the screen itself is
-     redesigned in batch 4 (docs/design/kiosk-redesign-plan.md). */
-  max-width: 64rem;
-  margin-inline: auto;
-}
-
-.amount {
-  font-size: 1.5rem;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-}
-
-.instruction {
-  font-size: 1.25rem;
+  gap: var(--space-m);
+  padding: var(--space-l);
   text-align: center;
 }
 
+.badge {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 9rem;
+  height: 9rem;
+  border-radius: var(--radius-pill);
+}
+
+.badgeNeutral {
+  background: var(--color-surface-sunken);
+  color: var(--color-ink-soft);
+}
+
+.badgeAccent {
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+}
+
+.badgeWarning {
+  background: var(--color-warning-soft);
+  color: var(--color-warning);
+}
+
+.badgeSuccess {
+  background: var(--color-success-soft);
+  color: var(--color-success);
+}
+
+/* A slow ring around the card icon — "the terminal is waiting". */
+.pulse {
+  position: absolute;
+  inset: 0;
+  border: 3px solid var(--color-accent);
+  border-radius: inherit;
+  opacity: 0;
+  animation: pulse 2s var(--motion-easing) infinite;
+}
+
+@keyframes pulse {
+  0% {
+    opacity: 0.5;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.35);
+  }
+}
+
+.spin {
+  animation: spin 1.2s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pulse,
+  .spin {
+    animation: none;
+  }
+}
+
+.message {
+  max-width: 36rem;
+  margin: 0;
+  font: var(--font-h2);
+  text-wrap: balance;
+}
+
+.amount {
+  font: var(--font-display);
+  font-size: 4.5rem;
+  color: var(--color-accent-strong);
+  font-variant-numeric: tabular-nums;
+}
+
 .countdown {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-s);
+  width: 22rem;
+}
+
+.countdownTrack {
+  width: 100%;
+  height: 0.5rem;
+  overflow: hidden;
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-sunken);
+}
+
+.countdownFill {
+  display: block;
+  height: 100%;
+  background: var(--color-accent);
+  transform-origin: left;
+  transition: transform 1s linear;
+}
+
+.countdownText {
+  font: var(--font-body);
   color: var(--color-ink-soft);
   font-variant-numeric: tabular-nums;
 }
 
-.problem {
-  color: var(--color-danger);
-  text-align: center;
+.question {
+  margin: 0;
+  font: var(--font-lead);
 }
 
-.success {
-  color: var(--color-success);
-  font-size: 1.25rem;
-  font-weight: 700;
-}
-
-.simulate,
 .receiptOptions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-m);
+  width: 100%;
+  max-width: 48rem;
+}
+
+.receiptOption {
   display: flex;
   flex-direction: column;
+  align-items: center;
+  justify-content: center;
   gap: var(--space-s);
+  min-height: 9rem;
+  padding: var(--space-m);
+  border: 1.5px solid var(--color-border-strong);
+  border-radius: var(--radius-large);
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font: var(--font-button);
+  cursor: pointer;
+  transition:
+    border-color var(--motion-duration-fast) var(--motion-easing),
+    transform var(--motion-duration-fast) var(--motion-easing);
+}
+
+.receiptOption:hover:not(:disabled) {
+  border-color: var(--color-accent);
+}
+
+.receiptOption:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.receiptOption:focus-visible {
+  outline: 3px solid var(--color-accent);
+  outline-offset: 3px;
+}
+
+.receiptOption:disabled {
+  color: var(--color-disabled-text);
+  cursor: not-allowed;
+}
+
+.receiptIcon {
+  display: inline-flex;
+  color: var(--color-accent);
+}
+
+.emailForm {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: center;
+  gap: var(--space-m);
   width: 100%;
+  max-width: 48rem;
 }
 
 .emailField {
   display: flex;
+  flex: 1;
   flex-direction: column;
   gap: var(--space-xs);
+  font: var(--font-body);
+  text-align: left;
+}
+
+.emailField input {
+  min-height: var(--touch-target);
+  padding: 0 var(--space-m);
+  box-sizing: border-box;
+  border: 1.5px solid var(--color-border-strong);
+  border-radius: var(--radius-medium);
+  font: var(--font-body);
+}
+
+.emailField input:focus-visible {
+  outline: 3px solid var(--color-accent);
+  outline-offset: 1px;
+}
+
+.problem {
+  flex-basis: 100%;
+  margin: 0;
+  color: var(--color-danger);
+  font: var(--font-body);
 }
 
 .hint {
+  max-width: 40rem;
+  margin: 0;
+  text-wrap: balance;
+  font: var(--font-caption);
   color: var(--color-ink-soft);
-  font-size: 0.875rem;
-  text-align: center;
+}
+
+/* The simulated terminal's outcomes — dashed like DevOnly, so nobody takes
+   them for part of the design. */
+.simulate {
+  position: absolute;
+  bottom: var(--space-m);
+  left: 50%;
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: var(--space-xs) var(--space-s);
+  border: 1.5px dashed var(--color-border-strong);
+  border-radius: var(--radius-medium);
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+
+.simulateLabel {
+  font: var(--font-caption);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-ink-soft);
+}
+
+.order {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-m);
+  min-height: 0;
+  padding: var(--space-l);
+}
+
+.orderTitle {
+  margin: 0;
+  font: var(--font-h3);
+}
+
+.orderList {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--space-s);
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.orderLine {
+  display: flex;
+  align-items: center;
+  gap: var(--space-m);
+  padding: var(--space-s) 0;
+}
+
+.orderLine + .orderLine {
+  border-top: 1px solid var(--color-border);
+}
+
+.orderIcon {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  border-radius: var(--radius-medium);
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+}
+
+.orderText {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.orderName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font: var(--font-body);
+  font-weight: 700;
+}
+
+.orderMeta {
+  font: var(--font-caption);
+  color: var(--color-ink-soft);
+}
+
+.orderPrice {
+  flex: none;
+  font: var(--font-body);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.orderTotal {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-m);
+  padding-top: var(--space-m);
+  border-top: 1.5px solid var(--color-border-strong);
+  font: var(--font-h3);
+}
+
+.orderAmount {
+  font: var(--font-h1);
+  color: var(--color-accent-strong);
+  font-variant-numeric: tabular-nums;
+}
+
+.confirmText {
+  margin: 0 0 var(--space-m);
+  font: var(--font-lead);
 }

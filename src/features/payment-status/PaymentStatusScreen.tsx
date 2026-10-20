@@ -1,8 +1,20 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
+import {
+  ArrowLeft,
+  CircleAlert,
+  CircleCheck,
+  FileText,
+  LoaderCircle,
+  Mail,
+  Nfc,
+  QrCode,
+  ReceiptText,
+  RotateCcw,
+} from 'lucide-react';
 import { KioskScreenLayout } from '../../layouts/KioskScreenLayout/KioskScreenLayout';
-import { CartPanel } from '../../components/CartPanel/CartPanel';
 import { Button } from '../../components/Button/Button';
 import { Modal } from '../../components/Modal/Modal';
+import { OrderSteps } from '../../components/OrderSteps/OrderSteps';
 import { useTranslation } from '../../i18n';
 import type { Language } from '../../i18n';
 import type { EndSessionReason, PrintOrder } from '../../types/kiosk';
@@ -17,14 +29,16 @@ import {
   type SimulatedPaymentOutcome,
 } from '../../services/paymentApi';
 import { getStandId } from '../../utils/standId';
-import { formatEuroCents } from '../../utils/pricing';
+import { computeItemPrice, formatEuroCents } from '../../utils/pricing';
+import { MIN_CARD_PAYMENT_CENTS } from '../../utils/tariff';
 import styles from './PaymentStatusScreen.module.css';
 
 // Payment Status screen — see docs/domain/kiosk-session.md ("Payment
 // Order", End Session "Blocked during a committed transaction") and
 // docs/payments-business-requirements.md ("Kiosk: the customer's journey").
-// Full-screen (not a popup), since the user has committed to paying —
-// distinct from Cart, which stays a popup while browsing/adding documents.
+// Step 4 of the print path (2026-10 redesign, docs/design/kiosk-redesign-plan.md):
+// what to do now on the left — tap the card, try again, pick the receipt —
+// and the order with the amount the terminal charges on the right.
 //
 // The server prices the selection and starts the sale on this stand's
 // terminal (src/services/paymentApi.ts); this screen shows the server's
@@ -50,6 +64,9 @@ const OPEN_STATUSES: Payment['status'][] = ['awaiting-card', 'unknown'];
 const UNPAID_FINAL: Payment['status'][] = ['declined', 'cancelled', 'timed-out', 'failed'];
 const POLL_INTERVAL_MS = 1500;
 const RECEIPT_DEFAULT_AFTER_MS = 30_000;
+// The terminal's window for a card (server/paymentStore.ts, PAYMENT_WINDOW_MS) — the
+// countdown bar's full length.
+const PAYMENT_WINDOW_SECONDS = 60;
 
 interface PaymentStatusScreenProps {
   /** The batch the user chose to pay for (ticked on the order review screen) —
@@ -253,6 +270,20 @@ export function PaymentStatusScreen({
   const isSimulator = payment?.provider === 'simulator';
   const canLeave = !isPaid;
 
+  // The order as the server priced it once the payment exists (its lines
+  // and total are what the terminal charges); our own prices until then.
+  const lineFor = new Map(payment?.items.map((line) => [line.cartItemId, line]) ?? []);
+  const lines = paymentItems.map((item) => ({
+    item,
+    cents: lineFor.get(item.id)?.amountCents ?? Math.round(computeItemPrice(item) * 100),
+  }));
+  const linesCents = lines.reduce((sum, line) => sum + line.cents, 0);
+  const totalCents = payment?.amountCents ?? linesCents;
+  // Viva's card minimum (src/utils/tariff.ts): the server tops a smaller
+  // order up — said here so the higher amount isn't a surprise.
+  const toppedUp = totalCents > linesCents;
+  const progress = secondsLeft !== null ? Math.min(1, secondsLeft / PAYMENT_WINDOW_SECONDS) : 1;
+
   return (
     <KioskScreenLayout
       sessionActive={isUnpaidFinal || startFailed}
@@ -271,143 +302,251 @@ export function PaymentStatusScreen({
       onGoToPaidOrders={onGoToPaidOrders}
       onLanguageChange={onLanguageChange}
     >
-      <div className={styles.body}>
-        <CartPanel items={paymentItems} />
+      <div className={styles.top}>
+        <h1 className={styles.title}>{t.paymentStatus.title}</h1>
+        <OrderSteps current="payment" />
+      </div>
 
-        {payment && (
-          <p className={styles.amount}>
-            {t.paymentStatus.toPay(formatEuroCents(payment.amountCents))}
-          </p>
-        )}
+      <div className={styles.columns}>
+        <section className={styles.stage} id="payment-stage">
+          {!payment && !startFailed && (
+            <>
+              <span className={`${styles.badge} ${styles.badgeNeutral}`} aria-hidden="true">
+                <LoaderCircle className={styles.spin} size={64} />
+              </span>
+              <h2 className={styles.message}>{t.paymentStatus.starting}</h2>
+            </>
+          )}
 
-        {!payment && !startFailed && <p>{t.paymentStatus.starting}</p>}
+          {isOpen && (
+            <>
+              <span className={`${styles.badge} ${styles.badgeAccent}`} aria-hidden="true">
+                <span className={styles.pulse} />
+                <Nfc size={72} strokeWidth={1.75} />
+              </span>
+              <h2 className={styles.message}>{t.paymentStatus.tapCard}</h2>
+              <span className={styles.amount} id="payment-amount">
+                {formatEuroCents(totalCents)}
+              </span>
+              {secondsLeft !== null && (
+                <div className={styles.countdown}>
+                  <span className={styles.countdownTrack}>
+                    <span
+                      className={styles.countdownFill}
+                      style={{ transform: `scaleX(${progress})` }}
+                    />
+                  </span>
+                  <span className={styles.countdownText}>
+                    {t.paymentStatus.secondsLeft(secondsLeft)}
+                  </span>
+                </div>
+              )}
+            </>
+          )}
 
-        {startFailed && (
-          <>
-            <p className={styles.problem}>{t.paymentStatus.startFailed}</p>
-            <Button
-              id="payment-try-again"
-              label={t.paymentStatus.tryAgain}
-              onClick={handleTryAgain}
-              disabled={isConnectionLost}
-            />
-          </>
-        )}
+          {(startFailed || isUnpaidFinal) && (
+            <>
+              <span className={`${styles.badge} ${styles.badgeWarning}`} aria-hidden="true">
+                <CircleAlert size={72} strokeWidth={1.75} />
+              </span>
+              <h2 className={styles.message} role="status">
+                {startFailed ? t.paymentStatus.startFailed : unpaidMessage}
+              </h2>
+              <Button
+                id="payment-try-again"
+                variant="primary"
+                icon={<RotateCcw size={24} />}
+                label={t.paymentStatus.tryAgain}
+                onClick={handleTryAgain}
+                disabled={isConnectionLost}
+              />
+            </>
+          )}
 
-        {isOpen && (
-          <>
-            <p className={styles.instruction}>{t.paymentStatus.tapCard}</p>
-            {secondsLeft !== null && (
-              <p className={styles.countdown}>{t.paymentStatus.secondsLeft(secondsLeft)}</p>
-            )}
-            {isSimulator && (
-              <div className={styles.simulate}>
-                <Button
-                  id="payment-simulate-success"
-                  label="Simulate payment success"
-                  onClick={() => handleSimulate('paid')}
-                  disabled={isConnectionLost}
-                />
-                <Button
-                  id="payment-simulate-declined"
-                  label="Simulate card declined"
-                  onClick={() => handleSimulate('declined')}
-                  disabled={isConnectionLost}
-                />
-                <Button
-                  id="payment-simulate-cancelled"
-                  label="Simulate cancel on terminal"
-                  onClick={() => handleSimulate('cancelled-on-terminal')}
-                  disabled={isConnectionLost}
-                />
-              </div>
-            )}
-          </>
-        )}
-
-        {isUnpaidFinal && (
-          <>
-            <p className={styles.problem}>{unpaidMessage}</p>
-            <Button
-              id="payment-try-again"
-              label={t.paymentStatus.tryAgain}
-              onClick={handleTryAgain}
-              disabled={isConnectionLost}
-            />
-          </>
-        )}
-
-        {isPaid && (
-          <>
-            <p className={styles.success}>{t.paymentStatus.paid}</p>
-            <p>{t.paymentStatus.receiptQuestion}</p>
-            {receiptMode === 'choose' ? (
-              <div className={styles.receiptOptions}>
-                <Button
-                  id="payment-receipt-qr"
-                  label={t.paymentStatus.receiptQr}
-                  onClick={() => handleReceipt('qr')}
-                  disabled={finished}
-                />
-                <Button
-                  id="payment-receipt-email"
-                  label={t.paymentStatus.receiptEmail}
-                  onClick={() => setReceiptMode('email')}
-                  disabled={finished}
-                />
-                <Button
-                  id="payment-receipt-paper"
-                  label={t.paymentStatus.receiptPaper}
-                  onClick={() => handleReceipt('paper')}
-                  disabled={finished}
-                />
-              </div>
-            ) : (
-              <div className={styles.receiptOptions}>
-                <label className={styles.emailField}>
-                  {t.paymentStatus.emailLabel}
-                  <input
-                    id="payment-receipt-email-input"
-                    type="email"
-                    value={email}
-                    onChange={(event) => {
-                      setEmail(event.target.value);
-                      setEmailError(false);
-                    }}
+          {isPaid && (
+            <>
+              <span className={`${styles.badge} ${styles.badgeSuccess}`} aria-hidden="true">
+                <CircleCheck size={72} strokeWidth={1.75} />
+              </span>
+              <h2 className={styles.message}>{t.paymentStatus.paid}</h2>
+              <p className={styles.question}>{t.paymentStatus.receiptQuestion}</p>
+              {receiptMode === 'choose' ? (
+                <div className={styles.receiptOptions}>
+                  <ReceiptOption
+                    id="payment-receipt-qr"
+                    icon={<QrCode size={44} strokeWidth={1.75} />}
+                    label={t.paymentStatus.receiptQr}
+                    onClick={() => handleReceipt('qr')}
+                    disabled={finished}
                   />
-                </label>
-                {emailError && <p className={styles.problem}>{t.paymentStatus.invalidEmail}</p>}
-                <Button
-                  id="payment-receipt-email-send"
-                  label={t.paymentStatus.sendReceipt}
-                  onClick={handleEmailSubmit}
-                  disabled={finished}
-                />
-              </div>
-            )}
-            <p className={styles.hint}>{t.paymentStatus.receiptConsent}</p>
-          </>
-        )}
+                  <ReceiptOption
+                    id="payment-receipt-email"
+                    icon={<Mail size={44} strokeWidth={1.75} />}
+                    label={t.paymentStatus.receiptEmail}
+                    onClick={() => setReceiptMode('email')}
+                    disabled={finished}
+                  />
+                  <ReceiptOption
+                    id="payment-receipt-paper"
+                    icon={<ReceiptText size={44} strokeWidth={1.75} />}
+                    label={t.paymentStatus.receiptPaper}
+                    onClick={() => handleReceipt('paper')}
+                    disabled={finished}
+                  />
+                </div>
+              ) : (
+                <div className={styles.emailForm}>
+                  <label className={styles.emailField}>
+                    {t.paymentStatus.emailLabel}
+                    <input
+                      id="payment-receipt-email-input"
+                      type="email"
+                      value={email}
+                      onChange={(event) => {
+                        setEmail(event.target.value);
+                        setEmailError(false);
+                      }}
+                    />
+                  </label>
+                  <Button
+                    id="payment-receipt-email-send"
+                    variant="primary"
+                    label={t.paymentStatus.sendReceipt}
+                    onClick={handleEmailSubmit}
+                    disabled={finished}
+                  />
+                  <Button
+                    id="payment-receipt-email-back"
+                    variant="ghost"
+                    icon={<ArrowLeft size={22} />}
+                    label={t.common.back}
+                    onClick={() => setReceiptMode('choose')}
+                    disabled={finished}
+                  />
+                  {emailError && (
+                    <p className={styles.problem} role="alert">
+                      {t.paymentStatus.invalidEmail}
+                    </p>
+                  )}
+                </div>
+              )}
+              <p className={styles.hint}>
+                {t.paymentStatus.paidHint}. {t.paymentStatus.receiptDefault}.
+              </p>
+              <p className={styles.hint}>{t.paymentStatus.receiptConsent}</p>
+            </>
+          )}
 
-        {canLeave && (
-          <Button
-            id="payment-cancel"
-            label={t.paymentStatus.cancelPayment}
-            onClick={() => setPendingAction('cancel')}
-          />
-        )}
+          {canLeave && (payment !== null || startFailed) && (
+            <Button
+              id="payment-cancel"
+              label={t.paymentStatus.cancelPayment}
+              onClick={() => setPendingAction('cancel')}
+            />
+          )}
+
+          {isOpen && isSimulator && (
+            // The simulated terminal (server/paymentTerminal.ts) until the
+            // Viva client lands — scaffolding, shown only for that provider.
+            <div className={styles.simulate} data-dev-only>
+              <span className={styles.simulateLabel}>test</span>
+              <Button
+                id="payment-simulate-success"
+                variant="ghost"
+                label="Simulate payment success"
+                onClick={() => handleSimulate('paid')}
+                disabled={isConnectionLost}
+              />
+              <Button
+                id="payment-simulate-declined"
+                variant="ghost"
+                label="Simulate card declined"
+                onClick={() => handleSimulate('declined')}
+                disabled={isConnectionLost}
+              />
+              <Button
+                id="payment-simulate-cancelled"
+                variant="ghost"
+                label="Simulate cancel on terminal"
+                onClick={() => handleSimulate('cancelled-on-terminal')}
+                disabled={isConnectionLost}
+              />
+            </div>
+          )}
+        </section>
+
+        <aside className={styles.order}>
+          <h2 className={styles.orderTitle}>{t.paymentStatus.orderTitle}</h2>
+          <ul className={styles.orderList}>
+            {lines.map(({ item, cents }) => (
+              <li key={item.id} className={styles.orderLine}>
+                <span className={styles.orderIcon} aria-hidden="true">
+                  <FileText size={24} />
+                </span>
+                <span className={styles.orderText}>
+                  <span className={styles.orderName}>{item.fileName}</span>
+                  <span className={styles.orderMeta}>
+                    {item.paperSize} ·{' '}
+                    {item.color === 'color' ? t.common.colorColor : t.common.colorBw} ·{' '}
+                    {t.cart.qty(item.quantity)}
+                  </span>
+                </span>
+                <span className={styles.orderPrice}>{formatEuroCents(cents)}</span>
+              </li>
+            ))}
+          </ul>
+          <div className={styles.orderTotal}>
+            <span>{t.paymentStatus.amountLabel}</span>
+            <span className={styles.orderAmount}>{formatEuroCents(totalCents)}</span>
+          </div>
+          {toppedUp && (
+            <p className={styles.hint} id="payment-minimum-charge">
+              {t.cart.minimumCharge(formatEuroCents(MIN_CARD_PAYMENT_CENTS))}
+            </p>
+          )}
+        </aside>
       </div>
 
       {pendingAction && (
         <Modal onClose={() => setPendingAction(null)}>
-          <p>{t.paymentStatus.cancelConfirmMessage}</p>
+          <p className={styles.confirmText}>{t.paymentStatus.cancelConfirmMessage}</p>
           <Button
             id="payment-cancel-confirm"
+            variant="primary"
             label={t.common.confirm}
             onClick={handleConfirmCancel}
           />
         </Modal>
       )}
     </KioskScreenLayout>
+  );
+}
+
+function ReceiptOption({
+  id,
+  icon,
+  label,
+  onClick,
+  disabled,
+}: {
+  id: string;
+  icon: ReactNode;
+  label: string;
+  onClick: () => void;
+  disabled: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      id={id}
+      className={styles.receiptOption}
+      onClick={onClick}
+      disabled={disabled}
+    >
+      <span className={styles.receiptIcon} aria-hidden="true">
+        {icon}
+      </span>
+      {label}
+    </button>
   );
 }

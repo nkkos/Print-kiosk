@@ -275,9 +275,13 @@ export const sk: Translations = {
     pagesPerSheetLegend: 'Strán na hárok',
   },
   paymentStatus: {
+    title: 'Platba',
+    orderTitle: 'Vaša objednávka',
+    amountLabel: 'Na úhradu',
+    paidHint: 'Tlač sa začne hneď po výbere',
+    receiptDefault: 'Ak nevyberiete do 30 s — QR kód na obrazovke',
     starting: 'Pripravujeme platbu…',
     tapCard: 'Priložte alebo vložte kartu do terminálu',
-    toPay: (amount: string) => `Na úhradu: ${amount}`,
     secondsLeft: (seconds: number) => `Zostáva: ${seconds} s`,
     declined: 'Karta bola zamietnutá. Nič sme nestrhli.',
     cancelled: 'Platba bola zrušená na termináli. Nič sme nestrhli.',
@@ -298,6 +302,10 @@ export const sk: Translations = {
     cancelConfirmMessage: 'Naozaj chcete zrušiť túto objednávku?',
   },
   printStatus: {
+    title: 'Tlač',
+    binLabel: 'Priehradka',
+    receiptTitle: 'Doklad',
+    printingBinHint: (bin: number) => `Dokumenty nájdete v priehradke č. ${bin}`,
     printingMessage: 'Tlačí sa váš dokument (dokumenty)...',
     succeededMessage: 'Váš dokument (dokumenty) bol úspešne vytlačený.',
     waitingForBinMessage: 'Všetky výdajné priehradky sú momentálne obsadené — chvíľu počkajte.',
@@ -326,7 +334,10 @@ export const sk: Translations = {
     receiptPaper: 'Vezmite si doklad z tlačiarne dokladov.',
   },
   finalisingSession: {
-    message: 'Vaše dokumenty boli vytlačené. Ďakujeme!',
+    title: 'Ďakujeme!',
+    hint: 'Keď skončíte, ukončite reláciu — vaše súbory sa hneď vymažú.',
+    somethingElse: 'Urobiť niečo ďalšie',
+    message: 'Vaše dokumenty boli vytlačené.',
   },
   endingSession: {
     message: 'Ukončuje sa relácia...',

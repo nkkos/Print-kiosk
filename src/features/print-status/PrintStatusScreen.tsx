@@ -1,5 +1,14 @@
+import {
+  ArrowRight,
+  BadgeEuro,
+  CircleAlert,
+  CircleCheck,
+  LoaderCircle,
+  Printer,
+} from 'lucide-react';
 import { KioskScreenLayout } from '../../layouts/KioskScreenLayout/KioskScreenLayout';
 import { Button } from '../../components/Button/Button';
+import { OrderSteps } from '../../components/OrderSteps/OrderSteps';
 import { useTranslation } from '../../i18n';
 import type { Language } from '../../i18n';
 import type { EndSessionReason, PrintOrder } from '../../types/kiosk';
@@ -24,6 +33,11 @@ import styles from './PrintStatusScreen.module.css';
 // end again; a refund that didn't go through is staff's to finish, they're
 // alerted on Telegram. There is no "Retry": a failed item's money is
 // already on its way back.
+//
+// Step 5 of the print path (2026-10 redesign, docs/design/kiosk-redesign-plan.md):
+// one big card that says what's happening — printing, which bin to take the
+// documents from, or what went wrong and that the money is on its way back —
+// and the receipt beside it.
 //
 // Real backend (server/printerAdapter.ts): App.tsx submits a Print Task
 // automatically on entering this screen and polls its status. Only
@@ -154,94 +168,158 @@ export function PrintStatusScreen({
       onGoToPaidOrders={onGoToPaidOrders}
       onLanguageChange={onLanguageChange}
     >
-      <div className={styles.body}>
-        {status === 'succeeded' && (
-          <>
-            <p className={styles.message}>
-              {binNumber != null
-                ? t.printStatus.readyForPickupMessage(binNumber)
-                : t.printStatus.succeededMessage}
-            </p>
-            <Button
-              id="print-continue"
-              label={t.printStatus.continueLabel}
-              onClick={onPrintComplete}
-            />
-          </>
+      <div className={styles.top}>
+        <h1 className={styles.title}>{t.printStatus.title}</h1>
+        <OrderSteps current="print" />
+      </div>
+
+      <div className={receiptPaymentId ? styles.columns : styles.single}>
+        <section className={styles.stage} id="print-stage" data-status={status}>
+          {(status === 'queued' || status === 'printing') && (
+            <>
+              <span className={`${styles.badge} ${styles.badgeAccent}`} aria-hidden="true">
+                <Printer size={80} strokeWidth={1.5} />
+                <span className={styles.sheet} />
+              </span>
+              <h2 className={styles.message} role="status">
+                {isWaitingForBin
+                  ? t.printStatus.waitingForBinMessage
+                  : t.printStatus.printingMessage}
+              </h2>
+              {binNumber != null && (
+                <p className={styles.lead}>{t.printStatus.printingBinHint(binNumber)}</p>
+              )}
+              <span className={styles.progress} aria-hidden="true">
+                <span className={styles.progressBar} />
+              </span>
+            </>
+          )}
+
+          {status === 'succeeded' && (
+            <>
+              {binNumber != null ? (
+                <span className={styles.bin} id="print-bin">
+                  <span className={styles.binLabel}>{t.printStatus.binLabel}</span>
+                  <span className={styles.binNumber}>{binNumber}</span>
+                </span>
+              ) : (
+                <span className={`${styles.badge} ${styles.badgeSuccess}`} aria-hidden="true">
+                  <CircleCheck size={80} strokeWidth={1.5} />
+                </span>
+              )}
+              <h2 className={styles.message} role="status">
+                {binNumber != null
+                  ? t.printStatus.readyForPickupMessage(binNumber)
+                  : t.printStatus.succeededMessage}
+              </h2>
+              {/* With a bin, "Continue" also marks it collected (App.tsx's
+                  handlePrintComplete) — so it says exactly that. */}
+              <Button
+                id="print-continue"
+                variant="primary"
+                label={
+                  binNumber != null
+                    ? t.printStatus.confirmPickedUpLabel
+                    : t.printStatus.continueLabel
+                }
+                trailingIcon={<ArrowRight size={24} />}
+                onClick={onPrintComplete}
+              />
+            </>
+          )}
+
+          {status === 'failed' && (
+            <>
+              <span className={`${styles.badge} ${styles.badgeWarning}`} aria-hidden="true">
+                <CircleAlert size={80} strokeWidth={1.5} />
+              </span>
+              <h2 className={styles.message} role="status">
+                {errorMessage(t, failedTasks[0]?.errorReason ?? null)}
+              </h2>
+              {anyPrinted && (
+                <p className={styles.lead}>
+                  {t.printStatus.partlyPrinted}{' '}
+                  {binNumber != null && t.printStatus.readyForPickupMessage(binNumber)}
+                </p>
+              )}
+              {refundedCents > 0 && (
+                <p className={`${styles.note} ${styles.noteSuccess}`} id="print-refunded">
+                  <BadgeEuro size={28} aria-hidden="true" />
+                  {t.printStatus.refunded(formatEuroCents(refundedCents))}
+                </p>
+              )}
+              {refundPending && (
+                <p className={styles.note}>
+                  <LoaderCircle className={styles.spin} size={28} aria-hidden="true" />
+                  {t.printStatus.refundPending}
+                </p>
+              )}
+              {refundFailed && (
+                <p className={`${styles.note} ${styles.noteWarning}`} id="print-refund-failed">
+                  {t.printStatus.refundFailed}
+                </p>
+              )}
+              {prepaidNotPrinted && <p className={styles.note}>{t.printStatus.prepaidKept}</p>}
+              <Button
+                id="print-continue"
+                variant="primary"
+                label={t.printStatus.continueLabel}
+                trailingIcon={<ArrowRight size={24} />}
+                onClick={onPrintComplete}
+                disabled={refundPending}
+              />
+            </>
+          )}
+
+          {/* Scaffolding for testing without a real printer. The real
+              outcome comes from the pavilion print agent (agent/); set
+              VITE_HIDE_PRINT_SIMULATE=true for customer-facing builds. */}
+          {(status === 'queued' || status === 'printing') && !HIDE_PRINT_SIMULATE && (
+            <div className={styles.simulate} data-dev-only>
+              <span className={styles.simulateLabel}>test</span>
+              {/* Disabled until the submission itself has actually returned a
+                  task (status === 'queued' means it's still in flight — e.g.
+                  waiting on document conversion, server/documentConverter.ts,
+                  which can take tens of seconds) — clicking earlier had
+                  nothing to act on yet and silently did nothing. */}
+              <Button
+                id="print-simulate-success"
+                variant="ghost"
+                label="Simulate success"
+                onClick={() => onSimulatePrintOutcome('success')}
+                disabled={isConnectionLost || status === 'queued'}
+              />
+              <Button
+                id="print-simulate-paper-jam"
+                variant="ghost"
+                label="Simulate paper jam"
+                onClick={() => onSimulatePrintOutcome('paper-jam')}
+                disabled={isConnectionLost || status === 'queued'}
+              />
+              <Button
+                id="print-simulate-out-of-paper"
+                variant="ghost"
+                label="Simulate out of paper"
+                onClick={() => onSimulatePrintOutcome('out-of-paper')}
+                disabled={isConnectionLost || status === 'queued'}
+              />
+              <Button
+                id="print-simulate-out-of-ink"
+                variant="ghost"
+                label="Simulate out of ink"
+                onClick={() => onSimulatePrintOutcome('out-of-ink')}
+                disabled={isConnectionLost || status === 'queued'}
+              />
+            </div>
+          )}
+        </section>
+
+        {receiptPaymentId && (
+          <aside className={styles.receiptCard}>
+            <h2 className={styles.receiptTitle}>{t.printStatus.receiptTitle}</h2>
+            <ReceiptPanel paymentId={receiptPaymentId} />
+          </aside>
         )}
-        {status === 'failed' && (
-          <>
-            <p className={styles.message}>{errorMessage(t, failedTasks[0]?.errorReason ?? null)}</p>
-            {anyPrinted && (
-              <p className={styles.message}>
-                {t.printStatus.partlyPrinted}{' '}
-                {binNumber != null && t.printStatus.readyForPickupMessage(binNumber)}
-              </p>
-            )}
-            {refundedCents > 0 && (
-              <p className={styles.message} id="print-refunded">
-                {t.printStatus.refunded(formatEuroCents(refundedCents))}
-              </p>
-            )}
-            {refundPending && <p className={styles.message}>{t.printStatus.refundPending}</p>}
-            {refundFailed && (
-              <p className={styles.message} id="print-refund-failed">
-                {t.printStatus.refundFailed}
-              </p>
-            )}
-            {prepaidNotPrinted && <p className={styles.message}>{t.printStatus.prepaidKept}</p>}
-            <Button
-              id="print-continue"
-              label={t.printStatus.continueLabel}
-              onClick={onPrintComplete}
-              disabled={refundPending}
-            />
-          </>
-        )}
-        {(status === 'queued' || status === 'printing') && (
-          <>
-            <p className={styles.message}>
-              {isWaitingForBin ? t.printStatus.waitingForBinMessage : t.printStatus.printingMessage}
-            </p>
-            {/* Scaffolding for testing without a real printer. The real
-                outcome comes from the pavilion print agent (agent/); set
-                VITE_HIDE_PRINT_SIMULATE=true for customer-facing builds. */}
-            {!HIDE_PRINT_SIMULATE && (
-              <>
-                {/* Disabled until the submission itself has actually returned a
-                    task (status === 'queued' means it's still in flight — e.g.
-                    waiting on document conversion, server/documentConverter.ts,
-                    which can take tens of seconds) — clicking earlier had
-                    nothing to act on yet and silently did nothing. */}
-                <Button
-                  id="print-simulate-success"
-                  label="Simulate success"
-                  onClick={() => onSimulatePrintOutcome('success')}
-                  disabled={isConnectionLost || status === 'queued'}
-                />
-                <Button
-                  id="print-simulate-paper-jam"
-                  label="Simulate paper jam"
-                  onClick={() => onSimulatePrintOutcome('paper-jam')}
-                  disabled={isConnectionLost || status === 'queued'}
-                />
-                <Button
-                  id="print-simulate-out-of-paper"
-                  label="Simulate out of paper"
-                  onClick={() => onSimulatePrintOutcome('out-of-paper')}
-                  disabled={isConnectionLost || status === 'queued'}
-                />
-                <Button
-                  id="print-simulate-out-of-ink"
-                  label="Simulate out of ink"
-                  onClick={() => onSimulatePrintOutcome('out-of-ink')}
-                  disabled={isConnectionLost || status === 'queued'}
-                />
-              </>
-            )}
-          </>
-        )}
-        {receiptPaymentId && <ReceiptPanel paymentId={receiptPaymentId} />}
       </div>
     </KioskScreenLayout>
   );
