@@ -1,18 +1,13 @@
 import type { ReactNode } from 'react';
-import { Button } from '../Button/Button';
+import { X } from 'lucide-react';
 import { useTranslation } from '../../i18n';
 import styles from './Modal.module.css';
 
-// See docs/design/component-library.md, Section 12. Minimal shell: a
-// non-dimming overlay bounded to the screen's content area + content area +
-// close action. No dimming backdrop and no full-viewport coverage — per
-// docs/domain/kiosk-session.md, a popup must not cover the header, footer,
-// or background of the working screen. No title prop yet — no confirmed use
-// case needs one beyond what children render, and Panel stays internal here
-// rather than becoming its own component (see that section's note on
-// avoiding speculative abstraction). Whether the popup is dismissible by
-// tapping outside it is an open decision there — not implemented here;
-// closing is only via the explicit close action.
+// The one popup shell (CLAUDE.md, "Popups never cover the header/footer"):
+// positioned inside KioskScreenLayout's content area, so its dimmed
+// backdrop covers only the working area and the header, footer and End
+// Session stay visible and usable. A round close button in the corner —
+// the popup's content owns everything else.
 interface ModalProps {
   onClose: () => void;
   children: ReactNode;
@@ -23,7 +18,15 @@ export function Modal({ onClose, children }: ModalProps) {
   return (
     <div className={styles.overlay}>
       <div className={styles.content}>
-        <Button id="modal-close" label={t.common.close} onClick={onClose} />
+        <button
+          type="button"
+          id="modal-close"
+          className={styles.close}
+          onClick={onClose}
+          aria-label={t.common.close}
+        >
+          <X size={30} strokeWidth={2} aria-hidden="true" />
+        </button>
         {children}
       </div>
     </div>

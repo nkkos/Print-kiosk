@@ -68,6 +68,17 @@ export const sk: Translations = {
       'Tlač je dočasne nedostupná — personál bol upozornený. Košík zostáva uložený, skúste to o chvíľu znova.',
   },
   login: {
+    subtitle: 'Aby ste si vybrali uložené súbory',
+    or: 'alebo',
+    createAccount: 'Vytvoriť účet',
+    showPassword: 'Zobraziť heslo',
+    hidePassword: 'Skryť heslo',
+    registerSubtitle:
+      'Naskenujte kód fotoaparátom telefónu a dokončite registráciu na stránke, ktorá sa otvorí',
+    registerStep1: 'Namierte fotoaparát telefónu na kód',
+    registerStep2: 'Otvorte zobrazený odkaz',
+    registerStep3: 'Vyplňte krátky formulár',
+    resetSubtitle: 'Zadajte e-mail účtu — pošleme odkaz na nastavenie nového hesla',
     checkYourEmail: 'Skontrolujte si e-mail',
     resetInstructionsSent:
       'Ak účet s týmto e-mailom existuje, boli naň odoslané pokyny na obnovenie hesla.',

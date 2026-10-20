@@ -21,7 +21,7 @@ Releases: the `redesign` branch goes to staging after each batch (seen on the st
 4. **Payment and pick-up** — payment, "checking payment", printing, "done, take your documents", refund on failure.
 5. **Scan and Copy.**
 6. **Popups** — help, tariffs, language, "how your data is protected", end session, inactivity warning, empty cart.
-7. **System states** — no connection, stand unavailable, file error, closing-soon strip, pavilion closed.
+7. **System states** — no connection, stand unavailable, file error, closing-soon strip, pavilion closed; **an on-screen keyboard inside the app** (decided 2026-10-20) — the stand has no physical keyboard, and the Windows touch keyboard in Chrome kiosk mode appears unreliably, covers half the screen and may offer a way out of the kiosk.
 8. **Phone pages** — QR upload, scan, copy on the customer's phone.
 9. Texts in all five languages; Slovak checked by a native speaker.
 
@@ -45,18 +45,19 @@ The photo kiosk is a separate, later piece of work.
 ## Open decisions (product owner)
 
 1. Brand name and logo — "Future Print" is a working name (`src/components/BrandMark/BrandMark.tsx`).
-2. Popups: keep "never cover header/footer", or dim the whole screen as in the mock-ups.
+2. ~~Popups: keep "never cover header/footer", or dim the whole screen as in the mock-ups.~~ Decided 2026-10-20: dim and blur only the working area; header and footer stay clear and usable (`docs/domain/kiosk-session.md` updated).
 3. What "Contact the operator" does before the intercom exists — a phone number / messenger QR, or hidden.
 4. Illustrations: line icons only, or drawn scenes (commissioned or generated as one set, without text). 2026-10-20: the product owner is considering bringing the comic-style scenes back — people don't like reading. The steps are one component (`src/components/StepList/`), so scenes would replace the icons on every screen at once.
 5. The step indicator "Files → Settings → Review → Payment → Print" across the whole print flow.
 
-Defaults used until decided: working name, popups as confirmed, operator hidden, line icons only, step indicator from batch 3.
+Defaults used until decided: working name, operator hidden, line icons only, step indicator from batch 3.
 
 ## Status
 
-| Screen                  | Status                |
-| ----------------------- | --------------------- |
-| Welcome                 | Approved (2026-10-20) |
-| Upload method selection | Approved (2026-10-20) |
-| QR upload               | Approved (2026-10-20) |
-| E-mail address + list   | Approved (2026-10-20) |
+| Screen                          | Status                |
+| ------------------------------- | --------------------- |
+| Welcome                         | Approved (2026-10-20) |
+| Upload method selection         | Approved (2026-10-20) |
+| QR upload                       | Approved (2026-10-20) |
+| E-mail address + list           | Approved (2026-10-20) |
+| Login popup (+ register, reset) | Approved (2026-10-20) |

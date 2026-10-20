@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Eye, EyeOff, LockKeyhole, Mail, MailCheck } from 'lucide-react';
 import { Button } from '../Button/Button';
 import { useTranslation } from '../../i18n';
 import { requestPasswordReset } from '../../services/accountApi';
@@ -31,6 +32,7 @@ export function LoginPanel({ onLogin, registerQrImageUrl }: LoginPanelProps) {
   const [mode, setMode] = useState<Mode>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [resetEmail, setResetEmail] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -65,15 +67,22 @@ export function LoginPanel({ onLogin, registerQrImageUrl }: LoginPanelProps) {
   if (mode === 'register') {
     return (
       <div className={styles.root}>
-        <h2 className={styles.title}>{t.login.registerTitle}</h2>
+        <div className={styles.heading}>
+          <h2 className={styles.title}>{t.login.registerTitle}</h2>
+          <p className={styles.subtitle}>{t.login.registerSubtitle}</p>
+        </div>
         <div className={styles.qrBox}>
           {registerQrImageUrl ? (
             <img src={registerQrImageUrl} alt={t.login.registerQrImageAlt} />
           ) : (
-            t.login.preparingQrCode
+            <span className={styles.preparing}>{t.login.preparingQrCode}</span>
           )}
         </div>
-        <p>{t.login.registerQrHint}</p>
+        <ol className={styles.steps}>
+          <li>{t.login.registerStep1}</li>
+          <li>{t.login.registerStep2}</li>
+          <li>{t.login.registerStep3}</li>
+        </ol>
         <Button
           id="login-back-to-login-from-register"
           label={t.login.backToLogin}
@@ -86,10 +95,16 @@ export function LoginPanel({ onLogin, registerQrImageUrl }: LoginPanelProps) {
   if (mode === 'reset-sent') {
     return (
       <div className={styles.root}>
-        <h2 className={styles.title}>{t.login.checkYourEmail}</h2>
-        <p>{t.login.resetInstructionsSent}</p>
+        <span className={styles.badge} aria-hidden="true">
+          <MailCheck size={48} strokeWidth={1.5} />
+        </span>
+        <div className={styles.heading}>
+          <h2 className={styles.title}>{t.login.checkYourEmail}</h2>
+          <p className={styles.subtitle}>{t.login.resetInstructionsSent}</p>
+        </div>
         <Button
           id="login-back-to-login"
+          variant="primary"
           label={t.login.backToLogin}
           onClick={() => setMode('login')}
         />
@@ -100,37 +115,54 @@ export function LoginPanel({ onLogin, registerQrImageUrl }: LoginPanelProps) {
   if (mode === 'forgot-password') {
     return (
       <div className={styles.root}>
-        <h2 className={styles.title}>{t.login.resetPassword}</h2>
+        <span className={styles.badge} aria-hidden="true">
+          <Mail size={48} strokeWidth={1.5} />
+        </span>
+        <div className={styles.heading}>
+          <h2 className={styles.title}>{t.login.resetPassword}</h2>
+          <p className={styles.subtitle}>{t.login.resetSubtitle}</p>
+        </div>
         <label className={styles.field}>
-          {t.login.email}
+          <Mail size={26} strokeWidth={1.75} aria-hidden="true" />
           <input
             type="email"
+            placeholder={t.login.email}
+            aria-label={t.login.email}
             value={resetEmail}
             onChange={(event) => setResetEmail(event.target.value)}
           />
         </label>
         <Button
           id="login-send-reset"
+          variant="primary"
           label={t.login.sendResetInstructions}
           onClick={handleSendReset}
           disabled={resetEmail.trim() === '' || isSendingReset}
         />
-        <Button
+        <button
+          type="button"
           id="login-cancel-reset"
-          label={t.login.backToLogin}
+          className={styles.link}
           onClick={() => setMode('login')}
-        />
+        >
+          {t.login.backToLogin}
+        </button>
       </div>
     );
   }
 
   return (
     <div className={styles.root}>
-      <h2 className={styles.title}>{t.login.logIn}</h2>
+      <div className={styles.heading}>
+        <h2 className={styles.title}>{t.login.logIn}</h2>
+        <p className={styles.subtitle}>{t.login.subtitle}</p>
+      </div>
       <label className={styles.field}>
-        {t.login.email}
+        <Mail size={26} strokeWidth={1.75} aria-hidden="true" />
         <input
           type="email"
+          placeholder={t.login.email}
+          aria-label={t.login.email}
           value={email}
           onChange={(event) => {
             setEmail(event.target.value);
@@ -139,29 +171,59 @@ export function LoginPanel({ onLogin, registerQrImageUrl }: LoginPanelProps) {
         />
       </label>
       <label className={styles.field}>
-        {t.login.password}
+        <LockKeyhole size={26} strokeWidth={1.75} aria-hidden="true" />
         <input
-          type="password"
+          type={showPassword ? 'text' : 'password'}
+          placeholder={t.login.password}
+          aria-label={t.login.password}
           value={password}
           onChange={(event) => {
             setPassword(event.target.value);
             setError(null);
           }}
         />
+        <button
+          type="button"
+          id="login-toggle-password"
+          className={styles.eye}
+          onClick={() => setShowPassword(!showPassword)}
+          aria-label={showPassword ? t.login.hidePassword : t.login.showPassword}
+        >
+          {showPassword ? (
+            <EyeOff size={26} aria-hidden="true" />
+          ) : (
+            <Eye size={26} aria-hidden="true" />
+          )}
+        </button>
       </label>
-      {error && <p className={styles.error}>{error}</p>}
+      {error && (
+        <p className={styles.error} role="alert">
+          {error}
+        </p>
+      )}
       <Button
         id="login-submit"
+        variant="primary"
         label={t.login.logIn}
         onClick={handleSubmit}
         disabled={email.trim() === '' || password.trim() === '' || isSubmitting}
       />
-      <Button
+      <button
+        type="button"
         id="login-forgot-password"
-        label={t.login.forgotPassword}
+        className={styles.link}
         onClick={() => setMode('forgot-password')}
+      >
+        {t.login.forgotPassword}
+      </button>
+      <div className={styles.divider}>
+        <span>{t.login.or}</span>
+      </div>
+      <Button
+        id="login-register"
+        label={t.login.createAccount}
+        onClick={() => setMode('register')}
       />
-      <Button id="login-register" label={t.login.register} onClick={() => setMode('register')} />
     </div>
   );
 }

@@ -1,42 +1,70 @@
 /* Per docs/domain/kiosk-session.md ("End Session" visibility rules), a
-   popup must not cover the header, footer, or even the background of the
-   working screen — so this has no dimming layer and is bounded to the
+   popup must not cover the header or footer — so it is bounded to the
    screen's content area (its nearest positioned ancestor, KioskScreenLayout's
-   .content), not the full viewport. The surface color (not `Canvas`
-   anymore) is a deliberate, slightly-off-white tone, distinct enough from
-   the screen's own background to read as a floating panel even without a
-   dimming layer behind it. */
+   .content), not the full viewport. */
 
+/* Revised 2026-10-20: the working area behind a popup is dimmed and
+   softly blurred — the screen underneath was showing through around the
+   panel's edges. The overlay still lives inside .content, so the header
+   and footer (End Session included) are never dimmed and stay usable. */
 .overlay {
   position: absolute;
   inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  /* Lets clicks reach whatever is behind the popup outside .content below —
-     only the panel itself should intercept clicks. */
-  pointer-events: none;
   z-index: 10;
+  border-radius: var(--radius-large);
+  background: rgb(13 26 69 / 18%);
+  backdrop-filter: blur(6px);
   animation: fade-in var(--motion-duration-fast) var(--motion-easing);
 }
 
 .content {
+  position: relative;
   pointer-events: auto;
   box-sizing: border-box;
   width: 90%;
-  max-width: 32rem;
+  max-width: 40rem;
   max-height: 100%;
   overflow-y: auto;
-  padding: var(--space-l);
+  padding: var(--space-xl) var(--space-xl) var(--space-l);
   border-radius: var(--radius-large);
   box-shadow: var(--elevation-modal);
-  border: 1px solid var(--color-border);
+  border: 1.5px solid var(--color-border);
   background: var(--color-surface);
   color: var(--color-ink);
   display: flex;
   flex-direction: column;
   gap: var(--space-m);
   animation: rise-in var(--motion-duration-fast) var(--motion-easing);
+}
+
+.close {
+  position: absolute;
+  top: var(--space-m);
+  right: var(--space-m);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--touch-target);
+  height: var(--touch-target);
+  border: none;
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-sunken);
+  color: var(--color-ink);
+  cursor: pointer;
+}
+
+.close:hover,
+.close:active {
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+}
+
+.close:focus-visible {
+  outline: 3px solid var(--color-accent);
+  outline-offset: 2px;
 }
 
 @keyframes fade-in {

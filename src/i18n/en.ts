@@ -71,6 +71,17 @@ export const en = {
       'Printing is temporarily unavailable — our staff have been notified. Your cart is saved, please try again shortly.',
   },
   login: {
+    subtitle: 'To pick files you saved earlier',
+    or: 'or',
+    createAccount: 'Create an account',
+    showPassword: 'Show password',
+    hidePassword: 'Hide password',
+    registerSubtitle:
+      'Scan the code with your phone camera and finish signing up on the page that opens',
+    registerStep1: 'Point your phone camera at the code',
+    registerStep2: 'Open the link that appears',
+    registerStep3: 'Fill in the short form',
+    resetSubtitle: "Enter your account e-mail — we'll send a link to set a new password",
     checkYourEmail: 'Check your email',
     resetInstructionsSent:
       'If an account with that email exists, password reset instructions have been sent.',

@@ -70,6 +70,17 @@ export const de: Translations = {
       'Drucken ist vorübergehend nicht möglich — unser Personal wurde benachrichtigt. Ihr Warenkorb bleibt gespeichert, bitte versuchen Sie es gleich noch einmal.',
   },
   login: {
+    subtitle: 'Um früher gespeicherte Dateien zu wählen',
+    or: 'oder',
+    createAccount: 'Konto erstellen',
+    showPassword: 'Passwort anzeigen',
+    hidePassword: 'Passwort verbergen',
+    registerSubtitle:
+      'Code mit der Handykamera scannen und die Registrierung auf der geöffneten Seite abschließen',
+    registerStep1: 'Handykamera auf den Code richten',
+    registerStep2: 'Den angezeigten Link öffnen',
+    registerStep3: 'Das kurze Formular ausfüllen',
+    resetSubtitle: 'Konto-E-Mail eingeben — wir senden einen Link für ein neues Passwort',
     checkYourEmail: 'Überprüfen Sie Ihre E-Mails',
     resetInstructionsSent:
       'Falls ein Konto mit dieser E-Mail-Adresse existiert, wurden Anweisungen zum Zurücksetzen des Passworts gesendet.',
