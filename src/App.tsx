@@ -8,6 +8,7 @@ import { ScanScreen } from './features/scan/ScanScreen';
 import { CopyScreen } from './features/copy/CopyScreen';
 import { PersonalAccountScreen } from './features/personal-account/PersonalAccountScreen';
 import { PrintOrderConfigurationScreen } from './features/print-order-configuration/PrintOrderConfigurationScreen';
+import { OrderReviewScreen } from './features/order-review/OrderReviewScreen';
 import { PaymentStatusScreen } from './features/payment-status/PaymentStatusScreen';
 import { PrintStatusScreen } from './features/print-status/PrintStatusScreen';
 import { FinalisingSessionScreen } from './features/finalising-session/FinalisingSessionScreen';
@@ -54,6 +55,7 @@ type Screen =
   | 'copy'
   | 'personal-account'
   | 'print-order-configuration'
+  | 'order-review'
   | 'payment-status'
   | 'print-status'
   | 'finalising-session'
@@ -119,8 +121,8 @@ const PRINT_POLL_INTERVAL_MS = 1500;
 // SESSION_ID_STORAGE_KEY above.
 //
 // Cart (docs/domain/kiosk-session.md) is likewise minimal: just an array of
-// PrintOrder, populated by the Email flow's "Add to cart" and read by every
-// screen's Cart popup (KioskScreenLayout) — persisted to localStorage (see
+// PrintOrder, populated by "Add to order" and shown on the order review
+// screen (OrderReviewScreen) — persisted to localStorage (see
 // CART_STORAGE_KEY) so it survives a reload.
 function App() {
   const [screen, setScreen] = useState<Screen>('welcome');
@@ -249,32 +251,18 @@ function App() {
   // (docs/upload-method-requirements.md). Set from `selectedFile.sourceMethod`
   // in handleAddToCart, now that a second method (QR) exists alongside Email.
   const [usedMethods, setUsedMethods] = useState<Set<string>>(new Set());
-  // Opens the Cart popup as soon as Upload Method Selection mounts — set
-  // right after "Add to cart" so the user sees what was just added instead
-  // of silently landing back on this screen. Reset to false on every other
-  // way of reaching this screen.
-  const [openCartOnUploadMethodSelection, setOpenCartOnUploadMethodSelection] = useState(false);
-  // Same idea, but for the Email mailbox screen: after "Add to cart" the
-  // user returns there (not to Upload Method Selection), since they may
-  // still have other attachments/emails to process.
-  const [openCartOnEmailFileList, setOpenCartOnEmailFileList] = useState(false);
-  // Same idea, but for the QR upload screen.
-  const [openCartOnQrUpload, setOpenCartOnQrUpload] = useState(false);
-  // Same idea, but for the Copy screen.
-  const [openCartOnCopy, setOpenCartOnCopy] = useState(false);
-  // Same idea, but for the Personal Account screen.
-  const [openCartOnPersonalAccount, setOpenCartOnPersonalAccount] = useState(false);
+  // Where the order review screen goes back to (Back, "Add another file") —
+  // the screen the customer came from, so they keep their place now that
+  // the Cart is a screen rather than a popup (docs/cart-requirements.md).
+  const [reviewReturn, setReviewReturn] = useState<{
+    screen: Screen;
+    personalAccountTab?: 'files' | 'orders';
+  }>({ screen: 'upload-method-selection' });
   // Which tab Personal Account should show when it (re)mounts — set
   // explicitly by every navigation into the screen (docs/personal-account-requirements.md:
   // returning after "My files" batch/single-file actions goes back to
   // "files"; adding a paid order from "My orders" goes back to "orders").
   const [personalAccountTab, setPersonalAccountTab] = useState<'files' | 'orders'>('files');
-  // Forces PersonalAccountScreen to remount when a paid order is added to
-  // Cart directly from "My orders" — unlike every other "add to cart" path,
-  // that one doesn't navigate to a different screen first, so
-  // `initialCartOpen` (a plain useState initializer in KioskScreenLayout)
-  // would otherwise never re-run and the Cart popup wouldn't reopen.
-  const [personalAccountRenderKey, setPersonalAccountRenderKey] = useState(0);
   // True right after a successful login while the account has at least one
   // order paid in advance and awaiting print (docs/personal-account-requirements.md,
   // "Paid orders awaiting print") — drives a one-time prompt popup shown
@@ -515,30 +503,49 @@ function App() {
     };
   }, [session]);
 
-  function goToUploadMethodSelection(openCart: boolean) {
-    setOpenCartOnUploadMethodSelection(openCart);
+  function goToUploadMethodSelection() {
     setScreen('upload-method-selection');
   }
 
-  function goToEmailFileList(openCart: boolean) {
-    setOpenCartOnEmailFileList(openCart);
+  function goToEmailFileList() {
     setScreen('email-file-list');
   }
 
-  function goToQrUpload(openCart: boolean) {
-    setOpenCartOnQrUpload(openCart);
+  function goToQrUpload() {
     setScreen('qr-upload');
   }
 
-  function goToCopy(openCart: boolean) {
-    setOpenCartOnCopy(openCart);
+  function goToCopy() {
     setScreen('copy');
   }
 
-  function goToPersonalAccount(openCart: boolean, tab: 'files' | 'orders' = 'files') {
-    setOpenCartOnPersonalAccount(openCart);
+  function goToPersonalAccount(tab: 'files' | 'orders' = 'files') {
     setPersonalAccountTab(tab);
     setScreen('personal-account');
+  }
+
+  function openOrderReview(from: { screen: Screen; personalAccountTab?: 'files' | 'orders' }) {
+    setReviewReturn({ personalAccountTab, ...from });
+    setScreen('order-review');
+  }
+
+  function leaveOrderReview() {
+    if (reviewReturn.screen === 'personal-account') {
+      goToPersonalAccount(reviewReturn.personalAccountTab);
+    } else {
+      setScreen(reviewReturn.screen);
+    }
+  }
+
+  // "Add another file": back to the file source the customer came from, or
+  // to the upload-method choice when they came from anywhere else.
+  function addMoreFromOrderReview() {
+    const fileSources: Screen[] = ['qr-upload', 'email-file-list', 'personal-account', 'copy'];
+    if (fileSources.includes(reviewReturn.screen)) {
+      leaveOrderReview();
+    } else {
+      goToUploadMethodSelection();
+    }
   }
 
   function selectFileForConfiguration(
@@ -619,8 +626,7 @@ function App() {
       { ...order, id: crypto.randomUUID(), sourcePaidOrderId: order.id },
     ]);
     setUsedMethods((current) => new Set(current).add('upload-method-account'));
-    setPersonalAccountRenderKey((current) => current + 1);
-    goToPersonalAccount(true, 'orders');
+    openOrderReview({ screen: 'personal-account', personalAccountTab: 'orders' });
   }
 
   function handleLogout() {
@@ -631,7 +637,7 @@ function App() {
       current ? { ...current, accountId: null, accountToken: undefined } : current,
     );
     setHasPendingPaidOrders(false);
-    goToUploadMethodSelection(false);
+    goToUploadMethodSelection();
   }
 
   function handlePrintActivate() {
@@ -648,7 +654,7 @@ function App() {
         console.error('[App] startSession request failed:', err);
       });
     }
-    goToUploadMethodSelection(false);
+    goToUploadMethodSelection();
   }
 
   // Creates a fresh scan attempt under the given Kiosk Session id
@@ -730,7 +736,7 @@ function App() {
     } else if (!copySessionId) {
       startCopySession(session.id);
     }
-    goToCopy(false);
+    goToCopy();
   }
 
   function handleCopyAnotherDocument() {
@@ -795,7 +801,7 @@ function App() {
 
   function handleGoToPaidOrders() {
     setHasPendingPaidOrders(false);
-    goToPersonalAccount(false, 'orders');
+    goToPersonalAccount('orders');
   }
 
   // Wrapped in useCallback for a stable reference: KioskScreenLayout's
@@ -848,7 +854,7 @@ function App() {
 
     // Mid-batch (docs/personal-account-requirements.md, "Batch configure"):
     // move straight to the next queued file's Print Order Configuration —
-    // no trip back to the source screen or Cart popup until every file in
+    // no trip back to the source screen or order review until every file in
     // the batch has been added.
     if (batchQueue.length > 0) {
       const [next, ...rest] = batchQueue;
@@ -865,24 +871,19 @@ function App() {
       return;
     }
 
-    // Returns to the screen the file came from (not Upload Method Selection)
-    // so the user can process another file from the same source — matches
-    // Cart's confirmed purpose (docs/domain/kiosk-session.md). Cart popup
-    // opens automatically so the user sees what was just added; they close
-    // it themselves to continue.
-    if (selectedFile.sourceMethod === 'upload-method-qr') {
-      goToQrUpload(true);
-    } else if (selectedFile.sourceMethod === 'upload-method-account') {
-      goToPersonalAccount(true, 'files');
-    } else if (selectedFile.sourceMethod === 'upload-method-copy') {
-      // Ready state is still correct (the document is unchanged) — the
-      // Cart popup opens automatically so the person sees what was just
-      // added, same as every other source (docs/screens/copy-spec.md,
-      // "Confirmed flow ordering").
-      goToCopy(true);
-    } else {
-      goToEmailFileList(true);
-    }
+    // Shows the order review screen (step 3) so the customer sees what was
+    // just added; its Back and "Add another file" return to the screen the
+    // file came from, so another file from the same source is one tap away
+    // (Cart's confirmed purpose, docs/domain/kiosk-session.md).
+    const sourceScreen: Record<string, Screen> = {
+      'upload-method-qr': 'qr-upload',
+      'upload-method-account': 'personal-account',
+      'upload-method-copy': 'copy',
+    };
+    openOrderReview({
+      screen: sourceScreen[selectedFile.sourceMethod] ?? 'email-file-list',
+      personalAccountTab: 'files',
+    });
   }
 
   function handleQuantityChange(id: string, quantity: number) {
@@ -987,25 +988,22 @@ function App() {
           onHome={() => setScreen('welcome')}
           onEndSession={handleEndSession}
           onEmailActivate={() =>
-            hasReceivedEmail ? goToEmailFileList(false) : setScreen('email-address')
+            hasReceivedEmail ? goToEmailFileList() : setScreen('email-address')
           }
           onQrActivate={() => {
             if (!hasQrUploadStarted) {
               setHasQrUploadStarted(true);
             }
-            goToQrUpload(false);
+            goToQrUpload();
           }}
           cartItems={cart}
-          onQuantityChange={handleQuantityChange}
-          onRemoveItem={handleRemoveItem}
-          onProceedToPayment={handleProceedToPayment}
+          onOpenCart={() => openOrderReview({ screen })}
           usedMethods={cardMarkerMethods}
-          cartOpenOnMount={openCartOnUploadMethodSelection}
           isConnectionLost={isConnectionLost}
           onSimulateConnectionLost={handleSimulateConnectionLost}
           onSimulateConnectionRestored={handleSimulateConnectionRestored}
           onLogin={handleLogin}
-          onGoToPersonalAccount={() => goToPersonalAccount(false)}
+          onGoToPersonalAccount={() => goToPersonalAccount()}
           accountId={session?.accountId ?? null}
           hasPendingPaidOrders={hasPendingPaidOrders}
           onDismissPaidOrdersPrompt={handleDismissPaidOrdersPrompt}
@@ -1023,21 +1021,19 @@ function App() {
           emailAddress={sessionEmailAddress(session.id)}
           onNext={() => {
             setHasReceivedEmail(true);
-            goToEmailFileList(false);
+            goToEmailFileList();
           }}
-          onBack={() => goToUploadMethodSelection(false)}
+          onBack={() => goToUploadMethodSelection()}
           onHome={() => setScreen('welcome')}
           onEndSession={handleEndSession}
           cartItems={cart}
-          onQuantityChange={handleQuantityChange}
-          onRemoveItem={handleRemoveItem}
-          onProceedToPayment={handleProceedToPayment}
+          onOpenCart={() => openOrderReview({ screen })}
           isConnectionLost={isConnectionLost}
           onSimulateConnectionLost={handleSimulateConnectionLost}
           onSimulateConnectionRestored={handleSimulateConnectionRestored}
           onLogin={handleLogin}
           accountId={session?.accountId ?? null}
-          onGoToPersonalAccount={() => goToPersonalAccount(false)}
+          onGoToPersonalAccount={() => goToPersonalAccount()}
           hasPendingPaidOrders={hasPendingPaidOrders}
           onDismissPaidOrdersPrompt={handleDismissPaidOrdersPrompt}
           onGoToPaidOrders={handleGoToPaidOrders}
@@ -1061,16 +1057,13 @@ function App() {
           onHome={() => setScreen('welcome')}
           onEndSession={handleEndSession}
           cartItems={cart}
-          onQuantityChange={handleQuantityChange}
-          onRemoveItem={handleRemoveItem}
-          onProceedToPayment={handleProceedToPayment}
-          cartOpenOnMount={openCartOnEmailFileList}
+          onOpenCart={() => openOrderReview({ screen })}
           isConnectionLost={isConnectionLost}
           onSimulateConnectionLost={handleSimulateConnectionLost}
           onSimulateConnectionRestored={handleSimulateConnectionRestored}
           onLogin={handleLogin}
           accountId={session?.accountId ?? null}
-          onGoToPersonalAccount={() => goToPersonalAccount(false)}
+          onGoToPersonalAccount={() => goToPersonalAccount()}
           hasPendingPaidOrders={hasPendingPaidOrders}
           onDismissPaidOrdersPrompt={handleDismissPaidOrdersPrompt}
           onGoToPaidOrders={handleGoToPaidOrders}
@@ -1090,20 +1083,17 @@ function App() {
             selectFileForConfiguration(fileId, fileName, 'upload-method-qr')
           }
           onConfigureAllFiles={handleConfigureAllQrFiles}
-          onBack={() => goToUploadMethodSelection(false)}
+          onBack={() => goToUploadMethodSelection()}
           onHome={() => setScreen('welcome')}
           onEndSession={handleEndSession}
           cartItems={cart}
-          onQuantityChange={handleQuantityChange}
-          onRemoveItem={handleRemoveItem}
-          onProceedToPayment={handleProceedToPayment}
-          cartOpenOnMount={openCartOnQrUpload}
+          onOpenCart={() => openOrderReview({ screen })}
           isConnectionLost={isConnectionLost}
           onSimulateConnectionLost={handleSimulateConnectionLost}
           onSimulateConnectionRestored={handleSimulateConnectionRestored}
           onLogin={handleLogin}
           accountId={session?.accountId ?? null}
-          onGoToPersonalAccount={() => goToPersonalAccount(false)}
+          onGoToPersonalAccount={() => goToPersonalAccount()}
           hasPendingPaidOrders={hasPendingPaidOrders}
           onDismissPaidOrdersPrompt={handleDismissPaidOrdersPrompt}
           onGoToPaidOrders={handleGoToPaidOrders}
@@ -1124,15 +1114,13 @@ function App() {
           onHome={() => setScreen('welcome')}
           onEndSession={handleEndSession}
           cartItems={cart}
-          onQuantityChange={handleQuantityChange}
-          onRemoveItem={handleRemoveItem}
-          onProceedToPayment={handleProceedToPayment}
+          onOpenCart={() => openOrderReview({ screen })}
           isConnectionLost={isConnectionLost}
           onSimulateConnectionLost={handleSimulateConnectionLost}
           onSimulateConnectionRestored={handleSimulateConnectionRestored}
           onLogin={handleLogin}
           accountId={session?.accountId ?? null}
-          onGoToPersonalAccount={() => goToPersonalAccount(false)}
+          onGoToPersonalAccount={() => goToPersonalAccount()}
           hasPendingPaidOrders={hasPendingPaidOrders}
           onDismissPaidOrdersPrompt={handleDismissPaidOrdersPrompt}
           onGoToPaidOrders={handleGoToPaidOrders}
@@ -1149,22 +1137,19 @@ function App() {
           copyQrUrl={copyQrUrl}
           copySession={copySession}
           resultFileStatus={copyResultFileStatus}
-          cartOpenOnMount={openCartOnCopy}
           onConfigurePrinting={handleCopyConfigurePrinting}
           onAnotherDocument={handleCopyAnotherDocument}
           onBack={() => setScreen('welcome')}
           onHome={() => setScreen('welcome')}
           onEndSession={handleEndSession}
           cartItems={cart}
-          onQuantityChange={handleQuantityChange}
-          onRemoveItem={handleRemoveItem}
-          onProceedToPayment={handleProceedToPayment}
+          onOpenCart={() => openOrderReview({ screen })}
           isConnectionLost={isConnectionLost}
           onSimulateConnectionLost={handleSimulateConnectionLost}
           onSimulateConnectionRestored={handleSimulateConnectionRestored}
           onLogin={handleLogin}
           accountId={session?.accountId ?? null}
-          onGoToPersonalAccount={() => goToPersonalAccount(false)}
+          onGoToPersonalAccount={() => goToPersonalAccount()}
           hasPendingPaidOrders={hasPendingPaidOrders}
           onDismissPaidOrdersPrompt={handleDismissPaidOrdersPrompt}
           onGoToPaidOrders={handleGoToPaidOrders}
@@ -1178,28 +1163,24 @@ function App() {
     return (
       <LanguageProvider language={language}>
         <PersonalAccountScreen
-          key={personalAccountRenderKey}
           onFileSelect={(fileId, fileName) =>
             selectFileForConfiguration(fileId, fileName, 'upload-method-account')
           }
           onConfigureSelectedFiles={handleConfigureSelectedAccountFiles}
           onAddPaidOrderToCart={handleAddPaidOrderToCart}
           initialTab={personalAccountTab}
-          onBack={() => goToUploadMethodSelection(false)}
+          onBack={() => goToUploadMethodSelection()}
           onHome={() => setScreen('welcome')}
           onEndSession={handleEndSession}
           cartItems={cart}
-          onQuantityChange={handleQuantityChange}
-          onRemoveItem={handleRemoveItem}
-          onProceedToPayment={handleProceedToPayment}
-          cartOpenOnMount={openCartOnPersonalAccount}
+          onOpenCart={() => openOrderReview({ screen })}
           isConnectionLost={isConnectionLost}
           onSimulateConnectionLost={handleSimulateConnectionLost}
           onSimulateConnectionRestored={handleSimulateConnectionRestored}
           onLogin={handleLogin}
           accountId={session?.accountId ?? null}
           accountToken={session?.accountToken}
-          onGoToPersonalAccount={() => goToPersonalAccount(false)}
+          onGoToPersonalAccount={() => goToPersonalAccount()}
           onLogout={handleLogout}
           hasPendingPaidOrders={hasPendingPaidOrders}
           onDismissPaidOrdersPrompt={handleDismissPaidOrdersPrompt}
@@ -1229,11 +1210,11 @@ function App() {
             // "Batch configure").
             setBatchQueue([]);
             if (selectedFile.sourceMethod === 'upload-method-qr') {
-              goToQrUpload(false);
+              goToQrUpload();
             } else if (selectedFile.sourceMethod === 'upload-method-account') {
-              goToPersonalAccount(false, 'files');
+              goToPersonalAccount('files');
             } else if (selectedFile.sourceMethod === 'upload-method-copy') {
-              goToCopy(false);
+              goToCopy();
             } else {
               setScreen('email-file-list');
             }
@@ -1244,15 +1225,40 @@ function App() {
           }}
           onEndSession={handleEndSession}
           cartItems={cart}
-          onQuantityChange={handleQuantityChange}
-          onRemoveItem={handleRemoveItem}
-          onProceedToPayment={handleProceedToPayment}
+          onOpenCart={() => openOrderReview({ screen })}
           isConnectionLost={isConnectionLost}
           onSimulateConnectionLost={handleSimulateConnectionLost}
           onSimulateConnectionRestored={handleSimulateConnectionRestored}
           onLogin={handleLogin}
           accountId={session?.accountId ?? null}
-          onGoToPersonalAccount={() => goToPersonalAccount(false)}
+          onGoToPersonalAccount={() => goToPersonalAccount()}
+          hasPendingPaidOrders={hasPendingPaidOrders}
+          onDismissPaidOrdersPrompt={handleDismissPaidOrdersPrompt}
+          onGoToPaidOrders={handleGoToPaidOrders}
+          onLanguageChange={setLanguage}
+        />
+      </LanguageProvider>
+    );
+  }
+
+  if (screen === 'order-review') {
+    return (
+      <LanguageProvider language={language}>
+        <OrderReviewScreen
+          cartItems={cart}
+          onQuantityChange={handleQuantityChange}
+          onRemoveItem={handleRemoveItem}
+          onProceedToPayment={handleProceedToPayment}
+          onAddMore={addMoreFromOrderReview}
+          onBack={leaveOrderReview}
+          onHome={() => setScreen('welcome')}
+          onEndSession={handleEndSession}
+          isConnectionLost={isConnectionLost}
+          onSimulateConnectionLost={handleSimulateConnectionLost}
+          onSimulateConnectionRestored={handleSimulateConnectionRestored}
+          onLogin={handleLogin}
+          accountId={session?.accountId ?? null}
+          onGoToPersonalAccount={() => goToPersonalAccount()}
           hasPendingPaidOrders={hasPendingPaidOrders}
           onDismissPaidOrdersPrompt={handleDismissPaidOrdersPrompt}
           onGoToPaidOrders={handleGoToPaidOrders}
@@ -1269,25 +1275,22 @@ function App() {
           paymentItems={paymentItems}
           sessionId={session?.id ?? null}
           cartItems={cart}
-          onQuantityChange={handleQuantityChange}
-          onRemoveItem={handleRemoveItem}
           onPaymentSuccess={handlePaymentSuccess}
           onCancelPayment={() => {
             setPaymentItems([]);
-            goToUploadMethodSelection(false);
+            goToUploadMethodSelection();
           }}
           onReturnHome={() => {
             setPaymentItems([]);
             setScreen('welcome');
           }}
           onEndSession={handleEndSession}
-          onProceedToPayment={handleProceedToPayment}
           isConnectionLost={isConnectionLost}
           onSimulateConnectionLost={handleSimulateConnectionLost}
           onSimulateConnectionRestored={handleSimulateConnectionRestored}
           onLogin={handleLogin}
           accountId={session?.accountId ?? null}
-          onGoToPersonalAccount={() => goToPersonalAccount(false)}
+          onGoToPersonalAccount={() => goToPersonalAccount()}
           hasPendingPaidOrders={hasPendingPaidOrders}
           onDismissPaidOrdersPrompt={handleDismissPaidOrdersPrompt}
           onGoToPaidOrders={handleGoToPaidOrders}
@@ -1302,20 +1305,17 @@ function App() {
       <LanguageProvider language={language}>
         <PrintStatusScreen
           cartItems={cart}
-          onQuantityChange={handleQuantityChange}
-          onRemoveItem={handleRemoveItem}
           printTasks={printTasks}
           receiptPaymentId={receiptPaymentId}
           onPrintComplete={handlePrintComplete}
           onSimulatePrintOutcome={handleSimulatePrintOutcome}
           onEndSession={handleEndSession}
-          onProceedToPayment={handleProceedToPayment}
           isConnectionLost={isConnectionLost}
           onSimulateConnectionLost={handleSimulateConnectionLost}
           onSimulateConnectionRestored={handleSimulateConnectionRestored}
           onLogin={handleLogin}
           accountId={session?.accountId ?? null}
-          onGoToPersonalAccount={() => goToPersonalAccount(false)}
+          onGoToPersonalAccount={() => goToPersonalAccount()}
           hasPendingPaidOrders={hasPendingPaidOrders}
           onDismissPaidOrdersPrompt={handleDismissPaidOrdersPrompt}
           onGoToPaidOrders={handleGoToPaidOrders}
@@ -1340,15 +1340,13 @@ function App() {
           onReturnToWelcome={() => setScreen('welcome')}
           onEndSession={handleEndSession}
           cartItems={cart}
-          onQuantityChange={handleQuantityChange}
-          onRemoveItem={handleRemoveItem}
-          onProceedToPayment={handleProceedToPayment}
+          onOpenCart={() => openOrderReview({ screen })}
           isConnectionLost={isConnectionLost}
           onSimulateConnectionLost={handleSimulateConnectionLost}
           onSimulateConnectionRestored={handleSimulateConnectionRestored}
           onLogin={handleLogin}
           accountId={session?.accountId ?? null}
-          onGoToPersonalAccount={() => goToPersonalAccount(false)}
+          onGoToPersonalAccount={() => goToPersonalAccount()}
           hasPendingPaidOrders={hasPendingPaidOrders}
           onDismissPaidOrdersPrompt={handleDismissPaidOrdersPrompt}
           onGoToPaidOrders={handleGoToPaidOrders}
@@ -1367,15 +1365,13 @@ function App() {
         sessionActive={session !== null}
         onEndSession={handleEndSession}
         cartItems={cart}
-        onQuantityChange={handleQuantityChange}
-        onRemoveItem={handleRemoveItem}
-        onProceedToPayment={handleProceedToPayment}
+        onOpenCart={() => openOrderReview({ screen })}
         isConnectionLost={isConnectionLost}
         onSimulateConnectionLost={handleSimulateConnectionLost}
         onSimulateConnectionRestored={handleSimulateConnectionRestored}
         onLogin={handleLogin}
         accountId={session?.accountId ?? null}
-        onGoToPersonalAccount={() => goToPersonalAccount(false)}
+        onGoToPersonalAccount={() => goToPersonalAccount()}
         hasPendingPaidOrders={hasPendingPaidOrders}
         onDismissPaidOrdersPrompt={handleDismissPaidOrdersPrompt}
         onGoToPaidOrders={handleGoToPaidOrders}

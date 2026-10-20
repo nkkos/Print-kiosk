@@ -29,8 +29,8 @@
     color var(--motion-duration-fast) var(--motion-easing);
 }
 
-.item:hover,
-.item:active {
+.item:hover:not(:disabled),
+.item:active:not(:disabled) {
   background: var(--color-accent-soft);
   color: var(--color-accent);
 }
@@ -38,6 +38,12 @@
 .item:focus-visible {
   outline: 3px solid var(--color-accent);
   outline-offset: 2px;
+}
+
+/* btn-cart while a payment or print is under way. */
+.item:disabled {
+  opacity: 0.4;
+  cursor: default;
 }
 
 .item[data-active] {

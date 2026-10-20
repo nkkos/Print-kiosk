@@ -6,14 +6,12 @@ import { DevOnly } from '../../components/DevOnly/DevOnly';
 import { Button } from '../../components/Button/Button';
 import { PersistentActionBar } from '../../components/PersistentActionBar/PersistentActionBar';
 import { Modal } from '../../components/Modal/Modal';
-import { CartPanel } from '../../components/CartPanel/CartPanel';
 import { Notification } from '../../components/Notification/Notification';
 import { LoginPanel } from '../../components/LoginPanel/LoginPanel';
 import { useRegisterQrImageUrl } from '../../components/LoginPanel/useRegisterQrImageUrl';
 import { useTranslation, LANGUAGE_NAMES } from '../../i18n';
 import type { Language } from '../../i18n';
 import type { EndSessionReason, PrintOrder } from '../../types/kiosk';
-import { isPrinterAvailable } from '../../services/printerStatusApi';
 import { usePavilionHours, formatPavilionTime } from './usePavilionHours';
 import styles from './KioskScreenLayout.module.css';
 
@@ -26,7 +24,6 @@ import styles from './KioskScreenLayout.module.css';
 // in the domain doc and is not implemented.
 const IDLE_WARNING_DELAY_MS = 5 * 60 * 1000;
 const IDLE_END_DELAY_MS = 60 * 1000;
-const PRINTER_STATUS_POLL_MS = 10 * 1000;
 // Exported so App.tsx's session-activity heartbeat (docs/data-privacy-requirements.md
 // follow-up) can listen for the same real-activity signal, instead of
 // duplicating this list.
@@ -40,15 +37,15 @@ export const ACTIVITY_EVENTS = ['pointerdown', 'keydown', 'touchstart'] as const
 const CONNECTION_LOST_REMINDER_INTERVAL_MS = 30 * 1000;
 
 // Shared shell for every in-flow screen: header (BrandMark + conditional
-// end-session), an optional Back/Home row, the persistent footer, and the
-// Cart popup (btn-cart) — see docs/screens/welcome-screen-spec.md and
+// end-session), an optional Back/Home row, the persistent footer and the
+// cross-cutting popups — see docs/screens/welcome-screen-spec.md and
 // docs/domain/kiosk-session.md. Extracted once a third screen needed the
 // same header/footer composition as WelcomeScreen and
 // UploadMethodSelectionScreen (see
 // docs/implementation/project-architecture.md, Section 9 — extract shared
-// layout once duplication is real, not speculative). Cart's open/closed
+// layout once duplication is real, not speculative). Popup open/closed
 // state lives here (not in App.tsx) since it's purely this shell's own
-// popup-visibility concern, not Kiosk Session domain state.
+// visibility concern, not Kiosk Session domain state.
 interface KioskScreenLayoutProps {
   /** Whether a Kiosk Session is active — controls end-session's visibility.
    * Defaults to true: every screen reached after service-print already has
@@ -61,21 +58,16 @@ interface KioskScreenLayoutProps {
   onBack?: () => void;
   /** Renders navigation-home when provided; omitted on WelcomeScreen. */
   onHome?: () => void;
-  /** Current Cart contents, shown in the btn-cart popup. */
+  /** Current Cart contents — the footer's count and the End Session rule. */
   cartItems: PrintOrder[];
-  /** Adjusts a Cart item's quantity (docs/cart-requirements.md). */
-  onQuantityChange: (id: string, quantity: number) => void;
-  /** Removes a Cart item entirely, immediately (docs/cart-requirements.md). */
-  onRemoveItem: (id: string) => void;
-  /** Navigates to the Payment Status screen with the currently-checked
-   * subset of Cart items (docs/cart-requirements.md, "Selection for
-   * payment"). Offered from the Cart popup whenever it has items. */
-  onProceedToPayment: (selectedItems: PrintOrder[]) => void;
-  /** Opens the Cart popup as soon as this screen mounts — used right after
-   * "Add to cart" so the user sees what was just added, instead of
-   * silently landing back on Upload Method Selection. The user closes it
-   * themselves (Modal's Close) to continue. Defaults to false. */
-  initialCartOpen?: boolean;
+  /** Opens the order review screen (btn-cart) — App.tsx navigates there;
+   * the Cart is a screen, not a popup, since the 2026-10 redesign
+   * (docs/domain/kiosk-session.md, "Related entities: Cart").
+   * Omitted on Payment/Print Status (a committed transaction) and on the
+   * review screen itself — btn-cart is then disabled. */
+  onOpenCart?: () => void;
+  /** This is the order review screen — btn-cart shows as the current one. */
+  cartIsCurrent?: boolean;
   /** Whether the (simulated) connection is currently lost — lifted to
    * App.tsx rather than owned here, since it must persist across screen
    * navigation and actually blocks Payment/Print actions on those screens,
@@ -121,10 +113,8 @@ export function KioskScreenLayout({
   onBack,
   onHome,
   cartItems,
-  onQuantityChange,
-  onRemoveItem,
-  onProceedToPayment,
-  initialCartOpen = false,
+  onOpenCart,
+  cartIsCurrent = false,
   isConnectionLost,
   onSimulateConnectionLost,
   onSimulateConnectionRestored,
@@ -138,25 +128,6 @@ export function KioskScreenLayout({
   children,
 }: KioskScreenLayoutProps) {
   const t = useTranslation();
-  const [isCartOpen, setIsCartOpen] = useState(initialCartOpen);
-  const [printerUnavailable, setPrinterUnavailable] = useState(false);
-
-  // Checked only while the Cart is open — the one place payment starts —
-  // and re-checked so a fixed jam unlocks the button without reopening.
-  useEffect(() => {
-    if (!isCartOpen) return;
-    let cancelled = false;
-    const check = () =>
-      isPrinterAvailable().then((available) => {
-        if (!cancelled) setPrinterUnavailable(!available);
-      });
-    check();
-    const intervalId = setInterval(check, PRINTER_STATUS_POLL_MS);
-    return () => {
-      cancelled = true;
-      clearInterval(intervalId);
-    };
-  }, [isCartOpen]);
   const [isEndConfirmOpen, setIsEndConfirmOpen] = useState(false);
   const [isConnectionNotificationVisible, setIsConnectionNotificationVisible] = useState(false);
   const [isIdleWarningOpen, setIsIdleWarningOpen] = useState(false);
@@ -228,11 +199,6 @@ export function KioskScreenLayout({
     };
   }, [sessionActive, onEndSession]);
 
-  function handleCartActivate() {
-    setIsEndConfirmOpen(false);
-    setIsCartOpen(true);
-  }
-
   // Confirmation rule (docs/domain/kiosk-session.md): a genuinely empty
   // session ends immediately with no dialog; a non-empty one always shows
   // the same generic confirmation first.
@@ -240,7 +206,6 @@ export function KioskScreenLayout({
     if (cartItems.length === 0) {
       onEndSession('manual');
     } else {
-      setIsCartOpen(false);
       setIsEndConfirmOpen(true);
     }
   }
@@ -360,18 +325,6 @@ export function KioskScreenLayout({
       <main className={styles.content}>
         {children}
 
-        {isCartOpen && (
-          <Modal onClose={() => setIsCartOpen(false)}>
-            <CartPanel
-              items={cartItems}
-              onQuantityChange={onQuantityChange}
-              onRemove={onRemoveItem}
-              onProceedToPayment={onProceedToPayment}
-              printerUnavailable={printerUnavailable}
-            />
-          </Modal>
-        )}
-
         {isEndConfirmOpen && (
           <Modal onClose={() => setIsEndConfirmOpen(false)}>
             <p>{t.kioskLayout.endSessionConfirmMessage}</p>
@@ -442,8 +395,9 @@ export function KioskScreenLayout({
 
       <footer className={styles.footer}>
         <PersistentActionBar
-          onCartActivate={handleCartActivate}
+          onCartActivate={onOpenCart}
           cartCount={cartItems.length}
+          cartActive={cartIsCurrent}
           onAccountActivate={handleAccountActivate}
           accountLoggedIn={accountId !== null}
           onLanguageActivate={() => setIsLanguageOpen(true)}

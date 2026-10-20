@@ -1,6 +1,6 @@
 # Cart — Requirements
 
-Internal project document. Confirmed with the product owner. Complements `docs/domain/kiosk-session.md` ("Related entities: Cart, Print Order"), which establishes Cart's session scope and popup presentation — this document defines the field-level behavior of Cart items themselves.
+Internal project document. Confirmed with the product owner. Complements `docs/domain/kiosk-session.md` ("Related entities: Cart, Print Order"), which establishes Cart's session scope and presentation (the order review screen since 2026-10-20) — this document defines the field-level behavior of Cart items themselves.
 
 All project artifacts are written in English.
 
@@ -13,7 +13,7 @@ Covers Cart's item-level behavior: quantity, per-item selection for payment, and
 - Every Cart item (Print Order) carries a `quantity`: the number of copies of the configured document to produce. For a Print Order, this is copies of the already-configured document (whatever pages/settings the user chose) — not a page count.
 - **Set in two places, same underlying value:**
   - Initially on the Print Order Configuration screen, before "Add to cart".
-  - Adjustable again afterward, directly in the Cart popup — editing it there changes the same Print Order, it does not create a new one.
+  - Adjustable again afterward, directly on the order review screen — editing it there changes the same Print Order, it does not create a new one.
 - **Control:** a stepper (+/− buttons). Minimum is **1** — decrementing at 1 does nothing; removing an item entirely is a separate, explicit action (see "Removal").
 - **No upper limit** on quantity is enforced.
 - Checking real resource availability (paper/ink) before allowing a large quantity is explicitly **not** done — flagged as an open item in `docs/domain/kiosk-session.md` (requires a real hardware agent, and even then most printers don't expose reliable remaining-stock counts).
@@ -27,11 +27,11 @@ Covers Cart's item-level behavior: quantity, per-item selection for payment, and
 ## Selection for payment
 
 - Each Cart item has a checkbox: "include this item in the payment I'm about to make."
-- **Default: all items checked** every time the Cart popup is opened.
+- **Default: all items checked** every time the order review screen is opened.
 - The user may uncheck items they don't want to pay for/execute right now. Unchecked items are **not removed** — they remain in the Cart, available to select next time.
 - "Proceed to payment" acts only on the currently checked items: it is these items — and only these — that become the Payment Order (`docs/domain/kiosk-session.md`, "Payment Order — created from a user-selected subset of cart items"). Unchecked items stay behind in the Cart, untouched.
 - The Cart's displayed total reflects only the checked items' sum, since that is the amount that will actually be charged if the user proceeds now.
-- Selection state is not persisted on the Print Order itself — it is a transient choice for the current Cart visit, which is why it always defaults back to "all checked" the next time the popup opens.
+- Selection state is not persisted on the Print Order itself — it is a transient choice for the current Cart visit, which is why it always defaults back to "all checked" the next time the order review screen opens.
 
 ## Removal
 

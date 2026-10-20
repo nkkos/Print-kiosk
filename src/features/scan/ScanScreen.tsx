@@ -26,9 +26,8 @@ interface ScanScreenProps {
   onHome: () => void;
   onEndSession: (reason: EndSessionReason) => void;
   cartItems: PrintOrder[];
-  onQuantityChange: (id: string, quantity: number) => void;
-  onRemoveItem: (id: string) => void;
-  onProceedToPayment: (selectedItems: PrintOrder[]) => void;
+  /** Opens the order review screen — the footer's btn-cart. */
+  onOpenCart: () => void;
   isConnectionLost: boolean;
   onSimulateConnectionLost: () => void;
   onSimulateConnectionRestored: () => void;
@@ -49,9 +48,7 @@ export function ScanScreen({
   onHome,
   onEndSession,
   cartItems,
-  onQuantityChange,
-  onRemoveItem,
-  onProceedToPayment,
+  onOpenCart,
   isConnectionLost,
   onSimulateConnectionLost,
   onSimulateConnectionRestored,
@@ -98,9 +95,7 @@ export function ScanScreen({
       onBack={onBack}
       onHome={onHome}
       cartItems={cartItems}
-      onQuantityChange={onQuantityChange}
-      onRemoveItem={onRemoveItem}
-      onProceedToPayment={onProceedToPayment}
+      onOpenCart={onOpenCart}
       isConnectionLost={isConnectionLost}
       onSimulateConnectionLost={onSimulateConnectionLost}
       onSimulateConnectionRestored={onSimulateConnectionRestored}

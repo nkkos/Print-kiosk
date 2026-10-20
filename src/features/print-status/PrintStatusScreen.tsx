@@ -32,8 +32,6 @@ import styles from './PrintStatusScreen.module.css';
 // "Simulate ..." buttons, available while the task is still queued/printing.
 interface PrintStatusScreenProps {
   cartItems: PrintOrder[];
-  onQuantityChange: (id: string, quantity: number) => void;
-  onRemoveItem: (id: string) => void;
   /** One Print Task per item being printed this visit (App.tsx's
    * `printingItems`) — aggregated below into a single displayed status. */
   printTasks: PrintTask[];
@@ -44,7 +42,6 @@ interface PrintStatusScreenProps {
     outcome: 'success' | 'paper-jam' | 'out-of-paper' | 'out-of-ink',
   ) => void;
   onEndSession: (reason: EndSessionReason) => void;
-  onProceedToPayment: (selectedItems: PrintOrder[]) => void;
   /** While true, printing-related actions are disabled — printing is one of
    * the two actions connection loss actually blocks (docs/domain/kiosk-session.md,
    * "Failure and recovery"). */
@@ -88,14 +85,11 @@ function errorMessage(
 
 export function PrintStatusScreen({
   cartItems,
-  onQuantityChange,
-  onRemoveItem,
   printTasks,
   receiptPaymentId,
   onPrintComplete,
   onSimulatePrintOutcome,
   onEndSession,
-  onProceedToPayment,
   isConnectionLost,
   onSimulateConnectionLost,
   onSimulateConnectionRestored,
@@ -149,9 +143,6 @@ export function PrintStatusScreen({
       sessionActive={status === 'succeeded' || (status === 'failed' && !refundPending)}
       onEndSession={onEndSession}
       cartItems={cartItems}
-      onQuantityChange={onQuantityChange}
-      onRemoveItem={onRemoveItem}
-      onProceedToPayment={onProceedToPayment}
       isConnectionLost={isConnectionLost}
       onSimulateConnectionLost={onSimulateConnectionLost}
       onSimulateConnectionRestored={onSimulateConnectionRestored}

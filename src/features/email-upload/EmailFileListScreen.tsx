@@ -36,17 +36,10 @@ interface EmailFileListScreenProps {
   emails: ReceivedEmail[];
   /** The session's address — repeated while nothing has arrived yet. */
   emailAddress: string;
-  /** Current Cart contents, shown in the btn-cart popup. */
+  /** Current Cart contents — the footer's count and the End Session rule. */
   cartItems: PrintOrder[];
-  /** Adjusts a Cart item's quantity (docs/cart-requirements.md). */
-  onQuantityChange: (id: string, quantity: number) => void;
-  /** Removes a Cart item entirely (docs/cart-requirements.md). */
-  onRemoveItem: (id: string) => void;
-  /** Navigates to the Payment Status screen with the checked Cart items. */
-  onProceedToPayment: (selectedItems: PrintOrder[]) => void;
-  /** Opens the Cart popup as soon as this screen mounts — set right after
-   * "Add to cart" so the user sees what was just added. */
-  cartOpenOnMount?: boolean;
+  /** Opens the order review screen — the footer's btn-cart. */
+  onOpenCart: () => void;
   isConnectionLost: boolean;
   onSimulateConnectionLost: () => void;
   onSimulateConnectionRestored: () => void;
@@ -70,10 +63,7 @@ export function EmailFileListScreen({
   emails,
   emailAddress,
   cartItems,
-  onQuantityChange,
-  onRemoveItem,
-  onProceedToPayment,
-  cartOpenOnMount,
+  onOpenCart,
   isConnectionLost,
   onSimulateConnectionLost,
   onSimulateConnectionRestored,
@@ -100,10 +90,7 @@ export function EmailFileListScreen({
       onBack={onBack}
       onHome={onHome}
       cartItems={cartItems}
-      onQuantityChange={onQuantityChange}
-      onRemoveItem={onRemoveItem}
-      onProceedToPayment={onProceedToPayment}
-      initialCartOpen={cartOpenOnMount}
+      onOpenCart={onOpenCart}
       isConnectionLost={isConnectionLost}
       onSimulateConnectionLost={onSimulateConnectionLost}
       onSimulateConnectionRestored={onSimulateConnectionRestored}

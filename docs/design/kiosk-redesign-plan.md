@@ -54,12 +54,13 @@ Defaults used until decided: working name, operator hidden, line icons only, ste
 
 ## Status
 
-| Screen                          | Status                |
-| ------------------------------- | --------------------- |
-| Welcome                         | Approved (2026-10-20) |
-| Upload method selection         | Approved (2026-10-20) |
-| QR upload                       | Approved (2026-10-20) |
-| E-mail address + list           | Approved (2026-10-20) |
-| Login popup (+ register, reset) | Approved (2026-10-20) |
-| Files from the account          | Approved (2026-10-20) |
-| Print settings + preview        | Approved (2026-10-20) |
+| Screen                             | Status                |
+| ---------------------------------- | --------------------- |
+| Welcome                            | Approved (2026-10-20) |
+| Upload method selection            | Approved (2026-10-20) |
+| QR upload                          | Approved (2026-10-20) |
+| E-mail address + list              | Approved (2026-10-20) |
+| Login popup (+ register, reset)    | Approved (2026-10-20) |
+| Files from the account             | Approved (2026-10-20) |
+| Print settings + preview           | Approved (2026-10-20) |
+| Order review (replaces Cart popup) | Approved (2026-10-20) |

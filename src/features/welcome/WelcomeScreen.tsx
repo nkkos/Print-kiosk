@@ -44,14 +44,10 @@ interface WelcomeScreenProps {
   sessionActive: boolean;
   /** Ends the active Kiosk Session and returns to this screen's neutral state. */
   onEndSession: (reason: EndSessionReason) => void;
-  /** Current Cart contents, shown in the btn-cart popup. */
+  /** Current Cart contents — the footer's count and the End Session rule. */
   cartItems: PrintOrder[];
-  /** Adjusts a Cart item's quantity (docs/cart-requirements.md). */
-  onQuantityChange: (id: string, quantity: number) => void;
-  /** Removes a Cart item entirely (docs/cart-requirements.md). */
-  onRemoveItem: (id: string) => void;
-  /** Navigates to the Payment Status screen with the checked Cart items. */
-  onProceedToPayment: (selectedItems: PrintOrder[]) => void;
+  /** Opens the order review screen — the footer's btn-cart. */
+  onOpenCart: () => void;
   isConnectionLost: boolean;
   onSimulateConnectionLost: () => void;
   onSimulateConnectionRestored: () => void;
@@ -76,9 +72,7 @@ export function WelcomeScreen({
   sessionActive,
   onEndSession,
   cartItems,
-  onQuantityChange,
-  onRemoveItem,
-  onProceedToPayment,
+  onOpenCart,
   isConnectionLost,
   onSimulateConnectionLost,
   onSimulateConnectionRestored,
@@ -116,9 +110,7 @@ export function WelcomeScreen({
       sessionActive={sessionActive}
       onEndSession={onEndSession}
       cartItems={cartItems}
-      onQuantityChange={onQuantityChange}
-      onRemoveItem={onRemoveItem}
-      onProceedToPayment={onProceedToPayment}
+      onOpenCart={onOpenCart}
       isConnectionLost={isConnectionLost}
       onSimulateConnectionLost={onSimulateConnectionLost}
       onSimulateConnectionRestored={onSimulateConnectionRestored}

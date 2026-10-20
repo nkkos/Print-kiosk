@@ -27,19 +27,14 @@ interface CopyScreenProps {
    * since the capture finishing (copySession.resultFileId set) can precede
    * the file actually being printable/previewable by several seconds. */
   resultFileStatus: ReceivedFile['status'] | null;
-  /** Opens the Cart popup as soon as this screen mounts — set after "Add to
-   * cart" from Print Order Configuration, same pattern as every other
-   * source screen (docs/screens/copy-spec.md, "Confirmed flow ordering"). */
-  cartOpenOnMount?: boolean;
   onConfigurePrinting: () => void;
   onAnotherDocument: () => void;
   onBack: () => void;
   onHome: () => void;
   onEndSession: (reason: EndSessionReason) => void;
   cartItems: PrintOrder[];
-  onQuantityChange: (id: string, quantity: number) => void;
-  onRemoveItem: (id: string) => void;
-  onProceedToPayment: (selectedItems: PrintOrder[]) => void;
+  /** Opens the order review screen — the footer's btn-cart. */
+  onOpenCart: () => void;
   isConnectionLost: boolean;
   onSimulateConnectionLost: () => void;
   onSimulateConnectionRestored: () => void;
@@ -56,16 +51,13 @@ export function CopyScreen({
   copyQrUrl,
   copySession,
   resultFileStatus,
-  cartOpenOnMount,
   onConfigurePrinting,
   onAnotherDocument,
   onBack,
   onHome,
   onEndSession,
   cartItems,
-  onQuantityChange,
-  onRemoveItem,
-  onProceedToPayment,
+  onOpenCart,
   isConnectionLost,
   onSimulateConnectionLost,
   onSimulateConnectionRestored,
@@ -118,11 +110,8 @@ export function CopyScreen({
       onEndSession={onEndSession}
       onBack={onBack}
       onHome={onHome}
-      initialCartOpen={cartOpenOnMount}
       cartItems={cartItems}
-      onQuantityChange={onQuantityChange}
-      onRemoveItem={onRemoveItem}
-      onProceedToPayment={onProceedToPayment}
+      onOpenCart={onOpenCart}
       isConnectionLost={isConnectionLost}
       onSimulateConnectionLost={onSimulateConnectionLost}
       onSimulateConnectionRestored={onSimulateConnectionRestored}

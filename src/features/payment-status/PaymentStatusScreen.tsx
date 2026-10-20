@@ -52,16 +52,14 @@ const POLL_INTERVAL_MS = 1500;
 const RECEIPT_DEFAULT_AFTER_MS = 30_000;
 
 interface PaymentStatusScreenProps {
-  /** The batch the user chose to pay for (checked in the Cart popup) —
+  /** The batch the user chose to pay for (ticked on the order review screen) —
    * shown here read-only, since it's already committed and shouldn't be
    * re-editable mid-payment. */
   paymentItems: PrintOrder[];
   sessionId: string | null;
-  /** Whatever the user left unchecked/didn't select — still shown in this
-   * screen's own Cart popup (btn-cart), fully editable there. */
+  /** The whole Cart, unpaid items included — the footer's count and the
+   * End Session rule. */
   cartItems: PrintOrder[];
-  onQuantityChange: (id: string, quantity: number) => void;
-  onRemoveItem: (id: string) => void;
   /** Called once paid (and the receipt chosen) with the batch, each item now
    * carrying its server `paymentItemId` — or straight away with the batch
    * unchanged when the server says nothing needs paying. */
@@ -69,7 +67,6 @@ interface PaymentStatusScreenProps {
   onCancelPayment: () => void;
   onReturnHome: () => void;
   onEndSession: (reason: EndSessionReason) => void;
-  onProceedToPayment: (selectedItems: PrintOrder[]) => void;
   /** While true, starting/simulating a payment is disabled — payment is one
    * of the two actions connection loss actually blocks
    * (docs/domain/kiosk-session.md, "Failure and recovery"). */
@@ -93,13 +90,10 @@ export function PaymentStatusScreen({
   paymentItems,
   sessionId,
   cartItems,
-  onQuantityChange,
-  onRemoveItem,
   onPaymentSuccess,
   onCancelPayment,
   onReturnHome,
   onEndSession,
-  onProceedToPayment,
   isConnectionLost,
   onSimulateConnectionLost,
   onSimulateConnectionRestored,
@@ -266,9 +260,6 @@ export function PaymentStatusScreen({
       onHome={canLeave ? () => setPendingAction('home') : undefined}
       onEndSession={onEndSession}
       cartItems={cartItems}
-      onQuantityChange={onQuantityChange}
-      onRemoveItem={onRemoveItem}
-      onProceedToPayment={onProceedToPayment}
       isConnectionLost={isConnectionLost}
       onSimulateConnectionLost={onSimulateConnectionLost}
       onSimulateConnectionRestored={onSimulateConnectionRestored}

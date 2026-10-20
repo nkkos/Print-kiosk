@@ -48,10 +48,8 @@ interface PersonalAccountScreenProps {
   onHome: () => void;
   onEndSession: (reason: EndSessionReason) => void;
   cartItems: PrintOrder[];
-  onQuantityChange: (id: string, quantity: number) => void;
-  onRemoveItem: (id: string) => void;
-  onProceedToPayment: (selectedItems: PrintOrder[]) => void;
-  cartOpenOnMount?: boolean;
+  /** Opens the order review screen — the footer's btn-cart. */
+  onOpenCart: () => void;
   isConnectionLost: boolean;
   onSimulateConnectionLost: () => void;
   onSimulateConnectionRestored: () => void;
@@ -80,10 +78,7 @@ export function PersonalAccountScreen({
   onHome,
   onEndSession,
   cartItems,
-  onQuantityChange,
-  onRemoveItem,
-  onProceedToPayment,
-  cartOpenOnMount,
+  onOpenCart,
   isConnectionLost,
   onSimulateConnectionLost,
   onSimulateConnectionRestored,
@@ -176,10 +171,7 @@ export function PersonalAccountScreen({
       onBack={onBack}
       onHome={onHome}
       cartItems={cartItems}
-      onQuantityChange={onQuantityChange}
-      onRemoveItem={onRemoveItem}
-      onProceedToPayment={onProceedToPayment}
-      initialCartOpen={cartOpenOnMount}
+      onOpenCart={onOpenCart}
       isConnectionLost={isConnectionLost}
       onSimulateConnectionLost={onSimulateConnectionLost}
       onSimulateConnectionRestored={onSimulateConnectionRestored}

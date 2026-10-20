@@ -9,7 +9,9 @@
   justify-content: center;
   gap: var(--space-l);
   width: 100%;
-  max-width: 24rem;
+  /* Wide enough for the order list (CartPanel); the screen itself is
+     redesigned in batch 4 (docs/design/kiosk-redesign-plan.md). */
+  max-width: 64rem;
   margin-inline: auto;
 }
 

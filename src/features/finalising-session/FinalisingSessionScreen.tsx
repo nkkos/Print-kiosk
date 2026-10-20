@@ -16,9 +16,8 @@ interface FinalisingSessionScreenProps {
   onReturnToWelcome: () => void;
   onEndSession: (reason: EndSessionReason) => void;
   cartItems: PrintOrder[];
-  onQuantityChange: (id: string, quantity: number) => void;
-  onRemoveItem: (id: string) => void;
-  onProceedToPayment: (selectedItems: PrintOrder[]) => void;
+  /** Opens the order review screen — the footer's btn-cart. */
+  onOpenCart: () => void;
   isConnectionLost: boolean;
   onSimulateConnectionLost: () => void;
   onSimulateConnectionRestored: () => void;
@@ -37,9 +36,7 @@ export function FinalisingSessionScreen({
   onReturnToWelcome,
   onEndSession,
   cartItems,
-  onQuantityChange,
-  onRemoveItem,
-  onProceedToPayment,
+  onOpenCart,
   isConnectionLost,
   onSimulateConnectionLost,
   onSimulateConnectionRestored,
@@ -58,9 +55,7 @@ export function FinalisingSessionScreen({
       onBack={onReturnToWelcome}
       onHome={onReturnToWelcome}
       cartItems={cartItems}
-      onQuantityChange={onQuantityChange}
-      onRemoveItem={onRemoveItem}
-      onProceedToPayment={onProceedToPayment}
+      onOpenCart={onOpenCart}
       isConnectionLost={isConnectionLost}
       onSimulateConnectionLost={onSimulateConnectionLost}
       onSimulateConnectionRestored={onSimulateConnectionRestored}

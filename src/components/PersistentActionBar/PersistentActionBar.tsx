@@ -19,6 +19,8 @@ interface PersistentActionBarProps {
   onCartActivate?: () => void;
   /** Items in the Cart — shown as a count on btn-cart. */
   cartCount?: number;
+  /** The order review screen is the one showing — btn-cart is highlighted. */
+  cartActive?: boolean;
   onAccountActivate?: () => void;
   /** Logged into an account (docs/personal-account-requirements.md). */
   accountLoggedIn?: boolean;
@@ -32,6 +34,7 @@ const ICON = { size: 30, strokeWidth: 1.75 } as const;
 export function PersistentActionBar({
   onCartActivate,
   cartCount = 0,
+  cartActive = false,
   onAccountActivate,
   accountLoggedIn = false,
   onLanguageActivate,
@@ -63,7 +66,15 @@ export function PersistentActionBar({
           <CircleUserRound {...ICON} aria-hidden="true" />
           {t.footer.account}
         </button>
-        <button type="button" id="btn-cart" className={styles.item} onClick={onCartActivate}>
+        <button
+          type="button"
+          id="btn-cart"
+          className={styles.item}
+          data-active={cartActive || undefined}
+          aria-current={cartActive ? 'page' : undefined}
+          onClick={onCartActivate}
+          disabled={!onCartActivate && !cartActive}
+        >
           <span className={styles.iconWrap}>
             <ShoppingCart {...ICON} aria-hidden="true" />
             {cartCount > 0 && <span className={styles.count}>{cartCount}</span>}

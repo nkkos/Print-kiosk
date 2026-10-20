@@ -38,12 +38,10 @@ interface QrUploadScreenProps {
   onBack: () => void;
   onHome: () => void;
   onEndSession: (reason: EndSessionReason) => void;
-  /** Current Cart contents, shown in the btn-cart popup. */
+  /** Current Cart contents — the footer's count and the End Session rule. */
   cartItems: PrintOrder[];
-  onQuantityChange: (id: string, quantity: number) => void;
-  onRemoveItem: (id: string) => void;
-  onProceedToPayment: (selectedItems: PrintOrder[]) => void;
-  cartOpenOnMount?: boolean;
+  /** Opens the order review screen — the footer's btn-cart. */
+  onOpenCart: () => void;
   isConnectionLost: boolean;
   onSimulateConnectionLost: () => void;
   onSimulateConnectionRestored: () => void;
@@ -67,10 +65,7 @@ export function QrUploadScreen({
   onHome,
   onEndSession,
   cartItems,
-  onQuantityChange,
-  onRemoveItem,
-  onProceedToPayment,
-  cartOpenOnMount,
+  onOpenCart,
   isConnectionLost,
   onSimulateConnectionLost,
   onSimulateConnectionRestored,
@@ -103,10 +98,7 @@ export function QrUploadScreen({
       onBack={onBack}
       onHome={onHome}
       cartItems={cartItems}
-      onQuantityChange={onQuantityChange}
-      onRemoveItem={onRemoveItem}
-      onProceedToPayment={onProceedToPayment}
-      initialCartOpen={cartOpenOnMount}
+      onOpenCart={onOpenCart}
       isConnectionLost={isConnectionLost}
       onSimulateConnectionLost={onSimulateConnectionLost}
       onSimulateConnectionRestored={onSimulateConnectionRestored}

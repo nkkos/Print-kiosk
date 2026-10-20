@@ -1,76 +1,247 @@
+/* The orders on the left, the total and next step on the right; in a
+   narrow container (Payment Status) the two stack instead. */
+
 .empty {
   color: var(--color-ink-soft);
 }
 
 .root {
   display: flex;
-  flex-direction: column;
-  gap: var(--space-m);
-}
-
-.title {
-  margin: 0;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--space-l);
+  width: 100%;
+  min-height: 0;
 }
 
 .list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
   display: flex;
+  flex: 1 1 40rem;
   flex-direction: column;
   gap: var(--space-s);
+  max-height: 100%;
+  margin: 0;
+  /* Room for the cards' shadow inside the scrolling list. */
+  padding: 0 0 var(--space-l);
+  overflow-y: auto;
+  list-style: none;
 }
 
 .item {
   display: flex;
-  flex-direction: column;
-  gap: var(--space-xs);
-  padding: var(--space-m);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-medium);
+  align-items: center;
+  gap: var(--space-m);
+  padding: var(--space-m) var(--space-l);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-large);
   background: var(--color-surface);
+  box-shadow: var(--elevation-raised);
 }
 
-.itemRow {
-  display: flex;
+.item[data-selected] {
+  border-color: var(--color-accent);
+}
+
+/* The whole tick area is the checkbox's label — a big target. */
+.tick {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+  cursor: pointer;
+}
+
+.tick input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.tickBox {
+  display: inline-flex;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--space-s);
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  box-sizing: border-box;
+  border: 2px solid var(--color-border-strong);
+  border-radius: var(--radius-small);
+  background: var(--color-surface);
+  color: var(--color-on-accent);
+}
+
+.tick input:checked + .tickBox {
+  border-color: var(--color-accent);
+  background: var(--color-accent);
+}
+
+.tick input:focus-visible + .tickBox {
+  outline: 3px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.fileIcon {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: var(--radius-medium);
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+}
+
+.itemText {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--space-xs);
+  min-width: 0;
 }
 
 .fileName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font: var(--font-h3);
 }
 
-.details {
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+}
+
+.chip {
+  padding: 0.1rem var(--space-s);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-sunken);
+  color: var(--color-ink-soft);
+  font: var(--font-caption);
+  font-weight: 600;
+}
+
+.stepper {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: var(--space-xs);
+  border-radius: var(--radius-medium);
+  background: var(--color-surface-sunken);
+}
+
+.stepperButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.25rem;
+  height: 3.25rem;
+  border: none;
+  border-radius: calc(var(--radius-medium) - 4px);
+  background: var(--color-surface);
+  box-shadow: var(--elevation-raised);
+  color: var(--color-accent);
+  cursor: pointer;
+}
+
+.stepperButton:focus-visible {
+  outline: 3px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.stepperButton:disabled {
+  background: transparent;
+  box-shadow: none;
+  color: var(--color-disabled-text);
+  cursor: not-allowed;
+}
+
+.stepperValue {
+  min-width: 2.75rem;
+  font: var(--font-h3);
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.qty {
+  flex: none;
+  font: var(--font-body);
+  color: var(--color-ink-soft);
+}
+
+.price {
+  flex: none;
+  min-width: 6.5rem;
+  font: var(--font-h3);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.remove {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: var(--touch-target);
+  height: var(--touch-target);
+  border: none;
+  border-radius: var(--radius-medium);
+  background: transparent;
+  color: var(--color-ink-soft);
+  cursor: pointer;
+}
+
+.remove:hover {
+  background: var(--color-surface-sunken);
+  color: var(--color-danger);
+}
+
+.remove:focus-visible {
+  outline: 3px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.summary {
+  display: flex;
+  flex: 1 1 22rem;
+  flex-direction: column;
+  gap: var(--space-m);
+  max-width: 30rem;
+  padding: var(--space-l);
+  box-sizing: border-box;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-large);
+  background: var(--color-surface);
+  box-shadow: var(--elevation-raised);
+}
+
+.toPrint {
+  font: var(--font-body);
+  color: var(--color-ink-soft);
+}
+
+.total {
+  font: var(--font-h3);
+}
+
+.totalAmount {
+  font: var(--font-display);
+  color: var(--color-accent-strong);
+  font-variant-numeric: tabular-nums;
+}
+
+.note {
+  margin: 0;
   font: var(--font-caption);
   color: var(--color-ink-soft);
 }
 
-.quantity {
-  display: flex;
-  align-items: center;
-  gap: var(--space-s);
-  font-variant-numeric: tabular-nums;
-}
-
-.price {
-  font: var(--font-h3);
-  font-variant-numeric: tabular-nums;
-}
-
-.total {
-  margin: 0;
-  font: var(--font-h2);
-  color: var(--color-accent-strong);
-}
-
 .unavailable {
   margin: 0;
-  color: var(--color-danger-strong);
-}
-
-.minimumNote {
-  color: var(--color-ink-soft);
-  font-size: 0.875rem;
+  padding: var(--space-m);
+  border-radius: var(--radius-medium);
+  background: var(--color-warning-soft);
+  color: var(--color-warning);
+  font: var(--font-body);
 }
