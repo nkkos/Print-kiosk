@@ -1,8 +1,12 @@
 import { useEffect, useState } from 'react';
 import QRCode from 'qrcode';
 import { KioskScreenLayout } from '../../layouts/KioskScreenLayout/KioskScreenLayout';
-import { OptionCard } from '../../components/OptionCard/OptionCard';
+import { Camera, Link2, LoaderCircle, Settings2, ShieldCheck, Upload } from 'lucide-react';
 import { Button } from '../../components/Button/Button';
+import { FileRow } from '../../components/FileRow/FileRow';
+import { StepList } from '../../components/StepList/StepList';
+import { DevOnly } from '../../components/DevOnly/DevOnly';
+import { acceptedFormatsLabel, MAX_FILE_SIZE_MB } from '../../utils/fileLimits';
 import { useTranslation } from '../../i18n';
 import type { Language } from '../../i18n';
 import type { EndSessionReason, PrintOrder, ReceivedFile } from '../../types/kiosk';
@@ -113,71 +117,115 @@ export function QrUploadScreen({
       onGoToPaidOrders={onGoToPaidOrders}
       onLanguageChange={onLanguageChange}
     >
+      <div className={styles.intro}>
+        <h1 className={styles.title}>{t.qrUpload.title}</h1>
+        <p className={styles.subtitle}>{t.qrUpload.subtitle}</p>
+      </div>
+
       <div className={styles.body}>
-        <div className={styles.qrHalf}>
+        {/* Before any file: how to do it. Once files arrive: what they are
+            and where they stand — the steps have done their job. */}
+        <div className={styles.main}>
+          {files.length === 0 ? (
+            <>
+              <StepList
+                id="qr-steps"
+                steps={[
+                  {
+                    icon: <Camera size={48} strokeWidth={1.5} />,
+                    title: t.qrUpload.step1Title,
+                    text: t.qrUpload.step1Text,
+                  },
+                  {
+                    icon: <Link2 size={48} strokeWidth={1.5} />,
+                    title: t.qrUpload.step2Title,
+                    text: t.qrUpload.step2Text,
+                  },
+                  {
+                    icon: <Upload size={48} strokeWidth={1.5} />,
+                    title: t.qrUpload.step3Title,
+                    text: t.qrUpload.step3Text,
+                  },
+                ]}
+              />
+              <p className={styles.formats}>
+                {t.uploadMethodSelection.formatsHint(acceptedFormatsLabel(), MAX_FILE_SIZE_MB)}
+              </p>
+            </>
+          ) : (
+            <div className={styles.files}>
+              <h2 className={styles.filesTitle}>{t.qrUpload.filesTitle}</h2>
+              <div className={styles.list}>
+                {files.map((file) => {
+                  // 'rejected' (docs/domain/kiosk-session.md, "File scanning
+                  // status") stays visible rather than disappearing, so the
+                  // user isn't left wondering whether their upload got stuck.
+                  const statusLabel =
+                    file.status === 'ready'
+                      ? t.common.fileReady
+                      : file.status === 'rejected'
+                        ? t.common.blockedVirusScan
+                        : file.status === 'scan-unavailable'
+                          ? t.common.scanUnavailable
+                          : file.status === 'converting'
+                            ? t.common.preparingForPrint
+                            : t.common.scanningForViruses;
+                  return (
+                    <FileRow
+                      key={file.id}
+                      id={`qr-file-${file.id}`}
+                      fileName={file.fileName}
+                      status={file.status}
+                      statusLabel={statusLabel}
+                      onConfigure={() => onFileSelect(file.id, file.fileName)}
+                      configureLabel={t.common.configure}
+                    />
+                  );
+                })}
+              </div>
+              <Button
+                id="qr-configure-all"
+                variant="primary"
+                icon={<Settings2 size={26} strokeWidth={2} />}
+                label={t.common.configureAllFiles}
+                onClick={onConfigureAllFiles}
+                disabled={!hasReadyFiles}
+              />
+            </div>
+          )}
+        </div>
+
+        <aside className={styles.qrCard}>
           <div className={styles.qrBox}>
             {qrImageUrl ? (
               <img src={qrImageUrl} alt={t.qrUpload.qrImageAlt} />
             ) : (
-              t.qrUpload.preparingQrCode
+              <span className={styles.preparing}>{t.qrUpload.preparingQrCode}</span>
             )}
           </div>
-          <p className={styles.qrHint}>{t.qrUpload.qrHint}</p>
-          {/* Dev-only convenience: lets the exact same-session URL be opened
-              directly (e.g. from a phone browser, or copy-pasted) without
-              needing a QR scanner — useful while debugging network
-              reachability (docs/qr-upload-requirements.md). Not part of the
-              confirmed screen design. */}
-          {qrUploadUrl && (
-            <p className={styles.qrHint}>
-              <a href={qrUploadUrl} target="_blank" rel="noreferrer">
-                {qrUploadUrl}
-              </a>
-            </p>
-          )}
-        </div>
-
-        <div className={styles.filesHalf}>
+          <p className={styles.qrCaption}>{t.qrUpload.qrCaption}</p>
+          <p className={styles.sessionOnly}>
+            <ShieldCheck size={24} strokeWidth={2} aria-hidden="true" />
+            {t.qrUpload.sessionOnly}
+          </p>
           {files.length === 0 ? (
-            <p className={styles.waiting}>{t.qrUpload.waitingForFiles}</p>
+            <p className={styles.waiting} id="qr-waiting" role="status">
+              <LoaderCircle className={styles.spin} size={28} aria-hidden="true" />
+              {t.qrUpload.waiting}
+            </p>
           ) : (
-            <div className={styles.list}>
-              {files.map((file) => {
-                const isReady = file.status === 'ready';
-                // 'rejected' (docs/domain/kiosk-session.md, "File scanning
-                // status") stays visible rather than disappearing, so the
-                // user isn't left wondering whether their upload got stuck.
-                const description =
-                  file.status === 'ready'
-                    ? t.common.tapToConfigurePrinting
-                    : file.status === 'rejected'
-                      ? t.common.blockedVirusScan
-                      : file.status === 'scan-unavailable'
-                        ? t.common.scanUnavailable
-                        : file.status === 'converting'
-                          ? t.common.preparingForPrint
-                          : t.common.scanningForViruses;
-                return (
-                  <OptionCard
-                    key={file.id}
-                    id={`qr-file-${file.id}`}
-                    title={file.fileName}
-                    description={description}
-                    onActivate={isReady ? () => onFileSelect(file.id, file.fileName) : undefined}
-                    disabled={!isReady}
-                  />
-                );
-              })}
-            </div>
+            <p className={styles.addMore}>{t.qrUpload.addMore}</p>
           )}
-
-          <Button
-            id="qr-configure-all"
-            label={t.common.configureAllFiles}
-            onClick={onConfigureAllFiles}
-            disabled={!hasReadyFiles}
-          />
-        </div>
+          {/* Opens the same-session URL without a QR scanner — handy while
+              debugging network reachability (docs/qr-upload-requirements.md). */}
+          {qrUploadUrl && (
+            <DevOnly>
+              <a href={qrUploadUrl} target="_blank" rel="noreferrer">
+                upload link
+              </a>
+            </DevOnly>
+          )}
+        </aside>
       </div>
     </KioskScreenLayout>
   );

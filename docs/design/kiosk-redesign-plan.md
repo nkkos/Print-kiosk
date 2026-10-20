@@ -47,7 +47,7 @@ The photo kiosk is a separate, later piece of work.
 1. Brand name and logo — "Future Print" is a working name (`src/components/BrandMark/BrandMark.tsx`).
 2. Popups: keep "never cover header/footer", or dim the whole screen as in the mock-ups.
 3. What "Contact the operator" does before the intercom exists — a phone number / messenger QR, or hidden.
-4. Illustrations: line icons only, or drawn scenes (commissioned or generated as one set, without text).
+4. Illustrations: line icons only, or drawn scenes (commissioned or generated as one set, without text). 2026-10-20: the product owner is considering bringing the comic-style scenes back — people don't like reading. The steps are one component (`src/components/StepList/`), so scenes would replace the icons on every screen at once.
 5. The step indicator "Files → Settings → Review → Payment → Print" across the whole print flow.
 
 Defaults used until decided: working name, popups as confirmed, operator hidden, line icons only, step indicator from batch 3.
@@ -58,3 +58,4 @@ Defaults used until decided: working name, popups as confirmed, operator hidden,
 | ----------------------- | --------------------- |
 | Welcome                 | Approved (2026-10-20) |
 | Upload method selection | Approved (2026-10-20) |
+| QR upload               | Approved (2026-10-20) |

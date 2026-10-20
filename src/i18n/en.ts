@@ -7,6 +7,8 @@
 // object access (`t.welcome.print`, not `t('welcome.print')`).
 export const en = {
   common: {
+    fileReady: 'Ready to print',
+    configure: 'Set up',
     back: 'Back',
     home: 'Home',
     close: 'Close',
@@ -150,6 +152,19 @@ export const en = {
     attachmentCount: (count: number) => `${count} attachment(s)`,
   },
   qrUpload: {
+    title: 'Upload a file from your phone',
+    subtitle: 'Scan the QR code and follow the steps',
+    step1Title: 'Point the camera',
+    step1Text: "Open your phone's camera and aim it at the QR code",
+    step2Title: 'Open the link',
+    step2Text: 'Tap the link that appears on your phone',
+    step3Title: 'Upload the file',
+    step3Text: 'Choose the document and tap “Upload”',
+    qrCaption: 'Scan with your phone camera',
+    sessionOnly: 'This code works only for your session',
+    waiting: 'Waiting for your file…',
+    filesTitle: 'Your files',
+    addMore: 'Scan the code again to add more files',
     qrImageAlt: 'QR code to upload files from your phone',
     preparingQrCode: 'Preparing QR code...',
     qrHint: "Scan with your phone's camera, then upload your file(s) from the page that opens",

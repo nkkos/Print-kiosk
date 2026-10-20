@@ -4,6 +4,8 @@ import type { Translations } from './en';
 // not yet reviewed by a native speaker).
 export const sk: Translations = {
   common: {
+    fileReady: 'Pripravené na tlač',
+    configure: 'Nastaviť',
     back: 'Späť',
     home: 'Domov',
     close: 'Zavrieť',
@@ -145,6 +147,19 @@ export const sk: Translations = {
     attachmentCount: (count: number) => `${count} príloh(y)`,
   },
   qrUpload: {
+    title: 'Nahrajte súbor z telefónu',
+    subtitle: 'Naskenujte QR kód a postupujte podľa krokov',
+    step1Title: 'Namierte fotoaparát',
+    step1Text: 'Otvorte fotoaparát telefónu a namierte ho na QR kód',
+    step2Title: 'Otvorte odkaz',
+    step2Text: 'Ťuknite na odkaz, ktorý sa zobrazí v telefóne',
+    step3Title: 'Nahrajte súbor',
+    step3Text: 'Vyberte dokument a ťuknite na „Nahrať“',
+    qrCaption: 'Naskenujte fotoaparátom telefónu',
+    sessionOnly: 'Kód platí len pre vašu reláciu',
+    waiting: 'Čakáme na súbor…',
+    filesTitle: 'Vaše súbory',
+    addMore: 'Naskenujte kód znova a pridajte ďalšie súbory',
     qrImageAlt: 'QR kód na nahratie súborov z telefónu',
     preparingQrCode: 'Pripravuje sa QR kód...',
     qrHint:

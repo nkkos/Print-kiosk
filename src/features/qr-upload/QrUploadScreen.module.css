@@ -1,17 +1,82 @@
-.body {
-  flex: 1;
-  display: flex;
-  flex-direction: row;
-  gap: var(--space-l);
-}
+/* Steps on the left, the QR code on the right; once files arrive the
+   steps give way to the file list (2026-10 screen pack: two states of one
+   screen). */
 
-.qrHalf {
-  flex: 1;
+.intro {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  gap: var(--space-s);
+  text-align: center;
+}
+
+.title {
+  font: var(--font-h1);
+  letter-spacing: -0.02em;
+}
+
+.subtitle {
+  margin: 0;
+  font: var(--font-lead);
+  color: var(--color-ink-soft);
+}
+
+.body {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1.45fr 1fr;
+  gap: var(--space-xl);
+  align-items: center;
+  width: 100%;
+  max-width: 100rem;
+  margin: 0 auto;
+}
+
+.main {
+  display: flex;
+  flex-direction: column;
   gap: var(--space-m);
+}
+
+.formats {
+  margin: 0;
+  padding-left: var(--space-l);
+  font: var(--font-body);
+  color: var(--color-ink-soft);
+}
+
+.files {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-m);
+}
+
+.filesTitle {
+  font: var(--font-h2);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-s);
+  max-height: 26rem;
+  overflow-y: auto;
+}
+
+.files > button {
+  align-self: flex-start;
+}
+
+.qrCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-m);
+  padding: var(--space-xl) var(--space-l);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-large);
+  background: var(--color-surface);
+  box-shadow: var(--elevation-raised);
   text-align: center;
 }
 
@@ -19,42 +84,70 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 12rem;
-  height: 12rem;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-medium);
+  width: 20rem;
+  height: 20rem;
+  padding: var(--space-m);
+  box-sizing: border-box;
+  border: 3px solid var(--color-accent);
+  border-radius: var(--radius-large);
   background: var(--color-surface);
-  box-shadow: var(--elevation-raised);
 }
 
 .qrBox img {
   width: 100%;
   height: 100%;
   object-fit: contain;
+  image-rendering: pixelated;
 }
 
-.qrHint {
-  margin: 0;
-  max-width: 20rem;
+.preparing {
+  font: var(--font-body);
   color: var(--color-ink-soft);
 }
 
-.filesHalf {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
+.qrCaption {
+  margin: 0;
+  font: var(--font-h3);
+}
+
+.sessionOnly,
+.waiting {
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
+  gap: var(--space-s);
+  margin: 0;
+  font: var(--font-body);
+  color: var(--color-ink-soft);
+}
+
+.sessionOnly svg {
+  color: var(--color-accent);
 }
 
 .waiting {
-  margin: 0;
+  font-weight: 600;
+  color: var(--color-accent);
 }
 
-.list {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-s);
-  width: 100%;
-  max-width: 20rem;
+.addMore {
+  margin: 0;
+  max-width: 22rem;
+  font: var(--font-body);
+  color: var(--color-ink-soft);
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spin {
+    animation: none;
+  }
 }

@@ -1,0 +1,74 @@
+.root {
+  display: flex;
+  align-items: center;
+  gap: var(--space-m);
+  padding: var(--space-m) var(--space-l);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-large);
+  background: var(--color-surface);
+  box-shadow: var(--elevation-raised);
+}
+
+.fileIcon {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 3.75rem;
+  height: 3.75rem;
+  border-radius: var(--radius-medium);
+  background: var(--color-surface-sunken);
+  color: var(--color-ink-soft);
+}
+
+.name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font: var(--font-h3);
+}
+
+.status {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: var(--space-s);
+  font: var(--font-body);
+  font-weight: 600;
+  color: var(--color-ink-soft);
+}
+
+.root[data-status='ready'] .status {
+  color: var(--color-success);
+}
+
+.root[data-status='rejected'] .status {
+  color: var(--color-danger);
+}
+
+.root[data-status='scan-unavailable'] .status {
+  color: var(--color-warning);
+}
+
+.root[data-status='scanning'] .status,
+.root[data-status='converting'] .status {
+  color: var(--color-accent);
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spin {
+    animation: none;
+  }
+}

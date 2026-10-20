@@ -4,6 +4,8 @@ import type { Translations } from './en';
 // not yet reviewed by a native speaker).
 export const de: Translations = {
   common: {
+    fileReady: 'Druckbereit',
+    configure: 'Einstellen',
     back: 'Zurück',
     home: 'Startseite',
     close: 'Schließen',
@@ -150,6 +152,19 @@ export const de: Translations = {
     attachmentCount: (count: number) => `${count} Anhang/Anhänge`,
   },
   qrUpload: {
+    title: 'Datei vom Handy hochladen',
+    subtitle: 'QR-Code scannen und den Schritten folgen',
+    step1Title: 'Kamera ausrichten',
+    step1Text: 'Öffnen Sie die Handykamera und richten Sie sie auf den QR-Code',
+    step2Title: 'Link öffnen',
+    step2Text: 'Tippen Sie auf den Link, der auf dem Handy erscheint',
+    step3Title: 'Datei hochladen',
+    step3Text: 'Dokument wählen und auf „Hochladen“ tippen',
+    qrCaption: 'Mit der Handykamera scannen',
+    sessionOnly: 'Der Code gilt nur für Ihre Sitzung',
+    waiting: 'Wir warten auf Ihre Datei…',
+    filesTitle: 'Ihre Dateien',
+    addMore: 'Code erneut scannen, um weitere Dateien hinzuzufügen',
     qrImageAlt: 'QR-Code zum Hochladen von Dateien vom Telefon',
     preparingQrCode: 'QR-Code wird vorbereitet...',
     qrHint:

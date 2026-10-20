@@ -4,6 +4,8 @@ import type { Translations } from './en';
 // not yet reviewed by a native speaker).
 export const ru: Translations = {
   common: {
+    fileReady: 'Готов к печати',
+    configure: 'Настроить',
     back: 'Назад',
     home: 'На главную',
     close: 'Закрыть',
@@ -146,6 +148,19 @@ export const ru: Translations = {
     attachmentCount: (count: number) => `Вложений: ${count}`,
   },
   qrUpload: {
+    title: 'Загрузите файл с телефона',
+    subtitle: 'Отсканируйте QR-код и следуйте подсказкам',
+    step1Title: 'Наведите камеру',
+    step1Text: 'Откройте камеру телефона и наведите её на QR-код',
+    step2Title: 'Откройте ссылку',
+    step2Text: 'Нажмите на ссылку, которая появится на телефоне',
+    step3Title: 'Загрузите файл',
+    step3Text: 'Выберите документ и нажмите «Загрузить»',
+    qrCaption: 'Сканируйте камерой телефона',
+    sessionOnly: 'Код действует только для вашей сессии',
+    waiting: 'Ожидаем файл…',
+    filesTitle: 'Ваши файлы',
+    addMore: 'Отсканируйте код ещё раз, чтобы добавить файлы',
     qrImageAlt: 'QR-код для загрузки файлов с телефона',
     preparingQrCode: 'Подготовка QR-кода...',
     qrHint: 'Отсканируйте камерой телефона, затем загрузите файл(ы) со страницы, которая откроется',
