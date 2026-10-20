@@ -1,37 +1,129 @@
-/* The preview box frames the real rendered document (or, for items with no
-   real file, the filename placeholder). */
+/* Print settings (2026-10 screen pack): a title with the order steps, the
+   sheet on the left, one row per setting on the right and, under them, the
+   total with the one primary action. */
 
-.body {
+.top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-l);
+  width: 100%;
+  max-width: 100rem;
+  margin: 0 auto;
+}
+
+.title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-m);
+  margin: 0;
+  font: var(--font-h1);
+  letter-spacing: -0.02em;
+}
+
+.batch {
+  padding: var(--space-xs) var(--space-m);
+  border-radius: var(--radius-pill);
+  background: var(--color-accent-soft);
+  color: var(--color-accent-strong);
+  font: var(--font-body);
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.columns {
   flex: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  gap: var(--space-l);
+  width: 100%;
+  max-width: 100rem;
+  min-height: 0;
+  margin: 0 auto;
+}
+
+.previewPanel,
+.settingsPanel,
+.summary {
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-large);
+  background: var(--color-surface);
+  box-shadow: var(--elevation-raised);
+}
+
+.previewPanel {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
   gap: var(--space-m);
+  padding: var(--space-l);
+}
+
+.file {
+  display: flex;
+  align-items: center;
+  gap: var(--space-m);
+  align-self: stretch;
+}
+
+.fileIcon {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: var(--radius-medium);
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+}
+
+.fileText {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.fileName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font: var(--font-h3);
+}
+
+.fileMeta {
+  font: var(--font-caption);
+  color: var(--color-ink-soft);
+}
+
+/* Tall enough for an A4 portrait sheet (297 mm × 1.07 px/mm), on a sunken
+   "desk" so the white sheet stands out. */
+.previewSlot {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  align-self: stretch;
+  min-height: 20.5rem;
+  border-radius: var(--radius-medium);
+  background: var(--color-surface-sunken);
 }
 
 .preview {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 16rem;
+  width: 15rem;
   height: 20rem;
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-medium);
+  border-radius: 4px;
   background: var(--color-surface);
   box-shadow: var(--elevation-raised);
   color: var(--color-ink-soft);
+  font: var(--font-caption);
   /* Once ready it's a to-scale sheet (inline size, THUMBNAIL_PX_PER_MM):
      a page larger than the sheet at original size is cropped, as printed. */
   overflow: hidden;
-}
-
-/* Tall enough for an A4 portrait sheet (297 mm × 1.07 px/mm). */
-.previewSlot {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 20rem;
 }
 
 .previewMedia {
@@ -54,8 +146,9 @@
   justify-content: center;
   overflow: hidden;
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-medium);
+  border-radius: 4px;
   background: var(--color-surface);
+  box-shadow: var(--elevation-raised);
 }
 
 .previewMediaContain {
@@ -68,41 +161,197 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: var(--space-s);
-  margin-top: var(--space-s);
+  gap: var(--space-m);
+  margin-top: var(--space-m);
+  font: var(--font-body);
+  font-variant-numeric: tabular-nums;
 }
 
-.settings {
+.side {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   gap: var(--space-m);
+  min-height: 0;
+}
+
+.settingsPanel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-s) var(--space-l);
+  overflow-y: auto;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-l);
+  padding: 0.75rem 0;
+}
+
+.row + .row {
+  border-top: 1px solid var(--color-border);
+}
+
+.rowLabel {
+  flex: none;
+  width: 15rem;
+  font: var(--font-h3);
+}
+
+.rowControl {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-xs);
+  min-width: 0;
 }
 
 .hint {
-  flex-basis: 100%;
-  margin: 0;
+  font: var(--font-caption);
   color: var(--color-ink-soft);
 }
 
-.pageRangeInputs {
+.segmented {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+  padding: var(--space-xs);
+  border-radius: var(--radius-medium);
+  background: var(--color-surface-sunken);
+}
+
+.segment {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 5.5rem;
+  min-height: 3.5rem;
+  padding: 0 var(--space-l);
+  box-sizing: border-box;
+  border-radius: calc(var(--radius-medium) - 4px);
+  color: var(--color-ink-soft);
+  font: var(--font-body);
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background-color var(--motion-duration-fast) var(--motion-easing),
+    color var(--motion-duration-fast) var(--motion-easing);
+}
+
+/* The radio itself stays in the page for focus and screen readers. */
+.segment input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.segment:has(input:checked) {
+  background: var(--color-surface);
+  color: var(--color-accent-strong);
+  box-shadow: var(--elevation-raised);
+}
+
+.segment:has(input:focus-visible) {
+  outline: 3px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.segment:has(input:disabled) {
+  color: var(--color-disabled-text);
+  cursor: not-allowed;
+}
+
+.pages {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-m);
+}
+
+.pageRange {
   display: flex;
   align-items: center;
   gap: var(--space-s);
+  font: var(--font-body);
+  color: var(--color-ink-soft);
 }
 
-.pageRangeInputs input {
-  width: 4rem;
+.stepper {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: var(--space-xs);
+  border-radius: var(--radius-medium);
+  background: var(--color-surface-sunken);
 }
 
-.quantity {
+.stepperButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.5rem;
+  height: 3.5rem;
+  border: none;
+  border-radius: calc(var(--radius-medium) - 4px);
+  background: var(--color-surface);
+  box-shadow: var(--elevation-raised);
+  color: var(--color-accent);
+  cursor: pointer;
+}
+
+.stepperButton:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+.stepperButton:focus-visible {
+  outline: 3px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.stepperButton:disabled {
+  background: transparent;
+  box-shadow: none;
+  color: var(--color-disabled-text);
+  cursor: not-allowed;
+}
+
+.stepperValue {
+  min-width: 3.5rem;
+  font: var(--font-h3);
+  color: var(--color-ink);
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.summary {
   display: flex;
   align-items: center;
-  gap: var(--space-s);
+  justify-content: space-between;
+  gap: var(--space-l);
+  padding: var(--space-m) var(--space-l);
+}
+
+.summaryText {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.summaryDetails {
+  font: var(--font-body);
+  color: var(--color-ink-soft);
+  font-variant-numeric: tabular-nums;
+}
+
+.total {
+  font: var(--font-h3);
 }
 
 .price {
-  margin: 0;
-  font: var(--font-h2);
+  font: var(--font-h1);
   color: var(--color-accent-strong);
   font-variant-numeric: tabular-nums;
 }

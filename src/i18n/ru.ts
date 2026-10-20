@@ -4,6 +4,11 @@ import type { Translations } from './en';
 // not yet reviewed by a native speaker).
 export const ru: Translations = {
   common: {
+    stepFiles: 'Файлы',
+    stepSettings: 'Настройки',
+    stepReview: 'Проверка',
+    stepPayment: 'Оплата',
+    stepPrint: 'Печать',
     fileReady: 'Готов к печати',
     configure: 'Настроить',
     back: 'Назад',
@@ -239,6 +244,14 @@ export const ru: Translations = {
       `Кол-во ${quantity} · Оплачено — нажмите, чтобы добавить в корзину`,
   },
   printOrderConfiguration: {
+    title: 'Настройте печать',
+    previewHint: 'Нажмите, чтобы посмотреть все страницы',
+    pagesFrom: 'с',
+    pagesTo: 'по',
+    total: 'Итого',
+    fileOfBatch: (current: number, total: number) => `Файл ${current} из ${total}`,
+    pageCount: (count: number) => `Страниц в файле: ${count}`,
+    summary: (pages: number, copies: number) => `Страниц: ${pages} · Копий: ${copies}`,
     paperSizeLegend: 'Формат бумаги',
     orientationLegend: 'Ориентация',
     scaleLegend: 'Масштаб',
@@ -247,8 +260,7 @@ export const ru: Translations = {
     pagesLegend: 'Страницы',
     pagesAll: 'Все страницы',
     pagesCustom: 'Указать диапазон',
-    quantity: 'Количество',
-    price: (amount: string) => `Цена: ${amount}`,
+    quantity: 'Копии',
     addToCart: 'Добавить в корзину',
     loadingPreview: 'Загрузка предпросмотра...',
     previewPageIndicator: (current: number, total: number) => `Страница ${current} из ${total}`,

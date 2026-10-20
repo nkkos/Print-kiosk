@@ -4,6 +4,11 @@ import type { Translations } from './en';
 // not yet reviewed by a native speaker).
 export const uk: Translations = {
   common: {
+    stepFiles: 'Файли',
+    stepSettings: 'Налаштування',
+    stepReview: 'Перевірка',
+    stepPayment: 'Оплата',
+    stepPrint: 'Друк',
     fileReady: 'Готовий до друку',
     configure: 'Налаштувати',
     back: 'Назад',
@@ -240,6 +245,14 @@ export const uk: Translations = {
       `Кількість ${quantity} · Оплачено — торкніться, щоб додати до кошика`,
   },
   printOrderConfiguration: {
+    title: 'Налаштуйте друк',
+    previewHint: 'Натисніть, щоб переглянути всі сторінки',
+    pagesFrom: 'з',
+    pagesTo: 'по',
+    total: 'Разом',
+    fileOfBatch: (current: number, total: number) => `Файл ${current} з ${total}`,
+    pageCount: (count: number) => `Сторінок у файлі: ${count}`,
+    summary: (pages: number, copies: number) => `Сторінок: ${pages} · Копій: ${copies}`,
     paperSizeLegend: 'Формат паперу',
     orientationLegend: 'Орієнтація',
     scaleLegend: 'Масштаб',
@@ -248,8 +261,7 @@ export const uk: Translations = {
     pagesLegend: 'Сторінки',
     pagesAll: 'Усі сторінки',
     pagesCustom: 'Вказати діапазон',
-    quantity: 'Кількість',
-    price: (amount: string) => `Ціна: ${amount}`,
+    quantity: 'Копії',
     addToCart: 'Додати до кошика',
     loadingPreview: 'Завантаження попереднього перегляду...',
     previewPageIndicator: (current: number, total: number) => `Сторінка ${current} з ${total}`,

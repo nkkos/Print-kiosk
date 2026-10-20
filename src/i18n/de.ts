@@ -4,6 +4,11 @@ import type { Translations } from './en';
 // not yet reviewed by a native speaker).
 export const de: Translations = {
   common: {
+    stepFiles: 'Dateien',
+    stepSettings: 'Einstellungen',
+    stepReview: 'Prüfen',
+    stepPayment: 'Zahlung',
+    stepPrint: 'Druck',
     fileReady: 'Druckbereit',
     configure: 'Einstellen',
     back: 'Zurück',
@@ -245,6 +250,14 @@ export const de: Translations = {
       `Anzahl ${quantity} · Bezahlt — zum Hinzufügen zum Warenkorb tippen`,
   },
   printOrderConfiguration: {
+    title: 'Druck einrichten',
+    previewHint: 'Tippen, um alle Seiten zu sehen',
+    pagesFrom: 'von',
+    pagesTo: 'bis',
+    total: 'Gesamt',
+    fileOfBatch: (current: number, total: number) => `Datei ${current} von ${total}`,
+    pageCount: (count: number) => `Seiten in der Datei: ${count}`,
+    summary: (pages: number, copies: number) => `Seiten: ${pages} · Kopien: ${copies}`,
     paperSizeLegend: 'Papierformat',
     orientationLegend: 'Ausrichtung',
     scaleLegend: 'Skalierung',
@@ -253,8 +266,7 @@ export const de: Translations = {
     pagesLegend: 'Seitenbereich',
     pagesAll: 'Alle Seiten',
     pagesCustom: 'Bereich festlegen',
-    quantity: 'Menge',
-    price: (amount: string) => `Preis: ${amount}`,
+    quantity: 'Kopien',
     addToCart: 'In den Warenkorb',
     loadingPreview: 'Vorschau wird geladen...',
     previewPageIndicator: (current: number, total: number) => `Seite ${current} von ${total}`,

@@ -1,7 +1,9 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { FileText, Maximize2, Minus, Plus, ShoppingCart } from 'lucide-react';
 import { KioskScreenLayout } from '../../layouts/KioskScreenLayout/KioskScreenLayout';
 import { Button } from '../../components/Button/Button';
 import { Modal } from '../../components/Modal/Modal';
+import { OrderSteps } from '../../components/OrderSteps/OrderSteps';
 import { useTranslation } from '../../i18n';
 import type { Language } from '../../i18n';
 import type { EndSessionReason, PrintOrder } from '../../types/kiosk';
@@ -31,9 +33,12 @@ import styles from './PrintOrderConfigurationScreen.module.css';
 // preview and print settings are combined into Print Order Configuration")
 // and docs/domain/kiosk-session.md ("Related entities: Print Order").
 //
-// Prototype simplifications:
-// - settings use plain native radio inputs directly: no shared RadioGroup
-//   component yet, since this is the only consumer so far
+// Layout (2026-10 redesign, docs/design/kiosk-redesign-plan.md, batch 3):
+// the sheet on the left, one row per setting on the right, and the total
+// with the one primary action under them. Settings are segmented choices
+// built on plain native radio inputs, and numbers (copies, page range) are
+// −/+ steppers — the stand has no keyboard. Both stay local to this screen
+// until a second screen needs them.
 //
 // Quantity (docs/cart-requirements.md) is set here initially and can be
 // adjusted again later directly in the Cart popup — same underlying value.
@@ -66,6 +71,8 @@ const PAPER_SIZE_MM: Record<PrintOrder['paperSize'], { width: number; height: nu
 
 interface PrintOrderConfigurationScreenProps {
   fileName: string;
+  /** Where this file sits in a batch ("File 2 of 3"), absent outside one. */
+  batchPosition?: { current: number; total: number };
   /** The real backing file's id this file came from — either
    * `uploadedFiles.id` (QR/Email) or `accountFiles.id` (Personal Account),
    * disambiguated by `sourceFileOrigin`. Threaded into the built PrintOrder
@@ -106,6 +113,7 @@ interface PrintOrderConfigurationScreenProps {
 export function PrintOrderConfigurationScreen({
   accountToken,
   fileName,
+  batchPosition,
   sourceFileId,
   sourceFileOrigin,
   onAddToCart,
@@ -358,6 +366,7 @@ export function PrintOrderConfigurationScreen({
   }
 
   const isPreviewClickable = preview.state === 'ready';
+  const numPages = preview.kind === 'pdf' ? preview.numPages : 0;
 
   return (
     <KioskScreenLayout
@@ -379,37 +388,75 @@ export function PrintOrderConfigurationScreen({
       onGoToPaidOrders={onGoToPaidOrders}
       onLanguageChange={onLanguageChange}
     >
-      <div className={styles.body}>
-        {/* Fixed-height slot: switching A4/A5 resizes the sheet without
-            shifting the settings below it. */}
-        <div className={styles.previewSlot}>
-          <div
-            id="print-order-preview"
-            className={styles.preview}
-            onClick={isPreviewClickable ? () => setIsPreviewOpen(true) : undefined}
-            style={{
-              ...(preview.state === 'ready'
-                ? { width: `${thumbnailWidthPx}px`, height: `${thumbnailHeightPx}px` }
-                : undefined),
-              ...(isPreviewClickable ? { cursor: 'pointer' } : undefined),
-            }}
-          >
-            {/* Always mounted (not just when ready) so the ref exists before
-                the preview effect tries to render onto it — hidden until
-                there's actually something drawn. */}
-            <canvas
-              ref={thumbnailCanvasRef}
-              className={effectiveScale === 'fit' ? styles.previewMedia : undefined}
-              hidden={!(preview.state === 'ready' && preview.kind === 'pdf')}
-            />
-            {/* Images always show as "fit" — same reasoning as the popup's. */}
-            {preview.state === 'ready' && preview.kind === 'image' && preview.imageUrl && (
-              <img src={preview.imageUrl} alt={fileName} className={styles.previewMediaContain} />
-            )}
-            {preview.state === 'loading' && t.printOrderConfiguration.loadingPreview}
-            {preview.state === 'unavailable' && fileName}
+      <div className={styles.top}>
+        <h1 className={styles.title}>
+          {t.printOrderConfiguration.title}
+          {batchPosition && (
+            <span className={styles.batch}>
+              {t.printOrderConfiguration.fileOfBatch(batchPosition.current, batchPosition.total)}
+            </span>
+          )}
+        </h1>
+        <OrderSteps current="settings" />
+      </div>
+
+      <div className={styles.columns}>
+        <section className={styles.previewPanel}>
+          <div className={styles.file}>
+            <span className={styles.fileIcon} aria-hidden="true">
+              <FileText size={28} />
+            </span>
+            <span className={styles.fileText}>
+              <span className={styles.fileName}>{fileName}</span>
+              {numPages > 0 && (
+                <span className={styles.fileMeta}>
+                  {t.printOrderConfiguration.pageCount(numPages)}
+                </span>
+              )}
+            </span>
           </div>
-        </div>
+
+          {/* Fixed-height slot: switching A4/A5 resizes the sheet without
+              shifting anything around it. */}
+          <div className={styles.previewSlot}>
+            <div
+              id="print-order-preview"
+              className={styles.preview}
+              onClick={isPreviewClickable ? () => setIsPreviewOpen(true) : undefined}
+              style={{
+                ...(preview.state === 'ready'
+                  ? { width: `${thumbnailWidthPx}px`, height: `${thumbnailHeightPx}px` }
+                  : undefined),
+                ...(isPreviewClickable ? { cursor: 'pointer' } : undefined),
+              }}
+            >
+              {/* Always mounted (not just when ready) so the ref exists before
+                  the preview effect tries to render onto it — hidden until
+                  there's actually something drawn. */}
+              <canvas
+                ref={thumbnailCanvasRef}
+                className={effectiveScale === 'fit' ? styles.previewMedia : undefined}
+                hidden={!(preview.state === 'ready' && preview.kind === 'pdf')}
+              />
+              {/* Images always show as "fit" — same reasoning as the popup's. */}
+              {preview.state === 'ready' && preview.kind === 'image' && preview.imageUrl && (
+                <img src={preview.imageUrl} alt={fileName} className={styles.previewMediaContain} />
+              )}
+              {preview.state === 'loading' && t.printOrderConfiguration.loadingPreview}
+              {preview.state === 'unavailable' && <FileText size={64} aria-hidden="true" />}
+            </div>
+          </div>
+
+          {isPreviewClickable && (
+            <Button
+              id="print-order-preview-open"
+              variant="ghost"
+              icon={<Maximize2 size={22} />}
+              label={t.printOrderConfiguration.previewHint}
+              onClick={() => setIsPreviewOpen(true)}
+            />
+          )}
+        </section>
 
         {isPreviewOpen && (
           <Modal onClose={() => setIsPreviewOpen(false)}>
@@ -462,191 +509,255 @@ export function PrintOrderConfigurationScreen({
           </Modal>
         )}
 
-        {OFFERED_PAPER_SIZES.length > 1 && (
-          <fieldset className={styles.settings}>
-            <legend>{t.printOrderConfiguration.paperSizeLegend}</legend>
-            {OFFERED_PAPER_SIZES.map((size) => (
-              <label key={size}>
-                <input
-                  type="radio"
+        <div className={styles.side}>
+          <section className={styles.settingsPanel}>
+            <SettingRow label={t.printOrderConfiguration.colorLegend}>
+              <Segmented
+                name="color"
+                value={color}
+                onChange={setColor}
+                options={[
+                  { value: 'bw', label: t.common.colorBw, id: 'print-order-color-bw' },
+                  { value: 'color', label: t.common.colorColor, id: 'print-order-color-color' },
+                ]}
+              />
+            </SettingRow>
+
+            <SettingRow
+              label={t.printOrderConfiguration.sidesLegend}
+              hint={duplexAvailable ? undefined : t.common.sidesDoubleA4Only}
+            >
+              <Segmented
+                name="sides"
+                value={sides}
+                onChange={setSides}
+                options={[
+                  { value: 'single', label: t.common.sidesSingle, id: 'print-order-sides-single' },
+                  {
+                    value: 'double',
+                    label: t.common.sidesDouble,
+                    id: 'print-order-sides-double',
+                    disabled: !duplexAvailable,
+                  },
+                ]}
+              />
+            </SettingRow>
+
+            {OFFERED_PAPER_SIZES.length > 1 && (
+              <SettingRow label={t.printOrderConfiguration.paperSizeLegend}>
+                <Segmented
                   name="paperSize"
-                  checked={paperSize === size}
-                  onChange={() => selectPaperSize(size)}
+                  value={paperSize}
+                  onChange={selectPaperSize}
+                  options={OFFERED_PAPER_SIZES.map((size) => ({
+                    value: size,
+                    label: size === 'A4' ? t.common.paperSizeA4 : t.common.paperSizeA5,
+                    id: `print-order-paper-${size.toLowerCase()}`,
+                  }))}
                 />
-                {size === 'A4' ? t.common.paperSizeA4 : t.common.paperSizeA5}
-              </label>
-            ))}
-          </fieldset>
-        )}
-
-        {nUpAvailable && (
-          <fieldset className={styles.settings}>
-            <legend>{t.printOrderConfiguration.pagesPerSheetLegend}</legend>
-            {PAGES_PER_SHEET_OPTIONS.map((option) => (
-              <label key={option}>
-                <input
-                  type="radio"
-                  name="pagesPerSheet"
-                  id={`print-order-pages-per-sheet-${option}`}
-                  checked={effectivePagesPerSheet === option}
-                  onChange={() => setPagesPerSheet(option)}
-                />
-                {option}
-              </label>
-            ))}
-          </fieldset>
-        )}
-
-        {!nUpLayout && (
-          <fieldset className={styles.settings}>
-            <legend>{t.printOrderConfiguration.scaleLegend}</legend>
-            <label>
-              <input
-                type="radio"
-                name="scale"
-                checked={scale === 'fit'}
-                onChange={() => setScale('fit')}
-              />
-              {t.common.scaleFit}
-            </label>
-            <label>
-              <input
-                type="radio"
-                name="scale"
-                checked={scale === 'original'}
-                onChange={() => setScale('original')}
-              />
-              {t.common.scaleOriginal}
-            </label>
-          </fieldset>
-        )}
-
-        <fieldset className={styles.settings}>
-          <legend>{t.printOrderConfiguration.sidesLegend}</legend>
-          <label>
-            <input
-              type="radio"
-              name="sides"
-              checked={sides === 'single'}
-              onChange={() => setSides('single')}
-            />
-            {t.common.sidesSingle}
-          </label>
-          <label>
-            <input
-              type="radio"
-              name="sides"
-              checked={sides === 'double'}
-              disabled={!duplexAvailable}
-              onChange={() => setSides('double')}
-            />
-            {t.common.sidesDouble}
-          </label>
-          {!duplexAvailable && <p className={styles.hint}>{t.common.sidesDoubleA4Only}</p>}
-        </fieldset>
-
-        <fieldset className={styles.settings}>
-          <legend>{t.printOrderConfiguration.colorLegend}</legend>
-          <label>
-            <input
-              type="radio"
-              name="color"
-              checked={color === 'bw'}
-              onChange={() => setColor('bw')}
-            />
-            {t.common.colorBw}
-          </label>
-          <label>
-            <input
-              type="radio"
-              name="color"
-              checked={color === 'color'}
-              onChange={() => setColor('color')}
-            />
-            {t.common.colorColor}
-          </label>
-        </fieldset>
-
-        {preview.kind === 'pdf' && preview.numPages > 1 && (
-          <fieldset className={styles.settings}>
-            <legend>{t.printOrderConfiguration.pagesLegend}</legend>
-            <label>
-              <input
-                type="radio"
-                name="pageRangeMode"
-                checked={pageRangeMode === 'all'}
-                onChange={() => setPageRangeMode('all')}
-              />
-              {t.printOrderConfiguration.pagesAll}
-            </label>
-            <label>
-              <input
-                type="radio"
-                name="pageRangeMode"
-                checked={pageRangeMode === 'custom'}
-                onChange={() => setPageRangeMode('custom')}
-              />
-              {t.printOrderConfiguration.pagesCustom}
-            </label>
-            {pageRangeMode === 'custom' && (
-              <span className={styles.pageRangeInputs}>
-                <input
-                  type="number"
-                  min={1}
-                  max={preview.numPages}
-                  value={rangeFrom}
-                  onChange={(e) => {
-                    const value = Math.max(
-                      1,
-                      Math.min(preview.numPages, Number(e.target.value) || 1),
-                    );
-                    setRangeFrom(Math.min(value, rangeTo));
-                  }}
-                />
-                –
-                <input
-                  type="number"
-                  min={1}
-                  max={preview.numPages}
-                  value={rangeTo}
-                  onChange={(e) => {
-                    const value = Math.max(
-                      1,
-                      Math.min(preview.numPages, Number(e.target.value) || 1),
-                    );
-                    setRangeTo(Math.max(value, rangeFrom));
-                  }}
-                />
-              </span>
+              </SettingRow>
             )}
-          </fieldset>
-        )}
 
-        <div className={styles.quantity}>
-          <span>{t.printOrderConfiguration.quantity}</span>
-          <Button
-            id="print-order-quantity-decrement"
-            label="−"
-            onClick={() => setQuantity((current) => Math.max(1, current - 1))}
-          />
-          <span>{quantity}</span>
-          <Button
-            id="print-order-quantity-increment"
-            label="+"
-            onClick={() => setQuantity((current) => current + 1)}
-          />
+            {numPages > 1 && (
+              <SettingRow label={t.printOrderConfiguration.pagesLegend}>
+                <div className={styles.pages}>
+                  <Segmented
+                    name="pageRangeMode"
+                    value={pageRangeMode}
+                    onChange={setPageRangeMode}
+                    options={[
+                      {
+                        value: 'all',
+                        label: t.printOrderConfiguration.pagesAll,
+                        id: 'print-order-pages-all',
+                      },
+                      {
+                        value: 'custom',
+                        label: t.printOrderConfiguration.pagesCustom,
+                        id: 'print-order-pages-custom',
+                      },
+                    ]}
+                  />
+                  {pageRangeMode === 'custom' && (
+                    <div className={styles.pageRange}>
+                      <span>{t.printOrderConfiguration.pagesFrom}</span>
+                      <Stepper
+                        id="print-order-range-from"
+                        value={rangeFrom}
+                        onChange={setRangeFrom}
+                        min={1}
+                        max={rangeTo}
+                      />
+                      <span>{t.printOrderConfiguration.pagesTo}</span>
+                      <Stepper
+                        id="print-order-range-to"
+                        value={rangeTo}
+                        onChange={setRangeTo}
+                        min={rangeFrom}
+                        max={numPages}
+                      />
+                    </div>
+                  )}
+                </div>
+              </SettingRow>
+            )}
+
+            {nUpAvailable && (
+              <SettingRow label={t.printOrderConfiguration.pagesPerSheetLegend}>
+                <Segmented
+                  name="pagesPerSheet"
+                  value={effectivePagesPerSheet}
+                  onChange={setPagesPerSheet}
+                  options={PAGES_PER_SHEET_OPTIONS.map((option) => ({
+                    value: option,
+                    label: String(option),
+                    id: `print-order-pages-per-sheet-${option}`,
+                  }))}
+                />
+              </SettingRow>
+            )}
+
+            {!nUpLayout && (
+              <SettingRow label={t.printOrderConfiguration.scaleLegend}>
+                <Segmented
+                  name="scale"
+                  value={scale}
+                  onChange={setScale}
+                  options={[
+                    { value: 'fit', label: t.common.scaleFit, id: 'print-order-scale-fit' },
+                    {
+                      value: 'original',
+                      label: t.common.scaleOriginal,
+                      id: 'print-order-scale-original',
+                    },
+                  ]}
+                />
+              </SettingRow>
+            )}
+
+            <SettingRow label={t.printOrderConfiguration.quantity}>
+              <Stepper id="print-order-quantity" value={quantity} onChange={setQuantity} min={1} />
+            </SettingRow>
+          </section>
+
+          <section className={styles.summary}>
+            <div className={styles.summaryText}>
+              <span className={styles.summaryDetails}>
+                {t.printOrderConfiguration.summary(pagesToPrint, quantity)}
+              </span>
+              <span className={styles.total}>
+                {t.printOrderConfiguration.total}{' '}
+                <span id="print-order-price" className={styles.price}>
+                  {formatEuro(unitPrice * quantity)}
+                </span>
+              </span>
+            </div>
+            <Button
+              id="print-order-add-to-cart"
+              variant="primary"
+              icon={<ShoppingCart size={24} />}
+              label={t.printOrderConfiguration.addToCart}
+              onClick={handleAddToCart}
+            />
+          </section>
         </div>
-
-        <p className={styles.price}>
-          {t.printOrderConfiguration.price(formatEuro(unitPrice * quantity))}
-        </p>
-
-        <Button
-          id="print-order-add-to-cart"
-          label={t.printOrderConfiguration.addToCart}
-          onClick={handleAddToCart}
-        />
       </div>
     </KioskScreenLayout>
+  );
+}
+
+function SettingRow({
+  label,
+  hint,
+  children,
+}: {
+  label: string;
+  hint?: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className={styles.row}>
+      <span className={styles.rowLabel}>{label}</span>
+      <div className={styles.rowControl}>
+        {children}
+        {hint && <span className={styles.hint}>{hint}</span>}
+      </div>
+    </div>
+  );
+}
+
+// A set of mutually exclusive choices drawn as one pill: native radios
+// underneath (keyboard and screen readers keep working), the checked one
+// lifted out of the track.
+function Segmented<T extends string | number>({
+  name,
+  value,
+  onChange,
+  options,
+}: {
+  name: string;
+  value: T;
+  onChange: (value: T) => void;
+  options: { value: T; label: string; id: string; disabled?: boolean }[];
+}) {
+  return (
+    <div className={styles.segmented} role="radiogroup">
+      {options.map((option) => (
+        <label key={option.value} className={styles.segment}>
+          <input
+            type="radio"
+            name={name}
+            id={option.id}
+            checked={value === option.value}
+            disabled={option.disabled}
+            onChange={() => onChange(option.value)}
+          />
+          {option.label}
+        </label>
+      ))}
+    </div>
+  );
+}
+
+// −/+ around a number — the stand has no keyboard to type one in.
+function Stepper({
+  id,
+  value,
+  onChange,
+  min,
+  max = Infinity,
+}: {
+  id: string;
+  value: number;
+  onChange: (value: number) => void;
+  min: number;
+  max?: number;
+}) {
+  return (
+    <div className={styles.stepper}>
+      <button
+        type="button"
+        id={`${id}-decrement`}
+        className={styles.stepperButton}
+        onClick={() => onChange(Math.max(min, value - 1))}
+        disabled={value <= min}
+        aria-label="−"
+      >
+        <Minus size={24} />
+      </button>
+      <span className={styles.stepperValue} id={`${id}-value`}>
+        {value}
+      </span>
+      <button
+        type="button"
+        id={`${id}-increment`}
+        className={styles.stepperButton}
+        onClick={() => onChange(Math.min(max, value + 1))}
+        disabled={value >= max}
+        aria-label="+"
+      >
+        <Plus size={24} />
+      </button>
+    </div>
   );
 }

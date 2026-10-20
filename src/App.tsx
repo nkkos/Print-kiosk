@@ -176,12 +176,14 @@ function App() {
   // as PrintOrderConfigurationScreen's React `key` so its internal settings
   // state (paper size, quantity, etc.) resets between files during a batch
   // (docs/personal-account-requirements.md, "Batch configure") instead of
-  // carrying over from the previous file.
+  // carrying over from the previous file. `batchPosition` is where this file
+  // sits in a batch ("File 2 of 3"), absent outside one.
   const [selectedFile, setSelectedFile] = useState<{
     fileId?: string;
     fileName: string;
     sourceMethod: string;
     instanceKey: string;
+    batchPosition?: { current: number; total: number };
   } | null>(null);
   // Files still queued after the current one, when the user chose "Configure
   // printing for all files" instead of picking one file at a time
@@ -543,8 +545,15 @@ function App() {
     fileId: string | undefined,
     fileName: string,
     sourceMethod: string,
+    batchPosition?: { current: number; total: number },
   ) {
-    setSelectedFile({ fileId, fileName, sourceMethod, instanceKey: crypto.randomUUID() });
+    setSelectedFile({
+      fileId,
+      fileName,
+      sourceMethod,
+      instanceKey: crypto.randomUUID(),
+      batchPosition,
+    });
     setScreen('print-order-configuration');
   }
 
@@ -555,7 +564,12 @@ function App() {
     if (files.length === 0) return;
     const [first, ...rest] = files;
     setBatchQueue(rest);
-    selectFileForConfiguration(first.fileId, first.fileName, first.sourceMethod);
+    selectFileForConfiguration(
+      first.fileId,
+      first.fileName,
+      first.sourceMethod,
+      files.length > 1 ? { current: 1, total: files.length } : undefined,
+    );
   }
 
   function handleConfigureAllEmailAttachments() {
@@ -839,7 +853,15 @@ function App() {
     if (batchQueue.length > 0) {
       const [next, ...rest] = batchQueue;
       setBatchQueue(rest);
-      selectFileForConfiguration(next.fileId, next.fileName, next.sourceMethod);
+      selectFileForConfiguration(
+        next.fileId,
+        next.fileName,
+        next.sourceMethod,
+        selectedFile.batchPosition && {
+          current: selectedFile.batchPosition.current + 1,
+          total: selectedFile.batchPosition.total,
+        },
+      );
       return;
     }
 
@@ -1194,6 +1216,7 @@ function App() {
         <PrintOrderConfigurationScreen
           key={selectedFile.instanceKey}
           fileName={selectedFile.fileName}
+          batchPosition={selectedFile.batchPosition}
           sourceFileId={selectedFile.fileId}
           sourceFileOrigin={
             selectedFile.sourceMethod === 'upload-method-account' ? 'account' : undefined

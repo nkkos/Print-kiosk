@@ -4,6 +4,11 @@ import type { Translations } from './en';
 // not yet reviewed by a native speaker).
 export const sk: Translations = {
   common: {
+    stepFiles: 'Súbory',
+    stepSettings: 'Nastavenia',
+    stepReview: 'Kontrola',
+    stepPayment: 'Platba',
+    stepPrint: 'Tlač',
     fileReady: 'Pripravené na tlač',
     configure: 'Nastaviť',
     back: 'Späť',
@@ -239,6 +244,14 @@ export const sk: Translations = {
       `Počet ${quantity} · Zaplatené — ťuknutím pridáte do košíka`,
   },
   printOrderConfiguration: {
+    title: 'Nastavte tlač',
+    previewHint: 'Ťuknite a pozrite si všetky strany',
+    pagesFrom: 'od',
+    pagesTo: 'do',
+    total: 'Spolu',
+    fileOfBatch: (current: number, total: number) => `Súbor ${current} z ${total}`,
+    pageCount: (count: number) => `Strán v súbore: ${count}`,
+    summary: (pages: number, copies: number) => `Strany: ${pages} · Kópie: ${copies}`,
     paperSizeLegend: 'Veľkosť papiera',
     orientationLegend: 'Orientácia',
     scaleLegend: 'Mierka',
@@ -247,8 +260,7 @@ export const sk: Translations = {
     pagesLegend: 'Rozsah strán',
     pagesAll: 'Všetky strany',
     pagesCustom: 'Vlastný rozsah',
-    quantity: 'Množstvo',
-    price: (amount: string) => `Cena: ${amount}`,
+    quantity: 'Kópie',
     addToCart: 'Pridať do košíka',
     loadingPreview: 'Načítava sa náhľad...',
     previewPageIndicator: (current: number, total: number) => `Strana ${current} z ${total}`,

@@ -7,6 +7,11 @@
 // object access (`t.welcome.print`, not `t('welcome.print')`).
 export const en = {
   common: {
+    stepFiles: 'Files',
+    stepSettings: 'Settings',
+    stepReview: 'Review',
+    stepPayment: 'Payment',
+    stepPrint: 'Printing',
     fileReady: 'Ready to print',
     configure: 'Set up',
     back: 'Back',
@@ -242,6 +247,14 @@ export const en = {
     orderDescription: (quantity: number) => `Qty ${quantity} · Paid — tap to add to cart`,
   },
   printOrderConfiguration: {
+    title: 'Set up printing',
+    previewHint: 'Tap to see every page',
+    pagesFrom: 'from',
+    pagesTo: 'to',
+    total: 'Total',
+    fileOfBatch: (current: number, total: number) => `File ${current} of ${total}`,
+    pageCount: (count: number) => `Pages in file: ${count}`,
+    summary: (pages: number, copies: number) => `Pages: ${pages} · Copies: ${copies}`,
     paperSizeLegend: 'Paper size',
     orientationLegend: 'Orientation',
     scaleLegend: 'Scale',
@@ -250,8 +263,7 @@ export const en = {
     pagesLegend: 'Pages',
     pagesAll: 'All pages',
     pagesCustom: 'Custom range',
-    quantity: 'Quantity',
-    price: (amount: string) => `Price: ${amount}`,
+    quantity: 'Copies',
     addToCart: 'Add to cart',
     loadingPreview: 'Loading preview...',
     previewPageIndicator: (current: number, total: number) => `Page ${current} of ${total}`,

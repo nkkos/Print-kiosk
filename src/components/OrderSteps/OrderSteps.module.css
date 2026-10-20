@@ -1,0 +1,61 @@
+.root {
+  display: flex;
+  align-items: center;
+  gap: var(--space-s);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.step {
+  display: flex;
+  align-items: center;
+  gap: var(--space-s);
+  color: var(--color-ink-soft);
+  font: var(--font-caption);
+  font-weight: 700;
+}
+
+/* The line between two steps. */
+.step + .step::before {
+  content: '';
+  width: 2.5rem;
+  height: 2px;
+  margin-right: var(--space-xs);
+  border-radius: 1px;
+  background: var(--color-border-strong);
+}
+
+.done + .step::before {
+  background: var(--color-accent);
+}
+
+.marker {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  box-sizing: border-box;
+  border: 2px solid var(--color-border-strong);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  font-variant-numeric: tabular-nums;
+}
+
+.done .marker {
+  border-color: var(--color-accent);
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+}
+
+.current {
+  color: var(--color-ink);
+}
+
+.current .marker {
+  border-color: var(--color-accent);
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+}

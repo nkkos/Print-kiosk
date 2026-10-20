@@ -62,3 +62,4 @@ Defaults used until decided: working name, operator hidden, line icons only, ste
 | E-mail address + list           | Approved (2026-10-20) |
 | Login popup (+ register, reset) | Approved (2026-10-20) |
 | Files from the account          | Approved (2026-10-20) |
+| Print settings + preview        | Approved (2026-10-20) |
