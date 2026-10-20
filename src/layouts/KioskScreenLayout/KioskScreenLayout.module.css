@@ -38,8 +38,36 @@
   color: var(--color-ink);
 }
 
+.trustBadge {
+  min-height: 3.25rem;
+  cursor: pointer;
+}
+
+.trustBadge:hover,
+.trustBadge:active {
+  border-color: var(--color-accent);
+}
+
+.trustBadge:focus-visible {
+  outline: 3px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
 .trustBadge svg {
   color: var(--color-accent);
+}
+
+/* The inactivity warning's seconds, in the notification's badge. */
+.countdown {
+  font: var(--font-display);
+  font-variant-numeric: tabular-nums;
+}
+
+.countdownText {
+  flex-basis: 100%;
+  font: var(--font-body);
+  color: var(--color-ink-soft);
+  font-variant-numeric: tabular-nums;
 }
 
 .status {

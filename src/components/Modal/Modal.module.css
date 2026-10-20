@@ -67,6 +67,10 @@
   outline-offset: 2px;
 }
 
+.content[data-size='wide'] {
+  max-width: 72rem;
+}
+
 @keyframes fade-in {
   from {
     opacity: 0;

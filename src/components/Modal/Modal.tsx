@@ -10,14 +10,16 @@ import styles from './Modal.module.css';
 // the popup's content owns everything else.
 interface ModalProps {
   onClose: () => void;
+  /** `wide` for reading content — Help, Prices, data protection. */
+  size?: 'default' | 'wide';
   children: ReactNode;
 }
 
-export function Modal({ onClose, children }: ModalProps) {
+export function Modal({ onClose, size = 'default', children }: ModalProps) {
   const t = useTranslation();
   return (
     <div className={styles.overlay}>
-      <div className={styles.content}>
+      <div className={styles.content} data-size={size}>
         <button
           type="button"
           id="modal-close"

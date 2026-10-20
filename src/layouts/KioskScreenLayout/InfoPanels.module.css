@@ -1,0 +1,188 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-l);
+  padding: var(--space-s) var(--space-s) 0;
+}
+
+.intro {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  padding-right: var(--space-xl);
+}
+
+.title {
+  margin: 0;
+  font: var(--font-h1);
+  letter-spacing: -0.02em;
+}
+
+.subtitle {
+  margin: 0;
+  font: var(--font-lead);
+  color: var(--color-ink-soft);
+}
+
+.footnote {
+  display: flex;
+  align-items: center;
+  gap: var(--space-s);
+  margin: 0;
+  padding: var(--space-m) var(--space-l);
+  border-radius: var(--radius-medium);
+  background: var(--color-surface-sunken);
+  font: var(--font-body);
+  color: var(--color-ink-soft);
+}
+
+.footnote svg {
+  flex: none;
+  color: var(--color-accent);
+}
+
+/* Prices: one row per colour, one column per side — what the customer
+   picks on the settings screen, in the same words. */
+.table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  overflow: hidden;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-large);
+  font: var(--font-lead);
+}
+
+.table th,
+.table td {
+  padding: var(--space-m) var(--space-l);
+  text-align: left;
+}
+
+.table thead th {
+  background: var(--color-surface-sunken);
+  font: var(--font-body);
+  font-weight: 700;
+  color: var(--color-ink-soft);
+}
+
+.table tbody tr + tr > * {
+  border-top: 1px solid var(--color-border);
+}
+
+.table tbody th {
+  display: flex;
+  align-items: center;
+  gap: var(--space-m);
+  font-weight: 700;
+}
+
+.table td {
+  font: var(--font-h2);
+  color: var(--color-accent-strong);
+  font-variant-numeric: tabular-nums;
+}
+
+.unit {
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font: var(--font-caption);
+  font-weight: 700;
+}
+
+.swatch {
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: var(--radius-small);
+  background: var(--color-ink);
+}
+
+.swatch[data-color='color'] {
+  background: conic-gradient(#00a3e0, #e4007c, #ffd400, #00a3e0);
+}
+
+.services {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-m);
+}
+
+.service {
+  display: flex;
+  align-items: center;
+  gap: var(--space-m);
+  padding: var(--space-m) var(--space-l);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-large);
+  color: var(--color-accent);
+}
+
+.serviceName {
+  flex: 1;
+  font: var(--font-h3);
+  color: var(--color-ink);
+}
+
+.serviceValue {
+  font: var(--font-body);
+  color: var(--color-ink-soft);
+}
+
+.free {
+  padding: var(--space-xs) var(--space-m);
+  border-radius: var(--radius-pill);
+  background: var(--color-success-soft);
+  color: var(--color-success);
+  font: var(--font-body);
+  font-weight: 800;
+}
+
+.languages {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-m);
+}
+
+.language {
+  display: flex;
+  align-items: center;
+  gap: var(--space-m);
+  min-height: 5rem;
+  padding: 0 var(--space-l);
+  border: 1.5px solid var(--color-border-strong);
+  border-radius: var(--radius-large);
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font: var(--font-h3);
+  text-align: left;
+  cursor: pointer;
+}
+
+.language svg {
+  margin-left: auto;
+}
+
+.language[aria-pressed='true'] {
+  border-color: var(--color-accent);
+  background: var(--color-accent-soft);
+  color: var(--color-accent-strong);
+}
+
+.language:focus-visible {
+  outline: 3px solid var(--color-accent);
+  outline-offset: 3px;
+}
+
+.languageCode {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  border-radius: var(--radius-medium);
+  background: var(--color-surface-sunken);
+  color: var(--color-ink-soft);
+  font: var(--font-caption);
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
