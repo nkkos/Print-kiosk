@@ -4,6 +4,7 @@ import type { Translations } from './en';
 // not yet reviewed by a native speaker).
 export const sk: Translations = {
   common: {
+    sidesDoubleNeedsTwoPages: 'Obojstranná tlač je pre viac ako jednu stranu',
     keyboardNext: 'Ďalej',
     keyboardDone: 'Hotovo',
     keyboardSpace: 'Medzera',

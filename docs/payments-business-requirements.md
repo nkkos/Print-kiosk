@@ -16,6 +16,7 @@ Scan stays free — no payment step (`docs/scan-upload-requirements.md`).
 ## Prices
 
 - Prices are in **EUR, VAT included** (the company is a VAT payer, 23 %). The customer always sees the final price.
+- **Double-sided only with more than one printed side** (confirmed 2026-10-22): the double-sided rate per side is lower, so a one-page job (or anything that fits on one side, e.g. two pages per sheet) can't choose it — the option is disabled on the kiosk and the portal, and the price list itself charges such a job at the single-sided rate (`src/utils/tariff.ts`, `duplexApplies`), so the server can't be talked into the cheaper rate either.
 - Until the real price list is confirmed, **placeholder prices in euro cents** are used, kept in one place so the real ones replace them without other changes.
 - **Minimum card payment 0.30 €** (changed 2026-10-06 — Viva accepts no card payment below 0.30 €, demo and live alike). A smaller order is topped up to 0.30 € with its own line («Doplatok do minimálnej sumy platby kartou», also on the receipt); the Cart, the portal and the shop say so before paying. If every document of the payment ends up refunded, the top-up is refunded too.
 - The amount charged is always calculated by the server from the order's settings, never taken from what the stand's screen shows.

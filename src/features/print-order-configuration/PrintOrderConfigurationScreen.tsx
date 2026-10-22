@@ -12,10 +12,12 @@ import { standHeaders } from '../../services/standAuth';
 import { getAccountFileContentUrl } from '../../services/accountFileApi';
 import { supportsDuplex, OFFERED_PAPER_SIZES } from '../../utils/printCapabilities';
 import { computeUnitPrice, formatEuro } from '../../utils/pricing';
+import { duplexApplies } from '../../utils/tariff';
 import {
   PAGES_PER_SHEET_OPTIONS,
   computeNUpLayout,
   pageNumbersInRange,
+  sheetSidesFor,
   type PagesPerSheet,
 } from '../../utils/nUpLayout';
 import {
@@ -185,8 +187,19 @@ export function PrintOrderConfigurationScreen({
     sheets.push(selectedPages.slice(i, i + effectivePagesPerSheet));
   }
   const effectiveScale: PrintOrder['scale'] = nUpLayout ? 'fit' : scale;
-  const unitPrice = computeUnitPrice(pagesToPrint, paperSize, color, sides, effectivePagesPerSheet);
-  const duplexAvailable = supportsDuplex(paperSize);
+  // Double-sided only when there's more than one printed side (tariff.ts,
+  // duplexApplies) — and the paper size allows it.
+  const paperAllowsDuplex = supportsDuplex(paperSize);
+  const duplexAvailable =
+    paperAllowsDuplex && duplexApplies(sheetSidesFor(pagesToPrint, effectivePagesPerSheet));
+  const effectiveSides: PrintOrder['sides'] = duplexAvailable ? sides : 'single';
+  const unitPrice = computeUnitPrice(
+    pagesToPrint,
+    paperSize,
+    color,
+    effectiveSides,
+    effectivePagesPerSheet,
+  );
 
   function selectPaperSize(size: PrintOrder['paperSize']) {
     setPaperSize(size);
@@ -347,7 +360,7 @@ export function PrintOrderConfigurationScreen({
       sourceFileId,
       sourceFileOrigin,
       paperSize,
-      sides,
+      sides: effectiveSides,
       color,
       orientation,
       scale: effectiveScale,
@@ -517,11 +530,17 @@ export function PrintOrderConfigurationScreen({
 
             <SettingRow
               label={t.printOrderConfiguration.sidesLegend}
-              hint={duplexAvailable ? undefined : t.common.sidesDoubleA4Only}
+              hint={
+                duplexAvailable
+                  ? undefined
+                  : paperAllowsDuplex
+                    ? t.common.sidesDoubleNeedsTwoPages
+                    : t.common.sidesDoubleA4Only
+              }
             >
               <Segmented
                 name="sides"
-                value={sides}
+                value={effectiveSides}
                 onChange={setSides}
                 options={[
                   { value: 'single', label: t.common.sidesSingle, id: 'print-order-sides-single' },

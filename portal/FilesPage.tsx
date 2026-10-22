@@ -20,6 +20,7 @@ import {
   type CreateOrderParams,
 } from '../src/services/accountFileApi';
 import { supportsDuplex, OFFERED_PAPER_SIZES } from '../src/utils/printCapabilities';
+import { duplexApplies } from '../src/utils/tariff';
 import { computeUnitPrice, formatEuro } from '../src/utils/pricing';
 import { MIN_CARD_PAYMENT_CENTS } from '../src/utils/tariff';
 import {
@@ -32,6 +33,7 @@ import {
   PAGES_PER_SHEET_OPTIONS,
   computeNUpLayout,
   pageNumbersInRange,
+  sheetSidesFor,
   type PagesPerSheet,
 } from '../src/utils/nUpLayout';
 
@@ -120,8 +122,18 @@ export function ConfigureAndPay({
     sheets.push(selectedPages.slice(i, i + effectivePagesPerSheet));
   }
   const effectiveScale: CreateOrderParams['scale'] = nUpLayout ? 'fit' : scale;
-  const unitPrice = computeUnitPrice(pagesToPrint, paperSize, color, sides, effectivePagesPerSheet);
-  const duplexAvailable = supportsDuplex(paperSize);
+  // Double-sided only with more than one printed side (src/utils/tariff.ts).
+  const paperAllowsDuplex = supportsDuplex(paperSize);
+  const duplexAvailable =
+    paperAllowsDuplex && duplexApplies(sheetSidesFor(pagesToPrint, effectivePagesPerSheet));
+  const effectiveSides: CreateOrderParams['sides'] = duplexAvailable ? sides : 'single';
+  const unitPrice = computeUnitPrice(
+    pagesToPrint,
+    paperSize,
+    color,
+    effectiveSides,
+    effectivePagesPerSheet,
+  );
   const popupItemCount = nUpLayout ? sheets.length : preview.numPages;
   const firstSheetKey = (sheets[0] ?? []).join(',');
 
@@ -183,7 +195,7 @@ export function ConfigureAndPay({
       accountFileId: file.id,
       fileName: file.fileName,
       paperSize,
-      sides,
+      sides: effectiveSides,
       color,
       orientation,
       scale: effectiveScale,
@@ -321,12 +333,16 @@ export function ConfigureAndPay({
       <label>
         Sides
         <select
-          value={sides}
+          value={effectiveSides}
           onChange={(e) => setSides(e.target.value as CreateOrderParams['sides'])}
         >
           <option value="single">Single-sided</option>
           <option value="double" disabled={!duplexAvailable}>
-            {duplexAvailable ? 'Double-sided' : 'Double-sided (A4 only)'}
+            {duplexAvailable
+              ? 'Double-sided'
+              : paperAllowsDuplex
+                ? 'Double-sided (2+ pages)'
+                : 'Double-sided (A4 only)'}
           </option>
         </select>
       </label>

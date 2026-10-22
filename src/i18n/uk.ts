@@ -4,6 +4,7 @@ import type { Translations } from './en';
 // not yet reviewed by a native speaker).
 export const uk: Translations = {
   common: {
+    sidesDoubleNeedsTwoPages: 'Двостороння — коли сторінок більше однієї',
     keyboardNext: 'Далі',
     keyboardDone: 'Готово',
     keyboardSpace: 'Пробіл',

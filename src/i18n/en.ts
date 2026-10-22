@@ -7,6 +7,7 @@
 // object access (`t.welcome.print`, not `t('welcome.print')`).
 export const en = {
   common: {
+    sidesDoubleNeedsTwoPages: 'Double-sided needs more than one page',
     keyboardNext: 'Next',
     keyboardDone: 'Done',
     keyboardSpace: 'Space',

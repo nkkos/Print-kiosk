@@ -20,15 +20,25 @@ export const RATE_PER_SIDE_CENTS: Record<string, number> = {
 /** VAT rate applied to every print/copy line (the company is a VAT payer). */
 export const PRINT_VAT_RATE_PERCENT = 23;
 
+/** Double-sided printing needs something on both sides of a sheet — with a
+ * single printed side it's the same work as single-sided, so it isn't
+ * offered and isn't priced as such (product owner, 2026-10-22: otherwise a
+ * one-page job could just pick the cheaper double-sided rate). */
+export function duplexApplies(sheetSides: number): boolean {
+  return sheetSides > 1;
+}
+
 /** Per-copy price of a configured document: printed sheet sides × the rate
- * for its paperSize/color/sides. `null` for a combination with no rate. */
+ * for its paperSize/color/sides. `null` for a combination with no rate.
+ * "double" for a single printed side is charged as "single" (duplexApplies). */
 export function unitPriceCentsFor(
   sheetSides: number,
   paperSize: string,
   color: string,
   sides: string,
 ): number | null {
-  const rate = RATE_PER_SIDE_CENTS[`${paperSize}-${color}-${sides}`];
+  const chargedSides = sides === 'double' && !duplexApplies(sheetSides) ? 'single' : sides;
+  const rate = RATE_PER_SIDE_CENTS[`${paperSize}-${color}-${chargedSides}`];
   return rate === undefined ? null : sheetSides * rate;
 }
 
