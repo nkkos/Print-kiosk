@@ -47,6 +47,7 @@ $chromeArgs = @(
   '--no-default-browser-check',
   '--noerrdialogs',
   '--disable-session-crashed-bubble',
+  '--force-device-scale-factor=1',         # the screens are designed for 1920x1080 at 1:1; Windows defaults a 15.6" panel to 150%
   '--disable-pinch',                       # no pinch zoom on the touch screen
   '--overscroll-history-navigation=0',     # no swipe-back to an earlier page
   '--disable-features=Translate,TouchpadOverscrollHistoryNavigation',
